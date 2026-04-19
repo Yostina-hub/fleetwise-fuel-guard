@@ -258,6 +258,7 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sectionFilter, setSectionFilter] = useState<string>("all");
+  const [kindFilter, setKindFilter] = useState<"all" | "sop" | "automation">("all");
   const [sortBy, setSortBy] = useState<"updated" | "name" | "runs" | "created">("updated");
   const [historyWorkflowId, setHistoryWorkflowId] = useState<string | null>(null);
   const [webhookWorkflow, setWebhookWorkflow] = useState<any | null>(null);
@@ -405,6 +406,11 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
     (a, b) => SECTION_ORDER.indexOf(a) - SECTION_ORDER.indexOf(b),
   );
 
+  const isSopRow = (w: any) => w?.kind === "sop" || w?.category === "sop";
+
+  const sopCount = (workflows || []).filter(isSopRow).length;
+  const automationCount = (workflows || []).filter((w: any) => !isSopRow(w)).length;
+
   const filteredWorkflows = (workflows || [])
     .filter((w: any) => {
       const q = search.toLowerCase();
@@ -412,10 +418,15 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
         !q ||
         w.name?.toLowerCase().includes(q) ||
         w.description?.toLowerCase().includes(q) ||
-        w.category?.toLowerCase().includes(q);
+        w.category?.toLowerCase().includes(q) ||
+        (w.sop_code || "").toLowerCase().includes(q);
       const matchesStatus = statusFilter === "all" || w.status === statusFilter;
       const matchesSection = sectionFilter === "all" || getSectionForWorkflow(w) === sectionFilter;
-      return matchesSearch && matchesStatus && matchesSection;
+      const matchesKind =
+        kindFilter === "all" ||
+        (kindFilter === "sop" && isSopRow(w)) ||
+        (kindFilter === "automation" && !isSopRow(w));
+      return matchesSearch && matchesStatus && matchesSection && matchesKind;
     })
     .sort((a: any, b: any) => {
       switch (sortBy) {
@@ -434,12 +445,14 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const activeFilterCount =
     (statusFilter !== "all" ? 1 : 0) +
     (sectionFilter !== "all" ? 1 : 0) +
+    (kindFilter !== "all" ? 1 : 0) +
     (search ? 1 : 0);
 
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("all");
     setSectionFilter("all");
+    setKindFilter("all");
   };
 
   return (
@@ -556,7 +569,37 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
             </div>
           </div>
 
-          {/* Row 2: Section pills — group by functional area (FMG-XXX or fallback) */}
+          {/* Row 2: Kind filter — separate SOPs from automation workflows */}
+          <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
+              Type
+            </span>
+            <SectionPill
+              label="All workflows"
+              icon={<LayoutGrid className="h-3.5 w-3.5" />}
+              count={workflows?.length || 0}
+              active={kindFilter === "all"}
+              onClick={() => setKindFilter("all")}
+            />
+            <SectionPill
+              label="SOPs"
+              icon={<FileText className="h-3.5 w-3.5" />}
+              count={sopCount}
+              active={kindFilter === "sop"}
+              accentClass="bg-primary text-primary-foreground border-primary"
+              onClick={() => setKindFilter("sop")}
+            />
+            <SectionPill
+              label="Automations"
+              icon={<Zap className="h-3.5 w-3.5" />}
+              count={automationCount}
+              active={kindFilter === "automation"}
+              accentClass="bg-accent text-accent-foreground border-accent"
+              onClick={() => setKindFilter("automation")}
+            />
+          </div>
+
+          {/* Row 3: Section pills — group by functional area (FMG-XXX or fallback) */}
           {availableSections.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
@@ -667,6 +710,12 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                 </p>
 
                 <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                  {isSopRow(workflow) && (
+                    <Badge variant="secondary" className="text-[10px] gap-0.5 border border-primary/40 bg-primary/10 text-primary">
+                      <FileText className="h-2.5 w-2.5" />
+                      {workflow.sop_code || "SOP"}
+                    </Badge>
+                  )}
                   <Badge className={cn(statusColors[workflow.status] || statusColors.draft, "text-[10px] capitalize")} variant="secondary">
                     {workflow.status}
                   </Badge>

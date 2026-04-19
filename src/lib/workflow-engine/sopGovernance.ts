@@ -21,24 +21,42 @@ export async function seedSingleSOP(
   if (!organizationId) throw new Error("No organization");
   const graph = convertSopConfigToGraph(config);
 
-  const { data: existing, error: fetchErr } = await supabase
+  // Lookup precedence: sop_type (new key) → legacy name match.
+  const { data: existingByType } = await supabase
     .from("workflows")
     .select("id")
     .eq("organization_id", organizationId)
-    .eq("category", "sop")
-    .eq("name", graph.name)
+    .eq("sop_type", config.type)
     .maybeSingle();
-  if (fetchErr) throw fetchErr;
+  let existing = existingByType;
+  if (!existing) {
+    const { data: existingByName, error: fetchErr } = await supabase
+      .from("workflows")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .eq("category", "sop")
+      .eq("name", graph.name)
+      .maybeSingle();
+    if (fetchErr) throw fetchErr;
+    existing = existingByName;
+  }
+
+  const { icon: _icon, ...definition } = config;
+  const sopRow = {
+    kind: "sop" as const,
+    sop_type: config.type,
+    sop_code: config.sopCode,
+    definition: definition as any,
+    description: graph.description,
+    category: graph.category,
+    nodes: graph.nodes as any,
+    edges: graph.edges as any,
+  };
 
   if (existing) {
     const { error } = await supabase
       .from("workflows")
-      .update({
-        description: graph.description,
-        category: graph.category,
-        nodes: graph.nodes as any,
-        edges: graph.edges as any,
-      })
+      .update(sopRow)
       .eq("id", existing.id);
     if (error) throw error;
     return { workflowId: existing.id, inserted: false, updated: true };
@@ -49,12 +67,9 @@ export async function seedSingleSOP(
     .insert({
       organization_id: organizationId,
       name: graph.name,
-      description: graph.description,
-      category: graph.category,
-      nodes: graph.nodes as any,
-      edges: graph.edges as any,
       status: "draft",
       created_by: userId || null,
+      ...sopRow,
     })
     .select("id")
     .single();
