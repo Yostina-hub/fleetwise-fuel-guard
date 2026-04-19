@@ -98,24 +98,37 @@ export const TireRequestsTab = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const markReturned = useMutation({
-    mutationFn: async ({ itemId, ref }: { itemId: string; ref: string }) => {
-      const { error } = await supabase
-        .from("tire_request_items")
-        .update({
-          iproc_return_status: "returned",
-          iproc_return_reference: ref || `MANUAL-${Date.now()}`,
-          iproc_returned_at: new Date().toISOString(),
-          iproc_received_by: profile?.full_name || user?.email || null,
-        })
-        .eq("id", itemId);
-      if (error) throw error;
+  const postReturn = useMutation({
+    mutationFn: async ({ itemId, warehouse, notes }: { itemId: string; warehouse?: string; notes?: string }) => {
+      const res = await iproc.postReturn({
+        request_item_id: itemId,
+        warehouse,
+        received_by: profile?.full_name || user?.email || undefined,
+        notes,
+      });
+      return res;
     },
-    onSuccess: () => {
-      toast.success("Marked returned (manual override)");
+    onSuccess: (res) => {
+      toast.success(`Return posted to iPROC (ref: ${res.iproc_return_reference})`);
       queryClient.invalidateQueries({ queryKey: ["tire-requests"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(`iPROC return failed: ${e.message}`),
+  });
+
+  // On-hand balance lookup for the selected request's items.
+  const onHand = useQuery({
+    queryKey: ["iproc-onhand", openId],
+    enabled: !!openId,
+    queryFn: async (): Promise<Record<string, OnHandBalance>> => {
+      const sel: any = (requests as any[]).find((r: any) => r.id === openId);
+      if (!sel) return {};
+      const sizes = Array.from(new Set((sel.items || []).map((it: any) => it.tire_size || "295/80R22.5"))) as string[];
+      const out: Record<string, OnHandBalance> = {};
+      await Promise.all(sizes.map(async (s) => {
+        try { out[s] = await iproc.lookupOnHand({ tire_size: s }); } catch { /* ignore */ }
+      }));
+      return out;
+    },
   });
 
   if (isLoading) {
