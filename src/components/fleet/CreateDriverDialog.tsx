@@ -51,6 +51,12 @@ const generatePassword = () => {
 interface CreateDriverDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When true, render the form body inline (no outer Dialog wrapper). */
+  embedded?: boolean;
+  /** Optional initial values (e.g. when launched from a workflow task). */
+  prefill?: Record<string, any>;
+  /** Fired after the driver row is successfully inserted. */
+  onSubmitted?: (result: { id: string }) => void;
 }
 
 const initialForm = {
@@ -69,12 +75,12 @@ const initialForm = {
   employee_id: "", medical_certificate_expiry: "",
 };
 
-export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverDialogProps) {
+export default function CreateDriverDialog({ open, onOpenChange, embedded, prefill, onSubmitted }: CreateDriverDialogProps) {
   const { organizationId } = useOrganization();
   const canSubmit = useSubmitThrottle();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({ ...initialForm });
+  const [formData, setFormData] = useState({ ...initialForm, ...(prefill ?? {}) });
   const [showPassword, setShowPassword] = useState(false);
 
   // File attachments
