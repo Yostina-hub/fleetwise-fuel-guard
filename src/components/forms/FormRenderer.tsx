@@ -34,6 +34,7 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { uploadFleetFile } from "@/components/fleet/uploadFleetFile";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { DraftStatus } from "@/components/inbox/DraftStatus";
 import { LocationPickerField } from "@/components/shared/LocationPickerField";
@@ -142,6 +143,7 @@ function FormRendererInner({
   const setValues = draft.setValues;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploadingFields, setUploadingFields] = useState<Record<string, boolean>>({});
 
   // Detect which entity types are needed for picker queries.
   const needs = useMemo(() => {
@@ -337,6 +339,24 @@ function FormRendererInner({
 
   // ---------- Field renderers --------------------------------------------
 
+  const handleFileUpload = async (field: BaseField, file: File | null, onValue: (v: any) => void) => {
+    if (!file) return;
+
+    const bucket = values.vehicle_id ? "vehicle-attachments" : "driver-documents";
+    const entityId = String(values.driver_id ?? values.vehicle_id ?? organizationId ?? "forms");
+
+    setUploadingFields((prev) => ({ ...prev, [field.key]: true }));
+    try {
+      const publicUrl = await uploadFleetFile(bucket, entityId, field.key, file);
+      onValue(publicUrl);
+      toast.success("File uploaded");
+    } catch (err: any) {
+      toast.error(err?.message || "File upload failed");
+    } finally {
+      setUploadingFields((prev) => ({ ...prev, [field.key]: false }));
+    }
+  };
+
   const renderInput = (field: BaseField, value: any, onValue: (v: any) => void, errKey: string) => {
     const err = errors[errKey];
     const common = { id: field.key, "aria-invalid": !!err };
@@ -452,15 +472,31 @@ function FormRendererInner({
           />
         );
       case "file":
-        // Phase 2: simple text input for file URLs/paths. Real upload UI in Phase 3.
         return (
-          <Input
-            {...common}
-            type="url"
-            value={value ?? ""}
-            onChange={(e) => onValue(e.target.value)}
-            placeholder="https://..."
-          />
+          <div className="space-y-2">
+            <Input
+              {...common}
+              type="file"
+              onChange={(e) => void handleFileUpload(field, e.target.files?.[0] ?? null, onValue)}
+              disabled={!!uploadingFields[field.key]}
+            />
+            {uploadingFields[field.key] ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Uploading file…
+              </div>
+            ) : null}
+            {typeof value === "string" && value ? (
+              <a
+                href={value}
+                target="_blank"
+                rel="noreferrer"
+                className="block text-xs text-primary underline underline-offset-2"
+              >
+                View uploaded file
+              </a>
+            ) : null}
+          </div>
         );
       case "location": {
         // Reuses the legacy LocationPickerField — text + map + geofence picker.

@@ -673,7 +673,7 @@ function FieldInputPreview({ field }: { field: BaseField }) {
     case "location":
       return <Input placeholder={field.placeholder || "📍 Select or type a place"} disabled />;
     case "file":
-      return <Input type="url" placeholder="https://..." disabled />;
+      return <Input type="file" disabled />;
     default:
       return (
         <Input
