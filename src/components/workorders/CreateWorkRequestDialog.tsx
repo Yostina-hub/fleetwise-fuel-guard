@@ -50,7 +50,11 @@ const workRequestSchema = z.object({
 interface CreateWorkRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
+  /** When true, render inline (no outer Dialog) — used by the unified FormRenderer / legacy registry. */
+  embedded?: boolean;
+  /** Optional callback fired after a successful work-request submission. */
+  onSubmitted?: (payload: { id: string; work_order_number: string }) => void;
 }
 
 const REQUEST_TYPES = [
@@ -72,7 +76,7 @@ const DRIVER_TYPES = [
   "Internal", "Outsourced", "Temporary", "Contract",
 ];
 
-const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess }: CreateWorkRequestDialogProps) => {
+const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSubmitted }: CreateWorkRequestDialogProps) => {
   const { organizationId } = useOrganization();
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
