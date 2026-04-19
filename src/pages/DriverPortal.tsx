@@ -369,19 +369,28 @@ const DriverPortal = () => {
 
         {!driver && (
           <Card className="glass-strong border-warning/30">
-            <CardContent className="p-6 flex items-center gap-3">
-              <AlertTriangle className="w-6 h-6 text-warning" aria-hidden="true" />
-              <div>
+            <CardContent className="p-6 flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 text-warning shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="space-y-1">
                 <p className="font-medium">
                   {isSuperAdmin
-                    ? (overrideDriverId ? "Driver not found" : "No driver profile linked to your account")
+                    ? overrideDriverId
+                      ? "Driver not found"
+                      : "You are signed in as super admin"
                     : "No driver profile linked to your account"}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {isSuperAdmin
-                    ? "Use the \"View as Driver\" picker above to inspect any driver's portal."
-                    : "Contact Fleet Operations to link your driver record."}
+                    ? overrideDriverId
+                      ? "The selected driver could not be loaded. Pick another driver above."
+                      : "Use the \"View as Driver\" picker above to inspect any driver's portal."
+                    : "Your login is recognized but no driver record was found in this organization. Ask Fleet Operations to verify that your driver profile exists and that its email matches your account email exactly."}
                 </p>
+                {!isSuperAdmin && userId && (
+                  <p className="text-xs text-muted-foreground/80 font-mono pt-1">
+                    Account ID: {userId.slice(0, 8)}…
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
