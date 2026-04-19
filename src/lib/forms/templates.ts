@@ -1163,6 +1163,82 @@ const roadsideRequestTemplate: FormTemplate = {
 // ---------------------------------------------------------------------------
 // 10) Driver Registration (HR — bound to legacy CreateDriverDialog)
 // ---------------------------------------------------------------------------
+// Option lists mirrored from src/components/fleet/formConstants.ts so the
+// editor canvas shows the EXACT same dropdown values as the legacy form.
+const DRIVER_TYPE_OPTIONS = [
+  { value: "ethio_contract",   label: "Ethio telecom — Contract" },
+  { value: "ethio_permanent",  label: "Ethio telecom — Permanent" },
+  { value: "ethio_outsource",  label: "Ethio telecom — Outsource" },
+  { value: "ethio_rental",     label: "Ethio telecom — Rental" },
+  { value: "3pl",              label: "3PL" },
+  { value: "individual",       label: "Individual" },
+];
+const GENDER_OPTIONS = [
+  { value: "male",   label: "Male" },
+  { value: "female", label: "Female" },
+];
+const ID_TYPE_OPTIONS = [
+  { value: "passport",        label: "Passport" },
+  { value: "drivers_license", label: "Driver's License" },
+  { value: "kebele_id",       label: "Kebele ID" },
+];
+const LICENSE_TYPE_OPTIONS = [
+  { value: "automobile",  label: "Automobile" },
+  { value: "dry_1",       label: "Cargo -1" },
+  { value: "dry_2",       label: "Cargo -2" },
+  { value: "dry_3",       label: "Cargo -3" },
+  { value: "motor_cycle", label: "Motor Cycle" },
+  { value: "n_a",         label: "N/A" },
+  { value: "public_1",    label: "Public - 1" },
+  { value: "public_2",    label: "Public - 2" },
+  { value: "public_3",    label: "Public - 3" },
+  { value: "taxi_1",      label: "Taxi -1" },
+  { value: "taxi_2",      label: "Taxi -2" },
+];
+const EMPLOYMENT_TYPE_OPTIONS = [
+  { value: "regular",   label: "Regular" },
+  { value: "shift",     label: "Shift" },
+  { value: "full_time", label: "Full Time" },
+  { value: "part_time", label: "Part Time" },
+  { value: "contract",  label: "Contract" },
+  { value: "freelance", label: "Freelance" },
+];
+const DRIVER_STATUS_OPTIONS = [
+  { value: "active",     label: "Active" },
+  { value: "suspended",  label: "Suspended" },
+  { value: "on_leave",   label: "On Leave" },
+  { value: "terminated", label: "Terminated" },
+];
+const ROUTE_TYPE_OPTIONS = [
+  { value: "intracity", label: "Intracity" },
+  { value: "intercity", label: "Intercity" },
+  { value: "both",      label: "Both" },
+];
+const BLOOD_TYPE_OPTIONS = ["A+","A-","B+","B-","AB+","AB-","O+","O-"]
+  .map((v) => ({ value: v, label: v }));
+const ASSIGNED_LOCATION_OPTIONS = [
+  { value: "corp_fom1",          label: "FOM I" },
+  { value: "corp_fom2",          label: "FOM II" },
+  { value: "corp_zemengebeya",   label: "ZemenGEBEYA Logistics" },
+  { value: "region_bole",        label: "Bole" },
+  { value: "region_yeka",        label: "Yeka" },
+  { value: "region_kirkos",      label: "Kirkos" },
+  { value: "region_arada",       label: "Arada" },
+  { value: "region_addis_ketema",label: "Addis Ketema" },
+  { value: "region_lideta",      label: "Lideta" },
+  { value: "region_gulele",      label: "Gulele" },
+  { value: "region_kolfe",       label: "Kolfe Keranio" },
+  { value: "region_akaky",       label: "Akaky Kaliti" },
+  { value: "region_nefas_silk",  label: "Nefas Silk Lafto" },
+  { value: "region_lemi_kura",   label: "Lemi Kura" },
+  { value: "region_adama",       label: "Adama" },
+  { value: "region_hawassa",     label: "Hawassa" },
+  { value: "region_bahir_dar",   label: "Bahir Dar" },
+  { value: "region_mekelle",     label: "Mekelle" },
+  { value: "region_jimma",       label: "Jimma" },
+  { value: "region_dire_dawa",   label: "Dire Dawa" },
+];
+
 const driverRegistrationTemplate: FormTemplate = {
   key: "driver_registration",
   name: "Driver Registration",
@@ -1174,31 +1250,179 @@ const driverRegistrationTemplate: FormTemplate = {
   schema: {
     version: 1,
     fields: [
-      f({ key: "first_name",  type: "text", label: "First name",  required: true }),
-      f({ key: "middle_name", type: "text", label: "Middle name", required: true }),
-      f({ key: "last_name",   type: "text", label: "Last name",   required: true }),
-      f({ key: "phone",       type: "text", label: "Phone (09XXXXXXXX)", required: true }),
-      f({ key: "driver_type", type: "select", label: "Driver type", required: true,
-         options: [
-           { value: "ethio_contract", label: "Ethio telecom — Contract" },
-           { value: "ethio_outsource", label: "Ethio telecom — Outsource" },
-           { value: "third_party",    label: "Third party" },
-         ] }),
-      f({ key: "govt_id_type",    type: "select", label: "ID type", required: true,
-         options: [
-           { value: "drivers_license", label: "Driver's license" },
-           { value: "passport",        label: "Passport" },
-           { value: "kebele_id",       label: "Kebele ID" },
-         ] }),
-      f({ key: "license_number",  type: "text", label: "ID / license number", required: true }),
-      f({ key: "department",      type: "text", label: "Assigned location",   required: true }),
-      f({ key: "emergency_contact_name",  type: "text", label: "Emergency contact name",  required: true }),
-      f({ key: "emergency_contact_phone", type: "text", label: "Emergency contact phone", required: true }),
-      f({ key: "password",        type: "text", label: "Portal password (min 12 chars)", required: true }),
+      // 1) Employment Type
+      f({
+        key: "employment_type_section",
+        type: "section",
+        label: "Employment Type",
+        fields: [
+          f({ key: "driver_type", type: "select", label: "Driver Type", required: true,
+             options: DRIVER_TYPE_OPTIONS, defaultValue: "ethio_contract",
+             layout: { colSpan: 1 } }),
+        ],
+      }),
+
+      // 2) Personal Information
+      f({
+        key: "personal_info_section",
+        type: "section",
+        label: "Personal Information",
+        fields: [
+          f({ key: "first_name",   type: "text",   label: "First Name",   required: true,
+             placeholder: "e.g. Abebe", layout: { colSpan: 1 } }),
+          f({ key: "middle_name",  type: "text",   label: "Middle Name",  required: true,
+             placeholder: "e.g. Kebede", layout: { colSpan: 1 } }),
+          f({ key: "last_name",    type: "text",   label: "Last Name",    required: true,
+             placeholder: "e.g. Tadesse", layout: { colSpan: 1 } }),
+          f({ key: "gender",       type: "select", label: "Gender",
+             options: GENDER_OPTIONS, layout: { colSpan: 1 } }),
+          f({ key: "phone",        type: "text",   label: "Phone Number", required: true,
+             placeholder: "09XXXXXXXX",
+             validation: { pattern: "^09[0-9]{8}$", patternMessage: "Ethiopian phone: 09XXXXXXXX", maxLength: 10 },
+             layout: { colSpan: 1 } }),
+          f({ key: "email",        type: "email",  label: "Email",
+             placeholder: "driver@example.com", layout: { colSpan: 1 } }),
+          f({ key: "date_of_birth",type: "date",   label: "Date of Birth", layout: { colSpan: 1 } }),
+          f({ key: "employee_id",  type: "text",   label: "Employee ID",
+             placeholder: "EMP-001", layout: { colSpan: 1 } }),
+        ],
+      }),
+
+      // 3) Address
+      f({
+        key: "address_section",
+        type: "section",
+        label: "Address",
+        fields: [
+          f({ key: "address_region",   type: "text", label: "Region",   required: true, layout: { colSpan: 1 } }),
+          f({ key: "address_zone",     type: "text", label: "Zone",     required: true, layout: { colSpan: 1 } }),
+          f({ key: "address_woreda",   type: "text", label: "Woreda",   required: true, layout: { colSpan: 1 } }),
+          f({ key: "address_specific", type: "text", label: "Specific Address",
+             placeholder: "Building name, street, directions...",
+             validation: { maxLength: 500 } }),
+        ],
+      }),
+
+      // 4) Legal & Verification
+      f({
+        key: "legal_section",
+        type: "section",
+        label: "Legal & Verification",
+        fields: [
+          f({ key: "govt_id_type",       type: "select", label: "ID Type", required: true,
+             options: ID_TYPE_OPTIONS, layout: { colSpan: 1 } }),
+          f({ key: "license_number",     type: "text",   label: "ID / License Number", required: true,
+             placeholder: "Enter ID / license number...", layout: { colSpan: 1 } }),
+          f({ key: "national_id",        type: "text",   label: "National ID (FAN)",
+             placeholder: "Please enter FAN", layout: { colSpan: 1 } }),
+          f({ key: "license_type",       type: "select", label: "License Type / Class",
+             options: LICENSE_TYPE_OPTIONS, layout: { colSpan: 1 } }),
+          f({ key: "license_issue_date", type: "date",   label: "License Issue Date",  layout: { colSpan: 1 } }),
+          f({ key: "license_expiry",     type: "date",   label: "License Expiry Date", layout: { colSpan: 1 } }),
+        ],
+      }),
+
+      // 5) Driver Attachments
+      f({
+        key: "attachments_section",
+        type: "section",
+        label: "Driver Attachments",
+        fields: [
+          f({ key: "license_front_url", type: "file", label: "Driver's License (Front)", layout: { colSpan: 1 } }),
+          f({ key: "license_back_url",  type: "file", label: "Driver's License (Back)",  layout: { colSpan: 1 } }),
+          f({ key: "national_id_url",   type: "file", label: "National ID Card",         layout: { colSpan: 1 } }),
+          f({ key: "avatar_url",        type: "file", label: "Profile Photo",            layout: { colSpan: 1 } }),
+        ],
+      }),
+
+      // 6) Employment Details
+      f({
+        key: "employment_details_section",
+        type: "section",
+        label: "Employment Details",
+        fields: [
+          f({ key: "employment_type",  type: "select", label: "Employment Status",
+             options: EMPLOYMENT_TYPE_OPTIONS, defaultValue: "regular", layout: { colSpan: 1 } }),
+          f({ key: "status",           type: "select", label: "Driver Status",
+             options: DRIVER_STATUS_OPTIONS, defaultValue: "active", layout: { colSpan: 1 } }),
+          f({ key: "joining_date",     type: "date",   label: "Effective Date", layout: { colSpan: 1 } }),
+          f({ key: "department",       type: "select", label: "Assigned Location", required: true,
+             options: ASSIGNED_LOCATION_OPTIONS, layout: { colSpan: 1 } }),
+          f({ key: "experience_years", type: "number", label: "Years of Experience",
+             placeholder: "e.g. 3", validation: { min: 0 }, layout: { colSpan: 1 } }),
+          f({ key: "route_type",       type: "select", label: "Type of Routes",
+             options: ROUTE_TYPE_OPTIONS, defaultValue: "intracity", layout: { colSpan: 1 } }),
+          f({ key: "medical_certificate_expiry", type: "date", label: "Medical Certificate Expiry",
+             layout: { colSpan: 1 } }),
+        ],
+      }),
+
+      // 7) Banking
+      f({
+        key: "banking_section",
+        type: "section",
+        label: "Banking Information",
+        fields: [
+          f({ key: "bank_name",    type: "text", label: "Bank Name",           layout: { colSpan: 1 } }),
+          f({ key: "bank_account", type: "text", label: "Bank Account Number", layout: { colSpan: 1 } }),
+        ],
+      }),
+
+      // 8) Emergency Contact
+      f({
+        key: "emergency_section",
+        type: "section",
+        label: "Emergency Contact",
+        fields: [
+          f({ key: "emergency_contact_name",  type: "text",   label: "Contact Name",  required: true,
+             placeholder: "Family member name", layout: { colSpan: 1 } }),
+          f({ key: "emergency_contact_phone", type: "text",   label: "Contact Phone", required: true,
+             placeholder: "09XXXXXXXX", layout: { colSpan: 1 } }),
+          f({ key: "blood_type",              type: "select", label: "Blood Type",
+             options: BLOOD_TYPE_OPTIONS, layout: { colSpan: 1 } }),
+        ],
+      }),
+
+      // 9) Identification Tags
+      f({
+        key: "identification_section",
+        type: "section",
+        label: "Identification Tags (Optional)",
+        fields: [
+          f({ key: "rfid_tag",     type: "text", label: "RFID Tag",     placeholder: "RFID tag number",     layout: { colSpan: 1 } }),
+          f({ key: "ibutton_id",   type: "text", label: "iButton ID",   placeholder: "iButton ID",          layout: { colSpan: 1 } }),
+          f({ key: "bluetooth_id", type: "text", label: "Bluetooth ID", placeholder: "Bluetooth device ID", layout: { colSpan: 1 } }),
+        ],
+      }),
+
+      // 10) Account Credentials
+      f({
+        key: "credentials_section",
+        type: "section",
+        label: "Account Credentials",
+        fields: [
+          f({ key: "password", type: "text", label: "Password", required: true,
+             placeholder: "Min 12 chars, upper/lower/digit/special",
+             helpText: "Used to provision the driver portal login when an email is also supplied.",
+             validation: { minLength: 12, maxLength: 100 },
+             layout: { colSpan: 1 } }),
+        ],
+      }),
+
+      // 11) Notes
+      f({
+        key: "notes_section",
+        type: "section",
+        label: "Additional Notes",
+        fields: [
+          f({ key: "notes", type: "textarea", label: "Notes",
+             placeholder: "Additional information..." }),
+        ],
+      }),
     ],
   },
   settings: {
-    submitLabel: "Register driver",
+    submitLabel: "Register Driver",
     cancelLabel: "Cancel",
     successMessage: "Driver registered. Portal access is provisioned automatically when an email + password are supplied.",
     twoColumnLayout: true,
