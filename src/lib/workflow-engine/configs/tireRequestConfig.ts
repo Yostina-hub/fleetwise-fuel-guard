@@ -27,6 +27,7 @@ export const tireRequestConfig: WorkflowConfig = {
   icon: CircleDot,
   initialStage: "submitted",
   requiresVehicle: true,
+  intakeFormKey: "tire_request",
   intakeFields: [
     { key: "title", label: "Request title", type: "text", required: true, placeholder: "Tire replacement — front axle" },
     { key: "__vehicle_id", label: "Vehicle", type: "vehicle", required: true },
