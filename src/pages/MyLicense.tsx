@@ -25,13 +25,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   IdCard, ShieldCheck, FileText, Award, Heart, Clock, AlertTriangle,
   CheckCircle2, Loader2, ChevronLeft, Download, FileWarning, History,
-  Calendar, Stethoscope, BookOpen,
+  Calendar, Stethoscope, BookOpen, Upload,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
 import RequestLicenseRenewalDialog from "@/components/driver-portal/RequestLicenseRenewalDialog";
+import UploadMyDocumentDialog, { type UploadDocCategory } from "@/components/driver-portal/UploadMyDocumentDialog";
 
 interface DriverDoc {
   id: string;
