@@ -20,6 +20,7 @@ import { vehicleHandoverConfig } from "./configs/vehicleHandoverConfig";
 import { fleetTransferConfig } from "./configs/fleetTransferConfig";
 import { vehicleRequestConfig } from "./configs/vehicleRequestConfig";
 import { fuelRequestConfig } from "./configs/fuelRequestConfig";
+import { maintenanceRequestConfig } from "./configs/maintenanceRequestConfig";
 
 // Reusable lane helpers
 import type { Lane } from "./types";
@@ -950,6 +951,7 @@ export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
   vehicle_handover:        vehicleHandoverConfig,
   fleet_transfer:          fleetTransferConfig,
   fuel_request:            fuelRequestConfig,
+  maintenance_request:     maintenanceRequestConfig,
 };
 
-export { tireRequestConfig, vehicleHandoverConfig, fleetTransferConfig, vehicleRequestConfig, fuelRequestConfig };
+export { tireRequestConfig, vehicleHandoverConfig, fleetTransferConfig, vehicleRequestConfig, fuelRequestConfig, maintenanceRequestConfig };
