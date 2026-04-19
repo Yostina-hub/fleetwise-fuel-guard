@@ -177,9 +177,9 @@ export const maintenanceRequestConfig: WorkflowConfig = {
       description: "Supplier performs maintenance per WO and contract. If a variation is required, notify for confirmation.",
       actions: [
         { id: "no_variation", label: "No variation → Conduct maintenance per WO", toStage: "conduct_maintenance",
-          allowedRoles: ["supplier", "sourcing_manager"] },
+          allowedRoles: ["sourcing_manager"] },
         { id: "wo_variation", label: "10. Notify variation for confirmation", toStage: "variation_review",
-          allowedRoles: ["supplier", "sourcing_manager"], variant: "outline",
+          allowedRoles: ["sourcing_manager"], variant: "outline",
           fields: [
             { key: "variation_reason", label: "Reason for variation", type: "textarea", required: true },
             { key: "variation_amount", label: "Variation amount (ETB)", type: "number", required: true },
@@ -200,7 +200,7 @@ export const maintenanceRequestConfig: WorkflowConfig = {
     { id: "supplier_correct", label: "26. Supplier corrects per feedback", lane: "supplier",
       actions: [
         { id: "correction_done", label: "Correction done → resume maintenance", toStage: "supplier_maintain",
-          allowedRoles: ["supplier", "sourcing_manager"] },
+          allowedRoles: ["sourcing_manager"] },
       ] },
 
     // 12 — Additional WO for accepted variation + delegation-matrix approval
@@ -219,7 +219,7 @@ export const maintenanceRequestConfig: WorkflowConfig = {
     { id: "conduct_maintenance", label: "13. Conduct maintenance per WO", lane: "supplier",
       actions: [
         { id: "ready_for_inspection", label: "14. Inform — ready for post-maintenance inspection", toStage: "post_inspection",
-          allowedRoles: ["supplier", "sourcing_manager"],
+          allowedRoles: ["sourcing_manager"],
           fields: [
             { key: "maintenance_completed_at", label: "Maintenance completed at", type: "datetime", required: true },
             { key: "supplier_invoice_ref", label: "Supplier invoice reference", type: "text" },
@@ -248,7 +248,7 @@ export const maintenanceRequestConfig: WorkflowConfig = {
     { id: "supplier_report", label: "17. Supplier maintenance report & invoice", lane: "supplier",
       actions: [
         { id: "report_received", label: "18. Request fulfillment confirmation", toStage: "fulfillment_confirm",
-          allowedRoles: ["supplier", "sourcing_manager"],
+          allowedRoles: ["sourcing_manager"],
           fields: [{ key: "supplier_invoice_no", label: "Supplier invoice #", type: "text", required: true }] },
       ] },
 
