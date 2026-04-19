@@ -351,24 +351,36 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
           </Tabs>
         </div>
       </SheetContent>
-
-      {/* Confirmation dialog for actions that carry a `confirm:` prompt. */}
-      <AlertDialog
-        open={!!pendingConfirm}
-        onOpenChange={(o) => { if (!o) setPendingConfirm(null); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm action</AlertDialogTitle>
-            <AlertDialogDescription>{pendingConfirm}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={runAction}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Sheet>
+
+    {/* Confirmation dialog rendered OUTSIDE the Sheet so its portal/focus
+        management cannot tear down the active action state mid-confirm. */}
+    <AlertDialog
+      open={!!pendingConfirm}
+      onOpenChange={(o) => { if (!o) setPendingConfirm(null); }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirm action</AlertDialogTitle>
+          <AlertDialogDescription>{pendingConfirm}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              // Prevent Radix's default close-on-click; we close ourselves
+              // after the mutation resolves so `activeAction` stays set.
+              e.preventDefault();
+              runAction();
+            }}
+            disabled={performAction.isPending}
+          >
+            Continue
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 
