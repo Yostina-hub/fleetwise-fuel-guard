@@ -85,16 +85,22 @@ export function useFormsUsage(
         taskCount.set(key, (taskCount.get(key) ?? 0) + 1);
       }
 
-      // 3. Combine with legacy registry binding.
+      // 3. Workflow intake form keys (declared in WORKFLOW_CONFIGS).
+      const intakeKeys = getWorkflowIntakeKeys();
+
+      // 4. Combine all signals.
       for (const f of forms) {
         const legacyBound = !!getLegacyFormEntry(f.key);
+        const workflowIntake = intakeKeys.has(f.key);
         const workflowTaskCount = taskCount.get(f.key) ?? 0;
         const submissionCount = subCount.get(f.id) ?? 0;
         result.set(f.id, {
           legacyBound,
+          workflowIntake,
           workflowTaskCount,
           submissionCount,
-          inUse: legacyBound || workflowTaskCount > 0 || submissionCount > 0,
+          inUse:
+            legacyBound || workflowIntake || workflowTaskCount > 0 || submissionCount > 0,
         });
       }
       return result;
