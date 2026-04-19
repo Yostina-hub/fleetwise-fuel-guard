@@ -532,6 +532,15 @@ const DriverPortal = () => {
             <DriverSubmissionsTab driverId={driverId} organizationId={organizationId} userId={userId} />
           </TabsContent>
 
+          <TabsContent value="requests">
+            <MyRequestsPanel
+              driverId={driverId}
+              organizationId={organizationId}
+              userId={userId}
+              onRequestRenewal={driver ? () => setShowLicenseRenewal(true) : undefined}
+            />
+          </TabsContent>
+
           <TabsContent value="performance">
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
