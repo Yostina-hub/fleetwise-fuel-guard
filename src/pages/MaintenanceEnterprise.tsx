@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Wrench, Loader2, Ticket, FileSignature, DollarSign, 
   Users, ShoppingCart, ClipboardList, Building2, FileText,
-  MessageSquare, CreditCard, ClipboardCheck, ShieldCheck, PackageSearch
+  MessageSquare, CreditCard, ClipboardCheck, ShieldCheck, PackageSearch, Link2
 } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -24,6 +24,7 @@ import MaintenanceSectionTab from "@/components/maintenance-enterprise/Maintenan
 import SCDSourcingTab from "@/components/maintenance-enterprise/SCDSourcingTab";
 import SupplierWorkflowTasksTab from "@/components/maintenance-enterprise/SupplierWorkflowTasksTab";
 import InspectorWorkspaceTab from "@/components/maintenance-enterprise/InspectorWorkspaceTab";
+import SupplierAssignmentsTab from "@/components/maintenance-enterprise/SupplierAssignmentsTab";
 
 const MaintenanceEnterprise = () => {
   const { organizationId, loading: orgLoading } = useOrganization();
@@ -132,6 +133,9 @@ const MaintenanceEnterprise = () => {
               <TabsTrigger value="suppliers" className="gap-1.5 text-xs md:text-sm">
                 <Users className="w-4 h-4" /> Suppliers
               </TabsTrigger>
+              <TabsTrigger value="supplier-assignments" className="gap-1.5 text-xs md:text-sm">
+                <Link2 className="w-4 h-4" /> Portal Access
+              </TabsTrigger>
               <TabsTrigger value="purchase-orders" className="gap-1.5 text-xs md:text-sm">
                 <ShoppingCart className="w-4 h-4" /> POs
               </TabsTrigger>
@@ -181,6 +185,9 @@ const MaintenanceEnterprise = () => {
             </TabsContent>
             <TabsContent value="suppliers">
               <SupplierProfilesTab />
+            </TabsContent>
+            <TabsContent value="supplier-assignments">
+              <SupplierAssignmentsTab />
             </TabsContent>
             <TabsContent value="purchase-orders">
               <PurchaseOrdersTab />

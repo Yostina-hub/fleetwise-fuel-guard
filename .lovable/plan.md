@@ -312,3 +312,28 @@ Once those land, Phase 2 pilot can start.
 ## Risks
 - `supplier` enum addition + RLS using it must be in 2 migration files (Postgres committed-enum rule).
 - Supplier route tree must early-return so suppliers never see fleet UI.
+
+---
+
+# Preventive Maintenance Workflow (SOP 1.1 – 1.9) — Phase A complete ✅
+
+| SOP step | Component | Status |
+|---|---|---|
+| 1.1 Auto-trigger | `trigger_preventive_maintenance` RPC + `trigger-preventive-maintenance` edge fn + **hourly cron** `preventive-maintenance-hourly-scan` | ✅ |
+| 1.1.1 Manual trigger | `useTriggerPreventiveScan` + `DuePreventiveSchedules` UI | ✅ |
+| 1.2 Fleet-ops approve | `FleetOpsReviewTab` + maintenance_requests workflow | ✅ |
+| 1.3 Maintenance creates WO | `MaintenanceSectionTab` → work_orders | ✅ |
+| 1.4 Delegation matrix approval | `authority_matrix` + WorkOrderApprovalFlow | ✅ |
+| 1.5 ERP POR | `erp-create-por` (Oracle EBS, stub when secrets missing) + `erp_sync_log` | ✅ stub |
+| 1.6 Auto zero-birr PO | `fn_wo_approved_create_po` trigger on work_orders | ✅ |
+| 1.7 Supplier portal access | `/supplier-portal` + `supplier` role + `maintenance_supplier_assignments` (vendor-scoped, multi-org) | ✅ |
+| 1.8 Supplier↔Maint chat + uploads | `WorkOrderMessageThread` + `wo_supplier_messages` + `supplier-documents` bucket | ✅ |
+| 1.9 Payment request review | `SupplierPaymentRequestForm` + `SupplierPaymentsTab` | ✅ |
+
+**Admin tools added:** Maintenance Enterprise → **Portal Access** tab (assign supplier user → vendor, auto-grants `supplier` role).
+
+**Phase B / pending:**
+- Real Oracle EBS endpoint + creds (`ERP_POR_ENDPOINT`, `ERP_API_KEY`)
+- Webhook back from ERP for POR status updates
+- Notifications to suppliers when WO assigned (push/email)
+- Cron health dashboard (read `cron_job_history`)
