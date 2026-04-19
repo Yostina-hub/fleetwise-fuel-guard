@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNowStrict } from "date-fns";
 
 const ACTION_META: Record<string, { icon: any; label: string; color: string }> = {
   create: { icon: Plus, label: "Created", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
@@ -68,6 +68,26 @@ const APPROVAL_STAGE_PATTERNS = [
 // Decision id substrings that indicate an approval/rejection outcome,
 // regardless of workflow naming (authority_approve, ops_approve, approve, reject…).
 const APPROVAL_DECISION_TOKENS = ["approve", "reject", "approved", "rejected"];
+
+const formatHistoryRelativeTime = (value: string) => {
+  const date = new Date(value);
+  const diffMs = Math.max(0, Date.now() - date.getTime());
+  const totalMinutes = Math.floor(diffMs / 60000);
+
+  if (totalMinutes < 60) {
+    return `${totalMinutes} min${totalMinutes === 1 ? "" : "s"} ago`;
+  }
+
+  if (totalMinutes < 24 * 60) {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return minutes === 0
+      ? `${hours} hr${hours === 1 ? "" : "s"} ago`
+      : `${hours} hr${hours === 1 ? "" : "s"} ${minutes} min ago`;
+  }
+
+  return formatDistanceToNowStrict(date, { addSuffix: true, roundingMethod: "floor" });
+};
 
 export const DelegationHistoryTab = () => {
   const { organizationId, isViewingAllOrgs } = useOrganization();
@@ -333,7 +353,7 @@ export const DelegationHistoryTab = () => {
               return (
                 <TableRow key={log.id}>
                   <TableCell className="text-xs">
-                    <div className="font-medium">{formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</div>
+                    <div className="font-medium">{formatHistoryRelativeTime(log.created_at)}</div>
                     <div className="text-muted-foreground">{format(new Date(log.created_at), "MMM dd, HH:mm")}</div>
                   </TableCell>
                   <TableCell>
