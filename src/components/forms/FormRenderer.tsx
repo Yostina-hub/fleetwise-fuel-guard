@@ -216,10 +216,25 @@ function FormRendererInner({
     return list;
   }, [schema]);
 
-  // Map of vehicleId -> full row for fields that autofill from "vehicle".
-  const autofillVehicleId = autofillFields.find((f) => f.autofillFrom?.entity === "vehicle")
-    ? values[autofillFields.find((f) => f.autofillFrom?.entity === "vehicle")!.autofillFrom!.sourceKey]
-    : null;
+  // Resolve the source id used by each autofill entity.
+  // - "vehicle": value of the field referenced by autofillFrom.sourceKey
+  //              (or, if missing, the first field of type "vehicle").
+  // - "driver":  value of autofillFrom.sourceKey if it points at a driver field,
+  //              otherwise the first field of type "driver", and finally the
+  //              vehicle's `assigned_driver_id` as a last-resort fallback.
+  const firstFieldOfType = (t: string): BaseField | undefined => {
+    for (const { field } of walkFields(schema.fields)) {
+      if (field.type === t) return field;
+    }
+    return undefined;
+  };
+
+  const vehicleAutofill = autofillFields.find((f) => f.autofillFrom?.entity === "vehicle");
+  const autofillVehicleId =
+    (vehicleAutofill && values[vehicleAutofill.autofillFrom!.sourceKey]) ||
+    (firstFieldOfType("vehicle") && values[firstFieldOfType("vehicle")!.key]) ||
+    null;
+
   const autofillVehicle = useQuery({
     queryKey: ["form-autofill-vehicle", autofillVehicleId, organizationId],
     enabled: !!autofillVehicleId && !!organizationId,
@@ -236,14 +251,28 @@ function FormRendererInner({
     },
     staleTime: 60_000,
   });
-  const autofillAssignedDriver = useQuery({
-    queryKey: ["form-autofill-driver", autofillVehicle.data?.assigned_driver_id, organizationId],
-    enabled: !!autofillVehicle.data?.assigned_driver_id && !!organizationId,
+
+  // Pick the driver id to look up. Prefer an explicit driver field on the form,
+  // then any sourceKey wired to autofillFrom.entity === "driver", and finally
+  // the vehicle's assigned driver.
+  const driverAutofill = autofillFields.find((f) => f.autofillFrom?.entity === "driver");
+  const driverField = firstFieldOfType("driver");
+  const autofillDriverId =
+    (driverField && values[driverField.key]) ||
+    (driverAutofill && values[driverAutofill.autofillFrom!.sourceKey]) ||
+    autofillVehicle.data?.assigned_driver_id ||
+    null;
+
+  const autofillDriver = useQuery({
+    queryKey: ["form-autofill-driver", autofillDriverId, organizationId],
+    enabled: !!autofillDriverId && !!organizationId,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("drivers")
-        .select("id, first_name, last_name, license_number, phone")
-        .eq("id", autofillVehicle.data!.assigned_driver_id!)
+        .select(
+          "id, first_name, middle_name, last_name, email, phone, license_number, license_expiry, license_class, license_type, license_issue_date, employee_id, hire_date, joining_date, status, department, driver_type, employment_type, outsource_company, gender, date_of_birth, blood_type, national_id, address_region, address_zone, address_woreda, address_specific, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, experience_years, route_type, safety_score, total_trips, total_distance_km, avatar_url"
+        )
+        .eq("id", autofillDriverId)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -258,10 +287,19 @@ function FormRendererInner({
       const af = f.autofillFrom!;
       let src: any = null;
       if (af.entity === "vehicle") src = autofillVehicle.data;
-      else if (af.entity === "driver") src = autofillAssignedDriver.data;
+      else if (af.entity === "driver") src = autofillDriver.data;
       if (!src) continue;
-      const next = src[af.sourceField];
-      if (next == null) continue;
+      // Composed convenience field: full_name = first + middle + last
+      let next: any;
+      if (af.sourceField === "full_name" && af.entity === "driver") {
+        next = [src.first_name, src.middle_name, src.last_name]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+      } else {
+        next = src[af.sourceField];
+      }
+      if (next == null || next === "") continue;
       const cur = values[f.key];
       // Always overwrite when the entity changes; otherwise only fill empties
       // so a user who manually edited a non-readOnly autofilled value keeps it.
@@ -274,7 +312,7 @@ function FormRendererInner({
       setValues((prev) => ({ ...prev, ...updates }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autofillVehicle.data?.id, autofillAssignedDriver.data?.id]);
+  }, [autofillVehicle.data?.id, autofillDriver.data?.id]);
 
   // Apply computed fields whenever values change.
   useEffect(() => {
