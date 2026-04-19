@@ -10,9 +10,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ClipboardList, CheckCircle2, XCircle, Clock, Package, AlertCircle, Truck } from "lucide-react";
+import { ClipboardList, CheckCircle2, XCircle, Clock, Package, AlertCircle, Truck, Warehouse } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { iproc, type OnHandBalance } from "@/lib/iproc/adapter";
 
 const STATUS_META: Record<string, { label: string; cls: string; icon: any }> = {
   pending: { label: "Pending", cls: "bg-muted text-foreground", icon: Clock },
