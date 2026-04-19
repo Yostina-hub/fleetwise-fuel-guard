@@ -46,6 +46,7 @@ const DriverPortal = () => {
   const [showVehicle, setShowVehicle] = useState(false);
   const [showTire, setShowTire] = useState(false);
   const [showInspection, setShowInspection] = useState(false);
+  const [showLicenseRenewal, setShowLicenseRenewal] = useState(false);
   // Override prefill when launching the inspection dialog as a post-trip flow
   // (from the pending banner or from an alert deep-link).
   const [inspectionPrefillOverride, setInspectionPrefillOverride] = useState<{
