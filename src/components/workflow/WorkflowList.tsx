@@ -258,6 +258,7 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sectionFilter, setSectionFilter] = useState<string>("all");
+  const [kindFilter, setKindFilter] = useState<"all" | "sop" | "automation">("all");
   const [sortBy, setSortBy] = useState<"updated" | "name" | "runs" | "created">("updated");
   const [historyWorkflowId, setHistoryWorkflowId] = useState<string | null>(null);
   const [webhookWorkflow, setWebhookWorkflow] = useState<any | null>(null);
@@ -405,6 +406,11 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
     (a, b) => SECTION_ORDER.indexOf(a) - SECTION_ORDER.indexOf(b),
   );
 
+  const isSopRow = (w: any) => w?.kind === "sop" || w?.category === "sop";
+
+  const sopCount = (workflows || []).filter(isSopRow).length;
+  const automationCount = (workflows || []).filter((w: any) => !isSopRow(w)).length;
+
   const filteredWorkflows = (workflows || [])
     .filter((w: any) => {
       const q = search.toLowerCase();
@@ -412,10 +418,15 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
         !q ||
         w.name?.toLowerCase().includes(q) ||
         w.description?.toLowerCase().includes(q) ||
-        w.category?.toLowerCase().includes(q);
+        w.category?.toLowerCase().includes(q) ||
+        (w.sop_code || "").toLowerCase().includes(q);
       const matchesStatus = statusFilter === "all" || w.status === statusFilter;
       const matchesSection = sectionFilter === "all" || getSectionForWorkflow(w) === sectionFilter;
-      return matchesSearch && matchesStatus && matchesSection;
+      const matchesKind =
+        kindFilter === "all" ||
+        (kindFilter === "sop" && isSopRow(w)) ||
+        (kindFilter === "automation" && !isSopRow(w));
+      return matchesSearch && matchesStatus && matchesSection && matchesKind;
     })
     .sort((a: any, b: any) => {
       switch (sortBy) {
@@ -434,12 +445,14 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const activeFilterCount =
     (statusFilter !== "all" ? 1 : 0) +
     (sectionFilter !== "all" ? 1 : 0) +
+    (kindFilter !== "all" ? 1 : 0) +
     (search ? 1 : 0);
 
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("all");
     setSectionFilter("all");
+    setKindFilter("all");
   };
 
   return (
