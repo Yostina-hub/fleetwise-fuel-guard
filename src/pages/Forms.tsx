@@ -38,6 +38,7 @@ export default function Forms() {
   const [includeArchived, setIncludeArchived] = useState(false);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"all" | "active" | "archived">("active");
+  const [launcher, setLauncher] = useState<{ id: string; key: string; name: string } | null>(null);
 
   const list = useFormsList(organizationId, includeArchived || tab !== "active");
   const archive = useArchiveForm();
@@ -178,6 +179,14 @@ export default function Forms() {
                                 }
                               >
                                 <Star className={`h-3.5 w-3.5 ${f.is_default ? "fill-current text-primary" : ""}`} />
+                              </Button>
+                            ) : null}
+                            {!f.is_archived && f.current_published_version_id ? (
+                              <Button
+                                size="sm"
+                                onClick={() => setLauncher({ id: f.id, key: f.key, name: f.name })}
+                              >
+                                <Send className="h-3.5 w-3.5 mr-1" /> File new
                               </Button>
                             ) : null}
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/forms/${f.id}/submissions`)}>
