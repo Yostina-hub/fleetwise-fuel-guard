@@ -140,8 +140,12 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
       setActionValues({});
       setActionNotes("");
       setPendingConfirm(null);
+      // Close the drawer so the user sees the refreshed swimlane state
+      // and avoids reading stale stage info from this instance snapshot.
+      onOpenChange(false);
     } catch {
       // Failure → keep the draft so the user can retry without retyping.
+      setPendingConfirm(null);
     }
   };
 
