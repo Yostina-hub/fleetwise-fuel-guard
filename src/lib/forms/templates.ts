@@ -688,6 +688,182 @@ const vehicleRequestTemplate: FormTemplate = {
 };
 
 // ---------------------------------------------------------------------------
+// 7) Maintenance Request — mirrors the Oracle EBS Work Request dialog
+// ---------------------------------------------------------------------------
+// Field keys mirror src/components/maintenance-enterprise/CreateWorkRequestForm.tsx
+// so editing labels / help text / order on /forms re-skins the legacy dialog
+// without forking it. The legacy dialog stays the canonical submitter and
+// owns: maintenance_requests row creation, attachment uploads, and routing
+// through the FMG-MNT 06.1 SOP.
+const maintenanceRequestTemplate: FormTemplate = {
+  key: "maintenance_request",
+  name: "Maintenance Request",
+  description:
+    "Driver / Operator maintenance intake — vehicle, symptoms, priority, and attachments. Routes through the FMG-MNT 06.1 (Manage Request for Vehicle Maintenance) SOP.",
+  category: "maintenance",
+  rationale:
+    "Use this to re-label or re-order the Maintenance Request fields without forking the legacy Oracle EBS Work Request dialog. Field keys are locked to the legacy contract (maintenance_requests table + Manage Request for Vehicle Maintenance SOP).",
+  schema: {
+    version: 1,
+    fields: [
+      // ---- Header ----
+      f({
+        key: "vehicle_id",
+        type: "vehicle",
+        label: "Vehicle / Asset Number",
+        required: true,
+      }),
+      f({
+        key: "driver_id",
+        type: "driver",
+        label: "Reporting Driver",
+      }),
+      f({
+        key: "request_channel",
+        type: "select",
+        label: "Request Channel",
+        required: true,
+        defaultValue: "phone",
+        options: [
+          { value: "phone",       label: "Phone (driver call-in)" },
+          { value: "erp",         label: "ERP — system notification" },
+          { value: "pm_schedule", label: "Preventive maintenance schedule" },
+        ],
+      }),
+      f({
+        key: "work_request_type",
+        type: "select",
+        label: "Work Request Type",
+        required: true,
+        defaultValue: "corrective",
+        options: [
+          { value: "corrective", label: "Corrective Maintenance" },
+          { value: "preventive", label: "Preventive Maintenance" },
+          { value: "inspection", label: "Inspection" },
+          { value: "repair",     label: "Repair" },
+          { value: "modification", label: "Modification" },
+        ],
+      }),
+      f({
+        key: "priority",
+        type: "select",
+        label: "Priority",
+        required: true,
+        defaultValue: "medium",
+        options: [
+          { value: "low",      label: "Low" },
+          { value: "medium",   label: "Medium" },
+          { value: "high",     label: "High" },
+          { value: "critical", label: "Critical" },
+        ],
+      }),
+      f({
+        key: "request_start_date",
+        type: "date",
+        label: "Request Start Date",
+        required: true,
+      }),
+      f({
+        key: "completion_date",
+        type: "date",
+        label: "Required Completion Date",
+      }),
+      f({
+        key: "asset_criticality",
+        type: "select",
+        label: "Asset Criticality",
+        options: [
+          { value: "low",    label: "Low" },
+          { value: "medium", label: "Medium" },
+          { value: "high",   label: "High" },
+        ],
+      }),
+
+      // ---- Operational context ----
+      f({
+        key: "km_reading",
+        type: "number",
+        label: "Current Odometer (km)",
+        validation: { min: 0 },
+      }),
+      f({
+        key: "estimated_cost",
+        type: "number",
+        label: "Estimated Cost (ETB)",
+        helpText: "Used by the delegation matrix to resolve the WO / PDR approver at the next stage.",
+        validation: { min: 0 },
+      }),
+
+      // ---- Description ----
+      f({
+        key: "summary",
+        type: "text",
+        label: "Summary",
+        required: true,
+        placeholder: "Short title for the request",
+        validation: { maxLength: 120 },
+      }),
+      f({
+        key: "additional_description",
+        type: "textarea",
+        label: "Symptoms / Description",
+        required: true,
+        placeholder: "Describe what is wrong, when it started, and any reproduction steps.",
+        validation: { minLength: 10 },
+      }),
+
+      // ---- Notification preferences ----
+      f({
+        key: "notify_user",
+        type: "select",
+        label: "Notify Requester on Updates",
+        defaultValue: "No",
+        options: [
+          { value: "Yes", label: "Yes" },
+          { value: "No",  label: "No" },
+        ],
+      }),
+      f({
+        key: "phone_number",
+        type: "text",
+        label: "Phone Number",
+        visibleWhen: { field: "notify_user", operator: "equals", value: "Yes" },
+      }),
+      f({
+        key: "email_addr",
+        type: "text",
+        label: "Email Address",
+        visibleWhen: { field: "notify_user", operator: "equals", value: "Yes" },
+      }),
+      f({
+        key: "contact_preference",
+        type: "select",
+        label: "Preferred Contact Method",
+        visibleWhen: { field: "notify_user", operator: "equals", value: "Yes" },
+        options: [
+          { value: "phone", label: "Phone" },
+          { value: "sms",   label: "SMS" },
+          { value: "email", label: "Email" },
+        ],
+      }),
+
+      // ---- Attachments ----
+      f({
+        key: "attachments",
+        type: "file",
+        label: "Attachments (photos, documents)",
+      }),
+    ],
+  },
+  settings: {
+    submitLabel: "Submit Maintenance Request",
+    cancelLabel: "Cancel",
+    successMessage: "Maintenance request submitted — routed to Fleet Operations review.",
+    twoColumnLayout: true,
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Public registry
 // ---------------------------------------------------------------------------
 
@@ -698,6 +874,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
   vehicleInspectionTemplate,
   oracleWorkOrderTemplate,
   vehicleRequestTemplate,
+  maintenanceRequestTemplate,
 ];
 
 export const getTemplate = (key: string): FormTemplate | undefined =>
