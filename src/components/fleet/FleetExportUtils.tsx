@@ -40,7 +40,7 @@ const buildFullCsv = (rows: Array<Record<string, any>>): string => {
     .map((c) => ({ key: c.id, label: c.label }));
 
   // Add any DB column not yet represented
-  const seen = new Set(registryCols.map((c) => c.key));
+  const seen = new Set<string>(registryCols.map((c) => c.key as string));
   const extraKeys = new Set<string>();
   rows.forEach((r) => {
     Object.keys(r).forEach((k) => {
