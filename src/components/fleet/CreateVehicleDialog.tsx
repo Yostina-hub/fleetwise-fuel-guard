@@ -31,6 +31,10 @@ import BasicInfoTabs from "./BasicInfoTabs";
 import { useVehicleValidation } from "./useVehicleValidation";
 import { FIELD_TO_SECTION, type VehicleFieldName } from "./vehicleValidation";
 import { useFormDraft, loadDraft, clearDraft } from "./useFormDraft";
+import {
+  sanitizeWhileTyping, sanitizeEmail, sanitizePhone, sanitizeNumeric,
+} from "./formSanitizers";
+import { CheckCircle2 } from "lucide-react";
 
 const DRAFT_KEY = "create-vehicle";
 
@@ -325,7 +329,9 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                     set={set}
                     plateNumber={plateNumber}
                     onBlur={(field, value) => fieldValidation.handleBlur(field as VehicleFieldName, value)}
+                    onChange={(field, value) => fieldValidation.handleChange(field as VehicleFieldName, value)}
                     getError={(field) => fieldValidation.getError(field as VehicleFieldName)}
+                    getStatus={(field, value) => fieldValidation.getStatus(field as VehicleFieldName, value)}
                   />
                 </Section>
               </TabsContent>
