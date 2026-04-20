@@ -335,23 +335,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowsMultipleVehicles]);
 
-  // Field-level validation messages
-  const validationErrors = useMemo(() => {
-    const errs: string[] = [];
-    if (isDaily && form.date && form.start_time && form.end_time && form.end_time <= form.start_time) {
-      errs.push("End time must be later than start time.");
-    }
-    if (!isDaily && form.start_date && form.end_date && form.end_date < form.start_date) {
-      errs.push("End date cannot be before the start date.");
-    }
-    if (isProject && !form.project_number?.trim()) {
-      errs.push("Project number is required for Project Operations.");
-    }
-    if (form.contact_phone && !/^[+\d\s().-]{7,}$/.test(form.contact_phone)) {
-      errs.push("Contact phone looks invalid.");
-    }
-    return errs;
-  }, [isDaily, isProject, form.date, form.start_time, form.end_time, form.start_date, form.end_date, form.project_number, form.contact_phone]);
+  // Professional, descriptive validation (per-field, on blur + on submit).
+  const validation = useVehicleRequestValidation();
+  const { getError, handleBlur, validateAll, errorCount } = validation;
 
   // Estimated duration (days for multi-day; hours for single-day) shown in the UI.
   const durationLabel = useMemo(() => {
@@ -376,10 +362,48 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     !!form.purpose &&
     (isDaily ? !!form.date : !!form.start_date) &&
     (!isProject || !!form.project_number?.trim()) &&
-    validationErrors.length === 0;
+    errorCount === 0;
+
+  const handleSubmit = () => {
+    const sanitized = sanitizeVehicleRequestForm(form as any);
+    setForm((f) => ({ ...f, ...sanitized }));
+    const result = validateAll({ ...form, ...sanitized } as any);
+    if (!result.valid) {
+      const firstField = Object.keys(result.errors)[0];
+      const firstMsg = (result.errors as any)[firstField];
+      toast.error(firstMsg || "Please fix the highlighted fields before submitting.");
+      // Jump to the first tab containing an error
+      const tabForField: Record<string, typeof activeTab> = {
+        request_type: "type",
+        date: "schedule", start_time: "schedule", end_time: "schedule",
+        start_date: "schedule", end_date: "schedule", project_number: "schedule",
+        departure_place: "route", destination: "route", trip_type: "route",
+        num_vehicles: "resources", passengers: "resources", vehicle_type: "resources",
+        priority: "resources", pool_category: "resources", pool_name: "resources",
+        contact_phone: "resources",
+        purpose: "details",
+      };
+      const target = tabForField[firstField];
+      if (target) setActiveTab(target);
+      return;
+    }
+    createMutation.mutate();
+  };
 
   const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) =>
     setForm(f => ({ ...f, [key]: val }));
+
+  /** Small inline error renderer (only shows when field has been touched). */
+  const FieldError = ({ field }: { field: Parameters<typeof getError>[0] }) => {
+    const msg = getError(field);
+    if (!msg) return null;
+    return (
+      <p className="mt-1 flex items-start gap-1 text-[11px] text-destructive animate-fade-in">
+        <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+        <span>{msg}</span>
+      </p>
+    );
+  };
 
 
   const TABS = [
