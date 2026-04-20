@@ -64,8 +64,17 @@ const defaultFilters: FilterState = {
   datePreset: "all",
   dateFrom: undefined,
   dateTo: undefined,
-  sortBy: "created_at",
-  sortDir: "desc",
+  sortBy: "name",
+  sortDir: "asc",
+};
+
+// Order option labels depend on the chosen sort field, so the dropdown stays
+// intuitive (A–Z for text fields, Newest/Oldest for dates, High/Low for counts).
+const ORDER_LABELS: Record<string, { asc: string; desc: string }> = {
+  name: { asc: "A → Z", desc: "Z → A" },
+  email: { asc: "A → Z", desc: "Z → A" },
+  roles: { asc: "Fewest first", desc: "Most first" },
+  created_at: { asc: "Oldest first", desc: "Newest first" },
 };
 
 interface UserFiltersProps {
