@@ -575,16 +575,39 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   );
 }
 
-function Field({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) {
+function Field({
+  label, children, error, status = "neutral",
+}: {
+  label: string;
+  children: React.ReactNode;
+  error?: string;
+  status?: "neutral" | "success" | "error";
+}) {
+  const isError = status === "error" || !!error;
+  const isSuccess = status === "success" && !error;
   return (
     <div className="space-y-1.5">
-      <Label className={`text-sm ${error ? "text-destructive" : ""}`}>{label}</Label>
-      <div className={error ? "[&_input]:border-destructive [&_button]:border-destructive [&_input]:ring-destructive/20" : ""}>
+      <Label className={`text-sm ${isError ? "text-destructive" : ""}`}>{label}</Label>
+      <div
+        className={`relative ${
+          isError
+            ? "[&_input]:border-destructive [&_button]:border-destructive [&_input]:focus-visible:ring-destructive/30"
+            : isSuccess
+              ? "[&_input]:border-success/60 [&_button]:border-success/60 [&_input]:focus-visible:ring-success/30"
+              : ""
+        }`}
+      >
         {children}
+        {isSuccess && (
+          <CheckCircle2
+            aria-hidden="true"
+            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-success"
+          />
+        )}
       </div>
       {error && (
-        <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" />
+        <p role="alert" className="text-[11px] font-medium text-destructive flex items-center gap-1">
+          <AlertCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
           {error}
         </p>
       )}
