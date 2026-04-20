@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getFleetLiveStatus } from "@/lib/fleetLiveStatus";
 import { useOrganization } from "./useOrganization";
 
 interface FleetStats {
@@ -99,25 +100,19 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
         }
       });
 
-      // Calculate stats based on telemetry
+      // Calculate stats based on telemetry using the same live-status rule as the Fleet list
       let moving = 0;
       let idleEngineOn = 0;
       let idleEngineOff = 0;
       let offline = 0;
 
       vehicleIds.forEach(id => {
-        const t = telemetryMap.get(id);
-        if (t?.device_connected) {
-          if (t.engine_on && t.speed_kmh > 0) {
-            moving++;
-          } else if (t.engine_on) {
-            idleEngineOn++;   // engine running, not moving (wasting fuel)
-          } else {
-            idleEngineOff++;  // parked but device reachable
-          }
-        } else {
-          offline++;
-        }
+        const liveStatus = getFleetLiveStatus(telemetryMap.get(id));
+
+        if (liveStatus === "moving") moving++;
+        else if (liveStatus === "idle_engine_on") idleEngineOn++;
+        else if (liveStatus === "idle_engine_off") idleEngineOff++;
+        else offline++;
       });
 
       setStats({ total, moving, idle: idleEngineOn + idleEngineOff, idleEngineOn, idleEngineOff, offline });
