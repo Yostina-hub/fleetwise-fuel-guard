@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
-import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
+
 
 interface DriverTripsViewProps {
   driverId?: string | null;
@@ -27,7 +27,7 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
   const [tab, setTab] = useState("active");
-  const [showVehicleReq, setShowVehicleReq] = useState(false);
+  
 
   // Active vehicle request assignment + dispatch jobs
   const { data: assignments, isLoading: aLoading } = useQuery({
@@ -168,9 +168,6 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
             {driverName ? `Welcome, ${driverName}` : "Your assignments and trip history"}
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowVehicleReq(true)} className="gap-1.5">
-          <Plus className="w-3.5 h-3.5" /> Request Vehicle
-        </Button>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -302,11 +299,10 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   <Package className="w-10 h-10 mx-auto mb-2 opacity-40" />
                   No vehicle requests yet
-                  <div className="mt-3">
-                    <Button size="sm" variant="outline" onClick={() => setShowVehicleReq(true)} className="gap-1.5">
-                      <Plus className="w-3.5 h-3.5" /> New Request
-                    </Button>
-                  </div>
+                  <p className="text-xs mt-2 max-w-sm mx-auto">
+                    Fleet requests are submitted by end-users, supervisors, or managers.
+                    Ask your dispatcher or supervisor to file a request on your behalf.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -344,11 +340,6 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
         </TabsContent>
       </Tabs>
 
-      <UnifiedVehicleRequestDialog
-        open={showVehicleReq}
-        onOpenChange={setShowVehicleReq}
-        source="driver_portal"
-      />
     </div>
   );
 };
