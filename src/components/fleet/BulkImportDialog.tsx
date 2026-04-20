@@ -137,10 +137,10 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
 
     for (let i = 0; i < validRows.length; i++) {
       const row = validRows[i];
-      const payload = {
+      const plate = String(row.data.plate_number ?? "").trim();
+      const payload: Record<string, any> = {
         ...row.data,
         organization_id: organizationId,
-        // sensible defaults
         fuel_type: row.data.fuel_type ?? "diesel",
         status: row.data.status ?? "active",
       };
@@ -151,7 +151,7 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
           .from("vehicles")
           .select("id")
           .eq("organization_id", organizationId)
-          .eq("plate_number", payload.plate_number)
+          .eq("plate_number", plate)
           .maybeSingle();
 
         if (existing?.id) {
@@ -162,7 +162,7 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
           if (error) throw error;
           outcome.updated++;
         } else {
-          const { error } = await supabase.from("vehicles").insert(payload);
+          const { error } = await supabase.from("vehicles").insert(payload as any);
           if (error) throw error;
           outcome.inserted++;
         }
