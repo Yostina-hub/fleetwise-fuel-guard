@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CascadingLocationSelector } from "@/components/fleet/CascadingLocationSelector";
 import { useSubmitThrottle } from "@/hooks/useSubmitThrottle";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -30,6 +30,9 @@ import { uploadFleetFile } from "./uploadFleetFile";
 import BasicInfoTabs from "./BasicInfoTabs";
 import { useVehicleValidation } from "./useVehicleValidation";
 import { FIELD_TO_SECTION, type VehicleFieldName } from "./vehicleValidation";
+import { useFormDraft, loadDraft, clearDraft } from "./useFormDraft";
+
+const DRAFT_KEY = "create-vehicle";
 
 interface CreateVehicleDialogProps {
   open: boolean;
@@ -80,6 +83,28 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({ ...initialForm });
   const [activeSection, setActiveSection] = useState<(typeof sectionTabs)[number]["value"]>("basic");
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // Restore draft when dialog opens (once per open cycle)
+  useEffect(() => {
+    if (!open || draftRestored) return;
+    const draft = loadDraft<typeof initialForm>(DRAFT_KEY, organizationId);
+    if (draft) {
+      setFormData({ ...initialForm, ...draft });
+      toast({ title: "Draft restored", description: "We brought back your unsaved changes." });
+    }
+    setDraftRestored(true);
+  }, [open, draftRestored, organizationId, toast]);
+
+  // Reset the restore flag when dialog closes so next open re-checks
+  useEffect(() => {
+    if (!open) setDraftRestored(false);
+  }, [open]);
+
+  // Persist form data while dialog is open. Only persist if user actually
+  // typed something (avoids saving an empty initial form).
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(initialForm);
+  useFormDraft(DRAFT_KEY, formData, { scope: organizationId, enabled: open && isDirty });
 
   const [ownerCertFile, setOwnerCertFile] = useState<File | null>(null);
   const [insuranceCertFile, setInsuranceCertFile] = useState<File | null>(null);
@@ -154,6 +179,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       setPhotoFrontFile(null); setPhotoBackFile(null); setPhotoLeftFile(null); setPhotoRightFile(null);
       fieldValidation.reset();
       setActiveSection("basic");
+      clearDraft(DRAFT_KEY, organizationId);
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -231,15 +257,33 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
     createMutation.mutate(cleanData);
   };
 
+  // Closing the dialog: keep the draft so reopening restores it.
+  // The user can explicitly Discard via the footer button.
+  const handleOpenChange = (next: boolean) => {
+    if (!next && createMutation.isPending) return; // don't close mid-submit
+    onOpenChange(next);
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft(DRAFT_KEY, organizationId);
+    setFormData({ ...initialForm });
+    fieldValidation.reset();
+    setActiveSection("basic");
+    onOpenChange(false);
+    toast({ title: "Draft discarded" });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0 overflow-hidden">
         <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle className="text-2xl flex items-center gap-2">
             <Truck className="w-6 h-6 text-primary" />
             Register New Vehicle
           </DialogTitle>
-          <DialogDescription>Each tab now shows only its own section.</DialogDescription>
+          <DialogDescription>
+            Changes auto-save as a draft — close anytime and resume where you left off.
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as typeof activeSection)} className="flex min-h-0 flex-1 flex-col">
@@ -497,8 +541,15 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
           </ScrollArea>
         </Tabs>
 
-        <DialogFooter className="p-6 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+        <DialogFooter className="p-6 pt-4 border-t gap-2 sm:gap-2">
+          {isDirty && (
+            <Button variant="ghost" onClick={handleDiscardDraft} className="text-destructive hover:text-destructive">
+              Discard draft
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {isDirty ? "Close & keep draft" : "Cancel"}
+          </Button>
           <Button onClick={handleSubmit} disabled={createMutation.isPending} className="min-w-[120px]">
             {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Register Vehicle
