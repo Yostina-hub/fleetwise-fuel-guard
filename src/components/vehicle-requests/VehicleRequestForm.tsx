@@ -63,6 +63,9 @@ const initialForm = {
   pool_name: "",
   purpose: "",
   project_number: "",
+  // New: priority + contact phone — surfaced for dispatch/approver context.
+  priority: "normal",
+  contact_phone: "",
 };
 
 export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
