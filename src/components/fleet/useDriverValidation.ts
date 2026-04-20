@@ -60,5 +60,43 @@ export function useDriverValidation() {
 
   const errorCount = Object.keys(errors).length;
 
-  return { errors, touched, errorCount, validateField, handleBlur, validateAll, reset, getError };
+  /** Validate only a subset of fields (e.g. one wizard step). Marks them touched. */
+  const validateFields = useCallback(
+    (fields: DriverFieldName[], formData: Record<string, unknown>) => {
+      const stepErrors: Partial<Record<DriverFieldName, string>> = {};
+      fields.forEach((f) => {
+        const msg = validateDriverField(f, formData[f]);
+        if (msg) stepErrors[f] = msg;
+      });
+      setErrors((prev) => {
+        const next = { ...prev };
+        fields.forEach((f) => {
+          if (stepErrors[f]) next[f] = stepErrors[f]!;
+          else delete next[f];
+        });
+        return next;
+      });
+      setTouched((prev) => {
+        const next = { ...prev };
+        fields.forEach((f) => {
+          next[f] = true;
+        });
+        return next;
+      });
+      return { ok: Object.keys(stepErrors).length === 0, errors: stepErrors };
+    },
+    [],
+  );
+
+  return {
+    errors,
+    touched,
+    errorCount,
+    validateField,
+    validateFields,
+    handleBlur,
+    validateAll,
+    reset,
+    getError,
+  };
 }
