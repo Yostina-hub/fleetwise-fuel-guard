@@ -762,9 +762,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   max={allowsMultipleVehicles ? 50 : 1}
                   value={allowsMultipleVehicles ? form.num_vehicles : "1"}
                   onChange={e => update("num_vehicles", e.target.value)}
+                  onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
                   disabled={!allowsMultipleVehicles}
                   className="h-10"
+                  aria-invalid={!!getError("num_vehicles")}
                 />
+                <FieldError field="num_vehicles" />
                 <p className="text-[11px] text-muted-foreground mt-1">
                   {allowsMultipleVehicles
                     ? "Project Operations support a fleet — request as many vehicles as needed."
@@ -773,7 +776,17 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
               <div>
                 <Label className="text-primary font-medium flex items-center gap-1"><Users className="w-3.5 h-3.5" /> No. Of Passenger</Label>
-                <Input type="number" min={1} max={100} value={form.passengers} onChange={e => update("passengers", e.target.value)} className="h-10" />
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={form.passengers}
+                  onChange={e => update("passengers", e.target.value)}
+                  onBlur={e => handleBlur("passengers", e.target.value, form as any)}
+                  className="h-10"
+                  aria-invalid={!!getError("passengers")}
+                />
+                <FieldError field="passengers" />
               </div>
               <div>
                 <Label className="text-primary font-medium">Vehicle Type</Label>
