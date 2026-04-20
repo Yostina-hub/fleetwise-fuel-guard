@@ -83,6 +83,28 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({ ...initialForm });
   const [activeSection, setActiveSection] = useState<(typeof sectionTabs)[number]["value"]>("basic");
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // Restore draft when dialog opens (once per open cycle)
+  useEffect(() => {
+    if (!open || draftRestored) return;
+    const draft = loadDraft<typeof initialForm>(DRAFT_KEY, organizationId);
+    if (draft) {
+      setFormData({ ...initialForm, ...draft });
+      toast({ title: "Draft restored", description: "We brought back your unsaved changes." });
+    }
+    setDraftRestored(true);
+  }, [open, draftRestored, organizationId, toast]);
+
+  // Reset the restore flag when dialog closes so next open re-checks
+  useEffect(() => {
+    if (!open) setDraftRestored(false);
+  }, [open]);
+
+  // Persist form data while dialog is open. Only persist if user actually
+  // typed something (avoids saving an empty initial form).
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(initialForm);
+  useFormDraft(DRAFT_KEY, formData, { scope: organizationId, enabled: open && isDirty });
 
   const [ownerCertFile, setOwnerCertFile] = useState<File | null>(null);
   const [insuranceCertFile, setInsuranceCertFile] = useState<File | null>(null);
