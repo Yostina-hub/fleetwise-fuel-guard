@@ -19,7 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Driver } from "@/hooks/useDrivers";
 import {
   DRIVER_TYPES, ADMIN_REGIONS, ID_TYPES, LICENSE_TYPES, EMPLOYMENT_STATUSES,
-  DRIVER_STATUSES, ROUTE_TYPES, BLOOD_TYPES, GENDERS, ASSIGNED_LOCATIONS,
+  DRIVER_STATUSES, ROUTE_TYPES, BLOOD_TYPES, GENDERS, ASSIGNED_LOCATIONS, ASSIGNED_POOLS,
 } from "./formConstants";
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
