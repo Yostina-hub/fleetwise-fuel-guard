@@ -21,6 +21,9 @@ import { useTranslation } from "react-i18next";
 import { DateTimePicker, combineDateAndTime } from "@/components/ui/date-time-picker";
 import { LocationPickerField } from "@/components/shared/LocationPickerField";
 import { VEHICLE_TYPES_OPTIONS } from "@/components/fleet/formConstants";
+import { AlertCircle } from "lucide-react";
+import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
+import { sanitizeVehicleRequestForm } from "./vehicleRequestValidation";
 
 interface VehicleRequestFormProps {
   open: boolean;
