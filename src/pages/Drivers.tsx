@@ -468,186 +468,84 @@ const Drivers = () => {
                   <CardTitle className="text-lg">All Drivers</CardTitle>
                   {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
                 </div>
-                <div className="text-xs text-muted-foreground flex items-center gap-2">
-                  <Badge variant="outline" className="font-mono">{totalCount}</Badge>
-                  <span>•</span>
-                  <span>Page {currentPage} of {totalPages || 1}</span>
+                <div className="flex items-center gap-3">
+                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                    <Badge variant="outline" className="font-mono">{totalCount}</Badge>
+                    <span>•</span>
+                    <span>Page {currentPage} of {totalPages || 1}</span>
+                  </div>
+                  <DriverColumnsPicker
+                    visibleColumns={visibleColumns}
+                    onChange={updateVisibleColumns}
+                  />
                 </div>
               </CardHeader>
               <CardContent>
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[40px]">
-                        <Checkbox
-                          checked={selectedDrivers.length === drivers.length && drivers.length > 0}
-                          onCheckedChange={handleSelectAll}
-                          aria-label="Select all drivers"
-                        />
-                      </TableHead>
-                      <TableHead>{t('common.driver', 'Driver')}</TableHead>
-                      <TableHead>Employee ID</TableHead>
-                      <TableHead>{t('common.license', 'License')}</TableHead>
-                      <TableHead>{t('common.contact', 'Contact')}</TableHead>
-                      <TableHead>{t('common.status', 'Status')}</TableHead>
-                      <TableHead>{t('common.vehicle', 'Vehicle')}</TableHead>
-                      <TableHead>Safety Score</TableHead>
-                      <TableHead className="text-right">{t('common.actions', 'Actions')}</TableHead>
+                      {visibleColumnDefs.map((col) => (
+                        <TableHead
+                          key={col.id}
+                          className={
+                            col.id === "select" ? "w-[40px]" :
+                            col.id === "actions" ? "text-right" : ""
+                          }
+                        >
+                          {col.id === "select" ? (
+                            <Checkbox
+                              checked={selectedDrivers.length === drivers.length && drivers.length > 0}
+                              onCheckedChange={handleSelectAll}
+                              aria-label="Select all drivers"
+                            />
+                          ) : col.label}
+                        </TableHead>
+                      ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {drivers.map((driver) => (
-                      <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50">
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          <Checkbox
-                            checked={selectedDrivers.some(d => d.id === driver.id)}
-                            onCheckedChange={(checked) => handleSelectDriver(driver, !!checked)}
-                            aria-label={`Select ${driver.first_name} ${driver.last_name}`}
-                          />
-                        </TableCell>
-                        <TableCell onClick={() => handleViewDriver(driver)}>
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarImage src={driver.avatar_url || undefined} />
-                              <AvatarFallback className="bg-primary/10 text-primary">
-                                {getInitials(driver.first_name, driver.last_name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium">{driver.first_name} {driver.last_name}</div>
-                              {driver.hire_date && (
-                                <div className="text-xs text-muted-foreground">
-                                  Since {format(new Date(driver.hire_date), "MMM yyyy")}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell onClick={() => handleViewDriver(driver)}>
-                          <span className="font-mono text-sm">{driver.employee_id || "-"}</span>
-                        </TableCell>
-                        <TableCell onClick={() => handleViewDriver(driver)}>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <CreditCard className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                              <div>
-                                <div className="text-sm font-medium">{driver.license_number}</div>
-                                {driver.license_class && (
-                                  <div className="text-xs text-muted-foreground">Class {driver.license_class}</div>
-                                )}
-                              </div>
-                            </div>
-                            {driver.license_expiry && (
-                              <LicenseExpiryBadge expiryDate={driver.license_expiry} />
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell onClick={() => handleViewDriver(driver)}>
-                          <div className="space-y-1">
-                            {driver.phone && (
-                              <div className="flex items-center gap-1 text-sm">
-                                <Phone className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
-                                {driver.phone}
-                              </div>
-                            )}
-                            {driver.email && (
-                              <div className="flex items-center gap-1 text-sm">
-                                <Mail className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
-                                {driver.email}
-                              </div>
-                            )}
-                            {!driver.phone && !driver.email && (
-                              <span className="text-muted-foreground text-sm">-</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          <DriverQuickStatusChange driver={driver} />
-                        </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          {vehicleAssignments[driver.id] ? (
-                            <button
-                              onClick={() => handleAssignVehicle(driver)}
-                              className="flex items-center gap-2 group"
-                              aria-label={`Change vehicle for ${driver.first_name} ${driver.last_name}`}
-                            >
-                              <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
-                                <Car className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                              </div>
-                              <div className="text-left">
-                                <div className="text-sm font-medium group-hover:text-primary transition-colors">
-                                  {vehicleAssignments[driver.id].plate_number}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {[vehicleAssignments[driver.id].make, vehicleAssignments[driver.id].model].filter(Boolean).join(" ") || "—"}
-                                </div>
-                              </div>
-                            </button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 gap-1.5 text-xs"
-                              onClick={() => handleAssignVehicle(driver)}
-                            >
-                              <Car className="h-3 w-3" aria-hidden="true" />
-                              Assign
-                            </Button>
-                          )}
-                        </TableCell>
-                        <TableCell onClick={() => handleViewDriver(driver)}>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                              (driver.safety_score || 0) >= 80 ? 'bg-success/10 text-success' :
-                              (driver.safety_score || 0) >= 60 ? 'bg-warning/10 text-warning' :
-                              'bg-destructive/10 text-destructive'
-                            }`}>
-                              {driver.safety_score || "-"}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Actions for ${driver.first_name} ${driver.last_name}`}>
-                                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>{t('common.actions', 'Actions')}</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleViewDriver(driver)}>
-                                <Eye className="w-4 h-4 mr-2" aria-hidden="true" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditDriver(driver)}>
-                                <Edit className="w-4 h-4 mr-2" aria-hidden="true" />
-                                Edit Driver
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleAssignVehicle(driver)}>
-                                <Car className="w-4 h-4 mr-2" aria-hidden="true" />
-                                Assign Vehicle
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => navigate(`/driver-scoring`)}>
-                                <Activity className="w-4 h-4 mr-2" aria-hidden="true" />
-                                View Scoring
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteDriver(driver)}
-                                className="text-destructive focus:text-destructive"
+                    {drivers.map((driver) => {
+                      const isSelected = selectedDrivers.some((d) => d.id === driver.id);
+                      const ctx = {
+                        selected: isSelected,
+                        onSelect: (checked: boolean) => handleSelectDriver(driver, checked),
+                        vehicleAssignment: vehicleAssignments[driver.id],
+                        onAssignVehicle: () => handleAssignVehicle(driver),
+                        onView: () => handleViewDriver(driver),
+                        onEdit: () => handleEditDriver(driver),
+                        onDelete: () => handleDeleteDriver(driver),
+                        onScoring: () => navigate(`/driver-scoring`),
+                        t,
+                      };
+                      return (
+                        <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50">
+                          {visibleColumnDefs.map((col) => {
+                            const isInteractive =
+                              col.id === "select" ||
+                              col.id === "status" ||
+                              col.id === "vehicle" ||
+                              col.id === "actions";
+                            return (
+                              <TableCell
+                                key={col.id}
+                                className={col.id === "actions" ? "text-right" : ""}
+                                onClick={
+                                  isInteractive
+                                    ? (e) => e.stopPropagation()
+                                    : () => handleViewDriver(driver)
+                                }
                               >
-                                <Trash2 className="w-4 h-4 mr-2" aria-hidden="true" />
-                                Delete Driver
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                                {renderDriverCell(col.id, driver, ctx)}
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      );
+                    })}
                     {drivers.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center py-12">
+                        <TableCell colSpan={visibleColumnDefs.length} className="text-center py-12">
                           <div role="status" aria-live="polite">
                             <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" aria-hidden="true" />
                             <h3 className="text-lg font-semibold mb-2">No drivers found</h3>
