@@ -543,8 +543,80 @@ const DriverPortal = () => {
                 </div>
               )}
 
+              {/* Multi-vehicle trip request assignments — each driver
+                  checks in/out their own assigned vehicle independently. */}
+              {trips?.requestAssignments?.length ? (
+                <div className="mb-4 space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                    <Car className="w-3.5 h-3.5" aria-hidden="true" /> Vehicle Request Assignments
+                  </h3>
+                  {trips.requestAssignments.map((a: any) => {
+                    const checkedIn = !!a.driver_checked_in_at;
+                    const v = a.vehicle;
+                    const r = a.request;
+                    return (
+                      <div
+                        key={a.id}
+                        className="p-3 rounded-lg border border-info/30 bg-info/5"
+                      >
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "text-xs capitalize",
+                                  checkedIn
+                                    ? "bg-success/15 text-success border-success/30"
+                                    : "bg-info/15 text-info border-info/30",
+                                )}
+                              >
+                                {checkedIn ? "Checked In" : "Assigned"}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {r?.request_number || "—"}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {r?.needed_from
+                                  ? format(new Date(r.needed_from), "MMM dd HH:mm")
+                                  : "—"}
+                              </span>
+                            </div>
+                            <p className="text-sm font-medium mt-2 truncate">
+                              {v?.plate_number || "—"} · {v?.make || ""} {v?.model || ""}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                              {r?.purpose || "—"}
+                              {r?.destination ? ` → ${r.destination}` : ""}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={checkedIn ? "outline" : "default"}
+                            className="gap-1 shrink-0"
+                            onClick={() => setActiveAssignment({ request: r, assignment: a })}
+                          >
+                            {checkedIn ? (
+                              <>
+                                <StopCircle className="w-4 h-4" aria-hidden="true" /> Check Out
+                              </>
+                            ) : (
+                              <>
+                                <PlayCircle className="w-4 h-4" aria-hidden="true" /> Check In
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+
               <div className="space-y-3">
-                {trips?.active?.length === 0 && trips?.upcoming?.length === 0 ? (
+                {trips?.active?.length === 0 &&
+                trips?.upcoming?.length === 0 &&
+                !trips?.requestAssignments?.length ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">
                     <CheckCircle2 className="w-10 h-10 mx-auto mb-2 opacity-50" aria-hidden="true" />
                     No active or scheduled assignments
