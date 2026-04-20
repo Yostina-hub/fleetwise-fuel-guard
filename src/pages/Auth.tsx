@@ -24,6 +24,25 @@ import {
 import ethioTelecomBg from "@/assets/ethio-telecom-bg.png";
 import ethioTelecomCyberBg from "@/assets/ethio-telecom-cyber-bg.png";
 import { KeyRound } from "lucide-react";
+import { getPostLoginPath } from "@/lib/auth/postLoginRedirect";
+
+/**
+ * Resolve the correct landing route for a freshly authenticated user.
+ * Drivers go to /driver-portal; everyone else goes to /. Roles are read
+ * directly from `user_roles` to avoid racing the async AuthContext refresh.
+ */
+async function resolveLandingPath(userId: string | undefined | null): Promise<string> {
+  if (!userId) return "/";
+  try {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    return getPostLoginPath((data as { role: string }[] | null) ?? []);
+  } catch {
+    return "/";
+  }
+}
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -47,7 +66,7 @@ const Auth = () => {
   // Redirect if already logged in (but not during 2FA check)
   useEffect(() => {
     if (user && !pending2FA && !checking2FARef.current) {
-      navigate("/");
+      void resolveLandingPath(user.id).then((path) => navigate(path));
     }
   }, [user, navigate, pending2FA]);
 
@@ -158,7 +177,8 @@ const Auth = () => {
         title: "Welcome back!",
         description: "You've been signed in successfully.",
       });
-      navigate("/");
+      const landing = await resolveLandingPath(userId);
+      navigate(landing);
     }
 
     setLoading(false);
@@ -204,7 +224,8 @@ const Auth = () => {
       if (!twoFactor?.secret_encrypted) {
         // 2FA was disabled in the meantime, allow through
         toast({ title: "Welcome back!", description: "Signed in successfully." });
-        navigate("/");
+        const landing2 = await resolveLandingPath(pending2FAUserId);
+        navigate(landing2);
         setVerifying2FA(false);
         return;
       }
@@ -246,7 +267,8 @@ const Auth = () => {
             ? "Signed in with backup code. Consider regenerating codes."
             : "Two-factor verification successful.",
         });
-        navigate("/");
+        const landing3 = await resolveLandingPath(pending2FAUserId);
+        navigate(landing3);
       } else {
         // Wrong code - sign out again
         await supabase.auth.signOut();
