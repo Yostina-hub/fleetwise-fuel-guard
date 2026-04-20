@@ -507,6 +507,42 @@ const Drivers = () => {
                 </SelectContent>
               </Select>
             </div>
+            {/* Sort By */}
+            <div>
+              <Label htmlFor="driver-sort-by" className="sr-only">Sort drivers by field</Label>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                <SelectTrigger
+                  id="driver-sort-by"
+                  aria-label="Sort drivers by"
+                  className="w-full md:w-[180px] h-10 bg-background/50 border-border/50"
+                >
+                  <span className="text-xs text-muted-foreground mr-1.5">Sort:</span>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_FIELD_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Sort direction */}
+            <div>
+              <Label htmlFor="driver-sort-dir" className="sr-only">Sort order</Label>
+              <Select value={sortDir} onValueChange={(v) => setSortDir(v as "asc" | "desc")}>
+                <SelectTrigger
+                  id="driver-sort-dir"
+                  aria-label="Sort order"
+                  className="w-full md:w-[160px] h-10 bg-background/50 border-border/50"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="asc">{activeOrderLabels.asc}</SelectItem>
+                  <SelectItem value="desc">{activeOrderLabels.desc}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {hasActiveFilters && (
               <Button
                 variant="ghost"
