@@ -27,6 +27,7 @@ import {
 } from "./formConstants";
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
+import BasicInfoTabs from "./BasicInfoTabs";
 
 const vehicleSchema = z.object({
   plate_number: z.string().trim().min(1, "Plate number is required"),
@@ -61,6 +62,14 @@ const initialForm = {
   owner_contact_person: "", owner_phone: "", owner_email: "",
   owner_region: "", owner_zone: "", owner_woreda: "",
   owner_govt_id: "", owner_tax_id: "", owner_status: "active",
+  // Extended Basic Info (Excel spec)
+  purpose_for: "", specific_pool: "", specific_location: "",
+  transmission_type: "", model_code: "", engine_number: "",
+  mfg_date: "", year_of_ownership: "",
+  seating_capacity: "", loading_capacity_quintal: "", engine_cc: "",
+  purchasing_price: "", current_market_price: "",
+  current_condition: "", fuel_standard_km_per_liter: "",
+  safety_comfort_category: "",
 };
 
 export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicleDialogProps) {
