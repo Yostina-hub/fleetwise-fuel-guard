@@ -239,6 +239,42 @@ const Drivers = () => {
     }
   };
 
+  const driverPrintColumns: PrintColumn[] = useMemo(() => [
+    { key: "employee_id", label: "Emp ID", width: 22 },
+    { key: "name", label: "Name", width: 40, format: (_, r: any) => `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() || "—" },
+    { key: "license_number", label: "License #", width: 28 },
+    { key: "license_class", label: "Class", width: 16 },
+    { key: "license_expiry", label: "Lic. Expiry", width: 22 },
+    { key: "phone", label: "Phone", width: 28 },
+    { key: "email", label: "Email" },
+    { key: "status", label: "Status", width: 20 },
+    { key: "hire_date", label: "Hire Date", width: 22 },
+  ], []);
+
+  const handleDriversPrint = () => {
+    const list = selectedDrivers.length > 0 ? selectedDrivers : drivers;
+    printRecords(list, driverPrintColumns, {
+      title: selectedDrivers.length > 0
+        ? `Drivers (${selectedDrivers.length} selected)`
+        : "Driver Directory",
+      subtitle: `Page ${currentPage} of ${totalPages} · ${list.length} shown · ${totalCount} total`,
+      filename: "drivers",
+      organizationName: "Driver Management",
+    });
+  };
+
+  const handleDriversExportPdf = () => {
+    const list = selectedDrivers.length > 0 ? selectedDrivers : drivers;
+    exportRecordsToPdf(list, driverPrintColumns, {
+      title: selectedDrivers.length > 0
+        ? `Drivers (${selectedDrivers.length} selected)`
+        : "Driver Directory",
+      subtitle: "Workforce report",
+      filename: "drivers",
+      organizationName: "Driver Management",
+    });
+  };
+
   if (initialLoading) {
     return (
       <Layout>
