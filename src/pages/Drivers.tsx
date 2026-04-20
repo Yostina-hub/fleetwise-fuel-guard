@@ -294,6 +294,37 @@ const Drivers = () => {
           />
         )}
 
+        {/* Category Cards */}
+        <DriverCategoryCards
+          total={categoryCounts.total}
+          assigned={categoryCounts.assigned}
+          unassigned={categoryCounts.unassigned}
+          byDriverType={categoryCounts.byDriverType}
+          byEmploymentType={categoryCounts.byEmploymentType}
+          active={{
+            driverType: driverTypeFilter !== "all" ? driverTypeFilter : undefined,
+            employmentType: employmentTypeFilter !== "all" ? employmentTypeFilter : undefined,
+            assignment: assignmentFilter,
+          }}
+          onSelect={(f) => {
+            if (f.assignment !== undefined) {
+              if (f.assignment === "all") {
+                setAssignmentFilter("all");
+                setDriverTypeFilter("all");
+                setEmploymentTypeFilter("all");
+              } else {
+                setAssignmentFilter(prev => prev === f.assignment ? "all" : f.assignment!);
+              }
+            }
+            if (f.driverType !== undefined) {
+              setDriverTypeFilter(prev => prev === f.driverType ? "all" : f.driverType!);
+            }
+            if (f.employmentType !== undefined) {
+              setEmploymentTypeFilter(prev => prev === f.employmentType ? "all" : f.employmentType!);
+            }
+          }}
+        />
+
         {/* Search and Filters */}
         <Card className="border-primary/20">
           <CardContent className="pt-6">
