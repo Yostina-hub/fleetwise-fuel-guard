@@ -88,6 +88,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
   const [photoLeftFile, setPhotoLeftFile] = useState<File | null>(null);
   const [photoRightFile, setPhotoRightFile] = useState<File | null>(null);
 
+  const validation = useVehicleValidation();
   const set = (field: string, value: string | number) => setFormData(prev => ({ ...prev, [field]: value }));
   const activeDrivers = drivers.filter(d => d.status === "active");
   const plateNumber = `${formData.plate_code}-${formData.plate_region}-${formData.plate_number_part}`;
