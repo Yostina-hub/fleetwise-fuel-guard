@@ -171,13 +171,13 @@ function SummaryRow({
   label,
   value,
 }: {
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  icon: LucideIcon;
   label: string;
   value: string;
 }) {
   return (
     <div className="flex items-start gap-2 rounded-md border border-border bg-muted/20 p-2.5">
-      <Icon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" aria-hidden />
+      <Icon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" aria-hidden="true" />
       <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
         <div className="text-sm text-foreground break-words">{value}</div>
