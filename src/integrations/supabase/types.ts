@@ -23875,6 +23875,7 @@ export type Database = {
           ownership_type: string | null
           permit_expiry: string | null
           photo_back_url: string | null
+          photo_extras_urls: string[]
           photo_front_url: string | null
           photo_left_url: string | null
           photo_right_url: string | null
@@ -23956,6 +23957,7 @@ export type Database = {
           ownership_type?: string | null
           permit_expiry?: string | null
           photo_back_url?: string | null
+          photo_extras_urls?: string[]
           photo_front_url?: string | null
           photo_left_url?: string | null
           photo_right_url?: string | null
@@ -24037,6 +24039,7 @@ export type Database = {
           ownership_type?: string | null
           permit_expiry?: string | null
           photo_back_url?: string | null
+          photo_extras_urls?: string[]
           photo_front_url?: string | null
           photo_left_url?: string | null
           photo_right_url?: string | null

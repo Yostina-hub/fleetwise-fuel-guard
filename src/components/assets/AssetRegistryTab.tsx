@@ -17,9 +17,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Search, Package, Truck, Wrench, CircleDot, Battery, Box, Download, Radio, Cpu, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Package, Truck, Wrench, CircleDot, Battery, Box, Download, Radio, Cpu, MoreHorizontal, Pencil, Trash2, IdCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
+import VehicleProfileDialog from "@/components/fleet/VehicleProfileDialog";
 
 const CATEGORIES = [
   { value: "vehicle", label: "Vehicle", icon: Truck },
@@ -70,6 +71,7 @@ export default function AssetRegistryTab() {
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [profileVehicleId, setProfileVehicleId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
 
   const { vehicles } = useVehicles();
@@ -332,6 +334,9 @@ export default function AssetRegistryTab() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      {a.category === "vehicle" && a.vehicle_id && (
+                        <DropdownMenuItem onClick={() => setProfileVehicleId(a.vehicle_id)}><IdCard className="h-3.5 w-3.5 mr-2" />Vehicle Profile</DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => openEdit(a)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(a.id)}><Trash2 className="h-3.5 w-3.5 mr-2" />Delete</DropdownMenuItem>
                     </DropdownMenuContent>
@@ -401,6 +406,9 @@ export default function AssetRegistryTab() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {a.category === "vehicle" && a.vehicle_id && (
+                            <DropdownMenuItem onClick={() => setProfileVehicleId(a.vehicle_id)}><IdCard className="h-3.5 w-3.5 mr-2" />Vehicle Profile</DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => openEdit(a)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(a.id)}><Trash2 className="h-3.5 w-3.5 mr-2" />Delete</DropdownMenuItem>
                         </DropdownMenuContent>
@@ -580,6 +588,13 @@ export default function AssetRegistryTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Vehicle Profile Dialog */}
+      <VehicleProfileDialog
+        vehicleId={profileVehicleId}
+        open={!!profileVehicleId}
+        onOpenChange={(o) => !o && setProfileVehicleId(null)}
+      />
     </div>
   );
 }
