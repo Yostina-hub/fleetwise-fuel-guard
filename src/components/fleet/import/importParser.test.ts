@@ -13,10 +13,11 @@ function xlsxFile(matrix: any[][], name = "vehicles.xlsx"): File {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(matrix);
   XLSX.utils.book_append_sheet(wb, ws, "Vehicles");
-  const out = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as Uint8Array;
-  return new File([out], name, {
+  const out = XLSX.write(wb, { type: "array", bookType: "xlsx" });
+  const blob = new Blob([out as ArrayBuffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
+  return new File([blob], name, { type: blob.type });
 }
 
 describe("importParser - CSV", () => {
