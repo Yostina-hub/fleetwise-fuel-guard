@@ -38,7 +38,7 @@ const TAB_FIELDS: Record<typeof tabs[number]["id"], string[]> = {
   value:    ["purchasing_price", "current_market_price", "current_condition", "fuel_standard_km_per_liter", "seating_capacity", "loading_capacity_quintal", "year_of_ownership", "safety_comfort_category"],
 };
 
-export default function BasicInfoTabs({ formData, set, plateNumber }: Props) {
+export default function BasicInfoTabs({ formData, set, plateNumber, onBlur, getError }: Props) {
   const [active, setActive] = useState<typeof tabs[number]["id"]>("identity");
 
   const completion = useMemo(() => {
@@ -154,18 +154,25 @@ export default function BasicInfoTabs({ formData, set, plateNumber }: Props) {
 }
 
 /* ---------- Field primitive ---------- */
-function Field({ label, required, hint, children, span = 1 }: {
-  label: string; required?: boolean; hint?: string; children: React.ReactNode; span?: 1 | 2 | 3;
+function Field({ label, required, hint, error, children, span = 1 }: {
+  label: string; required?: boolean; hint?: string; error?: string;
+  children: React.ReactNode; span?: 1 | 2 | 3;
 }) {
   const spanCls = span === 3 ? "md:col-span-3" : span === 2 ? "md:col-span-2" : "";
   return (
     <div className={`space-y-1.5 ${spanCls}`}>
-      <Label className="text-xs font-medium text-foreground/80 flex items-center gap-1">
+      <Label className={`text-xs font-medium flex items-center gap-1 ${error ? "text-destructive" : "text-foreground/80"}`}>
         {label}
         {required && <span className="text-primary">*</span>}
       </Label>
-      {children}
-      {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
+      <div className={error ? "[&_input]:border-destructive [&_button]:border-destructive [&_input]:ring-destructive/20" : ""}>
+        {children}
+      </div>
+      {error ? (
+        <p className="text-[11px] font-medium text-destructive">{error}</p>
+      ) : hint ? (
+        <p className="text-[10px] text-muted-foreground">{hint}</p>
+      ) : null}
     </div>
   );
 }
