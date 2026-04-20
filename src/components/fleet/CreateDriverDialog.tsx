@@ -84,6 +84,39 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
   const [nationalIdFile, setNationalIdFile] = useState<File | null>(null);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
 
+  // ---- Wizard step definitions ----
+  const STEPS: { id: string; label: string; icon: React.ComponentType<any>; fields: DriverFieldName[] }[] = [
+    { id: "personal",    label: "Personal",    icon: User,         fields: ["driver_type", "first_name", "middle_name", "last_name", "phone", "email", "date_of_birth"] },
+    { id: "address",     label: "Address",     icon: MapPin,       fields: ["address_specific"] },
+    { id: "legal",       label: "Legal & ID",  icon: CreditCard,   fields: ["govt_id_type", "license_number", "national_id", "license_issue_date", "license_expiry"] },
+    { id: "employment",  label: "Employment",  icon: Building2,    fields: ["status", "department", "joining_date", "experience_years"] },
+    { id: "emergency",   label: "Emergency",   icon: AlertCircle,  fields: ["emergency_contact_name", "emergency_contact_phone"] },
+    { id: "credentials", label: "Account",     icon: Key,          fields: ["password"] },
+  ];
+  const [activeStep, setActiveStep] = useState<string>(STEPS[0].id);
+
+  const stepHasErrors = (stepId: string) => {
+    const step = STEPS.find((s) => s.id === stepId);
+    return step?.fields.some((f) => validation.errors[f]) ?? false;
+  };
+  const stepIsComplete = (stepId: string) => {
+    const step = STEPS.find((s) => s.id === stepId);
+    if (!step) return false;
+    return step.fields.every((f) => {
+      const v = (formData as any)[f];
+      const err = validation.errors[f];
+      // "Complete" means: required+filled+no error, OR optional+no error
+      return !err && (typeof v === "string" ? v.trim().length > 0 || !isRequiredField(f) : true);
+    });
+  };
+
+  // Overall progress: % of total fields (across schemas) that pass
+  const allTrackedFields = STEPS.flatMap((s) => s.fields);
+  const completedFields = allTrackedFields.filter(
+    (f) => !validation.errors[f] && !!(formData as any)[f]?.toString().trim(),
+  ).length;
+  const progressPct = Math.round((completedFields / allTrackedFields.length) * 100);
+
   /** Update value + live-revalidate the field if user has already touched it. */
   const set = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
