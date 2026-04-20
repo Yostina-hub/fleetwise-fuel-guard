@@ -142,6 +142,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
 
+  // While impersonating, force the form to file the request as the impersonated
+  // user so requester_id matches what they see in /my-requests, and approval
+  // routing uses the impersonated user's role (not the super_admin's).
+  useEffect(() => {
+    if (!isImpersonating || !user?.id) return;
+    setOnBehalfOf((prev) => {
+      if (prev && prev.id === user.id) return prev;
+      return {
+        id: user.id,
+        name: profile?.full_name || user.email || "Impersonated user",
+        email: user.email || "",
+        type: "user",
+      };
+    });
+  }, [isImpersonating, user?.id, user?.email, profile?.full_name]);
+
   // Fetch both users and drivers for the combined picker
   const { data: orgPeople = [] } = useQuery({
     queryKey: ["vr-org-people", organizationId],
