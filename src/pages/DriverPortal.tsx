@@ -724,11 +724,7 @@ const DriverPortal = () => {
             ["driver-portal-submissions"],
           ]}
         />
-        <UnifiedVehicleRequestDialog
-          open={showVehicle}
-          onOpenChange={setShowVehicle}
-          source="driver_portal"
-        />
+        {/* Vehicle/Fleet requests intentionally not available to drivers — only end-users, supervisors, and managers can initiate them. */}
         <TireRequestDialog
           open={showTire}
           onOpenChange={setShowTire}
