@@ -497,15 +497,24 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                   className={errClass("joining_date")}
                 />
               </Field>
-              <Field label="Assigned Location" required error={validation.getError("department")} fieldRef={registerRef("department")}>
-                <Select value={formData.department} onValueChange={v => { set("department", v); validation.validateField("department", v); }}>
-                  <SelectTrigger className={errClass("department")} onBlur={() => onBlur("department")}><SelectValue placeholder="Select location..." /></SelectTrigger>
+              <Field label="Assigned Pool" required error={validation.getError("department")} hint="Corporate, Zone or Regional pool" fieldRef={registerRef("department")}>
+                <Select
+                  value={formData.department}
+                  onValueChange={v => {
+                    set("department", v);
+                    set("assigned_pool", v); // keep both fields in sync
+                    validation.validateField("department", v);
+                  }}
+                >
+                  <SelectTrigger className={errClass("department")} onBlur={() => onBlur("department")}>
+                    <SelectValue placeholder="Select pool..." />
+                  </SelectTrigger>
                   <SelectContent>
-                    {["Corporate", "Zone", "Region"].map(group => (
+                    {["Corporate Pools", "Regional Pools", "Other"].map(group => (
                       <SelectGroup key={group}>
                         <SelectLabel>{group}</SelectLabel>
-                        {ASSIGNED_LOCATIONS.filter(l => l.group === group).map(l => (
-                          <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                        {ASSIGNED_POOLS.filter(p => p.group === group).map(p => (
+                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                         ))}
                       </SelectGroup>
                     ))}
@@ -521,14 +530,6 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                   placeholder="e.g. 3"
                   className={errClass("experience_years")}
                 />
-              </Field>
-              <Field label="Assigned Pool">
-                <Select value={formData.assigned_pool} onValueChange={v => set("assigned_pool", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select pool..." /></SelectTrigger>
-                  <SelectContent>
-                    {ASSIGNED_POOLS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
               </Field>
             </div>
           </Section>

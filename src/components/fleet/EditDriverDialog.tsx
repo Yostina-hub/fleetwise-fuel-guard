@@ -373,15 +373,18 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                     </Select>
                   </Field>
                   <Field label="Effective Date"><Input type="date" value={formData.joining_date} onChange={e => set("joining_date", e.target.value)} /></Field>
-                  <Field label="Assigned Location">
-                    <Select value={formData.department} onValueChange={v => set("department", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                  <Field label="Assigned Pool">
+                    <Select
+                      value={formData.department}
+                      onValueChange={v => { set("department", v); set("assigned_pool", v); }}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select pool..." /></SelectTrigger>
                       <SelectContent>
-                        {["Corporate", "Zone", "Region"].map(group => (
+                        {["Corporate Pools", "Regional Pools", "Other"].map(group => (
                           <SelectGroup key={group}>
                             <SelectLabel>{group}</SelectLabel>
-                            {ASSIGNED_LOCATIONS.filter(l => l.group === group).map(l => (
-                              <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                            {ASSIGNED_POOLS.filter(p => p.group === group).map(p => (
+                              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                             ))}
                           </SelectGroup>
                         ))}
