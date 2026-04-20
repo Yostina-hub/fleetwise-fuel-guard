@@ -324,8 +324,12 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Load Capacity (kg)"><Input type="number" min={0} value={formData.capacity_kg} onChange={e => set("capacity_kg", e.target.value)} /></Field>
-                    <Field label="Cargo Volume (m³)"><Input type="number" min={0} step={0.1} value={formData.capacity_volume} onChange={e => set("capacity_volume", e.target.value)} /></Field>
+                    <Field label="Load Capacity (kg)" error={fieldValidation.getError("capacity_kg")}>
+                      <Input type="number" min={0} value={formData.capacity_kg} onChange={e => set("capacity_kg", e.target.value)} onBlur={() => fieldValidation.handleBlur("capacity_kg", formData.capacity_kg)} />
+                    </Field>
+                    <Field label="Cargo Volume (m³)" error={fieldValidation.getError("capacity_volume")}>
+                      <Input type="number" min={0} step={0.1} value={formData.capacity_volume} onChange={e => set("capacity_volume", e.target.value)} onBlur={() => fieldValidation.handleBlur("capacity_volume", formData.capacity_volume)} />
+                    </Field>
                     <Field label="Temperature Control">
                       <Select value={formData.temperature_control} onValueChange={v => set("temperature_control", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -343,9 +347,15 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="GPS Device ID"><Input value={formData.gps_device_id} onChange={e => set("gps_device_id", e.target.value)} disabled={formData.gps_installed !== "true"} /></Field>
-                    <Field label="Odometer (km)"><Input type="number" min={0} value={formData.odometer_km} onChange={e => set("odometer_km", e.target.value)} /></Field>
-                    <Field label="Tank Capacity (L)"><Input type="number" min={0} value={formData.tank_capacity_liters} onChange={e => set("tank_capacity_liters", e.target.value)} /></Field>
+                    <Field label="GPS Device ID" error={fieldValidation.getError("gps_device_id")}>
+                      <Input value={formData.gps_device_id} onChange={e => set("gps_device_id", e.target.value)} onBlur={() => fieldValidation.handleBlur("gps_device_id", formData.gps_device_id)} disabled={formData.gps_installed !== "true"} maxLength={100} />
+                    </Field>
+                    <Field label="Odometer (km)" error={fieldValidation.getError("odometer_km")}>
+                      <Input type="number" min={0} value={formData.odometer_km} onChange={e => set("odometer_km", e.target.value)} onBlur={() => fieldValidation.handleBlur("odometer_km", formData.odometer_km)} />
+                    </Field>
+                    <Field label="Tank Capacity (L)" error={fieldValidation.getError("tank_capacity_liters")}>
+                      <Input type="number" min={0} value={formData.tank_capacity_liters} onChange={e => set("tank_capacity_liters", e.target.value)} onBlur={() => fieldValidation.handleBlur("tank_capacity_liters", formData.tank_capacity_liters)} />
+                    </Field>
                     <Field label="Vehicle Status">
                       <Select value={formData.status} onValueChange={v => set("status", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -402,7 +412,9 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Full Name / Company Name"><Input value={formData.owner_full_name} onChange={e => set("owner_full_name", e.target.value)} /></Field>
+                    <Field label="Full Name / Company Name" error={fieldValidation.getError("owner_full_name")}>
+                      <Input value={formData.owner_full_name} onChange={e => set("owner_full_name", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_full_name", formData.owner_full_name)} maxLength={200} />
+                    </Field>
                     <Field label="Assigned Location *">
                       <Select value={formData.owner_department} onValueChange={v => set("owner_department", v)}>
                         <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
@@ -418,9 +430,15 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Contact Person"><Input value={formData.owner_contact_person} onChange={e => set("owner_contact_person", e.target.value)} /></Field>
-                    <Field label="Phone"><Input value={formData.owner_phone} onChange={e => set("owner_phone", e.target.value)} /></Field>
-                    <Field label="Email"><Input type="email" value={formData.owner_email} onChange={e => set("owner_email", e.target.value)} /></Field>
+                    <Field label="Contact Person" error={fieldValidation.getError("owner_contact_person")}>
+                      <Input value={formData.owner_contact_person} onChange={e => set("owner_contact_person", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_contact_person", formData.owner_contact_person)} maxLength={150} />
+                    </Field>
+                    <Field label="Phone" error={fieldValidation.getError("owner_phone")}>
+                      <Input value={formData.owner_phone} onChange={e => set("owner_phone", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_phone", formData.owner_phone)} placeholder="+251 9XX XXX XXX" />
+                    </Field>
+                    <Field label="Email" error={fieldValidation.getError("owner_email")}>
+                      <Input type="email" value={formData.owner_email} onChange={e => set("owner_email", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_email", formData.owner_email)} placeholder="name@example.com" />
+                    </Field>
                     <CascadingLocationSelector
                       region={formData.owner_region}
                       zone={formData.owner_zone}
@@ -429,8 +447,12 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                       onZoneChange={v => set("owner_zone", v)}
                       onWoredaChange={v => set("owner_woreda", v)}
                     />
-                    <Field label="Gov't ID / Business Reg No"><Input value={formData.owner_govt_id} onChange={e => set("owner_govt_id", e.target.value)} /></Field>
-                    <Field label="Tax ID / VAT Number"><Input value={formData.owner_tax_id} onChange={e => set("owner_tax_id", e.target.value)} /></Field>
+                    <Field label="Gov't ID / Business Reg No" error={fieldValidation.getError("owner_govt_id")}>
+                      <Input value={formData.owner_govt_id} onChange={e => set("owner_govt_id", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_govt_id", formData.owner_govt_id)} maxLength={100} />
+                    </Field>
+                    <Field label="Tax ID / VAT Number" error={fieldValidation.getError("owner_tax_id")}>
+                      <Input value={formData.owner_tax_id} onChange={e => set("owner_tax_id", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_tax_id", formData.owner_tax_id)} maxLength={50} />
+                    </Field>
                     <Field label="Owner Status">
                       <Select value={formData.owner_status} onValueChange={v => set("owner_status", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
