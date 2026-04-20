@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { DateTimePicker, combineDateAndTime } from "@/components/ui/date-time-picker";
 import { LocationPickerField } from "@/components/shared/LocationPickerField";
-import { VEHICLE_TYPES_OPTIONS } from "@/components/fleet/formConstants";
+import { VEHICLE_TYPES_OPTIONS, ASSIGNED_POOLS } from "@/components/fleet/formConstants";
 import { AlertCircle } from "lucide-react";
 import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm } from "./vehicleRequestValidation";
@@ -141,6 +141,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
+
+  // Default duration (in days) per request type — used to auto-derive end_date
+  // dynamically from start_date so requesters don't have to compute it manually.
+  // Users can still override the picker; we only fill when end_date is empty
+  // OR when it's still equal to the previously-derived default.
+  const DEFAULT_DURATION_DAYS: Record<string, number> = {
+    daily_operation: 0,
+    project_operation: 7,
+    field_operation: 30,
+  };
 
   // While impersonating, force the form to file the request as the impersonated
   // user so requester_id matches what they see in /my-requests, and approval
@@ -376,6 +386,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowsMultipleVehicles]);
+
+  // Dynamic end-date: auto-derive from start_date + operation-type default.
+  // Only fills when end_date is empty so a manual override is preserved.
+  useEffect(() => {
+    if (isDaily) return;
+    if (!form.start_date) return;
+    if (form.end_date) return;
+    const days = DEFAULT_DURATION_DAYS[form.request_type] ?? 0;
+    const derived = new Date(form.start_date);
+    derived.setDate(derived.getDate() + days);
+    setForm((f) => ({ ...f, end_date: derived }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.start_date, form.request_type, isDaily]);
 
   // Professional, descriptive validation (per-field, on blur + on submit).
   const validation = useVehicleRequestValidation();
@@ -853,25 +876,30 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label className="text-primary font-medium">Pool Category</Label>
-                <Select value={form.pool_category} onValueChange={v => { update("pool_category", v); update("pool_name", ""); }}>
-                  <SelectTrigger className="h-10"><SelectValue placeholder="Select Pool Category" /></SelectTrigger>
+              <div className="md:col-span-2">
+                <Label className="text-primary font-medium">Assigned Pool</Label>
+                <Select value={form.pool_name} onValueChange={v => {
+                  // Derive a category bucket so downstream filters/reports keep working.
+                  const found = ASSIGNED_POOLS.find(p => p.value === v);
+                  const cat = found?.group === "Corporate Pools" ? "corporate"
+                            : found?.group === "Regional Pools" ? "region"
+                            : "zone";
+                  update("pool_name", v);
+                  update("pool_category", cat);
+                }}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select Assigned Pool" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="corporate">Corporate</SelectItem>
-                    <SelectItem value="zone">Zone</SelectItem>
-                    <SelectItem value="region">Region</SelectItem>
+                    {["Corporate Pools", "Regional Pools", "Other"].map(group => (
+                      <SelectGroup key={group}>
+                        <SelectLabel>{group}</SelectLabel>
+                        {ASSIGNED_POOLS.filter(p => p.group === group).map(p => (
+                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <Label className="text-primary font-medium">Pool</Label>
-                <Select value={form.pool_name} onValueChange={v => update("pool_name", v)} disabled={!form.pool_category}>
-                  <SelectTrigger className="h-10"><SelectValue placeholder={form.pool_category ? "Select Pool" : "Select category first"} /></SelectTrigger>
-                  <SelectContent>
-                    {filteredPools.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <p className="text-[11px] text-muted-foreground mt-1">Operational pool the trip will be served from.</p>
               </div>
               <div className="md:col-span-2">
                 <Label className="text-primary font-medium">Contact Phone (during trip)</Label>

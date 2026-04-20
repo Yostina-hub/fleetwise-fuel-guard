@@ -392,11 +392,18 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                     </Select>
                   </Field>
                   <Field label="Years of Experience"><Input type="number" min={0} value={formData.experience_years} onChange={e => set("experience_years", e.target.value)} /></Field>
-                  <Field label="Type of Routes">
+                  <Field label="Assigned Pool (Routes)">
                     <Select value={formData.route_type} onValueChange={v => set("route_type", v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select pool..." /></SelectTrigger>
                       <SelectContent>
-                        {ROUTE_TYPES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                        {["Corporate Pools", "Regional Pools", "Other"].map(group => (
+                          <SelectGroup key={group}>
+                            <SelectLabel>{group}</SelectLabel>
+                            {ASSIGNED_POOLS.filter(p => p.group === group).map(p => (
+                              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Field>
