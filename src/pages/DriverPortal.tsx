@@ -850,6 +850,17 @@ const DriverPortal = () => {
             ["driver-pending-post-trip"],
           ]}
         />
+        {activeAssignment && (
+          <AssignmentCheckInDialog
+            request={activeAssignment.request}
+            assignment={activeAssignment.assignment}
+            open={!!activeAssignment}
+            onClose={() => {
+              setActiveAssignment(null);
+              queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] });
+            }}
+          />
+        )}
       </div>
     </Layout>
   );
