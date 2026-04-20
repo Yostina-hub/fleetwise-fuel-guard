@@ -27,6 +27,7 @@ import { TerminalSettingsPanel } from "@/components/fleet/TerminalSettingsPanel"
 import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
 import { VehicleTableView } from "@/components/fleet/VehicleTableView";
 import { useFleetExport } from "@/components/fleet/FleetExportUtils";
+import { printRecords, exportRecordsToPdf, type PrintColumn } from "@/components/fleet/printUtils";
 import FleetQuickStats from "@/components/fleet/FleetQuickStats";
 import FleetOwnershipStats from "@/components/fleet/FleetOwnershipStats";
 import { useFleetOwnershipStats } from "@/hooks/useFleetOwnershipStats";
@@ -49,6 +50,8 @@ import {
   ChevronDown,
   FileSpreadsheet,
   FileText,
+  Printer,
+  FileDown,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -381,6 +384,45 @@ const Fleet = () => {
     handleExport(selectedVehicles, true);
   };
 
+  const orgName = "Fleet Management";
+
+  const printColumns: PrintColumn[] = useMemo(() => [
+    { key: "plate", label: "Plate", width: 28 },
+    { key: "make", label: "Make", width: 24 },
+    { key: "model", label: "Model", width: 28 },
+    { key: "year", label: "Year", width: 14 },
+    { key: "vehicleType", label: "Type", width: 22 },
+    { key: "fuelType", label: "Fuel", width: 18 },
+    { key: "ownershipType", label: "Ownership", width: 24 },
+    { key: "status", label: "Status", width: 20 },
+    { key: "odometer", label: "Odometer (km)", width: 24, format: (v) => (v != null ? Number(v).toLocaleString() : "—") },
+    { key: "assignedDriver", label: "Driver" },
+  ], []);
+
+  const buildPrintRows = () => {
+    const ids = selectedIds.length > 0 ? selectedIds : null;
+    const list = ids ? vehicles.filter(v => ids.includes(v.vehicleId)) : vehicles;
+    return list;
+  };
+
+  const handlePrint = () => {
+    printRecords(buildPrintRows(), printColumns, {
+      title: selectedIds.length > 0 ? `Vehicles (${selectedIds.length} selected)` : "Vehicle Registry",
+      subtitle: `Page ${currentPage} of ${totalPages} · ${vehicles.length} shown`,
+      filename: "vehicles",
+      organizationName: orgName,
+    });
+  };
+
+  const handleExportPdf = () => {
+    exportRecordsToPdf(buildPrintRows(), printColumns, {
+      title: selectedIds.length > 0 ? `Vehicles (${selectedIds.length} selected)` : "Vehicle Registry",
+      subtitle: `Generated report`,
+      filename: "vehicles",
+      organizationName: orgName,
+    });
+  };
+
   // Clear selection when filters change
   useEffect(() => {
     setSelectedIds([]);
@@ -457,6 +499,12 @@ const Fleet = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleExportAll("csv")}>
                   <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPdf}>
+                  <FileDown className="w-4 h-4 mr-2" /> PDF (.pdf)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePrint}>
+                  <Printer className="w-4 h-4 mr-2" /> Print
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

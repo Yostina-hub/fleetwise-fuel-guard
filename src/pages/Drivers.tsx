@@ -55,6 +55,7 @@ import {
   type DriverColumnId,
 } from "@/components/fleet/driverTableColumns";
 import { exportDriversToCSV, exportAllDriversToCSV } from "@/components/fleet/DriverExportUtils";
+import { printRecords, exportRecordsToPdf, type PrintColumn } from "@/components/fleet/printUtils";
 import { 
   Users, 
   Search, 
@@ -75,6 +76,9 @@ import {
   Activity,
   Upload,
   Download,
+  Printer,
+  FileDown,
+  ChevronDown,
   X
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -235,6 +239,42 @@ const Drivers = () => {
     }
   };
 
+  const driverPrintColumns: PrintColumn[] = useMemo(() => [
+    { key: "employee_id", label: "Emp ID", width: 22 },
+    { key: "name", label: "Name", width: 40, format: (_, r: any) => `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() || "—" },
+    { key: "license_number", label: "License #", width: 28 },
+    { key: "license_class", label: "Class", width: 16 },
+    { key: "license_expiry", label: "Lic. Expiry", width: 22 },
+    { key: "phone", label: "Phone", width: 28 },
+    { key: "email", label: "Email" },
+    { key: "status", label: "Status", width: 20 },
+    { key: "hire_date", label: "Hire Date", width: 22 },
+  ], []);
+
+  const handleDriversPrint = () => {
+    const list = selectedDrivers.length > 0 ? selectedDrivers : drivers;
+    printRecords(list, driverPrintColumns, {
+      title: selectedDrivers.length > 0
+        ? `Drivers (${selectedDrivers.length} selected)`
+        : "Driver Directory",
+      subtitle: `Page ${currentPage} of ${totalPages} · ${list.length} shown · ${totalCount} total`,
+      filename: "drivers",
+      organizationName: "Driver Management",
+    });
+  };
+
+  const handleDriversExportPdf = () => {
+    const list = selectedDrivers.length > 0 ? selectedDrivers : drivers;
+    exportRecordsToPdf(list, driverPrintColumns, {
+      title: selectedDrivers.length > 0
+        ? `Drivers (${selectedDrivers.length} selected)`
+        : "Driver Directory",
+      subtitle: "Workforce report",
+      filename: "drivers",
+      organizationName: "Driver Management",
+    });
+  };
+
   if (initialLoading) {
     return (
       <Layout>
@@ -304,20 +344,35 @@ const Drivers = () => {
                   <span className="hidden sm:inline">{t('common.import')}</span>
                 </Button>
                 <div className="w-px h-5 bg-border" />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5 h-8"
-                  onClick={handleExportAll}
-                  disabled={isExporting}
-                >
-                  {isExporting ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <Download className="w-3.5 h-3.5" aria-hidden="true" />
-                  )}
-                  <span className="hidden sm:inline">{isExporting ? `${t('common.export')}...` : t('common.export')}</span>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 h-8"
+                      disabled={isExporting}
+                    >
+                      {isExporting ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" aria-hidden="true" />
+                      )}
+                      <span className="hidden sm:inline">{isExporting ? `${t('common.export')}...` : t('common.export')}</span>
+                      <ChevronDown className="w-3 h-3 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleExportAll}>
+                      <Download className="w-4 h-4 mr-2" /> CSV (.csv)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDriversExportPdf}>
+                      <FileDown className="w-4 h-4 mr-2" /> PDF (.pdf)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDriversPrint}>
+                      <Printer className="w-4 h-4 mr-2" /> Print
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <Button
                 variant="outline"
