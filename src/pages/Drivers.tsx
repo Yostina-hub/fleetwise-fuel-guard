@@ -81,6 +81,9 @@ const Drivers = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [driverTypeFilter, setDriverTypeFilter] = useState("all");
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState("all");
+  const [assignmentFilter, setAssignmentFilter] = useState<"all" | "assigned" | "unassigned">("all");
   const [isExporting, setIsExporting] = useState(false);
   
   const PAGE_SIZE = 10;
@@ -90,6 +93,7 @@ const Drivers = () => {
     initialLoading,
     totalCount,
     statusCounts,
+    categoryCounts,
     currentPage, 
     totalPages, 
     loadPage,
@@ -97,7 +101,10 @@ const Drivers = () => {
   } = useDriversPaginated({
     pageSize: PAGE_SIZE,
     searchQuery,
-    statusFilter
+    statusFilter,
+    driverTypeFilter,
+    employmentTypeFilter,
+    assignmentFilter,
   });
 
   // Fetch vehicle assignments for the drivers shown on the current page
