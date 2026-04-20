@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
 import { useLockedVehicles } from "@/hooks/useLockedVehicles";
+import { sendDispatchSms } from "@/services/smsNotificationService";
 import { toast } from "sonner";
 
 interface Props {
