@@ -2,7 +2,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useState } from "react";
+import * as XLSX from "xlsx";
 import { VEHICLE_COLUMNS } from "./vehicleTableColumns";
+
+export type ExportFormat = "csv" | "xlsx";
 
 interface ExportableVehicle {
   id: string;
