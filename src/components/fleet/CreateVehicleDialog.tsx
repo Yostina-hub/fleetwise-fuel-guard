@@ -192,6 +192,23 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       tank_capacity_liters: formData.tank_capacity_liters ? parseFloat(formData.tank_capacity_liters) : null,
       notes: formData.notes.trim() || null,
       is_active: formData.status !== "out_of_service",
+      // Extended Basic Info
+      purpose_for: formData.purpose_for || null,
+      specific_pool: formData.specific_pool || null,
+      specific_location: formData.specific_location?.trim() || null,
+      transmission_type: formData.transmission_type || null,
+      model_code: formData.model_code?.trim() || null,
+      engine_number: formData.engine_number?.trim() || null,
+      mfg_date: formData.mfg_date || null,
+      year_of_ownership: formData.year_of_ownership ? parseInt(formData.year_of_ownership) : null,
+      seating_capacity: formData.seating_capacity ? parseInt(formData.seating_capacity) : null,
+      loading_capacity_quintal: formData.loading_capacity_quintal ? parseFloat(formData.loading_capacity_quintal) : null,
+      engine_cc: formData.engine_cc ? parseInt(formData.engine_cc) : null,
+      purchasing_price: formData.purchasing_price ? parseFloat(formData.purchasing_price) : null,
+      current_market_price: formData.current_market_price ? parseFloat(formData.current_market_price) : null,
+      current_condition: formData.current_condition || null,
+      fuel_standard_km_per_liter: formData.fuel_standard_km_per_liter ? parseFloat(formData.fuel_standard_km_per_liter) : null,
+      safety_comfort_category: formData.safety_comfort_category || null,
     };
 
     const validation = vehicleSchema.safeParse(cleanData);
