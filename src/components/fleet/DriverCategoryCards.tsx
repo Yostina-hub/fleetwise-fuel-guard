@@ -187,7 +187,7 @@ const TypeCard = ({
     className={cn(
       "group relative overflow-hidden rounded-xl text-left",
       "border border-border/60 bg-card/30 backdrop-blur-xl",
-      "px-4 py-3.5 transition-all duration-300",
+      "px-4 py-3 transition-all duration-300 min-w-[180px] flex-1 sm:flex-none sm:min-w-[200px]",
       "hover:border-border hover:bg-card/60 hover:-translate-y-0.5",
       active && cn("ring-2 ring-offset-1 ring-offset-background bg-card/70", tone.ring),
     )}
@@ -223,7 +223,7 @@ const TypeCard = ({
 
 /* -------------------- Section Heading -------------------- */
 const SectionHeading = ({ icon: Icon, title, hint }: { icon: any; title: string; hint?: string }) => (
-  <div className="flex items-center gap-2 mb-3">
+  <div className="flex items-center gap-2 mb-2">
     <div className="h-6 w-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center">
       <Icon className="w-3 h-3 text-primary" aria-hidden="true" />
     </div>
