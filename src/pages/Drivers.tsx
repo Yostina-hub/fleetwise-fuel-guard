@@ -100,6 +100,8 @@ const Drivers = () => {
   const [driverTypeFilter, setDriverTypeFilter] = useState("all");
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState("all");
   const [assignmentFilter, setAssignmentFilter] = useState<"all" | "assigned" | "unassigned">("all");
+  const [sortBy, setSortBy] = useState<"last_name" | "first_name" | "employee_id" | "hire_date" | "license_expiry" | "created_at" | "status">("last_name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [isExporting, setIsExporting] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<DriverColumnId[]>(() => loadVisibleColumns());
   const updateVisibleColumns = (cols: DriverColumnId[]) => {
@@ -131,6 +133,8 @@ const Drivers = () => {
     driverTypeFilter,
     employmentTypeFilter,
     assignmentFilter,
+    sortBy,
+    sortDir,
   });
 
   // Fetch vehicle assignments for the drivers shown on the current page
