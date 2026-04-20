@@ -38,6 +38,10 @@ export interface Driver {
     medications?: string;
   };
   medical_certificate_expiry?: string;
+  driver_type?: string;
+  employment_type?: string;
+  department?: string;
+  outsource_company?: string;
 }
 
 export const useDrivers = () => {

@@ -43,6 +43,7 @@ import DriverQuickStatusChange from "@/components/fleet/DriverQuickStatusChange"
 import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
 import DriversQuickStats from "@/components/fleet/DriversQuickStats";
 import DriversQuickActions from "@/components/fleet/DriversQuickActions";
+import DriverCategoryCards from "@/components/fleet/DriverCategoryCards";
 import { exportDriversToCSV, exportAllDriversToCSV } from "@/components/fleet/DriverExportUtils";
 import { 
   Users, 
@@ -80,6 +81,9 @@ const Drivers = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [driverTypeFilter, setDriverTypeFilter] = useState("all");
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState("all");
+  const [assignmentFilter, setAssignmentFilter] = useState<"all" | "assigned" | "unassigned">("all");
   const [isExporting, setIsExporting] = useState(false);
   
   const PAGE_SIZE = 10;
@@ -89,6 +93,7 @@ const Drivers = () => {
     initialLoading,
     totalCount,
     statusCounts,
+    categoryCounts,
     currentPage, 
     totalPages, 
     loadPage,
@@ -96,7 +101,10 @@ const Drivers = () => {
   } = useDriversPaginated({
     pageSize: PAGE_SIZE,
     searchQuery,
-    statusFilter
+    statusFilter,
+    driverTypeFilter,
+    employmentTypeFilter,
+    assignmentFilter,
   });
 
   // Fetch vehicle assignments for the drivers shown on the current page
@@ -285,6 +293,37 @@ const Drivers = () => {
             }}
           />
         )}
+
+        {/* Category Cards */}
+        <DriverCategoryCards
+          total={categoryCounts.total}
+          assigned={categoryCounts.assigned}
+          unassigned={categoryCounts.unassigned}
+          byDriverType={categoryCounts.byDriverType}
+          byEmploymentType={categoryCounts.byEmploymentType}
+          active={{
+            driverType: driverTypeFilter !== "all" ? driverTypeFilter : undefined,
+            employmentType: employmentTypeFilter !== "all" ? employmentTypeFilter : undefined,
+            assignment: assignmentFilter,
+          }}
+          onSelect={(f) => {
+            if (f.assignment !== undefined) {
+              if (f.assignment === "all") {
+                setAssignmentFilter("all");
+                setDriverTypeFilter("all");
+                setEmploymentTypeFilter("all");
+              } else {
+                setAssignmentFilter(prev => prev === f.assignment ? "all" : f.assignment!);
+              }
+            }
+            if (f.driverType !== undefined) {
+              setDriverTypeFilter(prev => prev === f.driverType ? "all" : f.driverType!);
+            }
+            if (f.employmentType !== undefined) {
+              setEmploymentTypeFilter(prev => prev === f.employmentType ? "all" : f.employmentType!);
+            }
+          }}
+        />
 
         {/* Search and Filters */}
         <Card className="border-primary/20">
