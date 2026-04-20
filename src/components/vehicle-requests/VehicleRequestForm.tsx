@@ -67,8 +67,17 @@ const initialForm = {
 export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
   const { organizationId, isSuperAdmin } = useOrganization();
-  const { user } = useAuth();
+  const { user, roles: userRoles } = useAuth();
   const queryClient = useQueryClient();
+
+  // Drivers cannot initiate fleet/vehicle requests — only end-users, supervisors,
+  // and managers can. A user counts as "driver-only" when they hold the driver
+  // role and no other role that grants requestor privileges.
+  const roleNames = userRoles.map((r) => r.role);
+  const isDriverOnly =
+    roleNames.includes("driver") &&
+    !isSuperAdmin &&
+    !roleNames.some((r) => r !== "driver");
 
   // Persist in-progress form per (user, source) so progress isn't lost on
   // accidental close, refresh, navigation, or browser crash.
