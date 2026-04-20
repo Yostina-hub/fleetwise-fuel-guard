@@ -301,7 +301,9 @@ const Drivers = () => {
     driverTypeFilter !== "all" ||
     employmentTypeFilter !== "all" ||
     assignmentFilter !== "all" ||
-    searchQuery.length > 0;
+    searchQuery.length > 0 ||
+    sortBy !== "last_name" ||
+    sortDir !== "asc";
 
   const clearAllFilters = () => {
     setSearchQuery("");
@@ -309,7 +311,22 @@ const Drivers = () => {
     setDriverTypeFilter("all");
     setEmploymentTypeFilter("all");
     setAssignmentFilter("all");
+    setSortBy("last_name");
+    setSortDir("asc");
   };
+
+  // Order labels adapt to the active sort field for clarity
+  const SORT_FIELD_OPTIONS: { value: typeof sortBy; label: string; orderLabels: { asc: string; desc: string } }[] = [
+    { value: "last_name", label: "Last name", orderLabels: { asc: "A → Z", desc: "Z → A" } },
+    { value: "first_name", label: "First name", orderLabels: { asc: "A → Z", desc: "Z → A" } },
+    { value: "employee_id", label: "Employee ID", orderLabels: { asc: "A → Z", desc: "Z → A" } },
+    { value: "hire_date", label: "Hire date", orderLabels: { asc: "Oldest first", desc: "Newest first" } },
+    { value: "license_expiry", label: "License expiry", orderLabels: { asc: "Soonest first", desc: "Latest first" } },
+    { value: "created_at", label: "Date added", orderLabels: { asc: "Oldest first", desc: "Newest first" } },
+    { value: "status", label: "Status", orderLabels: { asc: "A → Z", desc: "Z → A" } },
+  ];
+  const activeOrderLabels =
+    SORT_FIELD_OPTIONS.find((s) => s.value === sortBy)?.orderLabels ?? { asc: "Ascending", desc: "Descending" };
 
   return (
     <Layout>
