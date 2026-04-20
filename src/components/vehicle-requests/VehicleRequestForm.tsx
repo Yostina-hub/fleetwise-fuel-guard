@@ -371,6 +371,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     (!isProject || !!form.project_number?.trim()) &&
     validationErrors.length === 0;
 
+  const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) =>
+    setForm(f => ({ ...f, [key]: val }));
+
 
   const TABS = [
     { id: "type", label: "Type", icon: Sparkles, hint: "Operation" },
