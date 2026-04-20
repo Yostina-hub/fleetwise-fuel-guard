@@ -74,8 +74,24 @@ const initialForm = {
 export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
   const { organizationId, isSuperAdmin } = useOrganization();
-  const { user, roles: userRoles } = useAuth();
+  const {
+    user,
+    profile,
+    roles: userRoles,
+    isImpersonating,
+    realUser,
+    realProfile,
+    realRoles,
+  } = useAuth();
   const queryClient = useQueryClient();
+
+  // When a super_admin is impersonating, the override puts the impersonated
+  // user into `useAuth().user` — but `supabase.auth.getUser()` still returns
+  // the super_admin's JWT identity. Treat impersonation as a first-class
+  // "on behalf of" so inserts get the impersonated user's id and approval
+  // routing uses their role (not the super_admin's auto-approve).
+  const isRealSuperAdmin =
+    isImpersonating || realRoles.some((r) => r.role === "super_admin") || isSuperAdmin;
 
   // Drivers cannot initiate fleet/vehicle requests — only end-users, supervisors,
   // and managers can. A user counts as "driver-only" when they hold the driver
