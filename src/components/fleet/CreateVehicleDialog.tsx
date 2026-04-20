@@ -23,6 +23,7 @@ import {
   ROUTE_TYPES, VEHICLE_CATEGORIES, TEMPERATURE_CONTROLS,
   VEHICLE_STATUSES, OWNER_TYPES, OWNER_STATUSES, ASSIGNED_LOCATIONS,
 } from "./formConstants";
+import { AssignedLocationPicker } from "./AssignedLocationPicker";
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
 import BasicInfoTabs from "./BasicInfoTabs";
@@ -426,19 +427,10 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                       <Input value={formData.owner_full_name} onChange={e => set("owner_full_name", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_full_name", formData.owner_full_name)} maxLength={200} />
                     </Field>
                     <Field label="Assigned Location *">
-                      <Select value={formData.owner_department} onValueChange={v => set("owner_department", v)}>
-                        <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                        <SelectContent>
-                          {["Corporate", "Zone", "Region"].map(group => (
-                            <SelectGroup key={group}>
-                              <SelectLabel>{group}</SelectLabel>
-                              {ASSIGNED_LOCATIONS.filter(l => l.group === group).map(l => (
-                                <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                              ))}
-                            </SelectGroup>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <AssignedLocationPicker
+                        value={formData.owner_department}
+                        onChange={(v) => set("owner_department", v)}
+                      />
                     </Field>
                     <Field label="Contact Person" error={fieldValidation.getError("owner_contact_person")}>
                       <Input value={formData.owner_contact_person} onChange={e => set("owner_contact_person", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_contact_person", formData.owner_contact_person)} maxLength={150} />

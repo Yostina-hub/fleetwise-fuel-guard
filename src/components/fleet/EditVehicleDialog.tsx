@@ -25,6 +25,7 @@ import {
   VEHICLE_STATUSES, OWNER_TYPES, OWNER_STATUSES, ASSIGNED_LOCATIONS,
   ADMIN_REGIONS,
 } from "./formConstants";
+import { AssignedLocationPicker } from "./AssignedLocationPicker";
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
 
@@ -478,20 +479,10 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                   </Field>
                   <Field label="Full Name / Company Name"><Input value={formData.owner_full_name} onChange={e => set("owner_full_name", e.target.value)} /></Field>
                   <Field label="Assigned Location">
-                    <Select value={formData.owner_department || "none"} onValueChange={v => set("owner_department", v === "none" ? "" : v)}>
-                      <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {["Corporate", "Zone", "Region"].map(group => (
-                          <SelectGroup key={group}>
-                            <SelectLabel>{group}</SelectLabel>
-                            {ASSIGNED_LOCATIONS.filter(l => l.group === group).map(l => (
-                              <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                            ))}
-                          </SelectGroup>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <AssignedLocationPicker
+                      value={formData.owner_department || ""}
+                      onChange={(v) => set("owner_department", v)}
+                    />
                   </Field>
                   <Field label="Contact Person"><Input value={formData.owner_contact_person} onChange={e => set("owner_contact_person", e.target.value)} /></Field>
                   <Field label="Phone"><Input value={formData.owner_phone} onChange={e => set("owner_phone", e.target.value)} /></Field>
