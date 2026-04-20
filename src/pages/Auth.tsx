@@ -24,6 +24,25 @@ import {
 import ethioTelecomBg from "@/assets/ethio-telecom-bg.png";
 import ethioTelecomCyberBg from "@/assets/ethio-telecom-cyber-bg.png";
 import { KeyRound } from "lucide-react";
+import { getPostLoginPath } from "@/lib/auth/postLoginRedirect";
+
+/**
+ * Resolve the correct landing route for a freshly authenticated user.
+ * Drivers go to /driver-portal; everyone else goes to /. Roles are read
+ * directly from `user_roles` to avoid racing the async AuthContext refresh.
+ */
+async function resolveLandingPath(userId: string | undefined | null): Promise<string> {
+  if (!userId) return "/";
+  try {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    return getPostLoginPath((data as { role: string }[] | null) ?? []);
+  } catch {
+    return "/";
+  }
+}
 
 const Auth = () => {
   const navigate = useNavigate();
