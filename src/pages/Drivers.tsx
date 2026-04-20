@@ -341,6 +341,7 @@ const Drivers = () => {
                       <TableHead>{t('common.license', 'License')}</TableHead>
                       <TableHead>{t('common.contact', 'Contact')}</TableHead>
                       <TableHead>{t('common.status', 'Status')}</TableHead>
+                      <TableHead>{t('common.vehicle', 'Vehicle')}</TableHead>
                       <TableHead>Safety Score</TableHead>
                       <TableHead className="text-right">{t('common.actions', 'Actions')}</TableHead>
                     </TableRow>
