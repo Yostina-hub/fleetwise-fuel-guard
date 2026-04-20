@@ -245,3 +245,11 @@ export const ASSIGNED_LOCATIONS = [
   { group: "Region", value: "region_jimma", label: "Jimma" },
   { group: "Region", value: "region_dire_dawa", label: "Dire Dawa" },
 ];
+
+// Backward-compatibility alias — kept so legacy edit forms still compile.
+// New code should use ASSIGNED_POOLS instead.
+export const ROUTE_TYPES = [
+  { value: "intracity", label: "Intracity" },
+  { value: "intercity", label: "Intercity" },
+  { value: "both", label: "Both" },
+];

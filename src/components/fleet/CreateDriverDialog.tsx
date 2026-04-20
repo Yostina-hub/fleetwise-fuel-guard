@@ -20,8 +20,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import {
   DRIVER_TYPES, ID_TYPES, LICENSE_TYPES, EMPLOYMENT_STATUSES,
-  DRIVER_STATUSES, ROUTE_TYPES, BLOOD_TYPES, GENDERS, ASSIGNED_LOCATIONS,
+  DRIVER_STATUSES, ASSIGNED_POOLS, BLOOD_TYPES, GENDERS, ASSIGNED_LOCATIONS,
 } from "./formConstants";
+import { computeLicenseExpiry } from "./driverValidation";
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
 import { useDriverValidation } from "./useDriverValidation";
@@ -50,13 +51,14 @@ interface CreateDriverDialogProps {
 const initialForm = {
   first_name: "", middle_name: "", last_name: "",
   gender: "", phone: "", email: "", date_of_birth: "",
-  driver_type: "ethio_contract",
+  driver_type: "", // #15 — no default; user must explicitly pick
   address_region: "", address_zone: "", address_woreda: "", address_specific: "",
   govt_id_type: "", license_number: "", national_id: "",
   license_type: "", license_issue_date: "", license_expiry: "",
   employment_type: "regular", status: "active",
-  joining_date: "", department: "", experience_years: "", route_type: "intracity",
-  bank_name: "", bank_account: "",
+  joining_date: "", department: "", experience_years: "",
+  assigned_pool: "", // #5 — replaces route_type
+  telebirr_account: "", // #8 — replaces bank fields
   emergency_contact_name: "", emergency_contact_phone: "", blood_type: "",
   password: "", notes: "",
   rfid_tag: "", ibutton_id: "", bluetooth_id: "",
@@ -212,9 +214,8 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
       joining_date: formData.joining_date || null,
       department: formData.department || null,
       experience_years: formData.experience_years ? parseInt(formData.experience_years) : null,
-      route_type: formData.route_type || null,
-      bank_name: formData.bank_name.trim() || null,
-      bank_account: formData.bank_account.trim() || null,
+      assigned_pool: formData.assigned_pool || null,
+      telebirr_account: formData.telebirr_account.trim() || null,
       emergency_contact_name: formData.emergency_contact_name.trim() || null,
       emergency_contact_phone: formData.emergency_contact_phone.trim() || null,
       blood_type: formData.blood_type || null,
