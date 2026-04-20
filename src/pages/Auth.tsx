@@ -66,7 +66,7 @@ const Auth = () => {
   // Redirect if already logged in (but not during 2FA check)
   useEffect(() => {
     if (user && !pending2FA && !checking2FARef.current) {
-      navigate("/");
+      void resolveLandingPath(user.id).then((path) => navigate(path));
     }
   }, [user, navigate, pending2FA]);
 
