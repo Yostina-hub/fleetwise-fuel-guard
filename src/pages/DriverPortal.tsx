@@ -325,6 +325,8 @@ const DriverPortal = () => {
         })
       .on("postgres_changes", { event: "*", schema: "public", table: "vehicle_requests", filter: `organization_id=eq.${organizationId}` },
         () => queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "vehicle_request_assignments", filter: `driver_id=eq.${driverId}` },
+        () => queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] }))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [driverId, organizationId, queryClient]);
