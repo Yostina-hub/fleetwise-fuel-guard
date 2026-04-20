@@ -60,6 +60,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useDriverScope } from "@/hooks/useDriverScope";
+import { useVehicleRequestScope, applyVRScope } from "@/hooks/useVehicleRequestScope";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -89,6 +90,7 @@ const VehicleRequests = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { isDriverOnly, driverId, userId, loading: scopeLoading } = useDriverScope();
+  const vrScope = useVehicleRequestScope();
   const queryClient = useQueryClient();
 
   // dialogs
@@ -129,7 +131,13 @@ const VehicleRequests = () => {
   }, [queryClient, organizationId]);
 
   const { data: requests = [], isLoading } = useQuery({
-    queryKey: ["vehicle-requests", organizationId, isDriverOnly, driverId, userId],
+    queryKey: [
+      "vehicle-requests",
+      organizationId,
+      vrScope.tier,
+      vrScope.userId,
+      vrScope.driverId,
+    ],
     queryFn: async () => {
       let query = (supabase as any)
         .from("vehicle_requests")
@@ -141,16 +149,16 @@ const VehicleRequests = () => {
         .order("created_at", { ascending: false })
         .limit(500);
 
-      if (isDriverOnly) {
-        if (!userId) return [];
-        query = query.eq("requester_id", userId);
-      }
+      // Role-based row scoping (super_admin/org_admin/etc see all;
+      // operator → pool queue + own; driver → assigned + own;
+      // basic user/requester → own only).
+      query = applyVRScope(query, vrScope);
 
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
-    enabled: !!organizationId && !scopeLoading,
+    enabled: !!organizationId && !scopeLoading && !vrScope.loading,
   });
 
   const { data: approvals = [] } = useQuery({
