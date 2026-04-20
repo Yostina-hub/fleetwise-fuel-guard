@@ -88,7 +88,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
   const [photoLeftFile, setPhotoLeftFile] = useState<File | null>(null);
   const [photoRightFile, setPhotoRightFile] = useState<File | null>(null);
 
-  const validation = useVehicleValidation();
+  const fieldValidation = useVehicleValidation();
   const set = (field: string, value: string | number) => setFormData(prev => ({ ...prev, [field]: value }));
   const activeDrivers = drivers.filter(d => d.status === "active");
   const plateNumber = `${formData.plate_code}-${formData.plate_region}-${formData.plate_number_part}`;
@@ -151,6 +151,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       setFormData({ ...initialForm });
       setOwnerCertFile(null); setInsuranceCertFile(null); setTaxClearanceFile(null);
       setPhotoFrontFile(null); setPhotoBackFile(null); setPhotoLeftFile(null); setPhotoRightFile(null);
+      fieldValidation.reset();
       setActiveSection("basic");
       onOpenChange(false);
     },
@@ -160,6 +161,23 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
   });
 
   const handleSubmit = () => {
+    // Run full validation on the raw formData; errors are keyed by field name.
+    const result = fieldValidation.validateAll(formData as Record<string, unknown>);
+    if (!result.ok) {
+      // Jump to the first tab containing an error so the user can see it.
+      if (result.firstError) {
+        const targetTab = FIELD_TO_SECTION[result.firstError.field];
+        if (targetTab) setActiveSection(targetTab as typeof activeSection);
+      }
+      toast({
+        title: "Please fix the highlighted fields",
+        description: result.firstError?.message ?? "Some fields need your attention.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Build the sanitized payload only after validation passes.
     const cleanData: any = {
       plate_number: plateNumber,
       vehicle_type: formData.vehicle_type || null,
@@ -170,7 +188,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       model: formData.model.trim(),
       year: formData.year,
       color: formData.color.trim() || null,
-      vin: formData.vin.trim() || null,
+      vin: formData.vin.trim().toUpperCase() || null,
       fuel_type: formData.fuel_type || "diesel",
       vehicle_category: formData.vehicle_category || null,
       registration_cert_no: formData.registration_cert_no.trim() || null,
@@ -208,11 +226,6 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       safety_comfort_category: formData.safety_comfort_category || null,
     };
 
-    const validation = vehicleSchema.safeParse(cleanData);
-    if (!validation.success) {
-      toast({ title: "Validation Error", description: validation.error.errors[0].message, variant: "destructive" });
-      return;
-    }
     createMutation.mutate(cleanData);
   };
 
