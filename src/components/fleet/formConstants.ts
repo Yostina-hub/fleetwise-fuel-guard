@@ -77,8 +77,14 @@ export const GENDERS = [
 
 // Vehicle constants
 export const PLATE_CODES = [
+  { value: "1", label: "1 - Private" },
+  { value: "2", label: "2 - Taxi" },
   { value: "3", label: "3 - Commercial / Business" },
   { value: "4", label: "4 - Government" },
+  { value: "5", label: "5 - Trailer" },
+  { value: "6", label: "6 - Diplomat / NGO" },
+  { value: "7", label: "7 - UN / International" },
+  { value: "8", label: "8 - Motorcycle" },
 ];
 
 export const PLATE_REGIONS = [
