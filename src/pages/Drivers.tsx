@@ -498,7 +498,7 @@ const Drivers = () => {
                     ))}
                     {drivers.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-12">
+                        <TableCell colSpan={9} className="text-center py-12">
                           <div role="status" aria-live="polite">
                             <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" aria-hidden="true" />
                             <h3 className="text-lg font-semibold mb-2">No drivers found</h3>

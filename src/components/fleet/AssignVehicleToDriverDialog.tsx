@@ -91,6 +91,8 @@ export default function AssignVehicleToDriverDialog({ open, onOpenChange, driver
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       queryClient.invalidateQueries({ queryKey: ["driver-vehicle"] });
+      queryClient.invalidateQueries({ queryKey: ["driver-vehicle-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["available-vehicles-for-driver"] });
       onOpenChange(false);
     },
     onError: (error: any) => {
