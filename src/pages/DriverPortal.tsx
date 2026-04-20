@@ -558,7 +558,7 @@ const DriverPortal = () => {
                     return (
                       <div
                         key={a.id}
-                        className="p-3 rounded-lg border border-info/30 bg-info/5"
+                        className="p-3 rounded-lg border border-primary/20 bg-primary/5"
                       >
                         <div className="flex items-start justify-between gap-3 flex-wrap">
                           <div className="flex-1 min-w-0">
@@ -569,7 +569,7 @@ const DriverPortal = () => {
                                   "text-xs capitalize",
                                   checkedIn
                                     ? "bg-success/15 text-success border-success/30"
-                                    : "bg-info/15 text-info border-info/30",
+                                    : "bg-primary/15 text-primary border-primary/30",
                                 )}
                               >
                                 {checkedIn ? "Checked In" : "Assigned"}
