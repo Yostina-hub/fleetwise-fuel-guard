@@ -215,20 +215,24 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
     const result = validation.validateAll(formData);
     if (!result.ok) {
       const count = Object.keys(result.errors).length;
+      // Jump to the first step containing an error
+      const targetStep = STEPS.find((s) => s.fields.some((f) => result.errors[f]));
+      if (targetStep) setActiveStep(targetStep.id);
       toast({
         title: `Please fix ${count} ${count === 1 ? "error" : "errors"}`,
         description: result.firstError?.message,
         variant: "destructive",
       });
-      // Scroll first errored field into view + focus it
+      // Scroll first errored field into view + focus it (defer past tab switch)
       if (result.firstError) {
-        const el = fieldRefs.current[result.firstError.field];
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          // focus inputs (selects render trigger as button)
-          const focusable = el.querySelector<HTMLElement>("input, button, textarea, [tabindex]") ?? el;
-          (focusable as HTMLElement).focus?.();
-        }
+        setTimeout(() => {
+          const el = fieldRefs.current[result.firstError!.field];
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            const focusable = el.querySelector<HTMLElement>("input, button, textarea, [tabindex]") ?? el;
+            (focusable as HTMLElement).focus?.();
+          }
+        }, 50);
       }
       return;
     }
