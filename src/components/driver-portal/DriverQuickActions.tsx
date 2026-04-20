@@ -1,12 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Fuel, Car, Gauge, FileText, ClipboardCheck, CircleDot } from "lucide-react";
+import { Wrench, Fuel, Gauge, FileText, ClipboardCheck, CircleDot } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DriverQuickActionsProps {
   onReportIssue: () => void;
   onRequestFuel: () => void;
-  onRequestVehicle: () => void;
+  /**
+   * @deprecated Drivers can no longer initiate fleet/vehicle requests.
+   * Vehicle requests are filed by end-users, supervisors, and managers only.
+   * Prop kept temporarily for backwards-compatibility; it is ignored.
+   */
+  onRequestVehicle?: () => void;
   onRequestTire?: () => void;
   onPreTripInspection: () => void;
   onPostTripInspection?: () => void;
@@ -16,7 +21,6 @@ interface DriverQuickActionsProps {
 const DriverQuickActions = ({
   onReportIssue,
   onRequestFuel,
-  onRequestVehicle,
   onRequestTire,
   onPreTripInspection,
   onPostTripInspection,
@@ -38,14 +42,6 @@ const DriverQuickActions = ({
       onClick: onRequestFuel,
       variant: "outline" as const,
       className: "border-primary/50 hover:bg-primary/10",
-    },
-    {
-      label: "Request Vehicle",
-      tooltip: "Request a vehicle for a trip",
-      icon: Car,
-      onClick: onRequestVehicle,
-      variant: "outline" as const,
-      className: "border-accent/50 hover:bg-accent/10",
     },
     ...(onRequestTire
       ? [{

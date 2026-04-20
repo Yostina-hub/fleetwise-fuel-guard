@@ -22,7 +22,7 @@ import DriverQuickStats from "@/components/driver-portal/DriverQuickStats";
 import DriverQuickActions from "@/components/driver-portal/DriverQuickActions";
 import { FuelRequestFormDialog } from "@/components/fuel/FuelRequestFormDialog";
 import { VehicleInspectionFormDialog } from "@/components/maintenance/VehicleInspectionFormDialog";
-import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
+
 import CreateWorkRequestDialog from "@/components/maintenance/CreateWorkRequestDialog";
 import { TireRequestDialog } from "@/components/tire-management/TireRequestDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
@@ -45,7 +45,7 @@ const DriverPortal = () => {
   // Dialog states
   const [showMaintenance, setShowMaintenance] = useState(false);
   const [showFuel, setShowFuel] = useState(false);
-  const [showVehicle, setShowVehicle] = useState(false);
+  
   const [showTire, setShowTire] = useState(false);
   const [showInspection, setShowInspection] = useState(false);
   const [showLicenseRenewal, setShowLicenseRenewal] = useState(false);
@@ -429,7 +429,7 @@ const DriverPortal = () => {
         <DriverQuickActions
           onReportIssue={() => setShowMaintenance(true)}
           onRequestFuel={() => setShowFuel(true)}
-          onRequestVehicle={() => setShowVehicle(true)}
+          
           onRequestTire={() => setShowTire(true)}
           onPreTripInspection={() => {
             setInspectionPrefillOverride(null);
