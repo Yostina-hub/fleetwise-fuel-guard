@@ -168,9 +168,6 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
             {driverName ? `Welcome, ${driverName}` : "Your assignments and trip history"}
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowVehicleReq(true)} className="gap-1.5">
-          <Plus className="w-3.5 h-3.5" /> Request Vehicle
-        </Button>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
