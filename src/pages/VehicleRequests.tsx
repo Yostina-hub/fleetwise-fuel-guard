@@ -93,6 +93,24 @@ const VehicleRequests = () => {
   const vrScope = useVehicleRequestScope();
   const queryClient = useQueryClient();
 
+  /**
+   * Action permissions by tier (mirrors row-visibility scoping).
+   * - all      → admins/managers/dispatchers/auditor → full toolkit
+   * - operator → pool reviewers → assign/deallocate/check-in but no
+   *              destructive bulk import/export
+   * - driver   → only check-in/out on rows assigned to them, plus own
+   *              feedback/delete on their own filed requests
+   * - self     → basic users / requesters → only manage their own rows
+   */
+  const isAdminTier = vrScope.tier === "all";
+  const isOperatorTier = vrScope.tier === "operator";
+  const isDriverTier = vrScope.tier === "driver";
+  const canManageAll = isAdminTier || isOperatorTier;
+  const canExportImport = isAdminTier;
+  const isOwnRow = (r: any) => r.requester_id && r.requester_id === vrScope.userId;
+  const isAssignedDriverRow = (r: any) =>
+    isDriverTier && vrScope.driverId && r.assigned_driver_id === vrScope.driverId;
+
   // dialogs
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<any>(null);
