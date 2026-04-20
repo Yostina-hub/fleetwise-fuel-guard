@@ -320,19 +320,29 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) =>
     setForm(f => ({ ...f, [key]: val }));
 
+  const TABS = [
+    { id: "type", label: "Type", icon: Sparkles, hint: "Operation" },
+    { id: "schedule", label: "Schedule", icon: CalendarDays, hint: "When" },
+    { id: "route", label: "Route", icon: MapPin, hint: "Where" },
+    { id: "resources", label: "Resources", icon: Layers, hint: "Vehicles & Pool" },
+    { id: "details", label: "Details", icon: FileText, hint: "Purpose & Submit" },
+  ] as const;
+  const tabIndex = TABS.findIndex(t => t.id === activeTab);
+  const goNext = () => setActiveTab(TABS[Math.min(tabIndex + 1, TABS.length - 1)].id as any);
+  const goPrev = () => setActiveTab(TABS[Math.max(tabIndex - 1, 0)].id as any);
+
+  // Per-tab completion indicators
+  const tabComplete: Record<string, boolean> = {
+    type: !!form.request_type,
+    schedule: isDaily ? !!form.date : !!form.start_date,
+    route: !!form.departure_place || !!form.destination,
+    resources: !!form.num_vehicles && !!form.passengers,
+    details: !!form.purpose,
+  };
+
   const body = (
     <>
-      {!embedded && (
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Car className="w-5 h-5 text-primary" />
-            Fleet Request Form
-          </DialogTitle>
-          <DialogDescription>Submit a vehicle request. Fields adapt based on operation type.</DialogDescription>
-        </DialogHeader>
-      )}
 
-  const TABS = [
     { id: "type", label: "Type", icon: Sparkles, hint: "Operation" },
     { id: "schedule", label: "Schedule", icon: CalendarDays, hint: "When" },
     { id: "route", label: "Route", icon: MapPin, hint: "Where" },
