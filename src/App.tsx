@@ -167,7 +167,8 @@ const App = () => {
                     <Suspense fallback={<PageLoader />}>
                       <Routes>
                         <Route path="/auth" element={<Auth />} />
-                        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                        {/* Drivers (and driver-only accounts) are bounced to /driver-portal so they never see the executive dashboard. */}
+                        <Route path="/" element={<ProtectedRoute blockedForRoles={["driver"]} redirectTo="/driver-portal"><Dashboard /></ProtectedRoute>} />
                         <Route path="/map" element={<ProtectedRoute><MapView /></ProtectedRoute>} />
                         <Route path="/vehicles" element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
                         <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
