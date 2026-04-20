@@ -23655,6 +23655,7 @@ export type Database = {
           acquisition_cost: number | null
           acquisition_date: string | null
           assigned_driver_id: string | null
+          assigned_location: string | null
           awaiting_post_trip_inspection_id: string | null
           capacity_kg: number | null
           capacity_volume: number | null
@@ -23735,6 +23736,7 @@ export type Database = {
           acquisition_cost?: number | null
           acquisition_date?: string | null
           assigned_driver_id?: string | null
+          assigned_location?: string | null
           awaiting_post_trip_inspection_id?: string | null
           capacity_kg?: number | null
           capacity_volume?: number | null
@@ -23815,6 +23817,7 @@ export type Database = {
           acquisition_cost?: number | null
           acquisition_date?: string | null
           assigned_driver_id?: string | null
+          assigned_location?: string | null
           awaiting_post_trip_inspection_id?: string | null
           capacity_kg?: number | null
           capacity_volume?: number | null
