@@ -134,8 +134,13 @@ export const DriverColumnsPicker = ({
           </div>
 
           <div className="relative mt-3">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <label htmlFor="driver-columns-search" className="sr-only">
+              Search columns
+            </label>
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
             <Input
+              id="driver-columns-search"
+              aria-label="Search columns"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search columns…"
