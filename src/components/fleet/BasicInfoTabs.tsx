@@ -33,7 +33,7 @@ const tabs = [
 
 // Single source of truth — drives both tab rendering AND completion math.
 const TAB_FIELDS: Record<typeof tabs[number]["id"], string[]> = {
-  identity: ["plate_number_part", "purpose_for", "specific_pool", "specific_location", "vehicle_type", "vehicle_group"],
+  identity: ["plate_number_part", "purpose_for", "specific_pool", "specific_location", "assigned_location", "vehicle_type", "vehicle_group"],
   spec:     ["make", "model", "model_code", "year", "mfg_date", "color", "vin", "engine_number", "transmission_type", "drive_type", "engine_cc", "fuel_type"],
   value:    ["purchasing_price", "current_market_price", "current_condition", "fuel_standard_km_per_liter", "seating_capacity", "loading_capacity_quintal", "year_of_ownership", "safety_comfort_category"],
 };
