@@ -99,7 +99,25 @@ const Drivers = () => {
     statusFilter
   });
 
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  // Fetch vehicle assignments for the drivers shown on the current page
+  const driverIds = useMemo(() => drivers.map(d => d.id), [drivers]);
+  const { data: vehicleAssignments = {} } = useQuery({
+    queryKey: ["driver-vehicle-assignments", organizationId, driverIds.join(",")],
+    enabled: !!organizationId && driverIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("id, plate_number, make, model, assigned_driver_id")
+        .eq("organization_id", organizationId!)
+        .in("assigned_driver_id", driverIds);
+      if (error) throw error;
+      const map: Record<string, { id: string; plate_number: string; make: string | null; model: string | null }> = {};
+      (data || []).forEach((v: any) => {
+        if (v.assigned_driver_id) map[v.assigned_driver_id] = v;
+      });
+      return map;
+    },
+  });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
