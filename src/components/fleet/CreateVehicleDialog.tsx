@@ -17,10 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
-import {
-  Loader2, Truck, User, FileText, Shield, Settings, MapPin, Paperclip, LayoutPanelTop,
-} from "lucide-react";
+import { Loader2, Truck, User, FileText, Shield, Settings, MapPin, Paperclip, LayoutPanelTop, AlertCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ROUTE_TYPES, VEHICLE_CATEGORIES, TEMPERATURE_CONTROLS,
@@ -29,17 +26,8 @@ import {
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
 import BasicInfoTabs from "./BasicInfoTabs";
-
-const vehicleSchema = z.object({
-  plate_number: z.string().trim().min(1, "Plate number is required"),
-  vehicle_type: z.string().min(1, "Vehicle type is required"),
-  vehicle_group: z.string().min(1, "Group is required"),
-  route_type: z.string().min(1, "Route type is required"),
-  drive_type: z.string().min(1, "Drive type is required"),
-  make: z.string().trim().min(1, "Make is required"),
-  model: z.string().trim().min(1, "Model is required"),
-  year: z.number().min(1900).max(new Date().getFullYear() + 2),
-});
+import { useVehicleValidation } from "./useVehicleValidation";
+import { FIELD_TO_SECTION, type VehicleFieldName } from "./vehicleValidation";
 
 interface CreateVehicleDialogProps {
   open: boolean;
@@ -99,6 +87,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
   const [photoLeftFile, setPhotoLeftFile] = useState<File | null>(null);
   const [photoRightFile, setPhotoRightFile] = useState<File | null>(null);
 
+  const fieldValidation = useVehicleValidation();
   const set = (field: string, value: string | number) => setFormData(prev => ({ ...prev, [field]: value }));
   const activeDrivers = drivers.filter(d => d.status === "active");
   const plateNumber = `${formData.plate_code}-${formData.plate_region}-${formData.plate_number_part}`;
@@ -161,6 +150,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       setFormData({ ...initialForm });
       setOwnerCertFile(null); setInsuranceCertFile(null); setTaxClearanceFile(null);
       setPhotoFrontFile(null); setPhotoBackFile(null); setPhotoLeftFile(null); setPhotoRightFile(null);
+      fieldValidation.reset();
       setActiveSection("basic");
       onOpenChange(false);
     },
@@ -170,6 +160,23 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
   });
 
   const handleSubmit = () => {
+    // Run full validation on the raw formData; errors are keyed by field name.
+    const result = fieldValidation.validateAll(formData as Record<string, unknown>);
+    if (!result.ok) {
+      // Jump to the first tab containing an error so the user can see it.
+      if (result.firstError) {
+        const targetTab = FIELD_TO_SECTION[result.firstError.field];
+        if (targetTab) setActiveSection(targetTab as typeof activeSection);
+      }
+      toast({
+        title: "Please fix the highlighted fields",
+        description: result.firstError?.message ?? "Some fields need your attention.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Build the sanitized payload only after validation passes.
     const cleanData: any = {
       plate_number: plateNumber,
       vehicle_type: formData.vehicle_type || null,
@@ -180,7 +187,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       model: formData.model.trim(),
       year: formData.year,
       color: formData.color.trim() || null,
-      vin: formData.vin.trim() || null,
+      vin: formData.vin.trim().toUpperCase() || null,
       fuel_type: formData.fuel_type || "diesel",
       vehicle_category: formData.vehicle_category || null,
       registration_cert_no: formData.registration_cert_no.trim() || null,
@@ -218,11 +225,6 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       safety_comfort_category: formData.safety_comfort_category || null,
     };
 
-    const validation = vehicleSchema.safeParse(cleanData);
-    if (!validation.success) {
-      toast({ title: "Validation Error", description: validation.error.errors[0].message, variant: "destructive" });
-      return;
-    }
     createMutation.mutate(cleanData);
   };
 
@@ -242,15 +244,24 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
             <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-2xl bg-muted/40 p-1">
               {sectionTabs.map((tab) => {
                 const Icon = tab.icon;
+                // Count touched-and-errored fields belonging to this tab.
+                const tabErrorCount = (Object.keys(fieldValidation.errors) as VehicleFieldName[])
+                  .filter((k) => fieldValidation.touched[k] && FIELD_TO_SECTION[k] === tab.value)
+                  .length;
                 return (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="min-w-fit rounded-xl px-3 py-2 text-xs md:text-sm"
+                    className="min-w-fit rounded-xl px-3 py-2 text-xs md:text-sm relative"
                   >
                     <span className="inline-flex items-center gap-2">
                       <Icon className="h-3.5 w-3.5" />
                       {tab.label}
+                      {tabErrorCount > 0 && (
+                        <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold">
+                          {tabErrorCount}
+                        </span>
+                      )}
                     </span>
                   </TabsTrigger>
                 );
@@ -262,17 +273,31 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
             <div className="p-6">
               <TabsContent value="basic" className="mt-0">
                 <Section title="Basic Vehicle Information" icon={<LayoutPanelTop className="w-5 h-5 text-primary" />}>
-                  <BasicInfoTabs formData={formData} set={set} plateNumber={plateNumber} />
+                  <BasicInfoTabs
+                    formData={formData}
+                    set={set}
+                    plateNumber={plateNumber}
+                    onBlur={(field, value) => fieldValidation.handleBlur(field as VehicleFieldName, value)}
+                    getError={(field) => fieldValidation.getError(field as VehicleFieldName)}
+                  />
                 </Section>
               </TabsContent>
 
               <TabsContent value="compliance" className="mt-0">
                 <Section icon={<Shield className="w-5 h-5 text-primary" />} title="Legal & Compliance">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Field label="Registration Certificate No"><Input value={formData.registration_cert_no} onChange={e => set("registration_cert_no", e.target.value)} /></Field>
-                    <Field label="Registration Expiry"><Input type="date" value={formData.registration_expiry} onChange={e => set("registration_expiry", e.target.value)} /></Field>
-                    <Field label="Insurance Policy No"><Input value={formData.insurance_policy_no} onChange={e => set("insurance_policy_no", e.target.value)} /></Field>
-                    <Field label="Insurance Expiry"><Input type="date" value={formData.insurance_expiry} onChange={e => set("insurance_expiry", e.target.value)} /></Field>
+                    <Field label="Registration Certificate No" error={fieldValidation.getError("registration_cert_no")}>
+                      <Input value={formData.registration_cert_no} onChange={e => set("registration_cert_no", e.target.value)} onBlur={() => fieldValidation.handleBlur("registration_cert_no", formData.registration_cert_no)} maxLength={100} />
+                    </Field>
+                    <Field label="Registration Expiry" error={fieldValidation.getError("registration_expiry")}>
+                      <Input type="date" value={formData.registration_expiry} onChange={e => set("registration_expiry", e.target.value)} onBlur={() => fieldValidation.handleBlur("registration_expiry", formData.registration_expiry)} />
+                    </Field>
+                    <Field label="Insurance Policy No" error={fieldValidation.getError("insurance_policy_no")}>
+                      <Input value={formData.insurance_policy_no} onChange={e => set("insurance_policy_no", e.target.value)} onBlur={() => fieldValidation.handleBlur("insurance_policy_no", formData.insurance_policy_no)} maxLength={100} />
+                    </Field>
+                    <Field label="Insurance Expiry" error={fieldValidation.getError("insurance_expiry")}>
+                      <Input type="date" value={formData.insurance_expiry} onChange={e => set("insurance_expiry", e.target.value)} onBlur={() => fieldValidation.handleBlur("insurance_expiry", formData.insurance_expiry)} />
+                    </Field>
                     <Field label="Commercial Permit">
                       <Select value={formData.commercial_permit} onValueChange={v => set("commercial_permit", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -282,7 +307,9 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Permit Expiry"><Input type="date" value={formData.permit_expiry} onChange={e => set("permit_expiry", e.target.value)} /></Field>
+                    <Field label="Permit Expiry" error={fieldValidation.getError("permit_expiry")}>
+                      <Input type="date" value={formData.permit_expiry} onChange={e => set("permit_expiry", e.target.value)} onBlur={() => fieldValidation.handleBlur("permit_expiry", formData.permit_expiry)} />
+                    </Field>
                   </div>
                 </Section>
               </TabsContent>
@@ -306,8 +333,12 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Load Capacity (kg)"><Input type="number" min={0} value={formData.capacity_kg} onChange={e => set("capacity_kg", e.target.value)} /></Field>
-                    <Field label="Cargo Volume (m³)"><Input type="number" min={0} step={0.1} value={formData.capacity_volume} onChange={e => set("capacity_volume", e.target.value)} /></Field>
+                    <Field label="Load Capacity (kg)" error={fieldValidation.getError("capacity_kg")}>
+                      <Input type="number" min={0} value={formData.capacity_kg} onChange={e => set("capacity_kg", e.target.value)} onBlur={() => fieldValidation.handleBlur("capacity_kg", formData.capacity_kg)} />
+                    </Field>
+                    <Field label="Cargo Volume (m³)" error={fieldValidation.getError("capacity_volume")}>
+                      <Input type="number" min={0} step={0.1} value={formData.capacity_volume} onChange={e => set("capacity_volume", e.target.value)} onBlur={() => fieldValidation.handleBlur("capacity_volume", formData.capacity_volume)} />
+                    </Field>
                     <Field label="Temperature Control">
                       <Select value={formData.temperature_control} onValueChange={v => set("temperature_control", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -325,9 +356,15 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="GPS Device ID"><Input value={formData.gps_device_id} onChange={e => set("gps_device_id", e.target.value)} disabled={formData.gps_installed !== "true"} /></Field>
-                    <Field label="Odometer (km)"><Input type="number" min={0} value={formData.odometer_km} onChange={e => set("odometer_km", e.target.value)} /></Field>
-                    <Field label="Tank Capacity (L)"><Input type="number" min={0} value={formData.tank_capacity_liters} onChange={e => set("tank_capacity_liters", e.target.value)} /></Field>
+                    <Field label="GPS Device ID" error={fieldValidation.getError("gps_device_id")}>
+                      <Input value={formData.gps_device_id} onChange={e => set("gps_device_id", e.target.value)} onBlur={() => fieldValidation.handleBlur("gps_device_id", formData.gps_device_id)} disabled={formData.gps_installed !== "true"} maxLength={100} />
+                    </Field>
+                    <Field label="Odometer (km)" error={fieldValidation.getError("odometer_km")}>
+                      <Input type="number" min={0} value={formData.odometer_km} onChange={e => set("odometer_km", e.target.value)} onBlur={() => fieldValidation.handleBlur("odometer_km", formData.odometer_km)} />
+                    </Field>
+                    <Field label="Tank Capacity (L)" error={fieldValidation.getError("tank_capacity_liters")}>
+                      <Input type="number" min={0} value={formData.tank_capacity_liters} onChange={e => set("tank_capacity_liters", e.target.value)} onBlur={() => fieldValidation.handleBlur("tank_capacity_liters", formData.tank_capacity_liters)} />
+                    </Field>
                     <Field label="Vehicle Status">
                       <Select value={formData.status} onValueChange={v => set("status", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -384,7 +421,9 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Full Name / Company Name"><Input value={formData.owner_full_name} onChange={e => set("owner_full_name", e.target.value)} /></Field>
+                    <Field label="Full Name / Company Name" error={fieldValidation.getError("owner_full_name")}>
+                      <Input value={formData.owner_full_name} onChange={e => set("owner_full_name", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_full_name", formData.owner_full_name)} maxLength={200} />
+                    </Field>
                     <Field label="Assigned Location *">
                       <Select value={formData.owner_department} onValueChange={v => set("owner_department", v)}>
                         <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
@@ -400,9 +439,15 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Contact Person"><Input value={formData.owner_contact_person} onChange={e => set("owner_contact_person", e.target.value)} /></Field>
-                    <Field label="Phone"><Input value={formData.owner_phone} onChange={e => set("owner_phone", e.target.value)} /></Field>
-                    <Field label="Email"><Input type="email" value={formData.owner_email} onChange={e => set("owner_email", e.target.value)} /></Field>
+                    <Field label="Contact Person" error={fieldValidation.getError("owner_contact_person")}>
+                      <Input value={formData.owner_contact_person} onChange={e => set("owner_contact_person", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_contact_person", formData.owner_contact_person)} maxLength={150} />
+                    </Field>
+                    <Field label="Phone" error={fieldValidation.getError("owner_phone")}>
+                      <Input value={formData.owner_phone} onChange={e => set("owner_phone", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_phone", formData.owner_phone)} placeholder="+251 9XX XXX XXX" />
+                    </Field>
+                    <Field label="Email" error={fieldValidation.getError("owner_email")}>
+                      <Input type="email" value={formData.owner_email} onChange={e => set("owner_email", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_email", formData.owner_email)} placeholder="name@example.com" />
+                    </Field>
                     <CascadingLocationSelector
                       region={formData.owner_region}
                       zone={formData.owner_zone}
@@ -411,8 +456,12 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                       onZoneChange={v => set("owner_zone", v)}
                       onWoredaChange={v => set("owner_woreda", v)}
                     />
-                    <Field label="Gov't ID / Business Reg No"><Input value={formData.owner_govt_id} onChange={e => set("owner_govt_id", e.target.value)} /></Field>
-                    <Field label="Tax ID / VAT Number"><Input value={formData.owner_tax_id} onChange={e => set("owner_tax_id", e.target.value)} /></Field>
+                    <Field label="Gov't ID / Business Reg No" error={fieldValidation.getError("owner_govt_id")}>
+                      <Input value={formData.owner_govt_id} onChange={e => set("owner_govt_id", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_govt_id", formData.owner_govt_id)} maxLength={100} />
+                    </Field>
+                    <Field label="Tax ID / VAT Number" error={fieldValidation.getError("owner_tax_id")}>
+                      <Input value={formData.owner_tax_id} onChange={e => set("owner_tax_id", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_tax_id", formData.owner_tax_id)} maxLength={50} />
+                    </Field>
                     <Field label="Owner Status">
                       <Select value={formData.owner_status} onValueChange={v => set("owner_status", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -427,7 +476,27 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
 
               <TabsContent value="notes" className="mt-0">
                 <Section icon={<FileText className="w-5 h-5 text-primary" />} title="Additional Information">
-                  <Textarea value={formData.notes} onChange={e => set("notes", e.target.value)} placeholder="Additional information..." rows={6} />
+                  <div className="space-y-1.5">
+                    <Textarea
+                      value={formData.notes}
+                      onChange={e => set("notes", e.target.value)}
+                      onBlur={() => fieldValidation.handleBlur("notes", formData.notes)}
+                      placeholder="Additional information..."
+                      rows={6}
+                      maxLength={2000}
+                      className={fieldValidation.getError("notes") ? "border-destructive" : ""}
+                    />
+                    {fieldValidation.getError("notes") ? (
+                      <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {fieldValidation.getError("notes")}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground text-right">
+                        {formData.notes.length}/2000 characters
+                      </p>
+                    )}
+                  </div>
                 </Section>
               </TabsContent>
             </div>
@@ -455,11 +524,19 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm">{label}</Label>
-      {children}
+      <Label className={`text-sm ${error ? "text-destructive" : ""}`}>{label}</Label>
+      <div className={error ? "[&_input]:border-destructive [&_button]:border-destructive [&_input]:ring-destructive/20" : ""}>
+        {children}
+      </div>
+      {error && (
+        <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+          {error}
+        </p>
+      )}
     </div>
   );
 }
