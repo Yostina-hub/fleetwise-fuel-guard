@@ -712,6 +712,7 @@ function Field({
   required,
   error,
   hint,
+  success,
   fieldRef,
   children,
 }: {
@@ -719,24 +720,63 @@ function Field({
   required?: boolean;
   error?: string;
   hint?: string;
+  success?: boolean;
   fieldRef?: (el: HTMLElement | null) => void;
   children: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5" ref={fieldRef}>
-      <Label className={cn("text-sm flex items-center gap-1", error && "text-destructive")}>
+      <Label className={cn("text-sm flex items-center gap-1", error && "text-destructive", success && "text-foreground")}>
         {label}
         {required && <span className="text-destructive" aria-hidden="true">*</span>}
+        {success && !error && <CheckCircle2 className="w-3 h-3 text-primary ml-auto" aria-label="Valid" />}
       </Label>
       {children}
       {error ? (
-        <p className="text-xs text-destructive flex items-center gap-1" role="alert">
+        <p className="text-xs text-destructive flex items-center gap-1 animate-in fade-in slide-in-from-top-1 duration-150" role="alert">
           <AlertCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
           {error}
         </p>
       ) : hint ? (
         <p className="text-[11px] text-muted-foreground">{hint}</p>
       ) : null}
+    </div>
+  );
+}
+
+/** Inline password strength meter — purely visual, complements the schema rules. */
+function PasswordStrengthMeter({ password }: { password: string }) {
+  const checks = [
+    { label: "12+ chars", ok: password.length >= 12 },
+    { label: "Uppercase", ok: /[A-Z]/.test(password) },
+    { label: "Lowercase", ok: /[a-z]/.test(password) },
+    { label: "Digit", ok: /[0-9]/.test(password) },
+    { label: "Special", ok: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+  ];
+  const score = checks.filter((c) => c.ok).length;
+  const pct = (score / checks.length) * 100;
+  const tone =
+    score <= 2 ? "bg-destructive" : score === 3 ? "bg-amber-500" : score === 4 ? "bg-yellow-400" : "bg-primary";
+  return (
+    <div className="space-y-1.5 mt-1">
+      <div className="h-1 rounded-full bg-muted overflow-hidden">
+        <div className={cn("h-full transition-all duration-300", tone)} style={{ width: `${pct}%` }} />
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {checks.map((c) => (
+          <span
+            key={c.label}
+            className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded border transition-colors",
+              c.ok
+                ? "border-primary/40 text-primary bg-primary/5"
+                : "border-border text-muted-foreground bg-muted/40",
+            )}
+          >
+            {c.ok ? "✓" : "·"} {c.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
