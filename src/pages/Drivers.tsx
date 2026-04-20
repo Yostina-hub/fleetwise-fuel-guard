@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -95,6 +97,26 @@ const Drivers = () => {
     pageSize: PAGE_SIZE,
     searchQuery,
     statusFilter
+  });
+
+  // Fetch vehicle assignments for the drivers shown on the current page
+  const driverIds = useMemo(() => drivers.map(d => d.id), [drivers]);
+  const { data: vehicleAssignments = {} } = useQuery({
+    queryKey: ["driver-vehicle-assignments", organizationId, driverIds.join(",")],
+    enabled: !!organizationId && driverIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("id, plate_number, make, model, assigned_driver_id")
+        .eq("organization_id", organizationId!)
+        .in("assigned_driver_id", driverIds);
+      if (error) throw error;
+      const map: Record<string, { id: string; plate_number: string; make: string | null; model: string | null }> = {};
+      (data || []).forEach((v: any) => {
+        if (v.assigned_driver_id) map[v.assigned_driver_id] = v;
+      });
+      return map;
+    },
   });
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -319,6 +341,7 @@ const Drivers = () => {
                       <TableHead>{t('common.license', 'License')}</TableHead>
                       <TableHead>{t('common.contact', 'Contact')}</TableHead>
                       <TableHead>{t('common.status', 'Status')}</TableHead>
+                      <TableHead>{t('common.vehicle', 'Vehicle')}</TableHead>
                       <TableHead>Safety Score</TableHead>
                       <TableHead className="text-right">{t('common.actions', 'Actions')}</TableHead>
                     </TableRow>
@@ -392,6 +415,37 @@ const Drivers = () => {
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <DriverQuickStatusChange driver={driver} />
                         </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          {vehicleAssignments[driver.id] ? (
+                            <button
+                              onClick={() => handleAssignVehicle(driver)}
+                              className="flex items-center gap-2 group"
+                              aria-label={`Change vehicle for ${driver.first_name} ${driver.last_name}`}
+                            >
+                              <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+                                <Car className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                              </div>
+                              <div className="text-left">
+                                <div className="text-sm font-medium group-hover:text-primary transition-colors">
+                                  {vehicleAssignments[driver.id].plate_number}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {[vehicleAssignments[driver.id].make, vehicleAssignments[driver.id].model].filter(Boolean).join(" ") || "—"}
+                                </div>
+                              </div>
+                            </button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 gap-1.5 text-xs"
+                              onClick={() => handleAssignVehicle(driver)}
+                            >
+                              <Car className="h-3 w-3" aria-hidden="true" />
+                              Assign
+                            </Button>
+                          )}
+                        </TableCell>
                         <TableCell onClick={() => handleViewDriver(driver)}>
                           <div className="flex items-center gap-2">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -444,7 +498,7 @@ const Drivers = () => {
                     ))}
                     {drivers.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-12">
+                        <TableCell colSpan={9} className="text-center py-12">
                           <div role="status" aria-live="polite">
                             <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" aria-hidden="true" />
                             <h3 className="text-lg font-semibold mb-2">No drivers found</h3>
