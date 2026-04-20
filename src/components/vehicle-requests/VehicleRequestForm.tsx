@@ -701,17 +701,33 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <TabsContent value="resources" className="mt-5 space-y-4 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-primary font-medium flex items-center gap-1"><Car className="w-3.5 h-3.5" /> No. Of Vehicle</Label>
-                <Input type="number" min={1} value={form.num_vehicles} onChange={e => update("num_vehicles", e.target.value)} />
+                <Label className="text-primary font-medium flex items-center gap-1">
+                  <Car className="w-3.5 h-3.5" /> No. Of Vehicle
+                  {!allowsMultipleVehicles && <Badge variant="outline" className="ml-1 text-[10px] py-0 px-1.5">Locked at 1</Badge>}
+                </Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={allowsMultipleVehicles ? 50 : 1}
+                  value={allowsMultipleVehicles ? form.num_vehicles : "1"}
+                  onChange={e => update("num_vehicles", e.target.value)}
+                  disabled={!allowsMultipleVehicles}
+                  className="h-10"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  {allowsMultipleVehicles
+                    ? "Project Operations support a fleet — request as many vehicles as needed."
+                    : "Daily & Field operations are limited to one vehicle. Switch to Project Operation to request more."}
+                </p>
               </div>
               <div>
                 <Label className="text-primary font-medium flex items-center gap-1"><Users className="w-3.5 h-3.5" /> No. Of Passenger</Label>
-                <Input type="number" min={1} value={form.passengers} onChange={e => update("passengers", e.target.value)} />
+                <Input type="number" min={1} max={100} value={form.passengers} onChange={e => update("passengers", e.target.value)} className="h-10" />
               </div>
               <div>
                 <Label className="text-primary font-medium">Vehicle Type</Label>
                 <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
                   <SelectContent>
                     {VEHICLE_TYPES_OPTIONS.map(vt => (
                       <SelectItem key={vt.value} value={vt.value}>{vt.label}</SelectItem>
@@ -720,9 +736,21 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Select>
               </div>
               <div>
+                <Label className="text-primary font-medium">Priority</Label>
+                <Select value={form.priority} onValueChange={v => update("priority", v)}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">🟢 Low — flexible timing</SelectItem>
+                    <SelectItem value="normal">🔵 Normal — standard priority</SelectItem>
+                    <SelectItem value="high">🟠 High — time sensitive</SelectItem>
+                    <SelectItem value="urgent">🔴 Urgent — immediate dispatch</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label className="text-primary font-medium">Pool Category</Label>
                 <Select value={form.pool_category} onValueChange={v => { update("pool_category", v); update("pool_name", ""); }}>
-                  <SelectTrigger><SelectValue placeholder="Select Pool Category" /></SelectTrigger>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select Pool Category" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="corporate">Corporate</SelectItem>
                     <SelectItem value="zone">Zone</SelectItem>
@@ -730,14 +758,26 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </div>
-              <div className="md:col-span-2">
+              <div>
                 <Label className="text-primary font-medium">Pool</Label>
                 <Select value={form.pool_name} onValueChange={v => update("pool_name", v)} disabled={!form.pool_category}>
-                  <SelectTrigger><SelectValue placeholder="Select Pool" /></SelectTrigger>
+                  <SelectTrigger className="h-10"><SelectValue placeholder={form.pool_category ? "Select Pool" : "Select category first"} /></SelectTrigger>
                   <SelectContent>
                     {filteredPools.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="md:col-span-2">
+                <Label className="text-primary font-medium">Contact Phone (during trip)</Label>
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  value={form.contact_phone}
+                  onChange={e => update("contact_phone", e.target.value)}
+                  placeholder="+251 9X XXX XXXX — reachable while the trip is active"
+                  className="h-10"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">Optional. Helps dispatch reach the requester quickly if plans change.</p>
               </div>
             </div>
           </TabsContent>
