@@ -612,11 +612,25 @@ const InviteUserDialog = ({
               >
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
-              <SelectContent>
-                {availableRoles.map((role) => (
-                  <SelectItem key={role.value} value={role.value}>
-                    {role.label}
-                  </SelectItem>
+              <SelectContent className="max-h-[320px]">
+                {visibleGroups.map((g) => (
+                  <SelectGroup key={g.group}>
+                    <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/80">
+                      {g.group}
+                    </SelectLabel>
+                    {g.roles.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        <div className="flex flex-col">
+                          <span>{role.label}</span>
+                          {role.description && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {role.description}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
