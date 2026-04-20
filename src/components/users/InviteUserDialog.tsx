@@ -382,8 +382,30 @@ const InviteUserDialog = ({
     );
 
   return (
+    <>
+    {/* When the actor selects "driver", we delegate to the full driver wizard
+        (CreateDriverDialog) so that legal IDs, license, attachments, emergency
+        contact, etc. are captured. The invite dialog hides itself while the
+        driver dialog is open and re-opens on cancel. */}
+    {selectedRole === "driver" && open && (
+      <CreateDriverDialog
+        open
+        onOpenChange={(o) => {
+          if (!o) {
+            // User closed the driver wizard — reset role so they don't get
+            // bounced straight back into it on the next open.
+            setSelectedRole("");
+          }
+        }}
+        onSubmitted={() => {
+          resetForm();
+          onOpenChange(false);
+          onUserCreated();
+        }}
+      />
+    )}
     <Dialog
-      open={open}
+      open={open && selectedRole !== "driver"}
       onOpenChange={(o) => {
         if (!o) resetForm();
         onOpenChange(o);
