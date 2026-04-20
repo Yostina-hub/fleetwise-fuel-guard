@@ -30,6 +30,9 @@ import { uploadFleetFile } from "./uploadFleetFile";
 import BasicInfoTabs from "./BasicInfoTabs";
 import { useVehicleValidation } from "./useVehicleValidation";
 import { FIELD_TO_SECTION, type VehicleFieldName } from "./vehicleValidation";
+import { useFormDraft, loadDraft, clearDraft } from "./useFormDraft";
+
+const DRAFT_KEY = "create-vehicle";
 
 interface CreateVehicleDialogProps {
   open: boolean;
