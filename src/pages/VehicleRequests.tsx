@@ -588,11 +588,39 @@ const VehicleRequests = () => {
                           <td className="py-3 px-3 text-muted-foreground text-xs">
                             {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
                           </td>
-                          <td className="py-3 px-3 text-muted-foreground text-xs">
-                            {r.assigned_vehicle?.plate_number || "—"}
+                          <td className="py-3 px-3 text-xs">
+                            {r.assigned_vehicle?.plate_number ? (
+                              <button
+                                type="button"
+                                onClick={() => setShowDetail(r)}
+                                className="inline-flex items-center gap-1 hover:text-primary"
+                                title={
+                                  (r.num_vehicles || 1) > 1
+                                    ? `Multi-vehicle request — open to see all ${r.num_vehicles} assignments`
+                                    : `${r.assigned_vehicle.make || ""} ${r.assigned_vehicle.model || ""}`.trim()
+                                }
+                              >
+                                <Truck className="w-3 h-3 text-muted-foreground" />
+                                <span className="font-medium text-foreground">{r.assigned_vehicle.plate_number}</span>
+                                {(r.num_vehicles || 1) > 1 && (
+                                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">
+                                    +{(r.num_vehicles || 1) - 1}
+                                  </Badge>
+                                )}
+                              </button>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                            {r.assigned_driver && (
+                              <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                                <Users className="w-2.5 h-2.5" />
+                                {r.assigned_driver.first_name} {r.assigned_driver.last_name}
+                                {(r.num_vehicles || 1) > 1 && (
+                                  <span className="opacity-60">+{(r.num_vehicles || 1) - 1}</span>
+                                )}
+                              </div>
+                            )}
                           </td>
-                          <td className="py-3 px-3 text-center">
-                            {r.trip_type ? (
                               <Badge variant="outline" className="text-[10px]">
                                 {r.trip_type === "one_way" ? "One Way" : "Round"}
                               </Badge>
