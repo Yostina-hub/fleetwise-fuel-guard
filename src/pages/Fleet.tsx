@@ -266,6 +266,8 @@ const Fleet = () => {
         lastSeen: telemetry?.last_communication_at || null,
         deviceConnected: telemetry?.device_connected || false,
         liveStatus,
+        // Full DB row (gives the table access to every column)
+        raw: v,
       };
     });
 
