@@ -410,16 +410,16 @@ const Fleet = () => {
       title: selectedIds.length > 0 ? `Vehicles (${selectedIds.length} selected)` : "Vehicle Registry",
       subtitle: `Page ${currentPage} of ${totalPages} · ${vehicles.length} shown`,
       filename: "vehicles",
-      organizationName: organization?.name ?? "Fleet Management",
+      organizationName: orgName,
     });
   };
 
   const handleExportPdf = () => {
     exportRecordsToPdf(buildPrintRows(), printColumns, {
       title: selectedIds.length > 0 ? `Vehicles (${selectedIds.length} selected)` : "Vehicle Registry",
-      subtitle: `Generated from ${organization?.name ?? "Fleet"}`,
+      subtitle: `Generated report`,
       filename: "vehicles",
-      organizationName: organization?.name ?? "Fleet Management",
+      organizationName: orgName,
     });
   };
 
