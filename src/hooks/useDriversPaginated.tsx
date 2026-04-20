@@ -253,7 +253,7 @@ export const useDriversPaginated = (
     } finally {
       setLoading(false);
     }
-  }, [organizationId, currentPage, pageSize, hasMore, loading, applyFilters, assignedDriverIds, totalCount]);
+  }, [organizationId, currentPage, pageSize, hasMore, loading, applyFilters, assignedDriverIds, totalCount, sortBy, sortDir]);
 
   const refetch = useCallback(() => {
     isFirstLoad.current = false;
