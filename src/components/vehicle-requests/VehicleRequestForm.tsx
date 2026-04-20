@@ -318,10 +318,59 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const isProject = form.request_type === "project_operation";
   const isField = form.request_type === "field_operation";
 
-  const canSubmit = form.purpose && (isDaily ? form.date : form.start_date);
+  // Single-vehicle policy: only Project Operations can request multiple vehicles.
+  // Daily and Field operations are 1:1 (one driver, one vehicle).
+  const allowsMultipleVehicles = isProject;
+  useEffect(() => {
+    if (!allowsMultipleVehicles && form.num_vehicles !== "1") {
+      setForm((f) => ({ ...f, num_vehicles: "1" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowsMultipleVehicles]);
 
-  const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) =>
-    setForm(f => ({ ...f, [key]: val }));
+  // Field-level validation messages
+  const validationErrors = useMemo(() => {
+    const errs: string[] = [];
+    if (isDaily && form.date && form.start_time && form.end_time && form.end_time <= form.start_time) {
+      errs.push("End time must be later than start time.");
+    }
+    if (!isDaily && form.start_date && form.end_date && form.end_date < form.start_date) {
+      errs.push("End date cannot be before the start date.");
+    }
+    if (isProject && !form.project_number?.trim()) {
+      errs.push("Project number is required for Project Operations.");
+    }
+    if (form.contact_phone && !/^[+\d\s().-]{7,}$/.test(form.contact_phone)) {
+      errs.push("Contact phone looks invalid.");
+    }
+    return errs;
+  }, [isDaily, isProject, form.date, form.start_time, form.end_time, form.start_date, form.end_date, form.project_number, form.contact_phone]);
+
+  // Estimated duration (days for multi-day; hours for single-day) shown in the UI.
+  const durationLabel = useMemo(() => {
+    if (isDaily) {
+      if (!form.date || !form.start_time || !form.end_time) return null;
+      const [sh, sm] = form.start_time.split(":").map(Number);
+      const [eh, em] = form.end_time.split(":").map(Number);
+      const mins = (eh * 60 + em) - (sh * 60 + sm);
+      if (mins <= 0) return null;
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${h}h${m ? ` ${m}m` : ""}`;
+    }
+    if (form.start_date && form.end_date) {
+      const days = Math.max(1, Math.ceil((form.end_date.getTime() - form.start_date.getTime()) / 86_400_000) + 1);
+      return `${days} day${days > 1 ? "s" : ""}`;
+    }
+    return null;
+  }, [isDaily, form.date, form.start_time, form.end_time, form.start_date, form.end_date]);
+
+  const canSubmit =
+    !!form.purpose &&
+    (isDaily ? !!form.date : !!form.start_date) &&
+    (!isProject || !!form.project_number?.trim()) &&
+    validationErrors.length === 0;
+
 
   const TABS = [
     { id: "type", label: "Type", icon: Sparkles, hint: "Operation" },
