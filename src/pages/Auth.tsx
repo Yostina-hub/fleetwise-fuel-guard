@@ -267,7 +267,8 @@ const Auth = () => {
             ? "Signed in with backup code. Consider regenerating codes."
             : "Two-factor verification successful.",
         });
-        navigate("/");
+        const landing3 = await resolveLandingPath(pending2FAUserId);
+        navigate(landing3);
       } else {
         // Wrong code - sign out again
         await supabase.auth.signOut();
