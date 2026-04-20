@@ -21,6 +21,9 @@ import { useTranslation } from "react-i18next";
 import { DateTimePicker, combineDateAndTime } from "@/components/ui/date-time-picker";
 import { LocationPickerField } from "@/components/shared/LocationPickerField";
 import { VEHICLE_TYPES_OPTIONS } from "@/components/fleet/formConstants";
+import { AlertCircle } from "lucide-react";
+import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
+import { sanitizeVehicleRequestForm } from "./vehicleRequestValidation";
 
 interface VehicleRequestFormProps {
   open: boolean;
@@ -332,23 +335,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowsMultipleVehicles]);
 
-  // Field-level validation messages
-  const validationErrors = useMemo(() => {
-    const errs: string[] = [];
-    if (isDaily && form.date && form.start_time && form.end_time && form.end_time <= form.start_time) {
-      errs.push("End time must be later than start time.");
-    }
-    if (!isDaily && form.start_date && form.end_date && form.end_date < form.start_date) {
-      errs.push("End date cannot be before the start date.");
-    }
-    if (isProject && !form.project_number?.trim()) {
-      errs.push("Project number is required for Project Operations.");
-    }
-    if (form.contact_phone && !/^[+\d\s().-]{7,}$/.test(form.contact_phone)) {
-      errs.push("Contact phone looks invalid.");
-    }
-    return errs;
-  }, [isDaily, isProject, form.date, form.start_time, form.end_time, form.start_date, form.end_date, form.project_number, form.contact_phone]);
+  // Professional, descriptive validation (per-field, on blur + on submit).
+  const validation = useVehicleRequestValidation();
+  const { getError, handleBlur, validateAll, errorCount } = validation;
 
   // Estimated duration (days for multi-day; hours for single-day) shown in the UI.
   const durationLabel = useMemo(() => {
@@ -373,10 +362,48 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     !!form.purpose &&
     (isDaily ? !!form.date : !!form.start_date) &&
     (!isProject || !!form.project_number?.trim()) &&
-    validationErrors.length === 0;
+    errorCount === 0;
+
+  const handleSubmit = () => {
+    const sanitized = sanitizeVehicleRequestForm(form as any) as any;
+    setForm((f) => ({ ...f, ...sanitized }));
+    const result = validateAll({ ...form, ...sanitized } as any);
+    if (!result.valid) {
+      const firstField = Object.keys(result.errors)[0];
+      const firstMsg = (result.errors as any)[firstField];
+      toast.error(firstMsg || "Please fix the highlighted fields before submitting.");
+      // Jump to the first tab containing an error
+      const tabForField: Record<string, typeof activeTab> = {
+        request_type: "type",
+        date: "schedule", start_time: "schedule", end_time: "schedule",
+        start_date: "schedule", end_date: "schedule", project_number: "schedule",
+        departure_place: "route", destination: "route", trip_type: "route",
+        num_vehicles: "resources", passengers: "resources", vehicle_type: "resources",
+        priority: "resources", pool_category: "resources", pool_name: "resources",
+        contact_phone: "resources",
+        purpose: "details",
+      };
+      const target = tabForField[firstField];
+      if (target) setActiveTab(target);
+      return;
+    }
+    createMutation.mutate();
+  };
 
   const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) =>
     setForm(f => ({ ...f, [key]: val }));
+
+  /** Small inline error renderer (only shows when field has been touched). */
+  const FieldError = ({ field }: { field: Parameters<typeof getError>[0] }) => {
+    const msg = getError(field);
+    if (!msg) return null;
+    return (
+      <p className="mt-1 flex items-start gap-1 text-[11px] text-destructive animate-fade-in">
+        <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+        <span>{msg}</span>
+      </p>
+    );
+  };
 
 
   const TABS = [
@@ -596,29 +623,63 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             {isDaily ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-1">
-                  <DateTimePicker label="Date" date={form.date} onDateChange={d => update("date", d)} required minDate={new Date()} hideTime />
+                  <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); }} required minDate={new Date()} hideTime />
+                  <FieldError field="date" />
                 </div>
                 <div>
                   <Label className="text-primary font-medium">Start Time <span className="text-destructive">*</span></Label>
-                  <Input type="time" value={form.start_time} onChange={e => update("start_time", e.target.value)} required className="h-10" />
+                  <Input
+                    type="time"
+                    value={form.start_time}
+                    onChange={e => update("start_time", e.target.value)}
+                    onBlur={e => handleBlur("start_time", e.target.value, form as any)}
+                    required
+                    className="h-10"
+                    aria-invalid={!!getError("start_time")}
+                  />
+                  <FieldError field="start_time" />
                 </div>
                 <div>
                   <Label className="text-primary font-medium">End Time <span className="text-destructive">*</span></Label>
-                  <Input type="time" value={form.end_time} onChange={e => update("end_time", e.target.value)} required className="h-10" />
+                  <Input
+                    type="time"
+                    value={form.end_time}
+                    onChange={e => update("end_time", e.target.value)}
+                    onBlur={e => handleBlur("end_time", e.target.value, form as any)}
+                    required
+                    className="h-10"
+                    aria-invalid={!!getError("end_time")}
+                  />
+                  <FieldError field="end_time" />
                 </div>
               </div>
             ) : (
               <div className={`grid grid-cols-1 ${isProject ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4`}>
-                <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => update("start_date", d)} required minDate={new Date()} hideTime />
-                <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => update("end_date", d)} required={isProject} minDate={form.start_date} hideTime />
+                <div>
+                  <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime />
+                  <FieldError field="start_date" />
+                </div>
+                <div>
+                  <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => { update("end_date", d); handleBlur("end_date", d, form as any); }} required={isProject} minDate={form.start_date} hideTime />
+                  <FieldError field="end_date" />
+                </div>
                 {isProject && (
                   <div>
                     <Label className="text-primary font-medium">Project Number <span className="text-destructive">*</span></Label>
-                    <Input value={form.project_number} onChange={e => update("project_number", e.target.value)} placeholder="e.g. PRJ-2026-001" className="h-10" />
+                    <Input
+                      value={form.project_number}
+                      onChange={e => update("project_number", e.target.value)}
+                      onBlur={e => handleBlur("project_number", e.target.value, form as any)}
+                      placeholder="e.g. PRJ-2026-001"
+                      className="h-10"
+                      aria-invalid={!!getError("project_number")}
+                    />
+                    <FieldError field="project_number" />
                   </div>
                 )}
               </div>
             )}
+
 
             {/* Live duration summary */}
             {durationLabel && (
@@ -629,17 +690,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
             )}
 
-            {/* Validation messages */}
-            {validationErrors.length > 0 && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive space-y-1">
-                {validationErrors.map((e, i) => (
-                  <div key={i} className="flex items-start gap-1.5">
-                    <X className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                    <span>{e}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Per-field errors are rendered inline below their inputs. */}
 
             {isField && (
               <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-xs text-muted-foreground">
@@ -711,9 +762,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   max={allowsMultipleVehicles ? 50 : 1}
                   value={allowsMultipleVehicles ? form.num_vehicles : "1"}
                   onChange={e => update("num_vehicles", e.target.value)}
+                  onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
                   disabled={!allowsMultipleVehicles}
                   className="h-10"
+                  aria-invalid={!!getError("num_vehicles")}
                 />
+                <FieldError field="num_vehicles" />
                 <p className="text-[11px] text-muted-foreground mt-1">
                   {allowsMultipleVehicles
                     ? "Project Operations support a fleet — request as many vehicles as needed."
@@ -722,7 +776,17 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
               <div>
                 <Label className="text-primary font-medium flex items-center gap-1"><Users className="w-3.5 h-3.5" /> No. Of Passenger</Label>
-                <Input type="number" min={1} max={100} value={form.passengers} onChange={e => update("passengers", e.target.value)} className="h-10" />
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={form.passengers}
+                  onChange={e => update("passengers", e.target.value)}
+                  onBlur={e => handleBlur("passengers", e.target.value, form as any)}
+                  className="h-10"
+                  aria-invalid={!!getError("passengers")}
+                />
+                <FieldError field="passengers" />
               </div>
               <div>
                 <Label className="text-primary font-medium">Vehicle Type</Label>
@@ -774,9 +838,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   inputMode="tel"
                   value={form.contact_phone}
                   onChange={e => update("contact_phone", e.target.value)}
+                  onBlur={e => handleBlur("contact_phone", e.target.value, form as any)}
                   placeholder="+251 9X XXX XXXX — reachable while the trip is active"
                   className="h-10"
+                  aria-invalid={!!getError("contact_phone")}
                 />
+                <FieldError field="contact_phone" />
                 <p className="text-[11px] text-muted-foreground mt-1">Optional. Helps dispatch reach the requester quickly if plans change.</p>
               </div>
             </div>
@@ -785,8 +852,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* DETAILS TAB */}
           <TabsContent value="details" className="mt-5 space-y-4 animate-fade-in">
             <div>
-              <Label className="text-primary font-medium">Trip Description</Label>
-              <Textarea value={form.purpose} onChange={e => update("purpose", e.target.value)} placeholder="Describe the purpose of this trip…" rows={4} />
+              <Label className="text-primary font-medium">Trip Description <span className="text-destructive">*</span></Label>
+              <Textarea
+                value={form.purpose}
+                onChange={e => update("purpose", e.target.value)}
+                onBlur={e => handleBlur("purpose", e.target.value, form as any)}
+                placeholder="Describe the purpose of this trip — what, where, and why (min 10 characters)…"
+                rows={4}
+                aria-invalid={!!getError("purpose")}
+              />
+              <FieldError field="purpose" />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {form.purpose?.length || 0}/2000 characters
+              </p>
             </div>
             <div className="rounded-lg border border-border bg-gradient-to-br from-muted/50 to-muted/20 p-4 text-xs text-muted-foreground space-y-2">
               <p className="font-medium text-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Approval Routing</p>
@@ -804,7 +882,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         const isLast = tabIndex === TABS.length - 1;
         const FooterInner = (
           <div className="flex w-full items-center justify-between gap-3">
-            <Button variant="ghost" size="sm" onClick={() => { setForm(initialForm); }} className="text-muted-foreground">
+            <Button variant="ghost" size="sm" onClick={() => { setForm(initialForm); validation.reset(); }} className="text-muted-foreground">
               Clear
             </Button>
             <div className="flex items-center gap-2">
@@ -820,7 +898,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Button>
               ) : (
                 <Button
-                  onClick={() => createMutation.mutate()}
+                  onClick={handleSubmit}
                   disabled={!canSubmit || createMutation.isPending}
                   className="gap-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg shadow-emerald-500/30"
                 >
