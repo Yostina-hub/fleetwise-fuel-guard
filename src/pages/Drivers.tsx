@@ -230,56 +230,91 @@ const Drivers = () => {
   const inactiveDrivers = statusCounts.inactive;
   const suspendedDrivers = statusCounts.suspended;
 
+  const hasActiveFilters =
+    statusFilter !== "all" ||
+    driverTypeFilter !== "all" ||
+    employmentTypeFilter !== "all" ||
+    assignmentFilter !== "all" ||
+    searchQuery.length > 0;
+
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setDriverTypeFilter("all");
+    setEmploymentTypeFilter("all");
+    setAssignmentFilter("all");
+  };
+
   return (
     <Layout>
-      <div className="p-4 md:p-8 space-y-8 animate-fade-in">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              {t('drivers.title')}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {totalCount} {t('nav.drivers').toLowerCase()}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline"
-              className="gap-2"
-              onClick={() => setImportDialogOpen(true)}
-            >
-              <Upload className="w-4 h-4" aria-hidden="true" />
-              {t('common.import')}
-            </Button>
-            <Button 
-              variant="outline"
-              className="gap-2"
-              onClick={handleExportAll}
-              disabled={isExporting}
-            >
-              {isExporting ? (
-                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <Download className="w-4 h-4" aria-hidden="true" />
-              )}
-              {isExporting ? `${t('common.export')}...` : t('common.export')}
-            </Button>
-            <Button 
-              variant="outline"
-              className="gap-2"
-              onClick={() => navigate("/driver-scoring")}
-            >
-              <Activity className="w-4 h-4" aria-hidden="true" />
-              Driver Scoring
-            </Button>
-            <Button 
-              className="gap-2 bg-gradient-to-r from-primary to-primary/80"
-              onClick={() => setCreateDialogOpen(true)}
-            >
-              <Plus className="w-4 h-4" aria-hidden="true" />
-              {t('drivers.addDriver')}
-            </Button>
+      <div className="p-4 md:p-8 space-y-6 animate-fade-in">
+        {/* Modern Sticky Header */}
+        <div className="sticky top-0 z-20 -mx-4 md:-mx-8 px-4 md:px-8 py-4 bg-background/80 backdrop-blur-xl border-b border-border/50">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shadow-sm">
+                <Users className="h-6 w-6 text-primary" aria-hidden="true" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-0.5">
+                  <span>Workforce</span>
+                  <span>/</span>
+                  <span className="text-foreground font-medium">Directory</span>
+                </div>
+                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent leading-tight">
+                  {t('drivers.title')}
+                </h1>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Managing <span className="font-semibold text-foreground">{totalCount}</span> {totalCount === 1 ? "driver" : "drivers"}
+                  {hasActiveFilters && <span className="text-primary"> • filtered view</span>}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border border-border/50">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 h-8"
+                  onClick={() => setImportDialogOpen(true)}
+                >
+                  <Upload className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span className="hidden sm:inline">{t('common.import')}</span>
+                </Button>
+                <div className="w-px h-5 bg-border" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 h-8"
+                  onClick={handleExportAll}
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5" aria-hidden="true" />
+                  )}
+                  <span className="hidden sm:inline">{isExporting ? `${t('common.export')}...` : t('common.export')}</span>
+                </Button>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-9"
+                onClick={() => navigate("/driver-scoring")}
+              >
+                <Activity className="w-3.5 h-3.5" aria-hidden="true" />
+                <span className="hidden md:inline">Driver Scoring</span>
+              </Button>
+              <Button
+                size="sm"
+                className="gap-1.5 h-9 bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all"
+                onClick={() => setCreateDialogOpen(true)}
+              >
+                <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+                {t('drivers.addDriver')}
+              </Button>
+            </div>
           </div>
         </div>
 
