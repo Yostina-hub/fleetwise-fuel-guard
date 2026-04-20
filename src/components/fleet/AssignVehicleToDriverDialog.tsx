@@ -245,7 +245,7 @@ export default function AssignVehicleToDriverDialog({ open, onOpenChange, driver
                           <Badge variant="secondary" className="text-[10px] h-5">Current</Badge>
                         )}
                         {isAssignedToOther && (
-                          <Badge variant="outline" className="text-[10px] h-5 border-amber-500/40 text-amber-600 dark:text-amber-400">
+                          <Badge variant="outline" className="text-[10px] h-5 border-warning/40 text-warning">
                             Assigned
                           </Badge>
                         )}
