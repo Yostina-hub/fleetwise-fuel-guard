@@ -50,7 +50,14 @@ Deno.serve(async (req) => {
       () => validateEmail(normalizedEmail),
       () => validateString(password, "password", { minLength: 8, maxLength: 128 }),
       () => validateString(fullName, "fullName", { required: false, maxLength: 200 }),
-      () => validateEnum(role, "role", ["super_admin", "org_admin", "fleet_manager", "operator", "driver", "viewer", "mechanic", "technician"]),
+      () => validateEnum(role, "role", [
+        "super_admin", "org_admin", "fleet_owner", "operations_manager",
+        "fleet_manager", "dispatcher", "fuel_controller", "maintenance_lead",
+        "operator", "driver", "technician", "mechanic",
+        "auditor", "transport_authority", "insurance_admin", "finance_manager",
+        "sourcing_manager", "maintenance_manager", "maintenance_supervisor",
+        "inspection_center", "supplier", "user", "viewer",
+      ]),
       () => validateOptionalUUID(organizationId, "organizationId"),
     );
     if (validationError) return secureJsonResponse({ success: false, error: validationError }, req, 400);

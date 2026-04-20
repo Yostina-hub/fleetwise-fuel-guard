@@ -27,7 +27,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -42,10 +44,13 @@ import {
   RefreshCw,
   ShieldCheck,
   UserPlus,
+  IdCard,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useOrganization } from "@/hooks/useOrganization";
 import { cn } from "@/lib/utils";
+import { APP_ROLES, ROLES_BY_GROUP, type AppRole } from "@/lib/workflow-engine/appRoles";
+import CreateDriverDialog from "@/components/fleet/CreateDriverDialog";
 
 /* ---------------------------------------------------------------- */
 /*  Sanitization helpers                                            */
@@ -67,14 +72,11 @@ const sanitizeFullName = (v: string): string =>
 /*  Zod schema                                                      */
 /* ---------------------------------------------------------------- */
 
-const ROLE_VALUES = [
-  "super_admin",
-  "org_admin",
-  "operator",
-  "fleet_manager",
-  "driver",
-  "technician",
-] as const;
+/** Roles whitelisted by the create-user edge function (mirrors validateEnum). */
+const ROLE_VALUES = APP_ROLES.map((r) => r.value) as [AppRole, ...AppRole[]];
+
+/** Roles only super_admin may assign (admin tier). */
+const ADMIN_ONLY_ROLES: ReadonlySet<AppRole> = new Set(["super_admin", "org_admin"]);
 
 const NAME_REGEX = /^[\p{L}][\p{L}\s'.-]{0,99}$/u;
 
@@ -109,19 +111,6 @@ const inviteUserSchema = z.object({
 type FieldErrors = Partial<Record<keyof z.infer<typeof inviteUserSchema>, string>>;
 
 /* ---------------------------------------------------------------- */
-/*  Roles                                                           */
-/* ---------------------------------------------------------------- */
-
-const allRoles: { value: (typeof ROLE_VALUES)[number]; label: string; adminOnly?: boolean }[] = [
-  { value: "super_admin", label: "Super Admin", adminOnly: true },
-  { value: "org_admin", label: "Org Admin", adminOnly: true },
-  { value: "operator", label: "Operator" },
-  { value: "fleet_manager", label: "Fleet Manager" },
-  { value: "driver", label: "Driver" },
-  { value: "technician", label: "Technician" },
-];
-
-/* ---------------------------------------------------------------- */
 /*  Component                                                       */
 /* ---------------------------------------------------------------- */
 
@@ -154,10 +143,19 @@ const InviteUserDialog = ({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const availableRoles = useMemo(
-    () => allRoles.filter((r) => isSuperAdmin || !r.adminOnly),
-    [isSuperAdmin],
-  );
+  /** Roles the current actor is allowed to assign (admin-only roles hidden from non-super_admin),
+   *  grouped by tier so the dropdown stays scannable when there are 20+ roles. */
+  const visibleGroups = useMemo(() => {
+    const groupOrder = ["Administration", "Management", "Operations", "Field", "Read-only"] as const;
+    return groupOrder
+      .map((g) => ({
+        group: g,
+        roles: (ROLES_BY_GROUP[g] ?? []).filter(
+          (r) => isSuperAdmin || !ADMIN_ONLY_ROLES.has(r.value),
+        ),
+      }))
+      .filter((g) => g.roles.length > 0);
+  }, [isSuperAdmin]);
 
   /* ---- validation ---- */
   const validateField = (
@@ -384,8 +382,30 @@ const InviteUserDialog = ({
     );
 
   return (
+    <>
+    {/* When the actor selects "driver", we delegate to the full driver wizard
+        (CreateDriverDialog) so that legal IDs, license, attachments, emergency
+        contact, etc. are captured. The invite dialog hides itself while the
+        driver dialog is open and re-opens on cancel. */}
+    {selectedRole === "driver" && open && (
+      <CreateDriverDialog
+        open
+        onOpenChange={(o) => {
+          if (!o) {
+            // User closed the driver wizard — reset role so they don't get
+            // bounced straight back into it on the next open.
+            setSelectedRole("");
+          }
+        }}
+        onSubmitted={() => {
+          resetForm();
+          onOpenChange(false);
+          onUserCreated();
+        }}
+      />
+    )}
     <Dialog
-      open={open}
+      open={open && selectedRole !== "driver"}
       onOpenChange={(o) => {
         if (!o) resetForm();
         onOpenChange(o);
@@ -614,11 +634,25 @@ const InviteUserDialog = ({
               >
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
-              <SelectContent>
-                {availableRoles.map((role) => (
-                  <SelectItem key={role.value} value={role.value}>
-                    {role.label}
-                  </SelectItem>
+              <SelectContent className="max-h-[320px]">
+                {visibleGroups.map((g) => (
+                  <SelectGroup key={g.group}>
+                    <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/80">
+                      {g.group}
+                    </SelectLabel>
+                    {g.roles.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        <div className="flex flex-col">
+                          <span>{role.label}</span>
+                          {role.description && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {role.description}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
@@ -672,6 +706,7 @@ const InviteUserDialog = ({
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
