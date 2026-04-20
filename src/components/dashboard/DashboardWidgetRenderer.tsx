@@ -84,7 +84,7 @@ const DashboardWidgetRenderer = ({ section, widgetMap, className }: WidgetRender
   const canDrag = !!activeLayout;
 
   return (
-    <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6", className)}>
+    <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-[1400px] mx-auto w-full", className)}>
       {widgets.map((widget) => {
         const renderer = widgetMap[widget.type];
         if (!renderer) return null;
