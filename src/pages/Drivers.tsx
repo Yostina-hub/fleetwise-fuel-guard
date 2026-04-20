@@ -558,6 +558,7 @@ const Drivers = () => {
                     )}
                   </TableBody>
                 </Table>
+                </div>
 
                 {/* Pagination */}
                 {totalPages > 1 && (
