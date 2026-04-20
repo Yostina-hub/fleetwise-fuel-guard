@@ -156,6 +156,93 @@ All colors MUST be HSL.
     --shadow-floating: 0 20px 60px hsla(0 0% 0% / 0.5);
   }
 
+  .light {
+    /* ✦ Aurora Light — modern, futuristic, beyond imagination ✦
+       Soft iridescent pearl base with violet→cyan→mint accent system,
+       glassmorphic surfaces, neon-on-light glows, refined contrast. */
+    --background: 220 60% 99%;              /* near-white pearl with cool tint */
+    --foreground: 230 35% 12%;              /* deep ink, not pure black */
+
+    --card: 0 0% 100%;
+    --card-foreground: 230 35% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 35% 12%;
+
+    /* Signature accents — electric violet primary, cyan secondary */
+    --primary: 252 95% 62%;                 /* electric indigo-violet */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 190 95% 50%;               /* luminous cyan */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 230 40% 96%;
+    --muted-foreground: 230 15% 42%;
+
+    --accent: 165 80% 48%;                  /* mint aurora */
+    --accent-foreground: 230 35% 12%;
+
+    --destructive: 350 90% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 158 75% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 32 100% 56%;
+    --warning-foreground: 230 35% 12%;
+
+    --border: 230 30% 92%;
+    --input: 230 30% 94%;
+    --ring: 252 95% 62%;
+
+    --radius: 0.85rem;
+
+    /* Header — frosted glass white with violet glow underline */
+    --header-background: 0 0% 100%;
+    --header-foreground: 230 35% 12%;
+
+    --footer-background: 230 40% 97%;
+    --footer-foreground: 230 35% 22%;
+
+    /* Sidebar — frosted dark-on-light with violet rail */
+    --sidebar-background: 230 35% 99%;
+    --sidebar-foreground: 230 25% 25%;
+    --sidebar-primary: 252 95% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 252 95% 96%;
+    --sidebar-accent-foreground: 252 95% 35%;
+    --sidebar-border: 230 30% 92%;
+    --sidebar-ring: 252 95% 62%;
+
+    --chart-1: 252 95% 62%;
+    --chart-2: 190 95% 50%;
+    --chart-3: 165 80% 48%;
+    --chart-4: 32 100% 56%;
+    --chart-5: 320 85% 62%;
+
+    /* Aurora gradients & neon-on-light glows */
+    --gradient-primary: linear-gradient(135deg, hsl(252 95% 62%) 0%, hsl(280 90% 65%) 50%, hsl(320 85% 62%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(190 95% 50%) 0%, hsl(165 80% 48%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(158 75% 42%) 0%, hsl(165 80% 55%) 100%);
+    --gradient-warning: linear-gradient(135deg, hsl(32 100% 56%) 0%, hsl(45 100% 60%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsla(0 0% 100% / 0.85) 0%, hsla(252 95% 96% / 0.55) 100%);
+    --gradient-aurora: radial-gradient(ellipse at 15% 0%, hsla(252 95% 75% / 0.35), transparent 55%),
+                        radial-gradient(ellipse at 85% 10%, hsla(190 95% 70% / 0.30), transparent 55%),
+                        radial-gradient(ellipse at 50% 100%, hsla(165 80% 70% / 0.28), transparent 60%),
+                        linear-gradient(180deg, hsl(220 60% 99%) 0%, hsl(230 50% 98%) 100%);
+
+    --shadow-glow: 0 0 32px hsla(252 95% 62% / 0.25);
+    --shadow-glow-strong: 0 0 56px hsla(252 95% 62% / 0.40);
+    --shadow-elevated: 0 8px 24px -8px hsla(252 60% 30% / 0.18), 0 2px 6px hsla(230 30% 30% / 0.06);
+    --shadow-floating: 0 20px 50px -12px hsla(252 60% 30% / 0.25), 0 4px 12px hsla(230 30% 30% / 0.08);
+  }
+
+  /* Aurora ambient background applied at body level for the light theme */
+  html.light body {
+    background: var(--gradient-aurora);
+    background-attachment: fixed;
+  }
+
   .cyber {
     /* Futuristic Cyber Theme - Deep blue tech corridor */
     --background: 215 80% 12%;
