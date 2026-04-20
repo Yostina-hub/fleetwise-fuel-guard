@@ -601,38 +601,51 @@ const VehicleRequests = () => {
                             )}
                           </td>
                           <td className="py-3 px-3 text-center">
-                            {r.driver_checked_in_at && !r.driver_checked_out_at ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 px-1.5"
-                                onClick={() => setShowCheckIn(r)}
-                                title="Check out driver"
-                              >
-                                <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-700 cursor-pointer">
-                                  In
-                                </Badge>
-                              </Button>
-                            ) : r.driver_checked_out_at ? (
-                              <Badge variant="secondary" className="text-[10px]">Out</Badge>
-                            ) : r.status === "assigned" ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 px-1.5"
-                                onClick={() => setShowCheckIn(r)}
-                              >
-                                <LogIn className="w-3 h-3" />
-                              </Button>
-                            ) : (
-                              "—"
-                            )}
+                            {(() => {
+                              // Check-in/out: admins/operators always; drivers only on rows assigned to them
+                              const canCheckRow =
+                                canManageAll || isAssignedDriverRow(r);
+                              if (r.driver_checked_in_at && !r.driver_checked_out_at) {
+                                return canCheckRow ? (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-1.5"
+                                    onClick={() => setShowCheckIn(r)}
+                                    title="Check out driver"
+                                  >
+                                    <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-700 cursor-pointer">
+                                      In
+                                    </Badge>
+                                  </Button>
+                                ) : (
+                                  <Badge className="text-[10px] bg-emerald-600">In</Badge>
+                                );
+                              }
+                              if (r.driver_checked_out_at) {
+                                return <Badge variant="secondary" className="text-[10px]">Out</Badge>;
+                              }
+                              if (r.status === "assigned" && canCheckRow) {
+                                return (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-1.5"
+                                    onClick={() => setShowCheckIn(r)}
+                                  >
+                                    <LogIn className="w-3 h-3" />
+                                  </Button>
+                                );
+                              }
+                              return <span className="text-muted-foreground">—</span>;
+                            })()}
                           </td>
                           <td className="py-3 px-3 text-center">
                             <StatusPill status={r.status} autoClosed={r.auto_closed} />
                           </td>
                           <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-0.5">
+                              {/* View — always available (rows are already scoped) */}
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -642,18 +655,24 @@ const VehicleRequests = () => {
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </Button>
-                              {r.status === "completed" && !r.requester_rating && !r.auto_closed && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0"
-                                  onClick={() => setShowFeedback(r)}
-                                  title="Give feedback"
-                                >
-                                  <MessageSquare className="w-3.5 h-3.5" />
-                                </Button>
-                              )}
-                              {r.pool_category === "outsource" &&
+                              {/* Feedback — only the requester who filed the row */}
+                              {r.status === "completed" &&
+                                !r.requester_rating &&
+                                !r.auto_closed &&
+                                isOwnRow(r) && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => setShowFeedback(r)}
+                                    title="Give feedback"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              {/* Multi-vehicle assign — admins & operators only */}
+                              {canManageAll &&
+                                r.pool_category === "outsource" &&
                                 (r.num_vehicles || 1) > 1 &&
                                 ["approved", "pending"].includes(r.status) && (
                                   <Button
@@ -666,28 +685,36 @@ const VehicleRequests = () => {
                                     <Users className="w-3.5 h-3.5" />
                                   </Button>
                                 )}
-                              {r.status === "assigned" && !r.driver_checked_in_at && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0"
-                                  onClick={() => setShowDeallocate(r)}
-                                  title="Deallocate vehicle/driver"
-                                >
-                                  <Undo2 className="w-3.5 h-3.5 text-amber-500" />
-                                </Button>
-                              )}
-                              {!["completed"].includes(r.status) && !r.driver_checked_in_at && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0"
-                                  onClick={() => setShowDelete(r)}
-                                  title="Remove request"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                                </Button>
-                              )}
+                              {/* Deallocate — admins & operators only */}
+                              {canManageAll &&
+                                r.status === "assigned" &&
+                                !r.driver_checked_in_at && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => setShowDeallocate(r)}
+                                    title="Deallocate vehicle/driver"
+                                  >
+                                    <Undo2 className="w-3.5 h-3.5 text-amber-500" />
+                                  </Button>
+                                )}
+                              {/* Delete — admins/operators always; requester only on
+                                  their own pending row before any check-in */}
+                              {!["completed"].includes(r.status) &&
+                                !r.driver_checked_in_at &&
+                                (canManageAll ||
+                                  (isOwnRow(r) && ["pending", "rejected", "cancelled"].includes(r.status))) && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => setShowDelete(r)}
+                                    title="Remove request"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                  </Button>
+                                )}
                             </div>
                           </td>
                         </tr>
