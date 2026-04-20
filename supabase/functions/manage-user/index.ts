@@ -1,3 +1,4 @@
+// manage-user edge function (rev 2)
 import {
   createAdminClient,
   verifyAuth,
