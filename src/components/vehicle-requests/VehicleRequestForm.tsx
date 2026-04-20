@@ -63,6 +63,9 @@ const initialForm = {
   pool_name: "",
   purpose: "",
   project_number: "",
+  // New: priority + contact phone — surfaced for dispatch/approver context.
+  priority: "normal",
+  contact_phone: "",
 };
 
 export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
@@ -226,7 +229,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         requester_id: requesterId,
         requester_name: requesterName,
         request_type: form.request_type,
-        purpose: form.purpose + filedOnBehalfNote,
+        purpose:
+          form.purpose +
+          filedOnBehalfNote +
+          (form.contact_phone ? `\n\nContact phone: ${form.contact_phone}` : ""),
         needed_from: neededFrom,
         needed_until: neededUntil,
         departure_place: form.departure_place || null,
@@ -235,7 +241,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         departure_lng: form.departure_lng,
         destination_lat: form.destination_lat,
         destination_lng: form.destination_lng,
-        num_vehicles: parseInt(form.num_vehicles) || 1,
+        num_vehicles: allowsMultipleVehicles ? (parseInt(form.num_vehicles) || 1) : 1,
         passengers: parseInt(form.passengers) || 1,
         vehicle_type: form.vehicle_type || null,
         trip_type: form.trip_type || null,
@@ -244,6 +250,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         start_time: form.start_time || null,
         end_time: form.end_time || null,
         project_number: form.request_type === "project_operation" ? (form.project_number || null) : null,
+        priority: form.priority || "normal",
         status: "pending",
       };
 
@@ -315,10 +322,62 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const isProject = form.request_type === "project_operation";
   const isField = form.request_type === "field_operation";
 
-  const canSubmit = form.purpose && (isDaily ? form.date : form.start_date);
+  // Single-vehicle policy: only Project Operations can request multiple vehicles.
+  // Daily and Field operations are 1:1 (one driver, one vehicle).
+  const allowsMultipleVehicles = isProject;
+  useEffect(() => {
+    if (!allowsMultipleVehicles && form.num_vehicles !== "1") {
+      setForm((f) => ({ ...f, num_vehicles: "1" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowsMultipleVehicles]);
+
+  // Field-level validation messages
+  const validationErrors = useMemo(() => {
+    const errs: string[] = [];
+    if (isDaily && form.date && form.start_time && form.end_time && form.end_time <= form.start_time) {
+      errs.push("End time must be later than start time.");
+    }
+    if (!isDaily && form.start_date && form.end_date && form.end_date < form.start_date) {
+      errs.push("End date cannot be before the start date.");
+    }
+    if (isProject && !form.project_number?.trim()) {
+      errs.push("Project number is required for Project Operations.");
+    }
+    if (form.contact_phone && !/^[+\d\s().-]{7,}$/.test(form.contact_phone)) {
+      errs.push("Contact phone looks invalid.");
+    }
+    return errs;
+  }, [isDaily, isProject, form.date, form.start_time, form.end_time, form.start_date, form.end_date, form.project_number, form.contact_phone]);
+
+  // Estimated duration (days for multi-day; hours for single-day) shown in the UI.
+  const durationLabel = useMemo(() => {
+    if (isDaily) {
+      if (!form.date || !form.start_time || !form.end_time) return null;
+      const [sh, sm] = form.start_time.split(":").map(Number);
+      const [eh, em] = form.end_time.split(":").map(Number);
+      const mins = (eh * 60 + em) - (sh * 60 + sm);
+      if (mins <= 0) return null;
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${h}h${m ? ` ${m}m` : ""}`;
+    }
+    if (form.start_date && form.end_date) {
+      const days = Math.max(1, Math.ceil((form.end_date.getTime() - form.start_date.getTime()) / 86_400_000) + 1);
+      return `${days} day${days > 1 ? "s" : ""}`;
+    }
+    return null;
+  }, [isDaily, form.date, form.start_time, form.end_time, form.start_date, form.end_date]);
+
+  const canSubmit =
+    !!form.purpose &&
+    (isDaily ? !!form.date : !!form.start_date) &&
+    (!isProject || !!form.project_number?.trim()) &&
+    validationErrors.length === 0;
 
   const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) =>
     setForm(f => ({ ...f, [key]: val }));
+
 
   const TABS = [
     { id: "type", label: "Type", icon: Sparkles, hint: "Operation" },
@@ -540,30 +599,52 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <DateTimePicker label="Date" date={form.date} onDateChange={d => update("date", d)} required minDate={new Date()} hideTime />
                 </div>
                 <div>
-                  <Label className="text-primary font-medium">Start Time</Label>
-                  <Input type="time" value={form.start_time} onChange={e => update("start_time", e.target.value)} required />
+                  <Label className="text-primary font-medium">Start Time <span className="text-destructive">*</span></Label>
+                  <Input type="time" value={form.start_time} onChange={e => update("start_time", e.target.value)} required className="h-10" />
                 </div>
                 <div>
-                  <Label className="text-primary font-medium">End Time</Label>
-                  <Input type="time" value={form.end_time} onChange={e => update("end_time", e.target.value)} required />
+                  <Label className="text-primary font-medium">End Time <span className="text-destructive">*</span></Label>
+                  <Input type="time" value={form.end_time} onChange={e => update("end_time", e.target.value)} required className="h-10" />
                 </div>
               </div>
             ) : (
               <div className={`grid grid-cols-1 ${isProject ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4`}>
                 <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => update("start_date", d)} required minDate={new Date()} hideTime />
-                <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => update("end_date", d)} minDate={form.start_date} hideTime />
+                <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => update("end_date", d)} required={isProject} minDate={form.start_date} hideTime />
                 {isProject && (
                   <div>
-                    <Label className="text-primary font-medium">Project Number</Label>
-                    <Input value={form.project_number} onChange={e => update("project_number", e.target.value)} placeholder="Project Number" />
+                    <Label className="text-primary font-medium">Project Number <span className="text-destructive">*</span></Label>
+                    <Input value={form.project_number} onChange={e => update("project_number", e.target.value)} placeholder="e.g. PRJ-2026-001" className="h-10" />
                   </div>
                 )}
               </div>
             )}
+
+            {/* Live duration summary */}
+            {durationLabel && (
+              <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span className="text-muted-foreground">Estimated duration:</span>
+                <Badge variant="secondary" className="font-semibold">{durationLabel}</Badge>
+              </div>
+            )}
+
+            {/* Validation messages */}
+            {validationErrors.length > 0 && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive space-y-1">
+                {validationErrors.map((e, i) => (
+                  <div key={i} className="flex items-start gap-1.5">
+                    <X className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    <span>{e}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {isField && (
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-xs text-muted-foreground">
-                <p className="font-medium text-blue-400">Field Operation Note:</p>
-                <p>Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled.</p>
+              <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-xs text-muted-foreground">
+                <p className="font-medium text-blue-400">Field Operation Note</p>
+                <p>Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled for the duration of the trip.</p>
               </div>
             )}
           </TabsContent>
@@ -620,17 +701,33 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <TabsContent value="resources" className="mt-5 space-y-4 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-primary font-medium flex items-center gap-1"><Car className="w-3.5 h-3.5" /> No. Of Vehicle</Label>
-                <Input type="number" min={1} value={form.num_vehicles} onChange={e => update("num_vehicles", e.target.value)} />
+                <Label className="text-primary font-medium flex items-center gap-1">
+                  <Car className="w-3.5 h-3.5" /> No. Of Vehicle
+                  {!allowsMultipleVehicles && <Badge variant="outline" className="ml-1 text-[10px] py-0 px-1.5">Locked at 1</Badge>}
+                </Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={allowsMultipleVehicles ? 50 : 1}
+                  value={allowsMultipleVehicles ? form.num_vehicles : "1"}
+                  onChange={e => update("num_vehicles", e.target.value)}
+                  disabled={!allowsMultipleVehicles}
+                  className="h-10"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  {allowsMultipleVehicles
+                    ? "Project Operations support a fleet — request as many vehicles as needed."
+                    : "Daily & Field operations are limited to one vehicle. Switch to Project Operation to request more."}
+                </p>
               </div>
               <div>
                 <Label className="text-primary font-medium flex items-center gap-1"><Users className="w-3.5 h-3.5" /> No. Of Passenger</Label>
-                <Input type="number" min={1} value={form.passengers} onChange={e => update("passengers", e.target.value)} />
+                <Input type="number" min={1} max={100} value={form.passengers} onChange={e => update("passengers", e.target.value)} className="h-10" />
               </div>
               <div>
                 <Label className="text-primary font-medium">Vehicle Type</Label>
                 <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
                   <SelectContent>
                     {VEHICLE_TYPES_OPTIONS.map(vt => (
                       <SelectItem key={vt.value} value={vt.value}>{vt.label}</SelectItem>
@@ -639,9 +736,21 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Select>
               </div>
               <div>
+                <Label className="text-primary font-medium">Priority</Label>
+                <Select value={form.priority} onValueChange={v => update("priority", v)}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">🟢 Low — flexible timing</SelectItem>
+                    <SelectItem value="normal">🔵 Normal — standard priority</SelectItem>
+                    <SelectItem value="high">🟠 High — time sensitive</SelectItem>
+                    <SelectItem value="urgent">🔴 Urgent — immediate dispatch</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label className="text-primary font-medium">Pool Category</Label>
                 <Select value={form.pool_category} onValueChange={v => { update("pool_category", v); update("pool_name", ""); }}>
-                  <SelectTrigger><SelectValue placeholder="Select Pool Category" /></SelectTrigger>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select Pool Category" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="corporate">Corporate</SelectItem>
                     <SelectItem value="zone">Zone</SelectItem>
@@ -649,14 +758,26 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </div>
-              <div className="md:col-span-2">
+              <div>
                 <Label className="text-primary font-medium">Pool</Label>
                 <Select value={form.pool_name} onValueChange={v => update("pool_name", v)} disabled={!form.pool_category}>
-                  <SelectTrigger><SelectValue placeholder="Select Pool" /></SelectTrigger>
+                  <SelectTrigger className="h-10"><SelectValue placeholder={form.pool_category ? "Select Pool" : "Select category first"} /></SelectTrigger>
                   <SelectContent>
                     {filteredPools.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="md:col-span-2">
+                <Label className="text-primary font-medium">Contact Phone (during trip)</Label>
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  value={form.contact_phone}
+                  onChange={e => update("contact_phone", e.target.value)}
+                  placeholder="+251 9X XXX XXXX — reachable while the trip is active"
+                  className="h-10"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">Optional. Helps dispatch reach the requester quickly if plans change.</p>
               </div>
             </div>
           </TabsContent>

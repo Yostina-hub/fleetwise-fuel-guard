@@ -1,5 +1,5 @@
 import * as React from "react";
-import { format } from "date-fns";
+import { format, addDays, isToday, isTomorrow, isSameDay } from "date-fns";
 import { CalendarIcon, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,18 +26,42 @@ interface DateTimePickerProps {
   hideTime?: boolean;
 }
 
+/**
+ * Friendly relative-day label: "Today", "Tomorrow", "In 3 days · Wed Apr 23".
+ * Shown inside the trigger to make picked dates instantly readable.
+ */
+function smartLabel(d: Date): string {
+  if (isToday(d)) return `Today · ${format(d, "MMM dd")}`;
+  if (isTomorrow(d)) return `Tomorrow · ${format(d, "MMM dd")}`;
+  const days = Math.round((d.getTime() - Date.now()) / 86_400_000);
+  if (days > 1 && days <= 7) return `In ${days} days · ${format(d, "EEE MMM dd")}`;
+  return format(d, "EEE, MMM dd, yyyy");
+}
+
 export function DateTimePicker({
   label,
   date,
   time,
   onDateChange,
   onTimeChange,
-  placeholder = "Select date",
+  placeholder = "Pick a date",
   required,
   disabled,
   minDate,
   hideTime,
 }: DateTimePickerProps) {
+  const [open, setOpen] = React.useState(false);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = addDays(today, 1);
+  const inAWeek = addDays(today, 7);
+
+  const quickPicks = [
+    { label: "Today", value: today, hint: format(today, "EEE") },
+    { label: "Tomorrow", value: tomorrow, hint: format(tomorrow, "EEE") },
+    { label: "+1 Week", value: inAWeek, hint: format(inAWeek, "MMM dd") },
+  ];
+
   return (
     <div className="space-y-1.5">
       {label && (
@@ -46,27 +70,60 @@ export function DateTimePicker({
         </Label>
       )}
       <div className="flex gap-2">
-        <Popover>
+        <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               disabled={disabled}
               className={cn(
-                "flex-1 justify-start text-left font-normal",
-                !date && "text-muted-foreground"
+                "flex-1 justify-start text-left font-normal h-10",
+                !date && "text-muted-foreground",
+                date && "border-primary/40 bg-primary/5",
               )}
             >
-              <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+              <CalendarIcon className={cn("mr-2 h-4 w-4 shrink-0", date && "text-primary")} />
               <span className="truncate">
-                {date ? format(date, "MMM dd, yyyy") : placeholder}
+                {date ? smartLabel(date) : placeholder}
               </span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent className="w-auto p-0 overflow-hidden" align="start">
+            {/* Quick picks header — friendlier than scrolling the calendar */}
+            <div className="border-b border-border bg-muted/30 p-2 flex items-center gap-1.5 flex-wrap">
+              {quickPicks.map((q) => {
+                const isSel = date && isSameDay(date, q.value);
+                const blocked = minDate && q.value < minDate;
+                return (
+                  <Button
+                    key={q.label}
+                    type="button"
+                    variant={isSel ? "default" : "outline"}
+                    size="sm"
+                    disabled={blocked}
+                    onClick={() => { onDateChange(q.value); setOpen(false); }}
+                    className="h-7 px-2.5 text-xs gap-1"
+                  >
+                    {q.label}
+                    <span className="text-[10px] opacity-70">{q.hint}</span>
+                  </Button>
+                );
+              })}
+              {date && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { onDateChange(undefined); setOpen(false); }}
+                  className="h-7 px-2 text-xs ml-auto text-muted-foreground hover:text-destructive"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
             <Calendar
               mode="single"
               selected={date}
-              onSelect={onDateChange}
+              onSelect={(d) => { onDateChange(d); if (d) setOpen(false); }}
               disabled={minDate ? (d) => d < minDate : undefined}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
@@ -74,14 +131,14 @@ export function DateTimePicker({
           </PopoverContent>
         </Popover>
         {!hideTime && (
-          <div className="relative w-[110px] shrink-0">
+          <div className="relative w-[120px] shrink-0">
             <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               type="time"
               value={time ?? ""}
               onChange={(e) => onTimeChange?.(e.target.value)}
               disabled={disabled}
-              className="pl-9"
+              className="pl-9 h-10"
             />
           </div>
         )}
@@ -125,12 +182,9 @@ export function combineDateAndTime(date?: Date, time?: string): string | undefin
   if (!date) return undefined;
   const [h, m] = (time || "00:00").split(":").map(Number);
   const tz = getActiveTimezone();
-  // Use the calendar Y-M-D the user picked (in their browser) — DatePicker stores
-  // these as "midnight local" Dates so Y/M/D match what they saw on screen.
   const y = date.getFullYear();
   const mo = date.getMonth();
   const day = date.getDate();
-  // Pretend the picked wall time is UTC, then shift by the org-tz offset at that instant.
   const naiveUtcMs = Date.UTC(y, mo, day, h, m, 0, 0);
   const offsetMin = tzOffsetMinutes(tz, naiveUtcMs);
   return new Date(naiveUtcMs - offsetMin * 60_000).toISOString();
@@ -148,7 +202,6 @@ export function splitDateTime(iso?: string | null): { date: Date | undefined; ti
   });
   const parts = dtf.formatToParts(d);
   const get = (t: string) => parts.find(p => p.type === t)?.value || "00";
-  // Build a Date whose local Y/M/D matches the org-tz wall date (for the picker).
   const localDate = new Date(Number(get("year")), Number(get("month")) - 1, Number(get("day")));
   return { date: localDate, time: `${get("hour")}:${get("minute")}` };
 }
