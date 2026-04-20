@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Clock, Users, Car, Route, UserCog, X } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Clock, Users, Car, Route, UserCog, X, MapPin, Layers, FileText, Sparkles, CalendarDays, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -117,6 +118,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // Super-admin only: file the request on behalf of another user or driver
   const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
 
   // Fetch both users and drivers for the combined picker
   const { data: orgPeople = [] } = useQuery({
@@ -318,21 +320,61 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) =>
     setForm(f => ({ ...f, [key]: val }));
 
+  const TABS = [
+    { id: "type", label: "Type", icon: Sparkles, hint: "Operation" },
+    { id: "schedule", label: "Schedule", icon: CalendarDays, hint: "When" },
+    { id: "route", label: "Route", icon: MapPin, hint: "Where" },
+    { id: "resources", label: "Resources", icon: Layers, hint: "Vehicles & Pool" },
+    { id: "details", label: "Details", icon: FileText, hint: "Purpose & Submit" },
+  ] as const;
+  const tabIndex = TABS.findIndex(t => t.id === activeTab);
+  const goNext = () => setActiveTab(TABS[Math.min(tabIndex + 1, TABS.length - 1)].id as any);
+  const goPrev = () => setActiveTab(TABS[Math.max(tabIndex - 1, 0)].id as any);
+
+  // Per-tab completion indicators
+  const tabComplete: Record<string, boolean> = {
+    type: !!form.request_type,
+    schedule: isDaily ? !!form.date : !!form.start_date,
+    route: !!form.departure_place || !!form.destination,
+    resources: !!form.num_vehicles && !!form.passengers,
+    details: !!form.purpose,
+  };
+
   const body = (
     <>
       {!embedded && (
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Car className="w-5 h-5 text-primary" />
-            Fleet Request Form
-          </DialogTitle>
-          <DialogDescription>Submit a vehicle request. Fields adapt based on operation type.</DialogDescription>
-        </DialogHeader>
+        <div className="relative -m-6 mb-0 px-6 pt-6 pb-5 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-b border-border/50 overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
+          <DialogHeader className="relative">
+            <div className="flex items-start gap-4">
+              <div className="relative shrink-0">
+                <div className="absolute inset-0 bg-primary/30 rounded-2xl blur-md" />
+                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/30">
+                  <Car className="w-6 h-6 text-primary-foreground" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-xl font-semibold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                  Fleet Request Form
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-sm">
+                  A guided 5-step intake — fields adapt as you go. Progress auto-saves.
+                </DialogDescription>
+              </div>
+              <Badge variant="outline" className="hidden md:inline-flex items-center gap-1 border-primary/30 bg-background/60 backdrop-blur">
+                <ShieldCheck className="w-3 h-3 text-primary" />
+                <span className="text-[11px]">Step {tabIndex + 1} of {TABS.length}</span>
+              </Badge>
+            </div>
+          </DialogHeader>
+        </div>
       )}
 
+      <div className="px-1 pt-4 space-y-4">
         {/* Draft restored notice */}
         {restoredAt && (
-          <div className="flex items-center justify-between gap-2 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs animate-fade-in">
             <span className="flex items-center gap-1.5 text-muted-foreground">
               <History className="w-3.5 h-3.5 text-primary" />
               Draft restored from {new Date(restoredAt).toLocaleString()}
@@ -351,7 +393,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
         {/* Super-admin: file on behalf of any user */}
         {isSuperAdmin && (
-          <div className="rounded-md border border-dashed border-primary/30 bg-primary/5 p-3 flex items-center gap-2 flex-wrap">
+          <div className="rounded-lg border border-dashed border-primary/30 bg-gradient-to-r from-primary/10 to-transparent p-3 flex items-center gap-2 flex-wrap">
             <UserCog className="w-4 h-4 text-primary shrink-0" />
             <span className="text-sm font-medium">Request on behalf of:</span>
             {onBehalfOf ? (
@@ -375,7 +417,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <CommandInput placeholder="Search by name, email, or license…" />
                     <CommandList className="max-h-72">
                       <CommandEmpty>No users or drivers found.</CommandEmpty>
-                      {/* System Users */}
                       <CommandGroup heading="System Users">
                         {orgPeople.filter((p: any) => p.type === "user").map((u: any) => (
                           <CommandItem
@@ -399,7 +440,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                           </CommandItem>
                         ))}
                       </CommandGroup>
-                      {/* Unlinked Drivers */}
                       {orgPeople.some((p: any) => p.type === "driver") && (
                         <CommandGroup heading="Drivers (no user account)">
                           {orgPeople.filter((p: any) => p.type === "driver").map((d: any) => (
@@ -437,145 +477,133 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </div>
         )}
 
-        <div className="space-y-5">
-          {/* Vehicle Request Type */}
-          <div>
+        {/* Modern Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+          <TabsList className="w-full h-auto p-1.5 bg-muted/40 backdrop-blur grid grid-cols-5 gap-1 rounded-xl">
+            {TABS.map((tab, i) => {
+              const Icon = tab.icon;
+              const active = activeTab === tab.id;
+              const done = tabComplete[tab.id] && !active;
+              return (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="relative flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:shadow-primary/10 transition-all"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${active ? "bg-primary text-primary-foreground" : done ? "bg-primary/20 text-primary" : "bg-muted-foreground/20 text-muted-foreground"}`}>
+                      {done ? <CheckCircle2 className="w-3 h-3" /> : i + 1}
+                    </span>
+                    <Icon className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs font-medium leading-none">{tab.label}</span>
+                  <span className="text-[10px] text-muted-foreground hidden sm:block leading-none">{tab.hint}</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+
+          {/* TYPE TAB */}
+          <TabsContent value="type" className="mt-5 space-y-4 animate-fade-in">
             <Label className="text-primary font-medium">Vehicle Request Type</Label>
-            <Select value={form.request_type} onValueChange={v => update("request_type", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily_operation">Daily Operation</SelectItem>
-                <SelectItem value="project_operation">Project Operation</SelectItem>
-                <SelectItem value="field_operation">Field Operation</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Date/Time Section — dynamic per request type */}
-          {isDaily ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-1">
-                <DateTimePicker
-                  label="Date"
-                  date={form.date}
-                  onDateChange={d => update("date", d)}
-                  required
-                  minDate={new Date()}
-                  hideTime
-                />
-              </div>
-              <div>
-                <Label className="text-primary font-medium">Start Time</Label>
-                <Input
-                  type="time"
-                  value={form.start_time}
-                  onChange={e => update("start_time", e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label className="text-primary font-medium">End Time</Label>
-                <Input
-                  type="time"
-                  value={form.end_time}
-                  onChange={e => update("end_time", e.target.value)}
-                  required
-                />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                { v: "daily_operation", title: "Daily Operation", desc: "Single-day trip with start & end time", icon: Clock },
+                { v: "project_operation", title: "Project Operation", desc: "Multi-day, project-coded assignment", icon: Layers },
+                { v: "field_operation", title: "Field Operation", desc: "Extended off-base or field deployment", icon: Route },
+              ].map(({ v, title, desc, icon: Icon }) => {
+                const active = form.request_type === v;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => update("request_type", v)}
+                    className={`group relative text-left rounded-xl border p-4 transition-all hover-scale ${active ? "border-primary bg-gradient-to-br from-primary/15 to-primary/5 shadow-lg shadow-primary/10" : "border-border bg-card hover:border-primary/40"}`}
+                  >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 ${active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="font-semibold text-sm">{title}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{desc}</div>
+                    {active && <div className="absolute top-2 right-2"><CheckCircle2 className="w-4 h-4 text-primary" /></div>}
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            <div className={`grid grid-cols-1 ${isProject ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4`}>
-              <DateTimePicker
-                label="Start Date"
-                date={form.start_date}
-                onDateChange={d => update("start_date", d)}
-                required
-                minDate={new Date()}
-                hideTime
-              />
-              <DateTimePicker
-                label="End Date"
-                date={form.end_date}
-                onDateChange={d => update("end_date", d)}
-                minDate={form.start_date}
-                hideTime
-              />
-              {isProject && (
+          </TabsContent>
+
+          {/* SCHEDULE TAB */}
+          <TabsContent value="schedule" className="mt-5 space-y-4 animate-fade-in">
+            {isDaily ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-1">
+                  <DateTimePicker label="Date" date={form.date} onDateChange={d => update("date", d)} required minDate={new Date()} hideTime />
+                </div>
                 <div>
-                  <Label className="text-primary font-medium">Project Number</Label>
-                  <Input
-                    value={form.project_number}
-                    onChange={e => update("project_number", e.target.value)}
-                    placeholder="Project Number"
-                  />
+                  <Label className="text-primary font-medium">Start Time</Label>
+                  <Input type="time" value={form.start_time} onChange={e => update("start_time", e.target.value)} required />
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Departure & Destination from geofences/map */}
-          <div className="grid grid-cols-2 gap-4">
-            <LocationPickerField
-              label="Departure Place"
-              value={form.departure_place}
-              onChange={v => update("departure_place", v)}
-              onCoordsChange={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
-              placeholder="Select or type departure"
-              iconColor="text-green-500"
-            />
-            <LocationPickerField
-              label="Destination Place"
-              value={form.destination}
-              onChange={v => update("destination", v)}
-              onCoordsChange={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
-              placeholder="Select or type destination"
-              iconColor="text-red-500"
-            />
-          </div>
-
-          {/* Coordinates display */}
-          {(form.departure_lat != null || form.destination_lat != null) && (
-            <div className="grid grid-cols-2 gap-4">
-              {form.departure_lat != null && form.departure_lng != null ? (
-                <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-                  <div className="font-medium text-foreground text-sm">{form.departure_place || "Departure"}</div>
-                  <div>Lat: {form.departure_lat.toFixed(6)} &nbsp;|&nbsp; Lng: {form.departure_lng.toFixed(6)}</div>
+                <div>
+                  <Label className="text-primary font-medium">End Time</Label>
+                  <Input type="time" value={form.end_time} onChange={e => update("end_time", e.target.value)} required />
                 </div>
-              ) : <div />}
-              {form.destination_lat != null && form.destination_lng != null ? (
-                <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-                  <div className="font-medium text-foreground text-sm">{form.destination || "Destination"}</div>
-                  <div>Lat: {form.destination_lat.toFixed(6)} &nbsp;|&nbsp; Lng: {form.destination_lng.toFixed(6)}</div>
-                </div>
-              ) : <div />}
-            </div>
-          )}
+              </div>
+            ) : (
+              <div className={`grid grid-cols-1 ${isProject ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4`}>
+                <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => update("start_date", d)} required minDate={new Date()} hideTime />
+                <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => update("end_date", d)} minDate={form.start_date} hideTime />
+                {isProject && (
+                  <div>
+                    <Label className="text-primary font-medium">Project Number</Label>
+                    <Input value={form.project_number} onChange={e => update("project_number", e.target.value)} placeholder="Project Number" />
+                  </div>
+                )}
+              </div>
+            )}
+            {isField && (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-xs text-muted-foreground">
+                <p className="font-medium text-blue-400">Field Operation Note:</p>
+                <p>Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled.</p>
+              </div>
+            )}
+          </TabsContent>
 
-          {/* Vehicles & Passengers */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-primary font-medium flex items-center gap-1"><Car className="w-3.5 h-3.5" /> No. Of Vehicle</Label>
-              <Input type="number" min={1} value={form.num_vehicles} onChange={e => update("num_vehicles", e.target.value)} />
+          {/* ROUTE TAB */}
+          <TabsContent value="route" className="mt-5 space-y-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <LocationPickerField
+                label="Departure Place"
+                value={form.departure_place}
+                onChange={v => update("departure_place", v)}
+                onCoordsChange={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
+                placeholder="Select or type departure"
+                iconColor="text-green-500"
+              />
+              <LocationPickerField
+                label="Destination Place"
+                value={form.destination}
+                onChange={v => update("destination", v)}
+                onCoordsChange={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
+                placeholder="Select or type destination"
+                iconColor="text-red-500"
+              />
             </div>
-            <div>
-              <Label className="text-primary font-medium flex items-center gap-1"><Users className="w-3.5 h-3.5" /> No. Of Passenger</Label>
-              <Input type="number" min={1} value={form.passengers} onChange={e => update("passengers", e.target.value)} />
-            </div>
-          </div>
-
-          {/* Vehicle Type & Trip Type */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-primary font-medium">Vehicle Type</Label>
-              <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
-                <SelectTrigger><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
-                <SelectContent>
-                  {VEHICLE_TYPES_OPTIONS.map(vt => (
-                    <SelectItem key={vt.value} value={vt.value}>{vt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {(form.departure_lat != null || form.destination_lat != null) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {form.departure_lat != null && form.departure_lng != null ? (
+                  <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+                    <div className="font-medium text-foreground text-sm flex items-center gap-1"><MapPin className="w-3 h-3 text-green-500" /> {form.departure_place || "Departure"}</div>
+                    <div>Lat: {form.departure_lat.toFixed(6)} &nbsp;|&nbsp; Lng: {form.departure_lng.toFixed(6)}</div>
+                  </div>
+                ) : <div />}
+                {form.destination_lat != null && form.destination_lng != null ? (
+                  <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+                    <div className="font-medium text-foreground text-sm flex items-center gap-1"><MapPin className="w-3 h-3 text-red-500" /> {form.destination || "Destination"}</div>
+                    <div>Lat: {form.destination_lat.toFixed(6)} &nbsp;|&nbsp; Lng: {form.destination_lng.toFixed(6)}</div>
+                  </div>
+                ) : <div />}
+              </div>
+            )}
             <div>
               <Label className="text-primary font-medium flex items-center gap-1"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
               <Select value={form.trip_type} onValueChange={v => update("trip_type", v)}>
@@ -586,89 +614,111 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          </TabsContent>
 
-          {/* Pool Category & Pool Name */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* RESOURCES TAB */}
+          <TabsContent value="resources" className="mt-5 space-y-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-primary font-medium flex items-center gap-1"><Car className="w-3.5 h-3.5" /> No. Of Vehicle</Label>
+                <Input type="number" min={1} value={form.num_vehicles} onChange={e => update("num_vehicles", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-primary font-medium flex items-center gap-1"><Users className="w-3.5 h-3.5" /> No. Of Passenger</Label>
+                <Input type="number" min={1} value={form.passengers} onChange={e => update("passengers", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-primary font-medium">Vehicle Type</Label>
+                <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
+                  <SelectContent>
+                    {VEHICLE_TYPES_OPTIONS.map(vt => (
+                      <SelectItem key={vt.value} value={vt.value}>{vt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-primary font-medium">Pool Category</Label>
+                <Select value={form.pool_category} onValueChange={v => { update("pool_category", v); update("pool_name", ""); }}>
+                  <SelectTrigger><SelectValue placeholder="Select Pool Category" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="corporate">Corporate</SelectItem>
+                    <SelectItem value="zone">Zone</SelectItem>
+                    <SelectItem value="region">Region</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-2">
+                <Label className="text-primary font-medium">Pool</Label>
+                <Select value={form.pool_name} onValueChange={v => update("pool_name", v)} disabled={!form.pool_category}>
+                  <SelectTrigger><SelectValue placeholder="Select Pool" /></SelectTrigger>
+                  <SelectContent>
+                    {filteredPools.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* DETAILS TAB */}
+          <TabsContent value="details" className="mt-5 space-y-4 animate-fade-in">
             <div>
-              <Label className="text-primary font-medium">Pool Category</Label>
-              <Select value={form.pool_category} onValueChange={v => { update("pool_category", v); update("pool_name", ""); }}>
-                <SelectTrigger><SelectValue placeholder="Select Pool Category" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="corporate">Corporate</SelectItem>
-                  <SelectItem value="zone">Zone</SelectItem>
-                  <SelectItem value="region">Region</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label className="text-primary font-medium">Trip Description</Label>
+              <Textarea value={form.purpose} onChange={e => update("purpose", e.target.value)} placeholder="Describe the purpose of this trip…" rows={4} />
             </div>
-            <div>
-              <Label className="text-primary font-medium">Pool</Label>
-              <Select value={form.pool_name} onValueChange={v => update("pool_name", v)} disabled={!form.pool_category}>
-                <SelectTrigger><SelectValue placeholder="Select Pool" /></SelectTrigger>
-                <SelectContent>
-                  {filteredPools.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <div className="rounded-lg border border-border bg-gradient-to-br from-muted/50 to-muted/20 p-4 text-xs text-muted-foreground space-y-2">
+              <p className="font-medium text-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Approval Routing</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1">
+                <div className="rounded-md bg-background/60 border border-border/50 p-2"><span className="font-medium text-foreground">≤15 days</span> → Immediate Manager</div>
+                <div className="rounded-md bg-background/60 border border-border/50 p-2"><span className="font-medium text-foreground">&gt;15 days</span> → Director</div>
+                <div className="rounded-md bg-background/60 border border-border/50 p-2"><span className="font-medium text-foreground">Managers+</span> → Auto-approved</div>
+              </div>
             </div>
-          </div>
+          </TabsContent>
+        </Tabs>
+      </div>
 
-          {/* Trip Description */}
-          <div>
-            <Label className="text-primary font-medium">Trip Description</Label>
-            <Textarea
-              value={form.purpose}
-              onChange={e => update("purpose", e.target.value)}
-              placeholder="Description"
-              rows={3}
-            />
-          </div>
-
-          {/* Dynamic info based on type */}
-          {isField && (
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-blue-400">Field Operation Note:</p>
-              <p>Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled.</p>
-            </div>
-          )}
-
-          {/* Approval Info */}
-          <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
-            <p className="font-medium text-foreground">Approval Routing:</p>
-            <p>• Requests ≤15 days → Routed to your Immediate Manager</p>
-            <p>• Requests &gt;15 days → Routed to Director</p>
-            <p>• Managers & above → Auto-approved</p>
-          </div>
-        </div>
-
-      {embedded ? (
-        <div className="flex justify-between pt-4 border-t mt-4">
-          <Button variant="outline" onClick={() => { setForm(initialForm); }}>Clear</Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel', 'Cancel')}</Button>
-            <Button
-              onClick={() => createMutation.mutate()}
-              disabled={!canSubmit || createMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {createMutation.isPending ? "Submitting..." : "Create Request"}
+      {(() => {
+        const isLast = tabIndex === TABS.length - 1;
+        const FooterInner = (
+          <div className="flex w-full items-center justify-between gap-3">
+            <Button variant="ghost" size="sm" onClick={() => { setForm(initialForm); }} className="text-muted-foreground">
+              Clear
             </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel', 'Cancel')}</Button>
+              {tabIndex > 0 && (
+                <Button variant="outline" onClick={goPrev} className="gap-1">
+                  <ChevronLeft className="w-4 h-4" /> Back
+                </Button>
+              )}
+              {!isLast ? (
+                <Button onClick={goNext} className="gap-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                  Next <ChevronRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => createMutation.mutate()}
+                  disabled={!canSubmit || createMutation.isPending}
+                  className="gap-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg shadow-emerald-500/30"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {createMutation.isPending ? "Submitting..." : "Submit Request"}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      ) : (
-        <DialogFooter className="flex justify-between sm:justify-between">
-          <Button variant="outline" onClick={() => { setForm(initialForm); }}>Clear</Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel', 'Cancel')}</Button>
-            <Button
-              onClick={() => createMutation.mutate()}
-              disabled={!canSubmit || createMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {createMutation.isPending ? "Submitting..." : "Create Request"}
-            </Button>
-          </div>
-        </DialogFooter>
-      )}
+        );
+        return embedded ? (
+          <div className="pt-4 border-t mt-4">{FooterInner}</div>
+        ) : (
+          <DialogFooter className="-mx-6 -mb-6 px-6 py-4 mt-6 bg-gradient-to-r from-muted/40 to-transparent border-t border-border/50 sm:justify-between">
+            {FooterInner}
+          </DialogFooter>
+        );
+      })()}
+
     </>
   );
 
@@ -705,7 +755,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-6">
         {isDriverOnly ? blockedBody : body}
       </DialogContent>
     </Dialog>
