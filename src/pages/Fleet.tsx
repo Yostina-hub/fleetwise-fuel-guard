@@ -98,6 +98,8 @@ const Fleet = () => {
   const location = useLocation();
   const { drivers } = useDrivers();
   const { handleExport, handleExportAll, exporting } = useFleetExport();
+  const { buckets: ownershipBuckets } = useFleetOwnershipStats();
+  const ownershipStats = { buckets: ownershipBuckets };
   
   // Check if we're coming from "Manage" action with a specific vehicle
   const locationState = location.state as { selectedVehicleId?: string; openModal?: boolean } | null;
