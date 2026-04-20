@@ -10,7 +10,7 @@ import {
   PLATE_CODES, PLATE_REGIONS, VEHICLE_TYPES_OPTIONS, VEHICLE_GROUPS, DRIVE_TYPES,
   ENERGY_TYPES, ENERGY_SOURCES,
   PURPOSE_FOR_OPTIONS, SPECIFIC_POOL_OPTIONS, TRANSMISSION_TYPES,
-  CURRENT_CONDITION_OPTIONS, SAFETY_COMFORT_CATEGORIES,
+  CURRENT_CONDITION_OPTIONS, SAFETY_COMFORT_CATEGORIES, ASSIGNED_LOCATIONS,
 } from "./formConstants";
 
 type SetFn = (field: string, value: string | number) => void;
@@ -33,7 +33,7 @@ const tabs = [
 
 // Single source of truth — drives both tab rendering AND completion math.
 const TAB_FIELDS: Record<typeof tabs[number]["id"], string[]> = {
-  identity: ["plate_number_part", "purpose_for", "specific_pool", "specific_location", "vehicle_type", "vehicle_group"],
+  identity: ["plate_number_part", "purpose_for", "specific_pool", "specific_location", "assigned_location", "vehicle_type", "vehicle_group"],
   spec:     ["make", "model", "model_code", "year", "mfg_date", "color", "vin", "engine_number", "transmission_type", "drive_type", "engine_cc", "fuel_type"],
   value:    ["purchasing_price", "current_market_price", "current_condition", "fuel_standard_km_per_liter", "seating_capacity", "loading_capacity_quintal", "year_of_ownership", "safety_comfort_category"],
 };
@@ -228,6 +228,22 @@ function IdentityPane({ formData, set, plateNumber, onBlur, getError }: Props) {
 
       <Field label="Specific Location" error={err("specific_location")}>
         <Input value={formData.specific_location || ""} onChange={e => set("specific_location", e.target.value)} onBlur={blur("specific_location")} placeholder="Branch / site name" />
+      </Field>
+
+      <Field label="Assigned Location" hint="Corporate / Zone / Region group" error={err("assigned_location")}>
+        <Select value={formData.assigned_location || ""} onValueChange={v => blurSelect("assigned_location", v)}>
+          <SelectTrigger><SelectValue placeholder="Select location..." /></SelectTrigger>
+          <SelectContent>
+            {["Corporate", "Zone", "Region"].map(group => (
+              <SelectGroup key={group}>
+                <SelectLabel className="text-xs font-semibold text-muted-foreground">{group}</SelectLabel>
+                {ASSIGNED_LOCATIONS.filter(l => l.group === group).map(l => (
+                  <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
+          </SelectContent>
+        </Select>
       </Field>
 
       <Field label="Vehicle Type" required error={err("vehicle_type")}>

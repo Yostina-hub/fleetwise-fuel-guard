@@ -58,6 +58,7 @@ export const vehicleFieldSchemas = {
   purpose_for: trimmedRequired("Purpose"),
   specific_pool: trimmedOptional(100),
   specific_location: trimmedOptional(200),
+  assigned_location: trimmedOptional(100),
   vehicle_type: trimmedRequired("Vehicle type"),
   vehicle_group: trimmedRequired("Group"),
 
@@ -171,7 +172,8 @@ export function validateVehicleForm(formData: Record<string, unknown>): {
 /** Map a field name → which top-level dialog tab contains it. */
 export const FIELD_TO_SECTION: Record<VehicleFieldName, string> = {
   plate_number_part: "basic", purpose_for: "basic", specific_pool: "basic",
-  specific_location: "basic", vehicle_type: "basic", vehicle_group: "basic",
+  specific_location: "basic", assigned_location: "basic",
+  vehicle_type: "basic", vehicle_group: "basic",
   make: "basic", model: "basic", model_code: "basic", year: "basic", mfg_date: "basic",
   color: "basic", vin: "basic", engine_number: "basic", transmission_type: "basic",
   drive_type: "basic", engine_cc: "basic", fuel_type: "basic",
