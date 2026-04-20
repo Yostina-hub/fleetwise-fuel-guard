@@ -27,6 +27,7 @@ import {
 } from "./formConstants";
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
+import BasicInfoTabs from "./BasicInfoTabs";
 
 const vehicleSchema = z.object({
   plate_number: z.string().trim().min(1, "Plate number is required"),
@@ -61,6 +62,14 @@ const initialForm = {
   owner_contact_person: "", owner_phone: "", owner_email: "",
   owner_region: "", owner_zone: "", owner_woreda: "",
   owner_govt_id: "", owner_tax_id: "", owner_status: "active",
+  // Extended Basic Info (Excel spec)
+  purpose_for: "", specific_pool: "", specific_location: "",
+  transmission_type: "", model_code: "", engine_number: "",
+  mfg_date: "", year_of_ownership: "",
+  seating_capacity: "", loading_capacity_quintal: "", engine_cc: "",
+  purchasing_price: "", current_market_price: "",
+  current_condition: "", fuel_standard_km_per_liter: "",
+  safety_comfort_category: "",
 };
 
 export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicleDialogProps) {
@@ -183,6 +192,23 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       tank_capacity_liters: formData.tank_capacity_liters ? parseFloat(formData.tank_capacity_liters) : null,
       notes: formData.notes.trim() || null,
       is_active: formData.status !== "out_of_service",
+      // Extended Basic Info
+      purpose_for: formData.purpose_for || null,
+      specific_pool: formData.specific_pool || null,
+      specific_location: formData.specific_location?.trim() || null,
+      transmission_type: formData.transmission_type || null,
+      model_code: formData.model_code?.trim() || null,
+      engine_number: formData.engine_number?.trim() || null,
+      mfg_date: formData.mfg_date || null,
+      year_of_ownership: formData.year_of_ownership ? parseInt(formData.year_of_ownership) : null,
+      seating_capacity: formData.seating_capacity ? parseInt(formData.seating_capacity) : null,
+      loading_capacity_quintal: formData.loading_capacity_quintal ? parseFloat(formData.loading_capacity_quintal) : null,
+      engine_cc: formData.engine_cc ? parseInt(formData.engine_cc) : null,
+      purchasing_price: formData.purchasing_price ? parseFloat(formData.purchasing_price) : null,
+      current_market_price: formData.current_market_price ? parseFloat(formData.current_market_price) : null,
+      current_condition: formData.current_condition || null,
+      fuel_standard_km_per_liter: formData.fuel_standard_km_per_liter ? parseFloat(formData.fuel_standard_km_per_liter) : null,
+      safety_comfort_category: formData.safety_comfort_category || null,
     };
 
     const validation = vehicleSchema.safeParse(cleanData);
@@ -207,93 +233,8 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
         <ScrollArea className="max-h-[calc(95vh-180px)]">
           <div className="p-6 space-y-6">
 
-            {/* 2.1 Basic Vehicle Information */}
-            <Section icon={<Truck className="w-5 h-5 text-primary" />} title="Basic Vehicle Information">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-3">
-                  <Label className="text-sm">Plate Number *</Label>
-                  <div className="grid grid-cols-3 gap-2 mt-1.5">
-                    <Select value={formData.plate_code} onValueChange={v => set("plate_code", v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {PLATE_CODES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select value={formData.plate_region} onValueChange={v => set("plate_region", v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {PLATE_REGIONS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Input value={formData.plate_number_part} onChange={e => set("plate_number_part", e.target.value.replace(/\D/g, "").slice(0, 5))} placeholder="12345" maxLength={5} />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Preview: {plateNumber}</p>
-                </div>
-
-                <Field label="Vehicle Type *">
-                  <Select value={formData.vehicle_type} onValueChange={v => set("vehicle_type", v)}>
-                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                    <SelectContent>
-                      {VEHICLE_TYPES_OPTIONS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Group *">
-                  <Select value={formData.vehicle_group} onValueChange={v => set("vehicle_group", v)}>
-                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                    <SelectContent>
-                      {VEHICLE_GROUPS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Route Type *">
-                  <Select value={formData.route_type} onValueChange={v => set("route_type", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {ROUTE_TYPES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Drive Type *">
-                  <Select value={formData.drive_type} onValueChange={v => set("drive_type", v)}>
-                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                    <SelectContent>
-                      {DRIVE_TYPES.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Make *"><Input value={formData.make} onChange={e => set("make", e.target.value)} placeholder="e.g. Toyota" /></Field>
-                <Field label="Model *"><Input value={formData.model} onChange={e => set("model", e.target.value)} placeholder="e.g. Hilux" /></Field>
-                <Field label="Manufactured Year *">
-                  <Input type="number" value={formData.year} onChange={e => set("year", parseInt(e.target.value) || new Date().getFullYear())} placeholder="YYYY" />
-                </Field>
-                <Field label="Color"><Input value={formData.color} onChange={e => set("color", e.target.value)} placeholder="e.g. White" /></Field>
-                <Field label="Chassis Number (VIN)"><Input value={formData.vin} onChange={e => set("vin", e.target.value)} maxLength={17} /></Field>
-                <Field label="Energy Type">
-                  <Select value={formData.fuel_type} onValueChange={v => set("fuel_type", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {ENERGY_SOURCES.map(src => (
-                        <SelectGroup key={src.value}>
-                          <SelectLabel className="text-xs font-semibold text-muted-foreground">{src.label}</SelectLabel>
-                          {ENERGY_TYPES.filter(e => e.source === src.value).map(e => (
-                            <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>
-                          ))}
-                        </SelectGroup>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Vehicle Category">
-                  <Select value={formData.vehicle_category} onValueChange={v => set("vehicle_category", v)}>
-                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                    <SelectContent>
-                      {VEHICLE_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-            </Section>
+            {/* 2.1 Basic Vehicle Information — Modern Tabbed UI */}
+            <BasicInfoTabs formData={formData} set={set} plateNumber={plateNumber} />
 
             {/* 2.2 Legal & Compliance */}
             <Section icon={<Shield className="w-5 h-5 text-primary" />} title="Legal & Compliance">

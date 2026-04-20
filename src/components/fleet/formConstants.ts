@@ -173,6 +173,44 @@ export const OWNER_STATUSES = [
   { value: "blacklisted", label: "Blacklisted" },
 ];
 
+// New Basic Info options (Excel spec)
+export const PURPOSE_FOR_OPTIONS = [
+  { value: "operational", label: "Operational" },
+  { value: "management", label: "Management Vehicle" },
+  { value: "op", label: "OP" },
+  { value: "support", label: "Support" },
+  { value: "executive", label: "Executive" },
+  { value: "pool", label: "Pool" },
+];
+
+export const SPECIFIC_POOL_OPTIONS = [
+  "NAAZ", "SR", "SWAAZ", "NEAZ", "SEAZ", "WAAZ", "EAAZ", "CAAZ", "Other",
+];
+
+export const TRANSMISSION_TYPES = [
+  { value: "manual", label: "Manual" },
+  { value: "automatic", label: "Automatic" },
+  { value: "semi_automatic", label: "Semi-Automatic" },
+  { value: "cvt", label: "CVT" },
+  { value: "dct", label: "DCT" },
+];
+
+export const CURRENT_CONDITION_OPTIONS = [
+  { value: "excellent", label: "Excellent" },
+  { value: "very_good", label: "Very Good" },
+  { value: "good", label: "Good" },
+  { value: "fair", label: "Fair" },
+  { value: "poor", label: "Poor" },
+];
+
+export const SAFETY_COMFORT_CATEGORIES = [
+  { value: "luxury", label: "Luxury" },
+  { value: "premium", label: "Premium" },
+  { value: "standard", label: "Standard" },
+  { value: "economy", label: "Economy" },
+  { value: "utility", label: "Utility" },
+];
+
 // Assigned location groups
 export const ASSIGNED_LOCATIONS = [
   { group: "Corporate", value: "corp_fom1", label: "FOM I" },

@@ -1,0 +1,17 @@
+ALTER TABLE public.vehicles
+  ADD COLUMN IF NOT EXISTS purpose_for text,
+  ADD COLUMN IF NOT EXISTS specific_pool text,
+  ADD COLUMN IF NOT EXISTS specific_location text,
+  ADD COLUMN IF NOT EXISTS transmission_type text,
+  ADD COLUMN IF NOT EXISTS model_code text,
+  ADD COLUMN IF NOT EXISTS engine_number text,
+  ADD COLUMN IF NOT EXISTS mfg_date date,
+  ADD COLUMN IF NOT EXISTS year_of_ownership integer,
+  ADD COLUMN IF NOT EXISTS seating_capacity integer,
+  ADD COLUMN IF NOT EXISTS loading_capacity_quintal numeric,
+  ADD COLUMN IF NOT EXISTS engine_cc integer,
+  ADD COLUMN IF NOT EXISTS purchasing_price numeric,
+  ADD COLUMN IF NOT EXISTS current_market_price numeric,
+  ADD COLUMN IF NOT EXISTS current_condition text,
+  ADD COLUMN IF NOT EXISTS fuel_standard_km_per_liter numeric,
+  ADD COLUMN IF NOT EXISTS safety_comfort_category text;
