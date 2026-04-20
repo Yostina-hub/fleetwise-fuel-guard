@@ -623,29 +623,63 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             {isDaily ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-1">
-                  <DateTimePicker label="Date" date={form.date} onDateChange={d => update("date", d)} required minDate={new Date()} hideTime />
+                  <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); }} required minDate={new Date()} hideTime />
+                  <FieldError field="date" />
                 </div>
                 <div>
                   <Label className="text-primary font-medium">Start Time <span className="text-destructive">*</span></Label>
-                  <Input type="time" value={form.start_time} onChange={e => update("start_time", e.target.value)} required className="h-10" />
+                  <Input
+                    type="time"
+                    value={form.start_time}
+                    onChange={e => update("start_time", e.target.value)}
+                    onBlur={e => handleBlur("start_time", e.target.value, form as any)}
+                    required
+                    className="h-10"
+                    aria-invalid={!!getError("start_time")}
+                  />
+                  <FieldError field="start_time" />
                 </div>
                 <div>
                   <Label className="text-primary font-medium">End Time <span className="text-destructive">*</span></Label>
-                  <Input type="time" value={form.end_time} onChange={e => update("end_time", e.target.value)} required className="h-10" />
+                  <Input
+                    type="time"
+                    value={form.end_time}
+                    onChange={e => update("end_time", e.target.value)}
+                    onBlur={e => handleBlur("end_time", e.target.value, form as any)}
+                    required
+                    className="h-10"
+                    aria-invalid={!!getError("end_time")}
+                  />
+                  <FieldError field="end_time" />
                 </div>
               </div>
             ) : (
               <div className={`grid grid-cols-1 ${isProject ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4`}>
-                <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => update("start_date", d)} required minDate={new Date()} hideTime />
-                <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => update("end_date", d)} required={isProject} minDate={form.start_date} hideTime />
+                <div>
+                  <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime />
+                  <FieldError field="start_date" />
+                </div>
+                <div>
+                  <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => { update("end_date", d); handleBlur("end_date", d, form as any); }} required={isProject} minDate={form.start_date} hideTime />
+                  <FieldError field="end_date" />
+                </div>
                 {isProject && (
                   <div>
                     <Label className="text-primary font-medium">Project Number <span className="text-destructive">*</span></Label>
-                    <Input value={form.project_number} onChange={e => update("project_number", e.target.value)} placeholder="e.g. PRJ-2026-001" className="h-10" />
+                    <Input
+                      value={form.project_number}
+                      onChange={e => update("project_number", e.target.value)}
+                      onBlur={e => handleBlur("project_number", e.target.value, form as any)}
+                      placeholder="e.g. PRJ-2026-001"
+                      className="h-10"
+                      aria-invalid={!!getError("project_number")}
+                    />
+                    <FieldError field="project_number" />
                   </div>
                 )}
               </div>
             )}
+
 
             {/* Live duration summary */}
             {durationLabel && (
