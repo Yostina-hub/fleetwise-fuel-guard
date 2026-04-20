@@ -23661,11 +23661,16 @@ export type Database = {
           color: string | null
           commercial_permit: boolean | null
           created_at: string
+          current_condition: string | null
+          current_market_price: number | null
           current_value: number | null
           depot_id: string | null
           depreciation_rate: number | null
           drive_type: string | null
+          engine_cc: number | null
           engine_hours: number | null
+          engine_number: string | null
+          fuel_standard_km_per_liter: number | null
           fuel_type: string
           gps_device_id: string | null
           gps_installed: boolean | null
@@ -23675,8 +23680,11 @@ export type Database = {
           insurance_policy_no: string | null
           is_active: boolean | null
           lifecycle_stage: string | null
+          loading_capacity_quintal: number | null
           make: string
+          mfg_date: string | null
           model: string
+          model_code: string | null
           notes: string | null
           odometer_km: number | null
           organization_id: string
@@ -23689,6 +23697,8 @@ export type Database = {
           photo_left_url: string | null
           photo_right_url: string | null
           plate_number: string
+          purchasing_price: number | null
+          purpose_for: string | null
           registration_cert_no: string | null
           registration_expiry: string | null
           rental_contract_number: string | null
@@ -23697,6 +23707,10 @@ export type Database = {
           rental_provider: string | null
           rental_start_date: string | null
           route_type: string | null
+          safety_comfort_category: string | null
+          seating_capacity: number | null
+          specific_location: string | null
+          specific_pool: string | null
           speed_cutoff_enabled: boolean | null
           speed_cutoff_grace_seconds: number | null
           speed_cutoff_limit_kmh: number | null
@@ -23708,12 +23722,14 @@ export type Database = {
           total_downtime_hours: number | null
           total_fuel_cost: number | null
           total_maintenance_cost: number | null
+          transmission_type: string | null
           updated_at: string
           vehicle_category: string | null
           vehicle_group: string | null
           vehicle_type: string | null
           vin: string | null
           year: number
+          year_of_ownership: number | null
         }
         Insert: {
           acquisition_cost?: number | null
@@ -23725,11 +23741,16 @@ export type Database = {
           color?: string | null
           commercial_permit?: boolean | null
           created_at?: string
+          current_condition?: string | null
+          current_market_price?: number | null
           current_value?: number | null
           depot_id?: string | null
           depreciation_rate?: number | null
           drive_type?: string | null
+          engine_cc?: number | null
           engine_hours?: number | null
+          engine_number?: string | null
+          fuel_standard_km_per_liter?: number | null
           fuel_type: string
           gps_device_id?: string | null
           gps_installed?: boolean | null
@@ -23739,8 +23760,11 @@ export type Database = {
           insurance_policy_no?: string | null
           is_active?: boolean | null
           lifecycle_stage?: string | null
+          loading_capacity_quintal?: number | null
           make: string
+          mfg_date?: string | null
           model: string
+          model_code?: string | null
           notes?: string | null
           odometer_km?: number | null
           organization_id: string
@@ -23753,6 +23777,8 @@ export type Database = {
           photo_left_url?: string | null
           photo_right_url?: string | null
           plate_number: string
+          purchasing_price?: number | null
+          purpose_for?: string | null
           registration_cert_no?: string | null
           registration_expiry?: string | null
           rental_contract_number?: string | null
@@ -23761,6 +23787,10 @@ export type Database = {
           rental_provider?: string | null
           rental_start_date?: string | null
           route_type?: string | null
+          safety_comfort_category?: string | null
+          seating_capacity?: number | null
+          specific_location?: string | null
+          specific_pool?: string | null
           speed_cutoff_enabled?: boolean | null
           speed_cutoff_grace_seconds?: number | null
           speed_cutoff_limit_kmh?: number | null
@@ -23772,12 +23802,14 @@ export type Database = {
           total_downtime_hours?: number | null
           total_fuel_cost?: number | null
           total_maintenance_cost?: number | null
+          transmission_type?: string | null
           updated_at?: string
           vehicle_category?: string | null
           vehicle_group?: string | null
           vehicle_type?: string | null
           vin?: string | null
           year: number
+          year_of_ownership?: number | null
         }
         Update: {
           acquisition_cost?: number | null
@@ -23789,11 +23821,16 @@ export type Database = {
           color?: string | null
           commercial_permit?: boolean | null
           created_at?: string
+          current_condition?: string | null
+          current_market_price?: number | null
           current_value?: number | null
           depot_id?: string | null
           depreciation_rate?: number | null
           drive_type?: string | null
+          engine_cc?: number | null
           engine_hours?: number | null
+          engine_number?: string | null
+          fuel_standard_km_per_liter?: number | null
           fuel_type?: string
           gps_device_id?: string | null
           gps_installed?: boolean | null
@@ -23803,8 +23840,11 @@ export type Database = {
           insurance_policy_no?: string | null
           is_active?: boolean | null
           lifecycle_stage?: string | null
+          loading_capacity_quintal?: number | null
           make?: string
+          mfg_date?: string | null
           model?: string
+          model_code?: string | null
           notes?: string | null
           odometer_km?: number | null
           organization_id?: string
@@ -23817,6 +23857,8 @@ export type Database = {
           photo_left_url?: string | null
           photo_right_url?: string | null
           plate_number?: string
+          purchasing_price?: number | null
+          purpose_for?: string | null
           registration_cert_no?: string | null
           registration_expiry?: string | null
           rental_contract_number?: string | null
@@ -23825,6 +23867,10 @@ export type Database = {
           rental_provider?: string | null
           rental_start_date?: string | null
           route_type?: string | null
+          safety_comfort_category?: string | null
+          seating_capacity?: number | null
+          specific_location?: string | null
+          specific_pool?: string | null
           speed_cutoff_enabled?: boolean | null
           speed_cutoff_grace_seconds?: number | null
           speed_cutoff_limit_kmh?: number | null
@@ -23836,12 +23882,14 @@ export type Database = {
           total_downtime_hours?: number | null
           total_fuel_cost?: number | null
           total_maintenance_cost?: number | null
+          transmission_type?: string | null
           updated_at?: string
           vehicle_category?: string | null
           vehicle_group?: string | null
           vehicle_type?: string | null
           vin?: string | null
           year?: number
+          year_of_ownership?: number | null
         }
         Relationships: [
           {
