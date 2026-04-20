@@ -35,6 +35,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
+  const [activeAssignment, setActiveAssignment] = useState<RequestAssignment | null>(null);
 
   // Role-based action gating (mirrors row visibility scope)
   const vrScope = useVehicleRequestScope();
@@ -362,6 +363,12 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       {request.purpose && (
         <div className="text-sm"><span className="text-muted-foreground">Purpose:</span> {request.purpose}</div>
       )}
+
+      {/* Multi-vehicle: per-vehicle assignment list with own check-in/out */}
+      <AssignedFleetList
+        request={request}
+        onCheckIn={(a) => setActiveAssignment(a)}
+      />
 
       {/* Approval routing info */}
       {request.approval_routed_to && (
