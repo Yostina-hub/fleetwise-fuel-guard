@@ -58,6 +58,7 @@ export const vehicleFieldSchemas = {
   purpose_for: trimmedRequired("Purpose"),
   specific_pool: trimmedOptional(100),
   specific_location: trimmedOptional(200),
+  assigned_location: trimmedOptional(100),
   vehicle_type: trimmedRequired("Vehicle type"),
   vehicle_group: trimmedRequired("Group"),
 
