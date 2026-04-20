@@ -838,9 +838,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   inputMode="tel"
                   value={form.contact_phone}
                   onChange={e => update("contact_phone", e.target.value)}
+                  onBlur={e => handleBlur("contact_phone", e.target.value, form as any)}
                   placeholder="+251 9X XXX XXXX — reachable while the trip is active"
                   className="h-10"
+                  aria-invalid={!!getError("contact_phone")}
                 />
+                <FieldError field="contact_phone" />
                 <p className="text-[11px] text-muted-foreground mt-1">Optional. Helps dispatch reach the requester quickly if plans change.</p>
               </div>
             </div>
@@ -849,8 +852,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* DETAILS TAB */}
           <TabsContent value="details" className="mt-5 space-y-4 animate-fade-in">
             <div>
-              <Label className="text-primary font-medium">Trip Description</Label>
-              <Textarea value={form.purpose} onChange={e => update("purpose", e.target.value)} placeholder="Describe the purpose of this trip…" rows={4} />
+              <Label className="text-primary font-medium">Trip Description <span className="text-destructive">*</span></Label>
+              <Textarea
+                value={form.purpose}
+                onChange={e => update("purpose", e.target.value)}
+                onBlur={e => handleBlur("purpose", e.target.value, form as any)}
+                placeholder="Describe the purpose of this trip — what, where, and why (min 10 characters)…"
+                rows={4}
+                aria-invalid={!!getError("purpose")}
+              />
+              <FieldError field="purpose" />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {form.purpose?.length || 0}/2000 characters
+              </p>
             </div>
             <div className="rounded-lg border border-border bg-gradient-to-br from-muted/50 to-muted/20 p-4 text-xs text-muted-foreground space-y-2">
               <p className="font-medium text-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Approval Routing</p>
