@@ -455,6 +455,14 @@ const Fleet = () => {
           offlineVehicles={fleetStats.offline}
           inMaintenance={0}
           avgFuelLevel={0}
+          activeFilter={liveStatusFilter}
+          onFilterChange={(filter) => {
+            setLiveStatusFilter((prev) => (prev === filter ? "all" : filter));
+            // Smooth scroll to vehicle list
+            setTimeout(() => {
+              document.getElementById("fleet-vehicle-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 50);
+          }}
         />
 
 
