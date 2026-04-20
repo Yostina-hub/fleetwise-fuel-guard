@@ -706,6 +706,7 @@ const InviteUserDialog = ({
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
