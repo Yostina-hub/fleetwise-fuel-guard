@@ -291,7 +291,7 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline">Total: {preview.totalRows}</Badge>
-                <Badge className="bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30">
+                <Badge className="bg-success/15 text-success border-success/30 hover:bg-success/15">
                   <CheckCircle2 className="w-3 h-3 mr-1" /> Valid: {preview.validRows}
                 </Badge>
                 {preview.invalidRows > 0 && (
@@ -349,11 +349,11 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-2">
                 <div className="rounded-lg border p-3 text-center">
-                  <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{result.inserted}</p>
+                  <p className="text-2xl font-semibold text-success">{result.inserted}</p>
                   <p className="text-xs text-muted-foreground">Added</p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
-                  <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">{result.updated}</p>
+                  <p className="text-2xl font-semibold text-primary">{result.updated}</p>
                   <p className="text-xs text-muted-foreground">Updated</p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
