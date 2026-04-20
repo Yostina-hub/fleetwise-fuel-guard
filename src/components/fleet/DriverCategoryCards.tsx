@@ -269,7 +269,7 @@ const DriverCategoryCards = ({
   };
 
   return (
-    <section className="space-y-6" aria-label="Driver categories">
+    <section className="space-y-4" aria-label="Driver categories">
       {/* Primary row: Total / Assigned / Unassigned */}
       <div>
         <SectionHeading icon={Sparkles} title="Assignment Overview" hint="Click any card to filter" />
@@ -310,7 +310,7 @@ const DriverCategoryCards = ({
       {driverTypeEntries.length > 0 && (
         <div>
           <SectionHeading icon={TrendingUp} title="By Driver Type" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="flex flex-wrap gap-3">
             {driverTypeEntries.map(([key, count]) => {
               const meta = driverTypeMeta[key] || {
                 ...driverTypeMeta.unspecified,
