@@ -177,7 +177,8 @@ const Auth = () => {
         title: "Welcome back!",
         description: "You've been signed in successfully.",
       });
-      navigate("/");
+      const landing = await resolveLandingPath(userId);
+      navigate(landing);
     }
 
     setLoading(false);
