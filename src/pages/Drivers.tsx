@@ -386,6 +386,9 @@ const Drivers = () => {
         <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm shadow-sm overflow-hidden">
           <div className="p-4 flex flex-col md:flex-row gap-3">
             <div className="relative flex-1 group">
+              <Label htmlFor="driver-search" className="sr-only">
+                Search drivers
+              </Label>
               <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" aria-hidden="true" />
               <Input
                 id="driver-search"
@@ -397,24 +400,37 @@ const Drivers = () => {
               />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors text-xs"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Clear search"
-                >✕</button>
+                >
+                  <X className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span className="sr-only">Clear search</span>
+                </button>
               )}
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[170px] h-10 bg-background/50 border-border/50">
-                <Filter className="w-3.5 h-3.5 mr-2 text-muted-foreground" aria-hidden="true" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">{t('common.active', 'Active')}</SelectItem>
-                <SelectItem value="inactive">{t('common.inactive', 'Inactive')}</SelectItem>
-                <SelectItem value="suspended">{t('common.suspended', 'Suspended')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <div>
+              <Label htmlFor="driver-status-filter" className="sr-only">
+                Filter drivers by status
+              </Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger
+                  id="driver-status-filter"
+                  aria-label="Filter drivers by status"
+                  className="w-full md:w-[170px] h-10 bg-background/50 border-border/50"
+                >
+                  <Filter className="w-3.5 h-3.5 mr-2 text-muted-foreground" aria-hidden="true" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">{t('common.active', 'Active')}</SelectItem>
+                  <SelectItem value="inactive">{t('common.inactive', 'Inactive')}</SelectItem>
+                  <SelectItem value="suspended">{t('common.suspended', 'Suspended')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {hasActiveFilters && (
               <Button
                 variant="ghost"
