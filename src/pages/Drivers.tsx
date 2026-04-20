@@ -43,6 +43,7 @@ import DriverQuickStatusChange from "@/components/fleet/DriverQuickStatusChange"
 import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
 import DriversQuickStats from "@/components/fleet/DriversQuickStats";
 import DriversQuickActions from "@/components/fleet/DriversQuickActions";
+import DriverCategoryCards from "@/components/fleet/DriverCategoryCards";
 import { exportDriversToCSV, exportAllDriversToCSV } from "@/components/fleet/DriverExportUtils";
 import { 
   Users, 
