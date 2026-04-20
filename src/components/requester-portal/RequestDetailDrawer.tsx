@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Car, Hash, FileText, Ban } from "lucide-react";
+import { Calendar, MapPin, Users, Car, Hash, FileText, Ban, type LucideIcon } from "lucide-react";
 import { format } from "date-fns";
 import { RequestStatusBadge } from "./RequestStatusBadge";
 import { RequestTimeline, type TimelineRequest } from "./RequestTimeline";
