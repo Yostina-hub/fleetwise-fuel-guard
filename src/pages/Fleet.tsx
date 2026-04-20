@@ -28,6 +28,8 @@ import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
 import { VehicleTableView } from "@/components/fleet/VehicleTableView";
 import { useFleetExport } from "@/components/fleet/FleetExportUtils";
 import FleetQuickStats from "@/components/fleet/FleetQuickStats";
+import FleetOwnershipStats from "@/components/fleet/FleetOwnershipStats";
+import { useFleetOwnershipStats } from "@/hooks/useFleetOwnershipStats";
 import FleetQuickActions from "@/components/fleet/FleetQuickActions";
 import { FleetAutomationsMenu } from "@/components/fleet/FleetAutomationsMenu";
 import { VehicleGridSkeleton, StatsRowSkeleton } from "@/components/ui/skeletons";
@@ -76,8 +78,12 @@ const FUEL_TYPES = [
 const OWNERSHIP_TYPES = [
   { value: "all", label: "All Ownership" },
   { value: "owned", label: "Owned" },
+  { value: "commercial", label: "Commercial" },
+  { value: "government", label: "Government" },
+  { value: "3pl", label: "3PL / Outsourced" },
   { value: "leased", label: "Leased" },
   { value: "rented", label: "Rented" },
+  { value: "unspecified", label: "Unspecified" },
 ];
 
 const DRIVER_FILTER = [
