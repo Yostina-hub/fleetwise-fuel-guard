@@ -34,7 +34,7 @@ import FleetQuickActions from "@/components/fleet/FleetQuickActions";
 import { FleetAutomationsMenu } from "@/components/fleet/FleetAutomationsMenu";
 import { VehicleGridSkeleton, StatsRowSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
-import { 
+import {
   Truck, 
   Search, 
   Plus, 
@@ -45,8 +45,17 @@ import {
   X,
   SlidersHorizontal,
   Download,
-  Upload
+  Upload,
+  ChevronDown,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useVehiclesPaginated } from "@/hooks/useVehiclesPaginated";
 import { useFleetStats } from "@/hooks/useFleetStats";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -434,10 +443,23 @@ const Fleet = () => {
               <Upload className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">{t('common.import')}</span>
             </Button>
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleExportAll} disabled={exporting}>
-              <Download className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline">{exporting ? `${t('common.export')}...` : t('common.export')}</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2" disabled={exporting}>
+                  <Download className="w-4 h-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">{exporting ? `${t('common.export')}...` : t('common.export')}</span>
+                  <ChevronDown className="w-3 h-3 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExportAll("xlsx")}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportAll("csv")}>
+                  <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               size="sm"
               className="gap-2"
