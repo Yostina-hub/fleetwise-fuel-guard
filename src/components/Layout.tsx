@@ -129,6 +129,7 @@ const getNavItems = (t: (key: string) => string) => [
     label: t("nav.tripManagement"), 
     highlight: true,
     subItems: [
+      { label: "My Requests", path: "/my-requests" },
       { label: t("nav.tripHub"), path: "/trip-management" },
       { label: t("nav.vehicleRequests"), path: "/vehicle-requests" },
       { label: t("nav.requestDashboard"), path: "/fleet-scheduling" },
