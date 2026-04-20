@@ -3,6 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import type { Driver } from "./useDrivers";
 
+export type DriverSortField =
+  | "last_name"
+  | "first_name"
+  | "employee_id"
+  | "hire_date"
+  | "license_expiry"
+  | "created_at"
+  | "status";
+
 interface UseDriversPaginatedOptions {
   pageSize?: number;
   searchQuery?: string;
@@ -10,6 +19,8 @@ interface UseDriversPaginatedOptions {
   driverTypeFilter?: string;
   employmentTypeFilter?: string;
   assignmentFilter?: "all" | "assigned" | "unassigned";
+  sortBy?: DriverSortField;
+  sortDir?: "asc" | "desc";
 }
 
 interface StatusCounts {
@@ -60,6 +71,8 @@ export const useDriversPaginated = (
     driverTypeFilter = "all",
     employmentTypeFilter = "all",
     assignmentFilter = "all",
+    sortBy = "last_name",
+    sortDir = "asc",
   } = options;
   const { organizationId } = useOrganization();
 
