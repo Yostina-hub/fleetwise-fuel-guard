@@ -683,16 +683,24 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0">
-        <DialogHeader className="p-6 pb-4 border-b">
-          <DialogTitle className="text-2xl flex items-center gap-2">
-            <User className="w-6 h-6 text-primary" />
-            Register New Driver
-          </DialogTitle>
-          <DialogDescription>Enter driver details per the registration specification</DialogDescription>
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 py-5 border-b bg-gradient-to-r from-primary/5 via-background to-background">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <User className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <DialogTitle className="text-xl">Register New Driver</DialogTitle>
+              <DialogDescription className="mt-0.5">
+                Complete each step. Fields validate as you go — descriptive errors guide you to fix issues quickly.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
-        {body}
-        <DialogFooter className="p-6 pt-4 border-t">{footerButtons}</DialogFooter>
+        <ScrollArea className="max-h-[calc(95vh-220px)]">
+          <div className="px-6 py-4">{body}</div>
+        </ScrollArea>
+        <DialogFooter className="px-6 py-4 border-t bg-muted/30">{footerButtons}</DialogFooter>
       </DialogContent>
     </Dialog>
   );
