@@ -24,26 +24,27 @@ Deno.serve(async (req) => {
       req.headers.get("Authorization")
     );
 
+    // Always return 200 with success:false so the client can read the actual error message
     if (authError || !requestingUser) {
-      return secureJsonResponse({ success: false, error: authError || "Unauthorized" }, req, 401);
+      return secureJsonResponse({ success: false, error: authError || "Unauthorized" }, req, 200);
     }
 
     const isSA = await isSuperAdmin(supabaseAdmin, requestingUser.id);
     if (!isSA) {
-      return secureJsonResponse({ success: false, error: "Unauthorized - super_admin required" }, req, 403);
+      return secureJsonResponse({ success: false, error: "Unauthorized - super_admin required" }, req, 200);
     }
 
     let body;
     try {
       body = await req.json();
     } catch {
-      return secureJsonResponse({ success: false, error: "Invalid request body" }, req, 400);
+      return secureJsonResponse({ success: false, error: "Invalid request body" }, req, 200);
     }
 
     const { action, userId, newPassword } = body;
 
     if (!action || !userId) {
-      return secureJsonResponse({ success: false, error: "action and userId are required" }, req, 400);
+      return secureJsonResponse({ success: false, error: "action and userId are required" }, req, 200);
     }
 
     const { ipAddress, userAgent } = getClientInfo(req);
@@ -51,11 +52,12 @@ Deno.serve(async (req) => {
     switch (action) {
       case "reset_password": {
         if (!newPassword || newPassword.length < 8) {
-          return secureJsonResponse({ success: false, error: "Password must be at least 8 characters" }, req, 400);
+          return secureJsonResponse({ success: false, error: "Password must be at least 8 characters" }, req, 200);
         }
         const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: newPassword });
         if (error) {
-          return secureJsonResponse({ success: false, error: error.message }, req, 400);
+          // Surface the real auth error (e.g. "Password is known to be weak and easy to guess")
+          return secureJsonResponse({ success: false, error: error.message }, req, 200);
         }
         await logSecurityEvent(supabaseAdmin, {
           eventType: "password_reset_by_admin",
@@ -74,7 +76,7 @@ Deno.serve(async (req) => {
           ban_duration: "876000h", // ~100 years
         });
         if (error) {
-          return secureJsonResponse({ success: false, error: error.message }, req, 400);
+          return secureJsonResponse({ success: false, error: error.message }, req, 200);
         }
         await logSecurityEvent(supabaseAdmin, {
           eventType: "user_deactivated",
@@ -93,7 +95,7 @@ Deno.serve(async (req) => {
           ban_duration: "none",
         });
         if (error) {
-          return secureJsonResponse({ success: false, error: error.message }, req, 400);
+          return secureJsonResponse({ success: false, error: error.message }, req, 200);
         }
         await logSecurityEvent(supabaseAdmin, {
           eventType: "user_activated",
@@ -108,28 +110,21 @@ Deno.serve(async (req) => {
       }
 
       case "delete": {
-        // Remove user roles first
         const { error: rolesError } = await supabaseAdmin
           .from("user_roles")
           .delete()
           .eq("user_id", userId);
-        if (rolesError) {
-          console.error("Failed to delete user roles:", rolesError);
-        }
+        if (rolesError) console.error("Failed to delete user roles:", rolesError);
 
-        // Delete from profiles
         const { error: profileError } = await supabaseAdmin
           .from("profiles")
           .delete()
           .eq("id", userId);
-        if (profileError) {
-          console.error("Failed to delete profile:", profileError);
-        }
+        if (profileError) console.error("Failed to delete profile:", profileError);
 
-        // Delete auth user
         const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
         if (error) {
-          return secureJsonResponse({ success: false, error: error.message }, req, 400);
+          return secureJsonResponse({ success: false, error: error.message }, req, 200);
         }
         await logSecurityEvent(supabaseAdmin, {
           eventType: "user_deleted",
@@ -146,7 +141,7 @@ Deno.serve(async (req) => {
       case "get_status": {
         const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
         if (error) {
-          return secureJsonResponse({ success: false, error: error.message }, req, 400);
+          return secureJsonResponse({ success: false, error: error.message }, req, 200);
         }
         const banned = data?.user?.banned_until
           ? new Date(data.user.banned_until).getTime() > Date.now()
@@ -155,10 +150,11 @@ Deno.serve(async (req) => {
       }
 
       default:
-        return secureJsonResponse({ success: false, error: `Unknown action: ${action}` }, req, 400);
+        return secureJsonResponse({ success: false, error: `Unknown action: ${action}` }, req, 200);
     }
   } catch (error: unknown) {
     console.error("manage-user error:", error);
-    return secureJsonResponse({ success: false, error: "Internal server error" }, req, 500);
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return secureJsonResponse({ success: false, error: message }, req, 200);
   }
 });

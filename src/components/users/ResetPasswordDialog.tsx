@@ -33,10 +33,11 @@ const ResetPasswordDialog = ({ open, onOpenChange, user }: ResetPasswordDialogPr
 
     setLoading(true);
     try {
-      const { error } = await supabase.functions.invoke("manage-user", {
+      const { data, error } = await supabase.functions.invoke("manage-user", {
         body: { action: "reset_password", userId: user.id, newPassword },
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message || "Edge function call failed");
+      if (!data?.success) throw new Error(data?.error || "Failed to reset password");
       toast({ title: "Password Reset", description: `Password updated for ${user.email}` });
       setNewPassword("");
       setConfirmPassword("");
