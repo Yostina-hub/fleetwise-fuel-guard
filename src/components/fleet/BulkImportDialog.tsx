@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -11,26 +11,40 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, FileText, Download, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import {
+  Loader2, Upload, FileText, Download, CheckCircle2, XCircle,
+  AlertCircle, FileSpreadsheet, ChevronDown,
+} from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import {
+  parseImportFile,
+  downloadImportTemplate,
+  type ParseResult,
+} from "./import/importParser";
 
 interface BulkImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-interface ImportResult {
-  success: number;
+interface ImportOutcome {
+  inserted: number;
+  updated: number;
   failed: number;
   errors: { row: number; message: string }[];
 }
 
-const SAMPLE_CSV = `plate_number,make,model,year,vehicle_type,fuel_type,status,odometer_km,ownership_type
-AA-12345,Toyota,Hilux,2022,pickup,diesel,active,50000,owned
-BB-67890,Isuzu,D-Max,2021,truck,diesel,active,75000,leased
-CC-11111,Ford,Transit,2023,van,diesel,maintenance,25000,owned`;
+const MAX_ROWS = 500;
 
 export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) {
   const { organizationId } = useOrganization();
@@ -39,313 +53,322 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
+  const [parsing, setParsing] = useState(false);
+  const [preview, setPreview] = useState<ParseResult | null>(null);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<ImportResult | null>(null);
+  const [result, setResult] = useState<ImportOutcome | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
-  const parseCSV = (text: string): Record<string, string>[] => {
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return [];
-    
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const rows: Record<string, string>[] = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
-      if (values.length === headers.length) {
-        const row: Record<string, string> = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index];
-        });
-        rows.push(row);
-      }
+  const reset = useCallback(() => {
+    setFile(null);
+    setPreview(null);
+    setResult(null);
+    setProgress(0);
+    setParsing(false);
+    setImporting(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  const handleSelectFile = useCallback(async (selected: File) => {
+    const ext = selected.name.split(".").pop()?.toLowerCase();
+    if (!["csv", "xlsx", "xls"].includes(ext || "")) {
+      toast({
+        title: "Unsupported file",
+        description: "Please upload a .csv, .xlsx, or .xls file",
+        variant: "destructive",
+      });
+      return;
     }
-    
-    return rows;
+    setFile(selected);
+    setResult(null);
+    setParsing(true);
+    try {
+      const parsed = await parseImportFile(selected);
+      setPreview(parsed);
+      if (parsed.totalRows > MAX_ROWS) {
+        toast({
+          title: "Batch too large",
+          description: `Maximum ${MAX_ROWS} vehicles per import. Found ${parsed.totalRows}.`,
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: "Failed to parse file",
+        description: err.message ?? "Unknown error",
+        variant: "destructive",
+      });
+      setPreview(null);
+    } finally {
+      setParsing(false);
+    }
+  }, [toast]);
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) handleSelectFile(f);
   };
 
-  const validateRow = (row: Record<string, string>, index: number): { valid: boolean; error?: string } => {
-    if (!row.plate_number?.trim()) {
-      return { valid: false, error: `Row ${index + 2}: Plate number is required` };
-    }
-    if (row.plate_number.trim().length > 20) {
-      return { valid: false, error: `Row ${index + 2}: Plate number too long (max 20 chars)` };
-    }
-    if (!row.make?.trim()) {
-      return { valid: false, error: `Row ${index + 2}: Make is required` };
-    }
-    if (row.make.trim().length > 100) {
-      return { valid: false, error: `Row ${index + 2}: Make too long (max 100 chars)` };
-    }
-    if (!row.model?.trim()) {
-      return { valid: false, error: `Row ${index + 2}: Model is required` };
-    }
-    if (row.model.trim().length > 100) {
-      return { valid: false, error: `Row ${index + 2}: Model too long (max 100 chars)` };
-    }
-    const year = parseInt(row.year);
-    if (!year || year < 1900 || year > new Date().getFullYear() + 1) {
-      return { valid: false, error: `Row ${index + 2}: Invalid year` };
-    }
-    if (row.vin?.trim() && row.vin.trim().length > 20) {
-      return { valid: false, error: `Row ${index + 2}: VIN too long (max 20 chars)` };
-    }
-    if (row.tank_capacity_liters && (parseFloat(row.tank_capacity_liters) < 0 || parseFloat(row.tank_capacity_liters) > 10000000)) {
-      return { valid: false, error: `Row ${index + 2}: Invalid tank capacity` };
-    }
-    if (row.odometer_km && (parseFloat(row.odometer_km) < 0 || parseFloat(row.odometer_km) > 10000000)) {
-      return { valid: false, error: `Row ${index + 2}: Invalid odometer reading` };
-    }
-    // GAP FIX: Validate enum fields and string lengths for remaining fields
-    const validFuelTypes = ['diesel', 'petrol', 'gasoline', 'electric', 'hybrid', 'cng', 'lpg'];
-    if (row.fuel_type?.trim() && !validFuelTypes.includes(row.fuel_type.trim().toLowerCase())) {
-      return { valid: false, error: `Row ${index + 2}: Invalid fuel type. Allowed: ${validFuelTypes.join(', ')}` };
-    }
-    const validStatuses = ['active', 'maintenance', 'inactive'];
-    if (row.status?.trim() && !validStatuses.includes(row.status.trim().toLowerCase())) {
-      return { valid: false, error: `Row ${index + 2}: Invalid status. Allowed: ${validStatuses.join(', ')}` };
-    }
-    const validVehicleTypes = ['sedan', 'suv', 'pickup', 'truck', 'van', 'bus', 'motorcycle', 'trailer', 'tanker', 'other'];
-    if (row.vehicle_type?.trim() && row.vehicle_type.trim().length > 50) {
-      return { valid: false, error: `Row ${index + 2}: Vehicle type too long (max 50 chars)` };
-    }
-    if (row.color?.trim() && row.color.trim().length > 30) {
-      return { valid: false, error: `Row ${index + 2}: Color too long (max 30 chars)` };
-    }
-    const validOwnership = ['owned', 'leased', 'rented'];
-    if (row.ownership_type?.trim() && !validOwnership.includes(row.ownership_type.trim().toLowerCase())) {
-      return { valid: false, error: `Row ${index + 2}: Invalid ownership type. Allowed: ${validOwnership.join(', ')}` };
-    }
-    return { valid: true };
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) handleSelectFile(f);
   };
 
   const handleImport = async () => {
-    if (!file || !organizationId) return;
+    if (!preview || !organizationId) return;
+    if (preview.totalRows > MAX_ROWS) return;
+
+    const validRows = preview.rows.filter((r) => r.errors.length === 0);
+    if (validRows.length === 0) {
+      toast({
+        title: "Nothing to import",
+        description: "Fix the validation errors and try again",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setImporting(true);
     setProgress(0);
-    setResult(null);
+    const outcome: ImportOutcome = { inserted: 0, updated: 0, failed: 0, errors: [] };
 
-    try {
-      const text = await file.text();
-      const rows = parseCSV(text);
+    for (let i = 0; i < validRows.length; i++) {
+      const row = validRows[i];
+      const payload = {
+        ...row.data,
+        organization_id: organizationId,
+        // sensible defaults
+        fuel_type: row.data.fuel_type ?? "diesel",
+        status: row.data.status ?? "active",
+      };
 
-      if (rows.length === 0) {
-        toast({
-          title: "Error",
-          description: "No valid data found in CSV file",
-          variant: "destructive",
-        });
-        setImporting(false);
-        return;
-      }
+      try {
+        // Upsert by (organization_id, plate_number)
+        const { data: existing } = await supabase
+          .from("vehicles")
+          .select("id")
+          .eq("organization_id", organizationId)
+          .eq("plate_number", payload.plate_number)
+          .maybeSingle();
 
-      const importResult: ImportResult = { success: 0, failed: 0, errors: [] };
-
-      // Finding #4: Limit bulk import batch size to prevent abuse
-      if (rows.length > 100) {
-        toast({ title: "Batch Too Large", description: "Maximum 100 vehicles per import. Please split your file.", variant: "destructive" });
-        setImporting(false);
-        return;
-      }
-
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const validation = validateRow(row, i);
-        
-        if (!validation.valid) {
-          importResult.failed++;
-          importResult.errors.push({ row: i + 2, message: validation.error! });
-          continue;
+        if (existing?.id) {
+          const { error } = await supabase
+            .from("vehicles")
+            .update(payload)
+            .eq("id", existing.id);
+          if (error) throw error;
+          outcome.updated++;
+        } else {
+          const { error } = await supabase.from("vehicles").insert(payload);
+          if (error) throw error;
+          outcome.inserted++;
         }
-
-          try {
-            const vehicleData: any = {
-              organization_id: organizationId,
-              plate_number: row.plate_number.trim(),
-              make: row.make.trim(),
-              model: row.model.trim(),
-              year: parseInt(row.year),
-              fuel_type: row.fuel_type?.trim() || 'diesel',
-              status: ['active', 'maintenance', 'inactive'].includes(row.status?.trim()) 
-                ? row.status.trim() 
-                : 'active',
-            };
-            
-            if (row.vehicle_type?.trim()) vehicleData.vehicle_type = row.vehicle_type.trim();
-            if (row.odometer_km) vehicleData.odometer_km = parseFloat(row.odometer_km);
-            if (row.ownership_type?.trim() && ['owned', 'leased', 'rented'].includes(row.ownership_type.trim())) {
-              vehicleData.ownership_type = row.ownership_type.trim();
-            }
-            if (row.vin?.trim()) vehicleData.vin = row.vin.trim();
-            if (row.color?.trim()) vehicleData.color = row.color.trim();
-            if (row.tank_capacity_liters) vehicleData.tank_capacity_liters = parseFloat(row.tank_capacity_liters);
-
-            const { error } = await supabase.from("vehicles").insert(vehicleData);
-
-          if (error) {
-            importResult.failed++;
-            importResult.errors.push({ row: i + 2, message: error.message });
-          } else {
-            importResult.success++;
-          }
-        } catch (err: any) {
-          importResult.failed++;
-          importResult.errors.push({ row: i + 2, message: err.message });
-        }
-
-        setProgress(Math.round(((i + 1) / rows.length) * 100));
+      } catch (err: any) {
+        outcome.failed++;
+        outcome.errors.push({ row: row.rowNumber, message: err.message ?? "Insert failed" });
       }
+      setProgress(Math.round(((i + 1) / validRows.length) * 100));
+    }
 
-      setResult(importResult);
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    setResult(outcome);
+    setImporting(false);
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
 
-      if (importResult.success > 0) {
-        toast({
-          title: "Import Complete",
-          description: `Successfully imported ${importResult.success} vehicle(s)`,
-        });
-      }
-    } catch (error: any) {
+    const total = outcome.inserted + outcome.updated;
+    if (total > 0) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to import vehicles",
+        title: "Import complete",
+        description: `${outcome.inserted} added · ${outcome.updated} updated${outcome.failed ? ` · ${outcome.failed} failed` : ""}`,
+      });
+    } else {
+      toast({
+        title: "Import failed",
+        description: "No vehicles were saved. See errors below.",
         variant: "destructive",
       });
-    } finally {
-      setImporting(false);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (!selectedFile.name.endsWith('.csv')) {
-        toast({
-          title: "Invalid File",
-          description: "Please select a CSV file",
-          variant: "destructive",
-        });
-        return;
-      }
-      setFile(selectedFile);
-      setResult(null);
-    }
-  };
-
-  const downloadTemplate = () => {
-    const blob = new Blob([SAMPLE_CSV], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'vehicle-import-template.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const resetDialog = () => {
-    setFile(null);
-    setResult(null);
-    setProgress(0);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+  const allRowErrors = preview?.rows.flatMap((r) => r.errors) ?? [];
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen) resetDialog();
-      onOpenChange(isOpen);
-    }}>
-      <DialogContent className="max-w-lg">
+    <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }}>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="w-5 h-5 text-primary" />
             Bulk Import Vehicles
           </DialogTitle>
           <DialogDescription>
-            Upload a CSV file to import multiple vehicles at once
+            Upload an Excel (.xlsx) or CSV file. We'll preview & validate before saving.
+            Existing vehicles (matched by plate number) will be updated.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Download Template */}
+        <div className="space-y-4 py-2">
+          {/* Template download */}
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm">Need a template?</span>
+              <span className="text-sm">Need a template with all supported fields?</span>
             </div>
-            <Button variant="outline" size="sm" onClick={downloadTemplate}>
-              <Download className="w-4 h-4 mr-2" />
-              Download CSV Template
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Template
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => downloadImportTemplate("xlsx")}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel (.xlsx) — recommended
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => downloadImportTemplate("csv")}>
+                  <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
-          {/* File Upload */}
-          <div className="space-y-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            <div 
-              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {file ? (
-                <div className="flex items-center justify-center gap-2">
-                  <FileText className="w-5 h-5 text-primary" />
-                  <span className="font-medium">{file.name}</span>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Click to select a CSV file or drag and drop
-                  </p>
+          {/* Drag & drop zone */}
+          {!result && (
+            <div className="space-y-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={onFileChange}
+                className="hidden"
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={onDrop}
+                className={cn(
+                  "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+                  dragOver
+                    ? "border-primary bg-primary/5"
+                    : "border-muted-foreground/25 hover:border-primary/50",
+                )}
+              >
+                {file ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <FileSpreadsheet className="w-5 h-5 text-primary" />
+                    <span className="font-medium">{file.name}</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </Badge>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Click to select a file or drag &amp; drop
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Supports .xlsx, .xls, .csv · max {MAX_ROWS} rows
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Parsing indicator */}
+          {parsing && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" /> Parsing file...
+            </div>
+          )}
+
+          {/* Dry-run preview */}
+          {preview && !importing && !result && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline">Total: {preview.totalRows}</Badge>
+                <Badge className="bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30">
+                  <CheckCircle2 className="w-3 h-3 mr-1" /> Valid: {preview.validRows}
+                </Badge>
+                {preview.invalidRows > 0 && (
+                  <Badge variant="destructive">
+                    <XCircle className="w-3 h-3 mr-1" /> Errors: {preview.invalidRows}
+                  </Badge>
+                )}
+                {preview.unmappedHeaders.length > 0 && (
+                  <Badge variant="secondary">
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    {preview.unmappedHeaders.length} unmapped column(s)
+                  </Badge>
+                )}
+              </div>
+
+              {preview.unmappedHeaders.length > 0 && (
+                <div className="text-xs text-muted-foreground bg-muted/50 rounded p-2">
+                  Ignored columns (not in schema): {preview.unmappedHeaders.join(", ")}
                 </div>
               )}
-            </div>
-          </div>
 
-          {/* Progress Bar */}
+              {allRowErrors.length > 0 && (
+                <ScrollArea className="h-40 border rounded-lg p-2">
+                  <div className="space-y-1">
+                    {allRowErrors.slice(0, 50).map((e, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs">
+                        <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground">{e}</span>
+                      </div>
+                    ))}
+                    {allRowErrors.length > 50 && (
+                      <p className="text-xs text-muted-foreground italic">
+                        ...and {allRowErrors.length - 50} more
+                      </p>
+                    )}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+          )}
+
+          {/* Progress bar */}
           {importing && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Importing...</span>
+                <span>Saving to database...</span>
                 <span>{progress}%</span>
               </div>
               <Progress value={progress} />
             </div>
           )}
 
-          {/* Results */}
+          {/* Final result */}
           {result && (
             <div className="space-y-3">
-              <div className="flex gap-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span>{result.success} successful</span>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{result.inserted}</p>
+                  <p className="text-xs text-muted-foreground">Added</p>
                 </div>
-                {result.failed > 0 && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <XCircle className="w-4 h-4 text-destructive" />
-                    <span>{result.failed} failed</span>
-                  </div>
-                )}
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">{result.updated}</p>
+                  <p className="text-xs text-muted-foreground">Updated</p>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-2xl font-semibold text-destructive">{result.failed}</p>
+                  <p className="text-xs text-muted-foreground">Failed</p>
+                </div>
               </div>
 
               {result.errors.length > 0 && (
                 <ScrollArea className="h-32 border rounded-lg p-2">
                   <div className="space-y-1">
-                    {result.errors.map((error, i) => (
-                      <div key={i} className="flex items-start gap-2 text-sm">
-                        <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                        <span className="text-muted-foreground">{error.message}</span>
+                    {result.errors.map((e, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs">
+                        <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground">Row {e.row}: {e.message}</span>
                       </div>
                     ))}
                   </div>
@@ -355,17 +378,28 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {result ? "Close" : "Cancel"}
           </Button>
+          {file && !result && (
+            <Button variant="ghost" onClick={reset} disabled={importing || parsing}>
+              Choose another file
+            </Button>
+          )}
           {!result && (
-            <Button 
-              onClick={handleImport} 
-              disabled={!file || importing}
+            <Button
+              onClick={handleImport}
+              disabled={
+                !preview ||
+                importing ||
+                parsing ||
+                preview.validRows === 0 ||
+                preview.totalRows > MAX_ROWS
+              }
             >
               {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Import Vehicles
+              {preview ? `Import ${preview.validRows} valid row(s)` : "Import"}
             </Button>
           )}
         </DialogFooter>
