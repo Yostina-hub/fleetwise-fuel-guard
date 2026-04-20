@@ -2,6 +2,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useState } from "react";
+import { VEHICLE_COLUMNS } from "./vehicleTableColumns";
 
 interface ExportableVehicle {
   id: string;
@@ -16,49 +17,86 @@ interface ExportableVehicle {
   vehicleType?: string;
   fuelType?: string;
   assignedDriver?: string;
+  raw?: Record<string, any>;
 }
 
-export function exportToCSV(vehicles: ExportableVehicle[], filename: string = "fleet-export") {
-  const headers = [
-    "Plate Number",
-    "Make",
-    "Model",
-    "Year",
-    "Status",
-    "Vehicle Type",
-    "Fuel Type",
-    "Odometer (km)",
-    "Fuel Level (%)",
-    "Assigned Driver"
+const csvEscape = (val: any): string => {
+  if (val === null || val === undefined) return "";
+  if (Array.isArray(val)) val = val.join("; ");
+  else if (typeof val === "object") val = JSON.stringify(val);
+  const s = String(val);
+  // Always quote, escape inner quotes
+  return `"${s.replace(/"/g, '""')}"`;
+};
+
+/**
+ * Build CSV including every registered vehicle column + every raw DB field
+ * not already covered, so the export is truly exhaustive.
+ */
+const buildFullCsv = (rows: Array<Record<string, any>>): string => {
+  // Start with curated columns from the registry (skip "actions")
+  const registryCols = VEHICLE_COLUMNS
+    .filter((c) => c.id !== "actions")
+    .map((c) => ({ key: c.id, label: c.label }));
+
+  // Add any DB column not yet represented
+  const seen = new Set<string>(registryCols.map((c) => c.key as string));
+  const extraKeys = new Set<string>();
+  rows.forEach((r) => {
+    Object.keys(r).forEach((k) => {
+      if (!seen.has(k)) extraKeys.add(k);
+    });
+  });
+
+  const allCols = [
+    ...registryCols,
+    ...Array.from(extraKeys)
+      .sort()
+      .map((k) => ({ key: k, label: k })),
   ];
 
-  const rows = vehicles.map(v => [
-    v.plate,
-    v.make,
-    v.model,
-    v.year.toString(),
-    v.status,
-    v.vehicleType || "",
-    v.fuelType || "",
-    v.odometer.toString(),
-    v.fuel?.toString() || "",
-    v.assignedDriver || ""
-  ]);
+  const header = allCols.map((c) => csvEscape(c.label)).join(",");
+  const body = rows
+    .map((r) => allCols.map((c) => csvEscape(r[c.key])).join(","))
+    .join("\n");
 
-  const csvContent = [
-    headers.join(","),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
-  ].join("\n");
+  return `${header}\n${body}`;
+};
 
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+const downloadCsv = (csv: string, filename: string) => {
+  // BOM for Excel UTF-8 compatibility
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `${filename}-${new Date().toISOString().split('T')[0]}.csv`);
+  link.href = url;
+  link.download = `${filename}-${new Date().toISOString().split("T")[0]}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+};
+
+/**
+ * Legacy export path used when callers pass already-loaded vehicles
+ * (e.g. selected rows). Prefers `raw` DB row for full-column output.
+ */
+export function exportToCSV(vehicles: ExportableVehicle[], filename: string = "fleet-export") {
+  const rows = vehicles.map((v) =>
+    v.raw && typeof v.raw === "object"
+      ? v.raw
+      : {
+          plate_number: v.plate,
+          make: v.make,
+          model: v.model,
+          year: v.year,
+          status: v.status,
+          vehicle_type: v.vehicleType,
+          fuel_type: v.fuelType,
+          odometer_km: v.odometer,
+          assigned_driver: v.assignedDriver,
+        },
+  );
+  downloadCsv(buildFullCsv(rows), filename);
 }
 
 export function useFleetExport() {
@@ -66,47 +104,33 @@ export function useFleetExport() {
   const { organizationId } = useOrganization();
   const [exporting, setExporting] = useState(false);
 
-  // Export selected vehicles only
+  // Export selected (or currently-loaded) vehicles
   const handleExport = (vehicles: ExportableVehicle[], selectedOnly: boolean = false) => {
     if (vehicles.length === 0) {
-      toast({
-        title: "No Data",
-        description: "No vehicles to export",
-        variant: "destructive"
-      });
+      toast({ title: "No Data", description: "No vehicles to export", variant: "destructive" });
       return;
     }
-
     try {
       exportToCSV(vehicles, selectedOnly ? "fleet-selected" : "fleet-all");
       toast({
         title: "Export Successful",
-        description: `Exported ${vehicles.length} vehicle(s) to CSV`,
+        description: `Exported ${vehicles.length} vehicle(s) with all columns`,
       });
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Failed to export data",
-        variant: "destructive"
-      });
+    } catch {
+      toast({ title: "Export Failed", description: "Failed to export data", variant: "destructive" });
     }
   };
 
-  // Export ALL vehicles from database (bypasses pagination)
+  // Export EVERY vehicle in the database with EVERY column (bypasses pagination)
   const handleExportAll = async () => {
     if (!organizationId) {
-      toast({
-        title: "Error",
-        description: "Organization not found",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Organization not found", variant: "destructive" });
       return;
     }
 
     setExporting(true);
     try {
-      // Fetch all vehicles in batches of 1000
-      const allVehicles: ExportableVehicle[] = [];
+      const allRows: Record<string, any>[] = [];
       let offset = 0;
       const batchSize = 1000;
       let hasMore = true;
@@ -114,7 +138,9 @@ export function useFleetExport() {
       while (hasMore) {
         const { data, error } = await supabase
           .from("vehicles")
-          .select("*, assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name)")
+          .select(
+            "*, assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, license_number)",
+          )
           .eq("organization_id", organizationId)
           .order("created_at", { ascending: false })
           .range(offset, offset + batchSize - 1);
@@ -122,23 +148,19 @@ export function useFleetExport() {
         if (error) throw error;
 
         if (data && data.length > 0) {
-          const formatted = data.map((v: any) => ({
-            id: v.plate_number,
-            vehicleId: v.id,
-            plate: v.plate_number,
-            make: v.make || "Unknown",
-            model: v.model || "",
-            year: v.year || new Date().getFullYear(),
-            status: v.status || "inactive",
-            fuel: null,
-            odometer: v.odometer_km || 0,
-            vehicleType: v.vehicle_type || "",
-            fuelType: v.fuel_type || "",
-            assignedDriver: v.assigned_driver 
-              ? `${v.assigned_driver.first_name} ${v.assigned_driver.last_name}` 
-              : "",
-          }));
-          allVehicles.push(...formatted);
+          data.forEach((v: any) => {
+            const driverName = v.assigned_driver
+              ? `${v.assigned_driver.first_name ?? ""} ${v.assigned_driver.last_name ?? ""}`.trim()
+              : "";
+            // Flatten driver object so it shows nicely under the "driver" column
+            const flat: Record<string, any> = { ...v, driver: driverName };
+            // Friendly aliases for registry column ids that don't match DB columns 1:1
+            flat.plate = v.plate_number;
+            flat.make_model = `${v.make ?? ""} ${v.model ?? ""}`.trim();
+            flat.odometer = v.odometer_km;
+            delete flat.assigned_driver;
+            allRows.push(flat);
+          });
           offset += batchSize;
           hasMore = data.length === batchSize;
         } else {
@@ -146,27 +168,19 @@ export function useFleetExport() {
         }
       }
 
-      if (allVehicles.length === 0) {
-        toast({
-          title: "No Data",
-          description: "No vehicles to export",
-          variant: "destructive"
-        });
+      if (allRows.length === 0) {
+        toast({ title: "No Data", description: "No vehicles to export", variant: "destructive" });
         return;
       }
 
-      exportToCSV(allVehicles, "fleet-complete");
+      downloadCsv(buildFullCsv(allRows), "fleet-complete");
       toast({
         title: "Export Successful",
-        description: `Exported all ${allVehicles.length} vehicle(s) to CSV`,
+        description: `Exported all ${allRows.length} vehicle(s) with every column`,
       });
     } catch (error) {
       console.error("Export error:", error);
-      toast({
-        title: "Export Failed",
-        description: "Failed to export data",
-        variant: "destructive"
-      });
+      toast({ title: "Export Failed", description: "Failed to export data", variant: "destructive" });
     } finally {
       setExporting(false);
     }
