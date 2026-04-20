@@ -43,6 +43,13 @@ const generatePassword = () => {
   return [...required, ...rest].sort(() => Math.random() - 0.5).join("");
 };
 
+const REQUIRED_FIELDS: Set<DriverFieldName> = new Set([
+  "driver_type", "first_name", "middle_name", "last_name", "phone",
+  "govt_id_type", "license_number", "status", "department",
+  "emergency_contact_name", "emergency_contact_phone", "password",
+]);
+const isRequiredField = (f: DriverFieldName) => REQUIRED_FIELDS.has(f);
+
 interface CreateDriverDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
