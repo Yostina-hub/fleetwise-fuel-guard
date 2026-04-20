@@ -15,8 +15,11 @@ import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, CreditCard, FileText, AlertCircle, MapPin, Briefcase, Building2, Key, Copy, RefreshCw, Droplets, Paperclip } from "lucide-react";
+import { Loader2, User, CreditCard, FileText, AlertCircle, MapPin, Briefcase, Building2, Key, Copy, RefreshCw, Droplets, Paperclip, CheckCircle2, ChevronLeft, ChevronRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   DRIVER_TYPES, ID_TYPES, LICENSE_TYPES, EMPLOYMENT_STATUSES,
@@ -39,6 +42,13 @@ const generatePassword = () => {
   const rest = Array.from({ length: 12 }, () => pick(all));
   return [...required, ...rest].sort(() => Math.random() - 0.5).join("");
 };
+
+const REQUIRED_FIELDS: Set<DriverFieldName> = new Set([
+  "driver_type", "first_name", "middle_name", "last_name", "phone",
+  "govt_id_type", "license_number", "status", "department",
+  "emergency_contact_name", "emergency_contact_phone", "password",
+]);
+const isRequiredField = (f: DriverFieldName) => REQUIRED_FIELDS.has(f);
 
 interface CreateDriverDialogProps {
   open: boolean;
@@ -80,6 +90,39 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
   const [licenseBackFile, setLicenseBackFile] = useState<File | null>(null);
   const [nationalIdFile, setNationalIdFile] = useState<File | null>(null);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+
+  // ---- Wizard step definitions ----
+  const STEPS: { id: string; label: string; icon: React.ComponentType<any>; fields: DriverFieldName[] }[] = [
+    { id: "personal",    label: "Personal",    icon: User,         fields: ["driver_type", "first_name", "middle_name", "last_name", "phone", "email", "date_of_birth"] },
+    { id: "address",     label: "Address",     icon: MapPin,       fields: ["address_specific"] },
+    { id: "legal",       label: "Legal & ID",  icon: CreditCard,   fields: ["govt_id_type", "license_number", "national_id", "license_issue_date", "license_expiry"] },
+    { id: "employment",  label: "Employment",  icon: Building2,    fields: ["status", "department", "joining_date", "experience_years"] },
+    { id: "emergency",   label: "Emergency",   icon: AlertCircle,  fields: ["emergency_contact_name", "emergency_contact_phone"] },
+    { id: "credentials", label: "Account",     icon: Key,          fields: ["password"] },
+  ];
+  const [activeStep, setActiveStep] = useState<string>(STEPS[0].id);
+
+  const stepHasErrors = (stepId: string) => {
+    const step = STEPS.find((s) => s.id === stepId);
+    return step?.fields.some((f) => validation.errors[f]) ?? false;
+  };
+  const stepIsComplete = (stepId: string) => {
+    const step = STEPS.find((s) => s.id === stepId);
+    if (!step) return false;
+    return step.fields.every((f) => {
+      const v = (formData as any)[f];
+      const err = validation.errors[f];
+      // "Complete" means: required+filled+no error, OR optional+no error
+      return !err && (typeof v === "string" ? v.trim().length > 0 || !isRequiredField(f) : true);
+    });
+  };
+
+  // Overall progress: % of total fields (across schemas) that pass
+  const allTrackedFields = STEPS.flatMap((s) => s.fields);
+  const completedFields = allTrackedFields.filter(
+    (f) => !validation.errors[f] && !!(formData as any)[f]?.toString().trim(),
+  ).length;
+  const progressPct = Math.round((completedFields / allTrackedFields.length) * 100);
 
   /** Update value + live-revalidate the field if user has already touched it. */
   const set = (field: string, value: string) => {
@@ -172,20 +215,24 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
     const result = validation.validateAll(formData);
     if (!result.ok) {
       const count = Object.keys(result.errors).length;
+      // Jump to the first step containing an error
+      const targetStep = STEPS.find((s) => s.fields.some((f) => result.errors[f]));
+      if (targetStep) setActiveStep(targetStep.id);
       toast({
         title: `Please fix ${count} ${count === 1 ? "error" : "errors"}`,
         description: result.firstError?.message,
         variant: "destructive",
       });
-      // Scroll first errored field into view + focus it
+      // Scroll first errored field into view + focus it (defer past tab switch)
       if (result.firstError) {
-        const el = fieldRefs.current[result.firstError.field];
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          // focus inputs (selects render trigger as button)
-          const focusable = el.querySelector<HTMLElement>("input, button, textarea, [tabindex]") ?? el;
-          (focusable as HTMLElement).focus?.();
-        }
+        setTimeout(() => {
+          const el = fieldRefs.current[result.firstError!.field];
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            const focusable = el.querySelector<HTMLElement>("input, button, textarea, [tabindex]") ?? el;
+            (focusable as HTMLElement).focus?.();
+          }
+        }, 50);
       }
       return;
     }
@@ -240,34 +287,108 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
 
   const errorCount = validation.errorCount;
 
+  const currentStepIdx = STEPS.findIndex((s) => s.id === activeStep);
+  const goPrev = () => currentStepIdx > 0 && setActiveStep(STEPS[currentStepIdx - 1].id);
+  const goNext = () => {
+    const step = STEPS[currentStepIdx];
+    // Validate just this step's fields before advancing — descriptive feedback
+    const res = validation.validateFields(step.fields, formData);
+    if (!res.ok) {
+      const count = Object.keys(res.errors).length;
+      toast({
+        title: `${count} ${count === 1 ? "field needs" : "fields need"} attention on this step`,
+        description: Object.values(res.errors)[0],
+        variant: "destructive",
+      });
+      return;
+    }
+    if (currentStepIdx < STEPS.length - 1) setActiveStep(STEPS[currentStepIdx + 1].id);
+  };
+
   const body = (
-    <>
-      {embedded ? (
-        <div className="space-y-6 p-2">
+    <div className="flex flex-col">
+      {/* Sticky progress + stepper */}
+      <div className="sticky top-0 z-10 -mx-2 px-2 pt-2 pb-3 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-sm">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            <span className="text-muted-foreground">
+              Step <span className="font-semibold text-foreground">{currentStepIdx + 1}</span> of {STEPS.length} ·{" "}
+              <span className="font-semibold text-foreground">{STEPS[currentStepIdx]?.label}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            {errorCount > 0 && (
+              <Badge variant="destructive" className="gap-1">
+                <AlertCircle className="w-3 h-3" /> {errorCount} {errorCount === 1 ? "issue" : "issues"}
+              </Badge>
+            )}
+            <span className="text-xs text-muted-foreground tabular-nums">{progressPct}% complete</span>
+          </div>
+        </div>
+        <Progress value={progressPct} className="h-1.5" />
+      </div>
 
-          {/* Error summary banner */}
-          {errorCount > 0 && (
-            <div
-              role="alert"
-              aria-live="polite"
-              className="flex items-start gap-2 p-3 rounded-md border border-destructive/30 bg-destructive/5 text-destructive"
-            >
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
-              <div className="text-sm">
-                <span className="font-medium">
-                  {errorCount} {errorCount === 1 ? "field needs" : "fields need"} attention
-                </span>
-                <span className="text-destructive/80 ml-1">— please review the highlighted fields below.</span>
-              </div>
+      <Tabs value={activeStep} onValueChange={setActiveStep} className="mt-4">
+        <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-1 h-auto bg-muted/40 p-1">
+          {STEPS.map((s, i) => {
+            const Icon = s.icon;
+            const hasErr = stepHasErrors(s.id);
+            const done = stepIsComplete(s.id) && !hasErr;
+            return (
+              <TabsTrigger
+                key={s.id}
+                value={s.id}
+                className={cn(
+                  "flex flex-col gap-1 py-2 px-2 h-auto text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all",
+                  hasErr && "ring-1 ring-destructive/40",
+                )}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={cn(
+                      "inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold",
+                      hasErr
+                        ? "bg-destructive text-destructive-foreground"
+                        : done
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {hasErr ? "!" : done ? <CheckCircle2 className="w-3 h-3" /> : i + 1}
+                  </span>
+                  <Icon className="w-3.5 h-3.5 hidden md:inline" />
+                </div>
+                <span className="font-medium">{s.label}</span>
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+
+        {/* Inline error summary banner — clickable to jump */}
+        {errorCount > 0 && (
+          <div
+            role="alert"
+            aria-live="polite"
+            className="mt-4 flex items-start gap-2 p-3 rounded-md border border-destructive/30 bg-destructive/5 text-destructive"
+          >
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+            <div className="text-sm flex-1">
+              <span className="font-medium">
+                {errorCount} {errorCount === 1 ? "field needs" : "fields need"} attention
+              </span>
+              <span className="text-destructive/80 ml-1">— click a step above with a red badge to fix.</span>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* 1.1 Employment Type */}
+        {/* ============ STEP 1: PERSONAL ============ */}
+        <TabsContent value="personal" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<Briefcase className="w-5 h-5 text-primary" />} title="Employment Type">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Driver Type" required error={validation.getError("driver_type")} fieldRef={registerRef("driver_type")}>
                 <Select value={formData.driver_type} onValueChange={v => { set("driver_type", v); validation.validateField("driver_type", v); }}>
-                  <SelectTrigger className={errClass("driver_type")} onBlur={() => onBlur("driver_type")}><SelectValue /></SelectTrigger>
+                  <SelectTrigger className={errClass("driver_type")} onBlur={() => onBlur("driver_type")}><SelectValue placeholder="Select driver type..." /></SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Ethio telecom</SelectLabel>
@@ -287,38 +408,16 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
             </div>
           </Section>
 
-          {/* 1.2 Personal Information */}
           <Section icon={<User className="w-5 h-5 text-primary" />} title="Personal Information">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field label="First Name" required error={validation.getError("first_name")} fieldRef={registerRef("first_name")}>
-                <Input
-                  value={formData.first_name}
-                  onChange={e => set("first_name", e.target.value)}
-                  onBlur={() => onBlur("first_name")}
-                  placeholder="e.g. Abebe" maxLength={100}
-                  className={errClass("first_name")}
-                  aria-invalid={!!validation.getError("first_name")}
-                />
+              <Field label="First Name" required error={validation.getError("first_name")} success={!validation.getError("first_name") && !!formData.first_name && validation.touched.first_name} fieldRef={registerRef("first_name")}>
+                <Input value={formData.first_name} onChange={e => set("first_name", e.target.value)} onBlur={() => onBlur("first_name")} placeholder="e.g. Abebe" maxLength={100} className={errClass("first_name")} aria-invalid={!!validation.getError("first_name")} />
               </Field>
-              <Field label="Middle Name" required error={validation.getError("middle_name")} fieldRef={registerRef("middle_name")}>
-                <Input
-                  value={formData.middle_name}
-                  onChange={e => set("middle_name", e.target.value)}
-                  onBlur={() => onBlur("middle_name")}
-                  placeholder="e.g. Kebede" maxLength={100}
-                  className={errClass("middle_name")}
-                  aria-invalid={!!validation.getError("middle_name")}
-                />
+              <Field label="Middle Name" required error={validation.getError("middle_name")} success={!validation.getError("middle_name") && !!formData.middle_name && validation.touched.middle_name} fieldRef={registerRef("middle_name")}>
+                <Input value={formData.middle_name} onChange={e => set("middle_name", e.target.value)} onBlur={() => onBlur("middle_name")} placeholder="e.g. Kebede" maxLength={100} className={errClass("middle_name")} aria-invalid={!!validation.getError("middle_name")} />
               </Field>
-              <Field label="Last Name" required error={validation.getError("last_name")} fieldRef={registerRef("last_name")}>
-                <Input
-                  value={formData.last_name}
-                  onChange={e => set("last_name", e.target.value)}
-                  onBlur={() => onBlur("last_name")}
-                  placeholder="e.g. Tadesse" maxLength={100}
-                  className={errClass("last_name")}
-                  aria-invalid={!!validation.getError("last_name")}
-                />
+              <Field label="Last Name" required error={validation.getError("last_name")} success={!validation.getError("last_name") && !!formData.last_name && validation.touched.last_name} fieldRef={registerRef("last_name")}>
+                <Input value={formData.last_name} onChange={e => set("last_name", e.target.value)} onBlur={() => onBlur("last_name")} placeholder="e.g. Tadesse" maxLength={100} className={errClass("last_name")} aria-invalid={!!validation.getError("last_name")} />
               </Field>
               <Field label="Gender">
                 <Select value={formData.gender} onValueChange={v => set("gender", v)}>
@@ -328,51 +427,24 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Phone Number" required error={validation.getError("phone")} fieldRef={registerRef("phone")} hint="Format: 09XXXXXXXX">
-                <Input
-                  value={formData.phone}
-                  onChange={e => set("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  onBlur={() => onBlur("phone")}
-                  placeholder="09XXXXXXXX" maxLength={10} inputMode="numeric"
-                  className={errClass("phone")}
-                  aria-invalid={!!validation.getError("phone")}
-                />
+              <Field label="Phone Number" required error={validation.getError("phone")} success={!validation.getError("phone") && !!formData.phone && validation.touched.phone} fieldRef={registerRef("phone")} hint="Format: 09XXXXXXXX (10 digits)">
+                <Input value={formData.phone} onChange={e => set("phone", e.target.value.replace(/\D/g, "").slice(0, 10))} onBlur={() => onBlur("phone")} placeholder="09XXXXXXXX" maxLength={10} inputMode="numeric" className={errClass("phone")} aria-invalid={!!validation.getError("phone")} />
               </Field>
-              <Field label="Email" error={validation.getError("email")} fieldRef={registerRef("email")} hint="Required for portal access">
-                <Input
-                  type="email"
-                  value={formData.email}
-                  onChange={e => set("email", e.target.value)}
-                  onBlur={() => onBlur("email")}
-                  placeholder="driver@example.com" maxLength={255}
-                  className={errClass("email")}
-                  aria-invalid={!!validation.getError("email")}
-                />
+              <Field label="Email" error={validation.getError("email")} success={!validation.getError("email") && !!formData.email && validation.touched.email} fieldRef={registerRef("email")} hint="Required for portal access">
+                <Input type="email" value={formData.email} onChange={e => set("email", e.target.value)} onBlur={() => onBlur("email")} placeholder="driver@example.com" maxLength={255} className={errClass("email")} aria-invalid={!!validation.getError("email")} />
               </Field>
               <Field label="Date of Birth" error={validation.getError("date_of_birth")} fieldRef={registerRef("date_of_birth")}>
-                <Input
-                  type="date"
-                  value={formData.date_of_birth}
-                  onChange={e => set("date_of_birth", e.target.value)}
-                  onBlur={() => onBlur("date_of_birth")}
-                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]}
-                  className={errClass("date_of_birth")}
-                  aria-invalid={!!validation.getError("date_of_birth")}
-                />
+                <Input type="date" value={formData.date_of_birth} onChange={e => set("date_of_birth", e.target.value)} onBlur={() => onBlur("date_of_birth")} max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]} className={errClass("date_of_birth")} aria-invalid={!!validation.getError("date_of_birth")} />
               </Field>
               <Field label="Employee ID" error={validation.getError("employee_id")}>
-                <Input
-                  value={formData.employee_id}
-                  onChange={e => set("employee_id", e.target.value)}
-                  onBlur={() => onBlur("employee_id")}
-                  placeholder="EMP-001" maxLength={50}
-                  className={errClass("employee_id")}
-                />
+                <Input value={formData.employee_id} onChange={e => set("employee_id", e.target.value)} onBlur={() => onBlur("employee_id")} placeholder="EMP-001" maxLength={50} className={errClass("employee_id")} />
               </Field>
             </div>
           </Section>
+        </TabsContent>
 
-          {/* 1.3 Address */}
+        {/* ============ STEP 2: ADDRESS ============ */}
+        <TabsContent value="address" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<MapPin className="w-5 h-5 text-primary" />} title="Address">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <CascadingLocationSelector
@@ -387,19 +459,15 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
               />
               <div className="md:col-span-3">
                 <Field label="Specific Address" error={validation.getError("address_specific")}>
-                  <Input
-                    value={formData.address_specific}
-                    onChange={e => set("address_specific", e.target.value)}
-                    onBlur={() => onBlur("address_specific")}
-                    placeholder="Building name, street, directions..." maxLength={500}
-                    className={errClass("address_specific")}
-                  />
+                  <Input value={formData.address_specific} onChange={e => set("address_specific", e.target.value)} onBlur={() => onBlur("address_specific")} placeholder="Building name, street, directions..." maxLength={500} className={errClass("address_specific")} />
                 </Field>
               </div>
             </div>
           </Section>
+        </TabsContent>
 
-          {/* 1.4 Legal & Verification */}
+        {/* ============ STEP 3: LEGAL & ID ============ */}
+        <TabsContent value="legal" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Legal & Verification">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Field label="ID Type" required error={validation.getError("govt_id_type")} fieldRef={registerRef("govt_id_type")}>
@@ -410,24 +478,11 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label={idLabel} required error={validation.getError("license_number")} fieldRef={registerRef("license_number")}>
-                <Input
-                  value={formData.license_number}
-                  onChange={e => set("license_number", e.target.value)}
-                  onBlur={() => onBlur("license_number")}
-                  placeholder={`Enter ${idLabel.toLowerCase()}...`} maxLength={50}
-                  className={errClass("license_number")}
-                  aria-invalid={!!validation.getError("license_number")}
-                />
+              <Field label={idLabel} required error={validation.getError("license_number")} success={!validation.getError("license_number") && !!formData.license_number && validation.touched.license_number} fieldRef={registerRef("license_number")}>
+                <Input value={formData.license_number} onChange={e => set("license_number", e.target.value)} onBlur={() => onBlur("license_number")} placeholder={`Enter ${idLabel.toLowerCase()}...`} maxLength={50} className={errClass("license_number")} aria-invalid={!!validation.getError("license_number")} />
               </Field>
               <Field label="National ID (FAN)" error={validation.getError("national_id")}>
-                <Input
-                  value={formData.national_id}
-                  onChange={e => set("national_id", e.target.value)}
-                  onBlur={() => onBlur("national_id")}
-                  placeholder="Please Enter FAN" maxLength={30}
-                  className={errClass("national_id")}
-                />
+                <Input value={formData.national_id} onChange={e => set("national_id", e.target.value)} onBlur={() => onBlur("national_id")} placeholder="Please Enter FAN" maxLength={30} className={errClass("national_id")} />
               </Field>
               <Field label="License Type / Class">
                 <Select value={formData.license_type} onValueChange={v => set("license_type", v)}>
@@ -438,27 +493,14 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                 </Select>
               </Field>
               <Field label="License Issue Date" error={validation.getError("license_issue_date")}>
-                <Input
-                  type="date"
-                  value={formData.license_issue_date}
-                  onChange={e => set("license_issue_date", e.target.value)}
-                  onBlur={() => onBlur("license_issue_date")}
-                  className={errClass("license_issue_date")}
-                />
+                <Input type="date" value={formData.license_issue_date} onChange={e => set("license_issue_date", e.target.value)} onBlur={() => onBlur("license_issue_date")} className={errClass("license_issue_date")} />
               </Field>
               <Field label="License Expiry Date" error={validation.getError("license_expiry")} fieldRef={registerRef("license_expiry")}>
-                <Input
-                  type="date"
-                  value={formData.license_expiry}
-                  onChange={e => { set("license_expiry", e.target.value); validation.validateField("license_expiry", e.target.value); }}
-                  onBlur={() => onBlur("license_expiry")}
-                  className={errClass("license_expiry")}
-                />
+                <Input type="date" value={formData.license_expiry} onChange={e => { set("license_expiry", e.target.value); validation.validateField("license_expiry", e.target.value); }} onBlur={() => onBlur("license_expiry")} className={errClass("license_expiry")} />
               </Field>
             </div>
           </Section>
 
-          {/* 1.5 Driver Attachments */}
           <Section icon={<Paperclip className="w-5 h-5 text-primary" />} title="Driver Attachments">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FileUploadField label="Driver's License (Front)" accept="image/*,.pdf" selectedFile={licenseFrontFile} onFileSelect={setLicenseFrontFile} />
@@ -468,8 +510,10 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
             </div>
             <p className="text-xs text-muted-foreground mt-2">Accepted: Images and PDF. Max size: 5MB per file.</p>
           </Section>
+        </TabsContent>
 
-          {/* 1.6 Employment Details */}
+        {/* ============ STEP 4: EMPLOYMENT ============ */}
+        <TabsContent value="employment" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<Building2 className="w-5 h-5 text-primary" />} title="Employment Details">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Field label="Employment Status">
@@ -489,23 +533,10 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                 </Select>
               </Field>
               <Field label="Effective Date" error={validation.getError("joining_date")} fieldRef={registerRef("joining_date")}>
-                <Input
-                  type="date"
-                  value={formData.joining_date}
-                  onChange={e => { set("joining_date", e.target.value); validation.validateField("joining_date", e.target.value); }}
-                  onBlur={() => onBlur("joining_date")}
-                  className={errClass("joining_date")}
-                />
+                <Input type="date" value={formData.joining_date} onChange={e => { set("joining_date", e.target.value); validation.validateField("joining_date", e.target.value); }} onBlur={() => onBlur("joining_date")} className={errClass("joining_date")} />
               </Field>
               <Field label="Assigned Pool" required error={validation.getError("department")} hint="Corporate, Zone or Regional pool" fieldRef={registerRef("department")}>
-                <Select
-                  value={formData.department}
-                  onValueChange={v => {
-                    set("department", v);
-                    set("assigned_pool", v); // keep both fields in sync
-                    validation.validateField("department", v);
-                  }}
-                >
+                <Select value={formData.department} onValueChange={v => { set("department", v); set("assigned_pool", v); validation.validateField("department", v); }}>
                   <SelectTrigger className={errClass("department")} onBlur={() => onBlur("department")}>
                     <SelectValue placeholder="Select pool..." />
                   </SelectTrigger>
@@ -522,57 +553,29 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                 </Select>
               </Field>
               <Field label="Years of Experience" error={validation.getError("experience_years")}>
-                <Input
-                  type="number" min={0} max={60}
-                  value={formData.experience_years}
-                  onChange={e => set("experience_years", e.target.value)}
-                  onBlur={() => onBlur("experience_years")}
-                  placeholder="e.g. 3"
-                  className={errClass("experience_years")}
-                />
+                <Input type="number" min={0} max={60} value={formData.experience_years} onChange={e => set("experience_years", e.target.value)} onBlur={() => onBlur("experience_years")} placeholder="e.g. 3" className={errClass("experience_years")} />
               </Field>
             </div>
           </Section>
 
-          {/* 1.7 Telebirr (optional) */}
           <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Telebirr Account (Optional)">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Telebirr Account" error={validation.getError("telebirr_account")} hint="Optional — used for payroll/payouts">
-                <Input
-                  value={formData.telebirr_account}
-                  onChange={e => set("telebirr_account", e.target.value.replace(/[^\d+]/g, "").slice(0, 13))}
-                  onBlur={() => onBlur("telebirr_account")}
-                  placeholder="09XXXXXXXX"
-                  maxLength={13}
-                  inputMode="tel"
-                  className={errClass("telebirr_account")}
-                />
+                <Input value={formData.telebirr_account} onChange={e => set("telebirr_account", e.target.value.replace(/[^\d+]/g, "").slice(0, 13))} onBlur={() => onBlur("telebirr_account")} placeholder="09XXXXXXXX" maxLength={13} inputMode="tel" className={errClass("telebirr_account")} />
               </Field>
             </div>
           </Section>
+        </TabsContent>
 
-          {/* 1.8 Emergency Contact */}
+        {/* ============ STEP 5: EMERGENCY ============ */}
+        <TabsContent value="emergency" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<AlertCircle className="w-5 h-5 text-destructive" />} title="Emergency Contact">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field label="Contact Name" required error={validation.getError("emergency_contact_name")} fieldRef={registerRef("emergency_contact_name")}>
-                <Input
-                  value={formData.emergency_contact_name}
-                  onChange={e => set("emergency_contact_name", e.target.value)}
-                  onBlur={() => onBlur("emergency_contact_name")}
-                  placeholder="Family member name" maxLength={150}
-                  className={errClass("emergency_contact_name")}
-                  aria-invalid={!!validation.getError("emergency_contact_name")}
-                />
+              <Field label="Contact Name" required error={validation.getError("emergency_contact_name")} success={!validation.getError("emergency_contact_name") && !!formData.emergency_contact_name && validation.touched.emergency_contact_name} fieldRef={registerRef("emergency_contact_name")}>
+                <Input value={formData.emergency_contact_name} onChange={e => set("emergency_contact_name", e.target.value)} onBlur={() => onBlur("emergency_contact_name")} placeholder="Family member name" maxLength={150} className={errClass("emergency_contact_name")} aria-invalid={!!validation.getError("emergency_contact_name")} />
               </Field>
-              <Field label="Contact Phone" required error={validation.getError("emergency_contact_phone")} fieldRef={registerRef("emergency_contact_phone")} hint="Format: 09XXXXXXXX">
-                <Input
-                  value={formData.emergency_contact_phone}
-                  onChange={e => set("emergency_contact_phone", e.target.value.replace(/[^\d+]/g, "").slice(0, 13))}
-                  onBlur={() => onBlur("emergency_contact_phone")}
-                  placeholder="09XXXXXXXX" maxLength={13} inputMode="tel"
-                  className={errClass("emergency_contact_phone")}
-                  aria-invalid={!!validation.getError("emergency_contact_phone")}
-                />
+              <Field label="Contact Phone" required error={validation.getError("emergency_contact_phone")} success={!validation.getError("emergency_contact_phone") && !!formData.emergency_contact_phone && validation.touched.emergency_contact_phone} fieldRef={registerRef("emergency_contact_phone")} hint="Format: 09XXXXXXXX">
+                <Input value={formData.emergency_contact_phone} onChange={e => set("emergency_contact_phone", e.target.value.replace(/[^\d+]/g, "").slice(0, 13))} onBlur={() => onBlur("emergency_contact_phone")} placeholder="09XXXXXXXX" maxLength={13} inputMode="tel" className={errClass("emergency_contact_phone")} aria-invalid={!!validation.getError("emergency_contact_phone")} />
               </Field>
               <Field label="Blood Type">
                 <Select value={formData.blood_type} onValueChange={v => set("blood_type", v)}>
@@ -585,7 +588,6 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
             </div>
           </Section>
 
-          {/* Identification Tags */}
           <Section icon={<Droplets className="w-5 h-5 text-primary" />} title="Identification Tags (Optional)">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Field label="RFID Tag"><Input value={formData.rfid_tag} onChange={e => set("rfid_tag", e.target.value)} placeholder="RFID tag number" maxLength={100} /></Field>
@@ -593,25 +595,21 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
               <Field label="Bluetooth ID"><Input value={formData.bluetooth_id} onChange={e => set("bluetooth_id", e.target.value)} placeholder="Bluetooth device ID" maxLength={100} /></Field>
             </div>
           </Section>
+        </TabsContent>
 
-          {/* 1.9 Account Credentials */}
+        {/* ============ STEP 6: ACCOUNT ============ */}
+        <TabsContent value="credentials" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<Key className="w-5 h-5 text-primary" />} title="Account Credentials">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Password" required error={validation.getError("password")} fieldRef={registerRef("password")} hint="Min 12 chars · upper · lower · digit · special">
+              <Field label="Password" required error={validation.getError("password")} success={!validation.getError("password") && !!formData.password && validation.touched.password} fieldRef={registerRef("password")} hint="Min 12 chars · upper · lower · digit · special">
                 <div className="flex gap-2">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={e => set("password", e.target.value)}
-                    onBlur={() => onBlur("password")}
-                    placeholder="••••••••••••" maxLength={100}
-                    className={cn("flex-1", errClass("password"))}
-                    aria-invalid={!!validation.getError("password")}
-                  />
+                  <Input type={showPassword ? "text" : "password"} value={formData.password} onChange={e => set("password", e.target.value)} onBlur={() => onBlur("password")} placeholder="••••••••••••" maxLength={100} className={cn("flex-1", errClass("password"))} aria-invalid={!!validation.getError("password")} />
                   <Button type="button" variant="outline" size="icon" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
-                    {showPassword ? "🙈" : "👁"}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </Button>
                 </div>
+                {/* Password strength meter */}
+                {formData.password && <PasswordStrengthMeter password={formData.password} />}
               </Field>
               <div className="flex items-end gap-2">
                 <Button type="button" variant="outline" onClick={() => {
@@ -634,28 +632,34 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
             </div>
           </Section>
 
-          {/* 1.10 Notes */}
           <Section icon={<FileText className="w-5 h-5 text-primary" />} title="Additional Notes">
             <Field label="Notes" error={validation.getError("notes")}>
-              <Textarea
-                value={formData.notes}
-                onChange={e => set("notes", e.target.value)}
-                onBlur={() => onBlur("notes")}
-                placeholder="Additional information..." rows={3} maxLength={2000}
-                className={errClass("notes")}
-              />
+              <Textarea value={formData.notes} onChange={e => set("notes", e.target.value)} onBlur={() => onBlur("notes")} placeholder="Additional information..." rows={3} maxLength={2000} className={errClass("notes")} />
               <p className="text-[11px] text-muted-foreground text-right">{formData.notes.length}/2000</p>
             </Field>
           </Section>
+        </TabsContent>
+      </Tabs>
 
-        </div>
-      ) : (
-        <ScrollArea className="max-h-[calc(95vh-180px)]">
-          <div className="p-6 space-y-6">
-          </div>
-        </ScrollArea>
-      )}
-    </>
+      {/* In-step Prev/Next navigation */}
+      <div className="flex items-center justify-between mt-6 pt-4 border-t">
+        <Button type="button" variant="ghost" onClick={goPrev} disabled={currentStepIdx === 0} className="gap-1">
+          <ChevronLeft className="w-4 h-4" /> Previous
+        </Button>
+        <span className="text-xs text-muted-foreground hidden md:inline">
+          {STEPS[currentStepIdx]?.label} · {currentStepIdx + 1}/{STEPS.length}
+        </span>
+        {currentStepIdx < STEPS.length - 1 ? (
+          <Button type="button" onClick={goNext} className="gap-1">
+            Next <ChevronRight className="w-4 h-4" />
+          </Button>
+        ) : (
+          <Badge variant="outline" className="gap-1 text-primary border-primary/40">
+            <CheckCircle2 className="w-3 h-3" /> Final step
+          </Badge>
+        )}
+      </div>
+    </div>
   );
 
   const footerButtons = (
@@ -679,16 +683,24 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0">
-        <DialogHeader className="p-6 pb-4 border-b">
-          <DialogTitle className="text-2xl flex items-center gap-2">
-            <User className="w-6 h-6 text-primary" />
-            Register New Driver
-          </DialogTitle>
-          <DialogDescription>Enter driver details per the registration specification</DialogDescription>
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 py-5 border-b bg-gradient-to-r from-primary/5 via-background to-background">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <User className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <DialogTitle className="text-xl">Register New Driver</DialogTitle>
+              <DialogDescription className="mt-0.5">
+                Complete each step. Fields validate as you go — descriptive errors guide you to fix issues quickly.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
-        {body}
-        <DialogFooter className="p-6 pt-4 border-t">{footerButtons}</DialogFooter>
+        <ScrollArea className="max-h-[calc(95vh-220px)]">
+          <div className="px-6 py-4">{body}</div>
+        </ScrollArea>
+        <DialogFooter className="px-6 py-4 border-t bg-muted/30">{footerButtons}</DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -708,6 +720,7 @@ function Field({
   required,
   error,
   hint,
+  success,
   fieldRef,
   children,
 }: {
@@ -715,24 +728,63 @@ function Field({
   required?: boolean;
   error?: string;
   hint?: string;
+  success?: boolean;
   fieldRef?: (el: HTMLElement | null) => void;
   children: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5" ref={fieldRef}>
-      <Label className={cn("text-sm flex items-center gap-1", error && "text-destructive")}>
+      <Label className={cn("text-sm flex items-center gap-1", error && "text-destructive", success && "text-foreground")}>
         {label}
         {required && <span className="text-destructive" aria-hidden="true">*</span>}
+        {success && !error && <CheckCircle2 className="w-3 h-3 text-primary ml-auto" aria-label="Valid" />}
       </Label>
       {children}
       {error ? (
-        <p className="text-xs text-destructive flex items-center gap-1" role="alert">
+        <p className="text-xs text-destructive flex items-center gap-1 animate-in fade-in slide-in-from-top-1 duration-150" role="alert">
           <AlertCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
           {error}
         </p>
       ) : hint ? (
         <p className="text-[11px] text-muted-foreground">{hint}</p>
       ) : null}
+    </div>
+  );
+}
+
+/** Inline password strength meter — purely visual, complements the schema rules. */
+function PasswordStrengthMeter({ password }: { password: string }) {
+  const checks = [
+    { label: "12+ chars", ok: password.length >= 12 },
+    { label: "Uppercase", ok: /[A-Z]/.test(password) },
+    { label: "Lowercase", ok: /[a-z]/.test(password) },
+    { label: "Digit", ok: /[0-9]/.test(password) },
+    { label: "Special", ok: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+  ];
+  const score = checks.filter((c) => c.ok).length;
+  const pct = (score / checks.length) * 100;
+  const tone =
+    score <= 2 ? "bg-destructive" : score === 3 ? "bg-amber-500" : score === 4 ? "bg-yellow-400" : "bg-primary";
+  return (
+    <div className="space-y-1.5 mt-1">
+      <div className="h-1 rounded-full bg-muted overflow-hidden">
+        <div className={cn("h-full transition-all duration-300", tone)} style={{ width: `${pct}%` }} />
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {checks.map((c) => (
+          <span
+            key={c.label}
+            className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded border transition-colors",
+              c.ok
+                ? "border-primary/40 text-primary bg-primary/5"
+                : "border-border text-muted-foreground bg-muted/40",
+            )}
+          >
+            {c.ok ? "✓" : "·"} {c.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
