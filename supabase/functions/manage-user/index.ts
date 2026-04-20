@@ -25,25 +25,25 @@ Deno.serve(async (req) => {
     );
 
     if (authError || !requestingUser) {
-      return secureJsonResponse({ success: false, error: authError || "Unauthorized" }, req, 401);
+      return secureJsonResponse({ success: false, error: authError || "Unauthorized" }, req, 200);
     }
 
     const isSA = await isSuperAdmin(supabaseAdmin, requestingUser.id);
     if (!isSA) {
-      return secureJsonResponse({ success: false, error: "Unauthorized - super_admin required" }, req, 403);
+      return secureJsonResponse({ success: false, error: "Unauthorized - super_admin required" }, req, 200);
     }
 
     let body;
     try {
       body = await req.json();
     } catch {
-      return secureJsonResponse({ success: false, error: "Invalid request body" }, req, 400);
+      return secureJsonResponse({ success: false, error: "Invalid request body" }, req, 200);
     }
 
     const { action, userId, newPassword } = body;
 
     if (!action || !userId) {
-      return secureJsonResponse({ success: false, error: "action and userId are required" }, req, 400);
+      return secureJsonResponse({ success: false, error: "action and userId are required" }, req, 200);
     }
 
     const { ipAddress, userAgent } = getClientInfo(req);
