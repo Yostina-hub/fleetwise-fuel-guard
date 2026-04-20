@@ -74,8 +74,10 @@ import {
   Car,
   Activity,
   Upload,
-  Download
+  Download,
+  X
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { useDriversPaginated } from "@/hooks/useDriversPaginated";
 import { Driver } from "@/hooks/useDrivers";
 import { useOrganization } from "@/hooks/useOrganization";
