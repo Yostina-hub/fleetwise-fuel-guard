@@ -119,7 +119,7 @@ const HeroCard = ({
 
     <div className="relative flex items-start justify-between gap-3">
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/80">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
           {label}
         </p>
         <div className="mt-2 flex items-baseline gap-2">
@@ -130,11 +130,11 @@ const HeroCard = ({
             {value.toLocaleString()}
           </span>
           {percent !== undefined && (
-            <span className="text-xs font-medium text-muted-foreground">{percent}%</span>
+            <span className="text-xs font-medium text-foreground/80">{percent}%</span>
           )}
         </div>
         {sub && (
-          <p className="mt-1.5 text-[11px] text-muted-foreground/90 truncate">{sub}</p>
+          <p className="mt-1.5 text-[11px] text-muted-foreground truncate">{sub}</p>
         )}
       </div>
       <div className={cn(
@@ -204,7 +204,7 @@ const TypeCard = ({
         <Icon className={cn("w-4.5 h-4.5", tone.iconText)} aria-hidden="true" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 truncate">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
           {label}
         </p>
         <p className={cn(
@@ -231,7 +231,7 @@ const SectionHeading = ({ icon: Icon, title, hint }: { icon: any; title: string;
       {title}
     </h3>
     {hint && (
-      <span className="text-[10px] text-muted-foreground/70 ml-1">{hint}</span>
+      <span className="text-[10px] text-muted-foreground ml-1">{hint}</span>
     )}
     <div className="flex-1 h-px bg-gradient-to-r from-border to-transparent ml-2" />
   </div>

@@ -74,8 +74,10 @@ import {
   Car,
   Activity,
   Upload,
-  Download
+  Download,
+  X
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { useDriversPaginated } from "@/hooks/useDriversPaginated";
 import { Driver } from "@/hooks/useDrivers";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -384,6 +386,9 @@ const Drivers = () => {
         <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm shadow-sm overflow-hidden">
           <div className="p-4 flex flex-col md:flex-row gap-3">
             <div className="relative flex-1 group">
+              <Label htmlFor="driver-search" className="sr-only">
+                Search drivers
+              </Label>
               <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" aria-hidden="true" />
               <Input
                 id="driver-search"
@@ -395,24 +400,37 @@ const Drivers = () => {
               />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors text-xs"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Clear search"
-                >✕</button>
+                >
+                  <X className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span className="sr-only">Clear search</span>
+                </button>
               )}
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[170px] h-10 bg-background/50 border-border/50">
-                <Filter className="w-3.5 h-3.5 mr-2 text-muted-foreground" aria-hidden="true" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">{t('common.active', 'Active')}</SelectItem>
-                <SelectItem value="inactive">{t('common.inactive', 'Inactive')}</SelectItem>
-                <SelectItem value="suspended">{t('common.suspended', 'Suspended')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <div>
+              <Label htmlFor="driver-status-filter" className="sr-only">
+                Filter drivers by status
+              </Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger
+                  id="driver-status-filter"
+                  aria-label="Filter drivers by status"
+                  className="w-full md:w-[170px] h-10 bg-background/50 border-border/50"
+                >
+                  <Filter className="w-3.5 h-3.5 mr-2 text-muted-foreground" aria-hidden="true" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">{t('common.active', 'Active')}</SelectItem>
+                  <SelectItem value="inactive">{t('common.inactive', 'Inactive')}</SelectItem>
+                  <SelectItem value="suspended">{t('common.suspended', 'Suspended')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {hasActiveFilters && (
               <Button
                 variant="ghost"
@@ -427,35 +445,75 @@ const Drivers = () => {
           </div>
           {hasActiveFilters && (
             <div className="px-4 py-2.5 border-t border-border/50 bg-muted/20 flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-medium text-muted-foreground">Active filters:</span>
+              <span className="text-xs font-medium text-foreground">Active filters:</span>
               {searchQuery && (
                 <Badge variant="secondary" className="gap-1 pl-2 pr-1 py-0.5">
                   Search: "{searchQuery}"
-                  <button onClick={() => setSearchQuery("")} className="hover:bg-background rounded-sm p-0.5" aria-label="Remove search filter">✕</button>
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="hover:bg-background rounded-sm p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Remove search filter"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
+                    <span className="sr-only">Remove search filter</span>
+                  </button>
                 </Badge>
               )}
               {statusFilter !== "all" && (
                 <Badge variant="secondary" className="gap-1 pl-2 pr-1 py-0.5">
                   Status: {statusFilter}
-                  <button onClick={() => setStatusFilter("all")} className="hover:bg-background rounded-sm p-0.5" aria-label="Remove status filter">✕</button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("all")}
+                    className="hover:bg-background rounded-sm p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Remove status filter"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
+                    <span className="sr-only">Remove status filter</span>
+                  </button>
                 </Badge>
               )}
               {assignmentFilter !== "all" && (
                 <Badge variant="secondary" className="gap-1 pl-2 pr-1 py-0.5">
                   {assignmentFilter === "assigned" ? "Assigned to vehicle" : "Unassigned"}
-                  <button onClick={() => setAssignmentFilter("all")} className="hover:bg-background rounded-sm p-0.5" aria-label="Remove assignment filter">✕</button>
+                  <button
+                    type="button"
+                    onClick={() => setAssignmentFilter("all")}
+                    className="hover:bg-background rounded-sm p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Remove assignment filter"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
+                    <span className="sr-only">Remove assignment filter</span>
+                  </button>
                 </Badge>
               )}
               {driverTypeFilter !== "all" && (
                 <Badge variant="secondary" className="gap-1 pl-2 pr-1 py-0.5">
                   Type: {driverTypeFilter.replace(/_/g, " ")}
-                  <button onClick={() => setDriverTypeFilter("all")} className="hover:bg-background rounded-sm p-0.5" aria-label="Remove type filter">✕</button>
+                  <button
+                    type="button"
+                    onClick={() => setDriverTypeFilter("all")}
+                    className="hover:bg-background rounded-sm p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Remove driver type filter"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
+                    <span className="sr-only">Remove driver type filter</span>
+                  </button>
                 </Badge>
               )}
               {employmentTypeFilter !== "all" && (
                 <Badge variant="secondary" className="gap-1 pl-2 pr-1 py-0.5">
                   Employment: {employmentTypeFilter.replace(/_/g, " ")}
-                  <button onClick={() => setEmploymentTypeFilter("all")} className="hover:bg-background rounded-sm p-0.5" aria-label="Remove employment filter">✕</button>
+                  <button
+                    type="button"
+                    onClick={() => setEmploymentTypeFilter("all")}
+                    className="hover:bg-background rounded-sm p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Remove employment filter"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
+                    <span className="sr-only">Remove employment filter</span>
+                  </button>
                 </Badge>
               )}
             </div>
