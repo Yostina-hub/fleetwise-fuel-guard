@@ -46,7 +46,9 @@ import {
   Warehouse,
   Plus,
   Trash2,
+  ShieldPlus,
 } from "lucide-react";
+import { ManageCustomRolesDialog } from "@/components/rbac/ManageCustomRolesDialog";
 
 interface Permission {
   id: string;
@@ -359,6 +361,9 @@ const RBACManagement = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setManageRolesOpen(true)} className="gap-2">
+              <ShieldPlus className="w-4 h-4" /> Manage Roles
+            </Button>
             <Button variant="outline" onClick={handleReset} disabled={!hasChanges || saving} className="gap-2">
               <RotateCcw className="w-4 h-4" /> Reset
             </Button>
@@ -369,6 +374,8 @@ const RBACManagement = () => {
             </Button>
           </div>
         </div>
+
+        <ManageCustomRolesDialog open={manageRolesOpen} onOpenChange={setManageRolesOpen} />
 
         {/* Role Overview Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
