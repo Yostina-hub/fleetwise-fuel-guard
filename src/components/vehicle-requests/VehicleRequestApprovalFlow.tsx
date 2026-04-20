@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { sendDispatchSms } from "@/services/smsNotificationService";
 import { notifyRequesterDecisionSms, notifyAssignmentSms, getAppUrl } from "@/services/vehicleRequestSmsService";
+import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
 
 interface Props {
   request: any;
