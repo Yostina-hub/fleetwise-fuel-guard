@@ -415,6 +415,37 @@ const Drivers = () => {
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <DriverQuickStatusChange driver={driver} />
                         </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          {vehicleAssignments[driver.id] ? (
+                            <button
+                              onClick={() => handleAssignVehicle(driver)}
+                              className="flex items-center gap-2 group"
+                              aria-label={`Change vehicle for ${driver.first_name} ${driver.last_name}`}
+                            >
+                              <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+                                <Car className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                              </div>
+                              <div className="text-left">
+                                <div className="text-sm font-medium group-hover:text-primary transition-colors">
+                                  {vehicleAssignments[driver.id].plate_number}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {[vehicleAssignments[driver.id].make, vehicleAssignments[driver.id].model].filter(Boolean).join(" ") || "—"}
+                                </div>
+                              </div>
+                            </button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 gap-1.5 text-xs"
+                              onClick={() => handleAssignVehicle(driver)}
+                            >
+                              <Car className="h-3 w-3" aria-hidden="true" />
+                              Assign
+                            </Button>
+                          )}
+                        </TableCell>
                         <TableCell onClick={() => handleViewDriver(driver)}>
                           <div className="flex items-center gap-2">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
