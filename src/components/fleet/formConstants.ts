@@ -222,33 +222,39 @@ export const SAFETY_COMFORT_CATEGORIES = [
   { value: "utility", label: "Utility" },
 ];
 
-// Assigned location groups
+// Assigned location groups — Corporate / Zone / Region (Ethio telecom hierarchy)
 export const ASSIGNED_LOCATIONS = [
-  { group: "Corporate", value: "corp_fom1", label: "FOM I" },
-  { group: "Corporate", value: "corp_fom2", label: "FOM II" },
-  { group: "Corporate", value: "corp_zemengebeya", label: "ZemenGEBEYA Logistics" },
+  // Corporate (3)
+  { group: "Corporate", value: "corp_fom1",         label: "FOM I" },
+  { group: "Corporate", value: "corp_fom2",         label: "FOM II" },
+  { group: "Corporate", value: "corp_zemengebeya",  label: "ZemenGEBEYA Logistics" },
+
+  // Zone (5) — Addis Ababa operational zones
   { group: "Zone", value: "zone_eaaz_aa",  label: "EAAZ - Addis Ababa" },
   { group: "Zone", value: "zone_naaz_aa",  label: "NAAZ - Addis Ababa" },
   { group: "Zone", value: "zone_saaz_aa",  label: "SAAZ - Addis Ababa" },
   { group: "Zone", value: "zone_swaaz_aa", label: "SWAAZ - Addis Ababa" },
   { group: "Zone", value: "zone_waaz_aa",  label: "WAAZ - Addis Ababa" },
-  { group: "Zone", value: "region_bole", label: "Bole" },
-  { group: "Zone", value: "region_yeka", label: "Yeka" },
-  { group: "Zone", value: "region_kirkos", label: "Kirkos" },
-  { group: "Zone", value: "region_arada", label: "Arada" },
-  { group: "Zone", value: "region_addis_ketema", label: "Addis Ketema" },
-  { group: "Zone", value: "region_lideta", label: "Lideta" },
-  { group: "Zone", value: "region_gulele", label: "Gulele" },
-  { group: "Zone", value: "region_kolfe", label: "Kolfe Keranio" },
-  { group: "Zone", value: "region_akaky", label: "Akaky Kaliti" },
-  { group: "Zone", value: "region_nefas_silk", label: "Nefas Silk Lafto" },
-  { group: "Zone", value: "region_lemi_kura", label: "Lemi Kura" },
-  { group: "Region", value: "region_adama", label: "Adama" },
-  { group: "Region", value: "region_hawassa", label: "Hawassa" },
-  { group: "Region", value: "region_bahir_dar", label: "Bahir Dar" },
-  { group: "Region", value: "region_mekelle", label: "Mekelle" },
-  { group: "Region", value: "region_jimma", label: "Jimma" },
-  { group: "Region", value: "region_dire_dawa", label: "Dire Dawa" },
+
+  // Region (18) — Regional offices with HQ city
+  { group: "Region", value: "region_eer_jijiga",         label: "EER - Jijiga" },
+  { group: "Region", value: "region_er_dire_dawa",       label: "ER - Dire Dawa" },
+  { group: "Region", value: "region_cer_harar",          label: "CER - Harar" },
+  { group: "Region", value: "region_ser_adama",          label: "SER - Adama" },
+  { group: "Region", value: "region_sser_bale_robe",     label: "SSER - Bale Robe" },
+  { group: "Region", value: "region_cnr_debre_birhan",   label: "CNR - Debre Birhan" },
+  { group: "Region", value: "region_ner_dessie",         label: "NER - Dessie" },
+  { group: "Region", value: "region_neer_semera",        label: "NEER - Semera" },
+  { group: "Region", value: "region_nwr_bahir_dar",      label: "NWR - Bahir Dar" },
+  { group: "Region", value: "region_nnwr_gondar",        label: "NNWR - Gondar" },
+  { group: "Region", value: "region_sr_hawassa",         label: "SR - Hawassa" },
+  { group: "Region", value: "region_sswr_woliyta_soddo", label: "SSWR - Woliyta Soddo" },
+  { group: "Region", value: "region_cwr_ambo",           label: "CWR - Ambo" },
+  { group: "Region", value: "region_wr_nekemte",         label: "WR - Nekemte" },
+  { group: "Region", value: "region_wwr_assosa",         label: "WWR - Assosa" },
+  { group: "Region", value: "region_swr_jimma",          label: "SWR - Jimma" },
+  { group: "Region", value: "region_swwr_gambella",      label: "SWWR - Gambella" },
+  { group: "Region", value: "region_nr_mekelle",         label: "NR - Mekelle" },
 ];
 
 // Backward-compatibility alias — kept so legacy edit forms still compile.
