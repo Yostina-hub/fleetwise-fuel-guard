@@ -257,15 +257,33 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
     createMutation.mutate(cleanData);
   };
 
+  // Closing the dialog: keep the draft so reopening restores it.
+  // The user can explicitly Discard via the footer button.
+  const handleOpenChange = (next: boolean) => {
+    if (!next && createMutation.isPending) return; // don't close mid-submit
+    onOpenChange(next);
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft(DRAFT_KEY, organizationId);
+    setFormData({ ...initialForm });
+    fieldValidation.reset();
+    setActiveSection("basic");
+    onOpenChange(false);
+    toast({ title: "Draft discarded" });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0 overflow-hidden">
         <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle className="text-2xl flex items-center gap-2">
             <Truck className="w-6 h-6 text-primary" />
             Register New Vehicle
           </DialogTitle>
-          <DialogDescription>Each tab now shows only its own section.</DialogDescription>
+          <DialogDescription>
+            Changes auto-save as a draft — close anytime and resume where you left off.
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as typeof activeSection)} className="flex min-h-0 flex-1 flex-col">
