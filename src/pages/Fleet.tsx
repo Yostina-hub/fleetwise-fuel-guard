@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getFleetLiveStatus } from "@/lib/fleetLiveStatus";
 import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -224,28 +225,15 @@ const Fleet = () => {
     let filtered = dbVehicles.map((v) => {
       const telemetry = telemetryMap[v.id];
       const nextService = nextServiceMap[v.id];
+      const liveStatus = getFleetLiveStatus(telemetry);
       
-      // Check if telemetry is stale (older than 15 minutes)
-      const isDataFresh = telemetry?.last_communication_at 
-        ? (Date.now() - new Date(telemetry.last_communication_at).getTime()) < 15 * 60 * 1000
-        : false;
-      
-      // Determine status from telemetry - must have fresh data
       let status: "moving" | "idle" | "offline" = "offline";
-      let liveStatus: "moving" | "idle_engine_on" | "idle_engine_off" | "offline" = "offline";
-      if (telemetry && isDataFresh && telemetry.device_connected) {
-        const speed = telemetry.speed_kmh || 0;
-        if (speed > 3) {
-          status = "moving";
-          liveStatus = "moving";
-        } else if (telemetry.engine_on || telemetry.ignition_on) {
-          status = "idle";
-          liveStatus = "idle_engine_on";
-        } else {
-          status = "offline"; // Engine off, not moving = stopped/offline
-          liveStatus = "idle_engine_off";
-        }
+      if (liveStatus === "moving") {
+        status = "moving";
+      } else if (liveStatus === "idle_engine_on" || liveStatus === "idle_engine_off") {
+        status = "idle";
       }
+
 
       // Get driver name from join or fallback to trip-based assignment
       const driverFromJoin = v.assigned_driver 
@@ -357,6 +345,7 @@ const Fleet = () => {
     setFuelTypeFilter("all");
     setOwnershipFilter("all");
     setDriverFilter("all");
+    setLiveStatusFilter("all");
   };
 
   const activeFilterCount = [
@@ -365,6 +354,7 @@ const Fleet = () => {
     fuelTypeFilter !== "all",
     ownershipFilter !== "all",
     driverFilter !== "all",
+    liveStatusFilter !== "all",
   ].filter(Boolean).length;
 
   const handleExportSelected = () => {
