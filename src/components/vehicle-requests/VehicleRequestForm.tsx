@@ -118,6 +118,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // Super-admin only: file the request on behalf of another user or driver
   const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
 
   // Fetch both users and drivers for the combined picker
   const { data: orgPeople = [] } = useQuery({
