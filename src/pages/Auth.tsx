@@ -224,7 +224,8 @@ const Auth = () => {
       if (!twoFactor?.secret_encrypted) {
         // 2FA was disabled in the meantime, allow through
         toast({ title: "Welcome back!", description: "Signed in successfully." });
-        navigate("/");
+        const landing2 = await resolveLandingPath(pending2FAUserId);
+        navigate(landing2);
         setVerifying2FA(false);
         return;
       }
