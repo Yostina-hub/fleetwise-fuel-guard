@@ -94,6 +94,16 @@ const Drivers = () => {
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState("all");
   const [assignmentFilter, setAssignmentFilter] = useState<"all" | "assigned" | "unassigned">("all");
   const [isExporting, setIsExporting] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<DriverColumnId[]>(() => loadVisibleColumns());
+  const updateVisibleColumns = (cols: DriverColumnId[]) => {
+    setVisibleColumns(cols);
+    saveVisibleColumns(cols);
+  };
+  const visibleColumnDefs = useMemo(
+    () => visibleColumns.map((id) => COLUMN_BY_ID[id]).filter(Boolean),
+    [visibleColumns],
+  );
+  const isColVisible = (id: DriverColumnId) => visibleColumns.includes(id);
   
   const PAGE_SIZE = 10;
   const { 
