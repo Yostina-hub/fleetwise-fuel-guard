@@ -45,6 +45,7 @@ import DriversQuickStats from "@/components/fleet/DriversQuickStats";
 import DriversQuickActions from "@/components/fleet/DriversQuickActions";
 import DriverCategoryCards from "@/components/fleet/DriverCategoryCards";
 import DriverColumnsPicker from "@/components/fleet/DriverColumnsPicker";
+import { renderDriverCell } from "@/components/fleet/driverCellRenderer";
 import {
   DRIVER_COLUMNS,
   COLUMN_BY_ID,
