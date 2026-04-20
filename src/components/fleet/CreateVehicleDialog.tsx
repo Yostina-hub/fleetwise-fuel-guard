@@ -18,9 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import {
-  Loader2, Truck, User, FileText, Shield, Settings, MapPin, Paperclip, LayoutPanelTop,
-} from "lucide-react";
+import { Loader2, Truck, User, FileText, Shield, Settings, MapPin, Paperclip, LayoutPanelTop, AlertCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ROUTE_TYPES, VEHICLE_CATEGORIES, TEMPERATURE_CONTROLS,
@@ -29,17 +27,8 @@ import {
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
 import BasicInfoTabs from "./BasicInfoTabs";
-
-const vehicleSchema = z.object({
-  plate_number: z.string().trim().min(1, "Plate number is required"),
-  vehicle_type: z.string().min(1, "Vehicle type is required"),
-  vehicle_group: z.string().min(1, "Group is required"),
-  route_type: z.string().min(1, "Route type is required"),
-  drive_type: z.string().min(1, "Drive type is required"),
-  make: z.string().trim().min(1, "Make is required"),
-  model: z.string().trim().min(1, "Model is required"),
-  year: z.number().min(1900).max(new Date().getFullYear() + 2),
-});
+import { useVehicleValidation } from "./useVehicleValidation";
+import { FIELD_TO_SECTION, type VehicleFieldName } from "./vehicleValidation";
 
 interface CreateVehicleDialogProps {
   open: boolean;
