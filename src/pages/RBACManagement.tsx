@@ -136,6 +136,7 @@ const RBACManagement = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("matrix");
+  const [manageRolesOpen, setManageRolesOpen] = useState(false);
   const [userCounts, setUserCounts] = useState<Record<string, number>>({});
 
   // Location Access state
