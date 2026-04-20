@@ -33,6 +33,15 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
   const [selectedDriver, setSelectedDriver] = useState("");
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
 
+  // Role-based action gating (mirrors row visibility scope)
+  const vrScope = useVehicleRequestScope();
+  const isAdminTier = vrScope.tier === "all";
+  const isOperatorTier = vrScope.tier === "operator";
+  const canManageAll = isAdminTier || isOperatorTier; // approve/reject/assign/sms/complete
+  const isAssignedDriver =
+    vrScope.tier === "driver" && request.assigned_driver_id === vrScope.driverId;
+  const canCheckInOut = canManageAll || isAssignedDriver;
+
   // Fetch drivers for assignment
   const { data: drivers = [] } = useQuery({
     queryKey: ["drivers-for-assignment", request.organization_id],
