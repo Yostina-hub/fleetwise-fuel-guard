@@ -485,7 +485,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2 pt-2 border-t">
-        {request.status === "pending" && !showRejectForm && (
+        {request.status === "pending" && !showRejectForm && canManageAll && (
           <>
             <Button size="sm" onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
               <CheckCircle className="w-3.5 h-3.5 mr-1" /> Approve
@@ -495,7 +495,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
             </Button>
           </>
         )}
-        {request.status === "approved" && (
+        {request.status === "approved" && canManageAll && (
           <div className="space-y-2 w-full">
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -535,24 +535,26 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         )}
         {request.status === "assigned" && (
           <>
-            {!request.driver_checked_in_at && onCheckIn && (
+            {!request.driver_checked_in_at && onCheckIn && canCheckInOut && (
               <Button size="sm" onClick={onCheckIn} className="bg-green-600 hover:bg-green-700">
                 <LogIn className="w-3.5 h-3.5 mr-1" /> Check In
               </Button>
             )}
-            {request.driver_checked_in_at && !request.driver_checked_out_at && onCheckIn && (
+            {request.driver_checked_in_at && !request.driver_checked_out_at && onCheckIn && canCheckInOut && (
               <Button size="sm" onClick={onCheckIn} className="bg-amber-600 hover:bg-amber-700">
                 <LogIn className="w-3.5 h-3.5 mr-1 rotate-180" /> Check Out
               </Button>
             )}
-            {!request.sms_notification_sent && (
+            {!request.sms_notification_sent && canManageAll && (
               <Button size="sm" variant="outline" onClick={() => sendSmsMutation.mutate()} disabled={sendSmsMutation.isPending}>
                 <Send className="w-3.5 h-3.5 mr-1" /> Send SMS
               </Button>
             )}
-            <Button size="sm" onClick={() => completeMutation.mutate()} disabled={completeMutation.isPending}>
-              <CheckCircle className="w-3.5 h-3.5 mr-1" /> Complete
-            </Button>
+            {canManageAll && (
+              <Button size="sm" onClick={() => completeMutation.mutate()} disabled={completeMutation.isPending}>
+                <CheckCircle className="w-3.5 h-3.5 mr-1" /> Complete
+              </Button>
+            )}
           </>
         )}
         {["pending", "approved"].includes(request.status) && !showRejectForm && (
