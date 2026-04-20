@@ -15,6 +15,9 @@ import { useTranslation } from "react-i18next";
 import { sendDispatchSms } from "@/services/smsNotificationService";
 import { notifyRequesterDecisionSms, notifyAssignmentSms, getAppUrl } from "@/services/vehicleRequestSmsService";
 import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
+import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetList";
+import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
+import type { RequestAssignment } from "@/hooks/useRequestAssignments";
 
 interface Props {
   request: any;
