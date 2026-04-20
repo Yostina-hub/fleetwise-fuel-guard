@@ -43,6 +43,7 @@ export function DatePickerField({
   maxDate,
   clearable = true,
 }: DatePickerFieldProps) {
+  const [open, setOpen] = React.useState(false);
   const date = React.useMemo(() => {
     if (!value) return undefined;
     const parsed = parse(value, ISO, new Date());
@@ -50,7 +51,7 @@ export function DatePickerField({
   }, [value]);
 
   return (
-    <Popover onOpenChange={(o) => !o && onBlur?.()}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) onBlur?.(); }}>
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -92,7 +93,7 @@ export function DatePickerField({
         <Calendar
           mode="single"
           selected={date}
-          onSelect={(d) => onChange(d ? format(d, ISO) : "")}
+          onSelect={(d) => { onChange(d ? format(d, ISO) : ""); if (d) setOpen(false); }}
           disabled={(d) => {
             if (minDate && d < minDate) return true;
             if (maxDate && d > maxDate) return true;
