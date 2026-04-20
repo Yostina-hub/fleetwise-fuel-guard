@@ -230,6 +230,22 @@ function IdentityPane({ formData, set, plateNumber, onBlur, getError }: Props) {
         <Input value={formData.specific_location || ""} onChange={e => set("specific_location", e.target.value)} onBlur={blur("specific_location")} placeholder="Branch / site name" />
       </Field>
 
+      <Field label="Assigned Location" hint="Corporate / Zone / Region group" error={err("assigned_location")}>
+        <Select value={formData.assigned_location || ""} onValueChange={v => blurSelect("assigned_location", v)}>
+          <SelectTrigger><SelectValue placeholder="Select location..." /></SelectTrigger>
+          <SelectContent>
+            {["Corporate", "Zone", "Region"].map(group => (
+              <SelectGroup key={group}>
+                <SelectLabel className="text-xs font-semibold text-muted-foreground">{group}</SelectLabel>
+                {ASSIGNED_LOCATIONS.filter(l => l.group === group).map(l => (
+                  <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
+
       <Field label="Vehicle Type" required error={err("vehicle_type")}>
         <Select value={formData.vehicle_type} onValueChange={v => blurSelect("vehicle_type", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
