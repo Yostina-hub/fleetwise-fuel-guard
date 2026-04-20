@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
 import { useLockedVehicles } from "@/hooks/useLockedVehicles";
+import { sendDispatchSms } from "@/services/smsNotificationService";
 import { toast } from "sonner";
 
 interface Props {
@@ -32,7 +33,7 @@ export const MultiVehicleAssignDialog = ({ request, open, onClose }: Props) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("drivers")
-        .select("id, first_name, last_name")
+        .select("id, first_name, last_name, phone")
         .eq("organization_id", request.organization_id)
         .eq("status", "active")
         .order("first_name").limit(100);
@@ -96,6 +97,28 @@ export const MultiVehicleAssignDialog = ({ request, open, onClose }: Props) => {
         assigned_at: new Date().toISOString(),
         assigned_by: user?.id,
       }).eq("id", request.id);
+
+      // Send dispatch SMS to every assigned driver (best-effort, errors logged)
+      const driverById = new Map(drivers.map((d: any) => [d.id, d]));
+      const vehicleById = new Map(available.map((v: any) => [v.id, v]));
+      await Promise.allSettled(
+        Object.entries(picks)
+          .filter(([, did]) => !!did)
+          .map(async ([vid, did]) => {
+            const drv = driverById.get(did!);
+            const veh = vehicleById.get(vid);
+            if (!drv?.phone) return;
+            return sendDispatchSms({
+              driverPhone: drv.phone,
+              driverName: `${drv.first_name || ""} ${drv.last_name || ""}`.trim(),
+              jobNumber: request.request_number,
+              pickupLocation: request.departure_place || "",
+              dropoffLocation: request.destination || "",
+              scheduledTime: request.needed_from,
+              specialInstructions: veh?.plate_number ? `Vehicle: ${veh.plate_number}` : undefined,
+            });
+          })
+      );
     },
     onSuccess: () => {
       toast.success(`${selectedCount} vehicle${selectedCount > 1 ? "s" : ""} assigned`);

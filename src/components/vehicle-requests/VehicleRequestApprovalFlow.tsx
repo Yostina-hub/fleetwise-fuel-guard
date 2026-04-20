@@ -15,6 +15,9 @@ import { useTranslation } from "react-i18next";
 import { sendDispatchSms } from "@/services/smsNotificationService";
 import { notifyRequesterDecisionSms, notifyAssignmentSms, getAppUrl } from "@/services/vehicleRequestSmsService";
 import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
+import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetList";
+import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
+import type { RequestAssignment } from "@/hooks/useRequestAssignments";
 
 interface Props {
   request: any;
@@ -32,6 +35,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
+  const [activeAssignment, setActiveAssignment] = useState<RequestAssignment | null>(null);
 
   // Role-based action gating (mirrors row visibility scope)
   const vrScope = useVehicleRequestScope();
@@ -360,6 +364,12 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         <div className="text-sm"><span className="text-muted-foreground">Purpose:</span> {request.purpose}</div>
       )}
 
+      {/* Multi-vehicle: per-vehicle assignment list with own check-in/out */}
+      <AssignedFleetList
+        request={request}
+        onCheckIn={(a) => setActiveAssignment(a)}
+      />
+
       {/* Approval routing info */}
       {request.approval_routed_to && (
         <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-lg p-2">
@@ -561,6 +571,15 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
           <Button size="sm" variant="outline" onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
         )}
       </div>
+
+      {activeAssignment && (
+        <AssignmentCheckInDialog
+          request={request}
+          assignment={activeAssignment}
+          open={!!activeAssignment}
+          onClose={() => setActiveAssignment(null)}
+        />
+      )}
     </div>
   );
 };
