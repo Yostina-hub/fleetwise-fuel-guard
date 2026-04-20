@@ -216,15 +216,50 @@ export function downloadImportTemplate(format: "xlsx" | "csv" = "xlsx") {
     return parts.join(" — ");
   });
 
-  // Sample row (only required fields filled in)
-  const sample = IMPORTABLE_FIELDS.map((f) => {
-    if (!f.required) return "";
-    if (f.dbKey === "plate_number") return "AA-12345";
-    if (f.dbKey === "make") return "Toyota";
-    if (f.dbKey === "model") return "Hilux";
-    if (f.dbKey === "year") return new Date().getFullYear();
-    return "";
-  });
+  // Fully populated sample row — gives users a concrete example for every column
+  const SAMPLE_VALUES: Record<string, any> = {
+    plate_number: "AA-12345",
+    make: "Toyota",
+    model: "Hilux",
+    year: new Date().getFullYear() - 1,
+    vehicle_type: "pickup",
+    vehicle_group: "Operations",
+    vehicle_category: "Light Duty",
+    color: "White",
+    vin: "JTFDE626X00012345",
+    fuel_type: "diesel",
+    transmission_type: "manual",
+    drive_type: "4wd",
+    engine_cc: 2800,
+    engine_number: "1GD-FTV-9876543",
+    model_code: "GUN125L",
+    tank_capacity_liters: 80,
+    seating_capacity: 5,
+    loading_capacity_quintal: 10,
+    capacity_kg: 1000,
+    status: "active",
+    ownership_type: "owned",
+    assigned_location: "zone_eaaz_aa",
+    specific_pool: "HQ Pool",
+    specific_location: "Bole, Addis Ababa",
+    purpose_for: "Field Operations",
+    odometer_km: 45000,
+    fuel_standard_km_per_liter: 12.5,
+    purchasing_price: 2500000,
+    current_market_price: 2100000,
+    mfg_date: "2023-05-15",
+    year_of_ownership: 2023,
+    registration_cert_no: "REG-2023-00123",
+    registration_expiry: "2026-05-14",
+    insurance_policy_no: "INS-POL-998877",
+    insurance_expiry: "2026-05-14",
+    permit_expiry: "2026-12-31",
+    owner_type: "Company",
+    owner_full_name: "Acme Logistics PLC",
+    owner_phone: "+251911234567",
+    owner_email: "fleet@acme.example",
+  };
+  const sample = IMPORTABLE_FIELDS.map((f) => SAMPLE_VALUES[f.dbKey] ?? "");
 
   if (format === "csv") {
     const csvEscape = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
