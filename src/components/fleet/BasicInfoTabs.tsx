@@ -12,6 +12,7 @@ import {
   PURPOSE_FOR_OPTIONS, SPECIFIC_POOL_OPTIONS, TRANSMISSION_TYPES,
   CURRENT_CONDITION_OPTIONS, SAFETY_COMFORT_CATEGORIES, ASSIGNED_LOCATIONS,
 } from "./formConstants";
+import { AssignedLocationPicker } from "./AssignedLocationPicker";
 
 type SetFn = (field: string, value: string | number) => void;
 type BlurFn = (field: string, value: unknown) => void;
@@ -231,19 +232,10 @@ function IdentityPane({ formData, set, plateNumber, onBlur, getError }: Props) {
       </Field>
 
       <Field label="Assigned Location" hint="Corporate / Zone / Region group" error={err("assigned_location")}>
-        <Select value={formData.assigned_location || ""} onValueChange={v => blurSelect("assigned_location", v)}>
-          <SelectTrigger><SelectValue placeholder="Select location..." /></SelectTrigger>
-          <SelectContent>
-            {["Corporate", "Zone", "Region"].map(group => (
-              <SelectGroup key={group}>
-                <SelectLabel className="text-xs font-semibold text-muted-foreground">{group}</SelectLabel>
-                {ASSIGNED_LOCATIONS.filter(l => l.group === group).map(l => (
-                  <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                ))}
-              </SelectGroup>
-            ))}
-          </SelectContent>
-        </Select>
+        <AssignedLocationPicker
+          value={formData.assigned_location || ""}
+          onChange={(v) => blurSelect("assigned_location", v)}
+        />
       </Field>
 
       <Field label="Vehicle Type" required error={err("vehicle_type")}>
