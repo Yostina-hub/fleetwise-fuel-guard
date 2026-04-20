@@ -187,7 +187,7 @@ const TypeCard = ({
     className={cn(
       "group relative overflow-hidden rounded-xl text-left",
       "border border-border/60 bg-card/30 backdrop-blur-xl",
-      "px-4 py-3.5 transition-all duration-300",
+      "px-4 py-3 transition-all duration-300 min-w-[180px] flex-1 sm:flex-none sm:min-w-[200px]",
       "hover:border-border hover:bg-card/60 hover:-translate-y-0.5",
       active && cn("ring-2 ring-offset-1 ring-offset-background bg-card/70", tone.ring),
     )}
@@ -223,7 +223,7 @@ const TypeCard = ({
 
 /* -------------------- Section Heading -------------------- */
 const SectionHeading = ({ icon: Icon, title, hint }: { icon: any; title: string; hint?: string }) => (
-  <div className="flex items-center gap-2 mb-3">
+  <div className="flex items-center gap-2 mb-2">
     <div className="h-6 w-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center">
       <Icon className="w-3 h-3 text-primary" aria-hidden="true" />
     </div>
@@ -269,7 +269,7 @@ const DriverCategoryCards = ({
   };
 
   return (
-    <section className="space-y-6" aria-label="Driver categories">
+    <section className="space-y-4" aria-label="Driver categories">
       {/* Primary row: Total / Assigned / Unassigned */}
       <div>
         <SectionHeading icon={Sparkles} title="Assignment Overview" hint="Click any card to filter" />
@@ -310,7 +310,7 @@ const DriverCategoryCards = ({
       {driverTypeEntries.length > 0 && (
         <div>
           <SectionHeading icon={TrendingUp} title="By Driver Type" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="flex flex-wrap gap-3">
             {driverTypeEntries.map(([key, count]) => {
               const meta = driverTypeMeta[key] || {
                 ...driverTypeMeta.unspecified,
