@@ -244,15 +244,24 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
             <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-2xl bg-muted/40 p-1">
               {sectionTabs.map((tab) => {
                 const Icon = tab.icon;
+                // Count touched-and-errored fields belonging to this tab.
+                const tabErrorCount = (Object.keys(fieldValidation.errors) as VehicleFieldName[])
+                  .filter((k) => fieldValidation.touched[k] && FIELD_TO_SECTION[k] === tab.value)
+                  .length;
                 return (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="min-w-fit rounded-xl px-3 py-2 text-xs md:text-sm"
+                    className="min-w-fit rounded-xl px-3 py-2 text-xs md:text-sm relative"
                   >
                     <span className="inline-flex items-center gap-2">
                       <Icon className="h-3.5 w-3.5" />
                       {tab.label}
+                      {tabErrorCount > 0 && (
+                        <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold">
+                          {tabErrorCount}
+                        </span>
+                      )}
                     </span>
                   </TabsTrigger>
                 );
