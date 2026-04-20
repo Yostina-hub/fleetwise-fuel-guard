@@ -21,18 +21,18 @@ export const ID_TYPES = [
   { value: "kebele_id", label: "Kebele ID" },
 ];
 
+// Ethiopian official driver license categories.
+// Default validity (years) is used for dynamic expiry-date computation
+// when an admin hasn't overridden it via license_category_validity table.
 export const LICENSE_TYPES = [
-  { value: "automobile", label: "Automobile" },
-  { value: "dry_1", label: "Cargo -1" },
-  { value: "dry_2", label: "Cargo -2" },
-  { value: "dry_3", label: "Cargo -3" },
-  { value: "motor_cycle", label: "Motor Cycle" },
-  { value: "n_a", label: "N/A" },
-  { value: "public_1", label: "Public - 1" },
-  { value: "public_2", label: "Public - 2" },
-  { value: "public_3", label: "Public - 3" },
-  { value: "taxi_1", label: "Taxi -1" },
-  { value: "taxi_2", label: "Taxi -2" },
+  { value: "1",        label: "Category 1 — Automobile / private",  defaultYears: 5 },
+  { value: "2",        label: "Category 2 — Light commercial",       defaultYears: 5 },
+  { value: "3",        label: "Category 3 — Heavy commercial",       defaultYears: 5 },
+  { value: "4",        label: "Category 4 — Heavy haulage",          defaultYears: 3 },
+  { value: "5",        label: "Category 5 — Specialised",            defaultYears: 3 },
+  { value: "Public-1", label: "Public-1 — Taxi / Mini-bus",          defaultYears: 3 },
+  { value: "Public-2", label: "Public-2 — Midi-bus",                 defaultYears: 3 },
+  { value: "Public-3", label: "Public-3 — Bus / Coach",              defaultYears: 3 },
 ];
 
 export const EMPLOYMENT_STATUSES = [
@@ -51,10 +51,21 @@ export const DRIVER_STATUSES = [
   { value: "terminated", label: "Terminated" },
 ];
 
-export const ROUTE_TYPES = [
-  { value: "intracity", label: "Intracity" },
-  { value: "intercity", label: "Intercity" },
-  { value: "both", label: "Both" },
+// Pool assignments — replaces the legacy "Route Type" semantics.
+// Sourced from real Ethio telecom operational pool hierarchy.
+export const ASSIGNED_POOLS = [
+  { group: "Corporate Pools", value: "pool_naaz",     label: "NAAZ — Northern AA Zone" },
+  { group: "Corporate Pools", value: "pool_caaz",     label: "CAAZ — Central AA Zone" },
+  { group: "Corporate Pools", value: "pool_eaaz",     label: "EAAZ — Eastern AA Zone" },
+  { group: "Corporate Pools", value: "pool_waaz",     label: "WAAZ — Western AA Zone" },
+  { group: "Corporate Pools", value: "pool_neaz",     label: "NEAZ — North-East AA Zone" },
+  { group: "Corporate Pools", value: "pool_seaz",     label: "SEAZ — South-East AA Zone" },
+  { group: "Corporate Pools", value: "pool_swaaz",    label: "SWAAZ — South-West AA Zone" },
+  { group: "Regional Pools",  value: "pool_sr",       label: "SR — Southern Region" },
+  { group: "Regional Pools",  value: "pool_north",    label: "Northern Region Pool" },
+  { group: "Regional Pools",  value: "pool_east",     label: "Eastern Region Pool" },
+  { group: "Regional Pools",  value: "pool_west",     label: "Western Region Pool" },
+  { group: "Other",           value: "pool_other",    label: "Other / Unassigned" },
 ];
 
 export const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];

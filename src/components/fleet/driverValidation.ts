@@ -8,10 +8,10 @@
  * - Length caps prevent abuse + DB overflow
  * - Patterns enforce names, phones, IDs, license, email
  * - Used both for onBlur per-field validation AND final submit
+ * - Error messages are field-specific (no generic "Invalid value")
  */
 import { z } from "zod";
 
-const CURRENT_YEAR = new Date().getFullYear();
 const MIN_AGE = 18;
 const MAX_AGE = 80;
 
@@ -19,12 +19,19 @@ const MAX_AGE = 80;
 const NAME_REGEX = /^[\p{L}\s'.-]+$/u;
 // Ethiopian local mobile format: 09XXXXXXXX (10 digits) or +2519XXXXXXXX
 const ETH_PHONE_REGEX = /^(?:09\d{8}|\+2519\d{8})$/;
-// FAN / National ID: digits, possibly with dashes, 10–20 chars
+// Telebirr: typically 9 digits (without leading 0) or full 10-digit phone
+const TELEBIRR_REGEX = /^(?:9\d{8}|09\d{8})$/;
+// FAN / National ID: digits, possibly with dashes, 6–30 chars
 const NATIONAL_ID_REGEX = /^[A-Z0-9-]{6,30}$/i;
 
-// ----- Reusable atoms -----
-const trimmedOptional = (max: number) =>
-  z.string().trim().max(max, `Maximum ${max} characters`).optional().or(z.literal(""));
+// ----- Reusable atoms with descriptive errors -----
+const trimmedOptional = (label: string, max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, `${label} must be ${max} characters or fewer`)
+    .optional()
+    .or(z.literal(""));
 
 const trimmedRequired = (label: string, min = 1, max = 200) =>
   z
@@ -38,10 +45,13 @@ const optionalDate = (label: string, opts?: { future?: boolean; past?: boolean }
     .string()
     .optional()
     .or(z.literal(""))
-    .refine((v) => !v || !Number.isNaN(Date.parse(v)), `Invalid ${label.toLowerCase()}`)
+    .refine(
+      (v) => !v || !Number.isNaN(Date.parse(v)),
+      `${label} is not a valid date (use YYYY-MM-DD)`,
+    )
     .refine(
       (v) => !v || (opts?.future ? new Date(v) > new Date() : true),
-      `${label} must be in the future`,
+      `${label} must be a date in the future`,
     )
     .refine(
       (v) => !v || (opts?.past ? new Date(v) <= new Date() : true),
@@ -66,8 +76,8 @@ const numericOptional = (label: string, opts?: { min?: number; max?: number; int
       },
       {
         message: opts?.integer
-          ? `${label} must be a whole number${opts?.min !== undefined ? ` ≥ ${opts.min}` : ""}${opts?.max !== undefined ? `, ≤ ${opts.max}` : ""}`
-          : `${label} must be a valid number${opts?.min !== undefined ? ` ≥ ${opts.min}` : ""}${opts?.max !== undefined ? `, ≤ ${opts.max}` : ""}`,
+          ? `${label} must be a whole number${opts?.min !== undefined ? ` (≥ ${opts.min})` : ""}${opts?.max !== undefined ? ` and ≤ ${opts.max}` : ""}`
+          : `${label} must be a number${opts?.min !== undefined ? ` ≥ ${opts.min}` : ""}${opts?.max !== undefined ? ` and ≤ ${opts.max}` : ""}`,
       },
     );
 
@@ -78,41 +88,41 @@ export const driverFieldSchemas = {
     .string()
     .trim()
     .min(2, "First name must be at least 2 characters")
-    .max(100, "Maximum 100 characters")
-    .regex(NAME_REGEX, "Only letters, spaces, hyphens, and apostrophes"),
+    .max(100, "First name must be 100 characters or fewer")
+    .regex(NAME_REGEX, "First name may only contain letters, spaces, hyphens, and apostrophes"),
   middle_name: z
     .string()
     .trim()
     .min(2, "Middle name must be at least 2 characters")
-    .max(100, "Maximum 100 characters")
-    .regex(NAME_REGEX, "Only letters, spaces, hyphens, and apostrophes"),
+    .max(100, "Middle name must be 100 characters or fewer")
+    .regex(NAME_REGEX, "Middle name may only contain letters, spaces, hyphens, and apostrophes"),
   last_name: z
     .string()
     .trim()
     .min(2, "Last name must be at least 2 characters")
-    .max(100, "Maximum 100 characters")
-    .regex(NAME_REGEX, "Only letters, spaces, hyphens, and apostrophes"),
-  gender: trimmedOptional(20),
+    .max(100, "Last name must be 100 characters or fewer")
+    .regex(NAME_REGEX, "Last name may only contain letters, spaces, hyphens, and apostrophes"),
+  gender: trimmedOptional("Gender", 20),
   phone: z
     .string()
     .trim()
     .min(1, "Phone number is required")
-    .regex(ETH_PHONE_REGEX, "Use Ethiopian format: 09XXXXXXXX"),
+    .regex(ETH_PHONE_REGEX, "Phone must be Ethiopian: 09XXXXXXXX (10 digits) or +2519XXXXXXXX"),
   email: z
     .string()
     .trim()
-    .max(255, "Maximum 255 characters")
+    .max(255, "Email must be 255 characters or fewer")
     .optional()
     .or(z.literal(""))
     .refine(
       (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
-      "Invalid email address",
+      "Enter a valid email address (e.g. name@example.com)",
     ),
   date_of_birth: z
     .string()
     .optional()
     .or(z.literal(""))
-    .refine((v) => !v || !Number.isNaN(Date.parse(v)), "Invalid date of birth")
+    .refine((v) => !v || !Number.isNaN(Date.parse(v)), "Date of birth is not a valid date")
     .refine(
       (v) => {
         if (!v) return true;
@@ -120,98 +130,120 @@ export const driverFieldSchemas = {
         const age = (Date.now() - dob.getTime()) / (365.25 * 24 * 3600 * 1000);
         return age >= MIN_AGE && age <= MAX_AGE;
       },
-      `Driver must be between ${MIN_AGE} and ${MAX_AGE} years old`,
+      `Driver age must be between ${MIN_AGE} and ${MAX_AGE} years`,
     ),
   employee_id: z
     .string()
     .trim()
-    .max(50, "Maximum 50 characters")
+    .max(50, "Employee ID must be 50 characters or fewer")
     .optional()
     .or(z.literal("")),
 
   // ----- Address -----
-  address_region: trimmedOptional(100),
-  address_zone: trimmedOptional(100),
-  address_woreda: trimmedOptional(100),
-  address_specific: trimmedOptional(500),
+  address_region: trimmedOptional("Region", 100),
+  address_zone: trimmedOptional("Zone", 100),
+  address_woreda: trimmedOptional("Woreda", 100),
+  address_specific: trimmedOptional("Specific address", 500),
 
   // ----- Legal & Verification -----
-  driver_type: trimmedRequired("Driver type"),
+  // driver_type now REQUIRED with explicit selection (no default) per #15
+  driver_type: z
+    .string()
+    .trim()
+    .min(1, "Please select a driver type — no default is set"),
   govt_id_type: trimmedRequired("ID type"),
   license_number: z
     .string()
     .trim()
     .min(3, "License/ID number must be at least 3 characters")
-    .max(50, "Maximum 50 characters")
-    .regex(/^[A-Z0-9\s\-\/]+$/i, "Only letters, digits, hyphens, slashes"),
+    .max(50, "License/ID number must be 50 characters or fewer")
+    .regex(/^[A-Z0-9\s\-\/]+$/i, "License/ID may only contain letters, digits, hyphens, and slashes"),
   national_id: z
     .string()
     .trim()
     .optional()
     .or(z.literal(""))
-    .refine((v) => !v || NATIONAL_ID_REGEX.test(v), "Invalid National ID (FAN) format"),
-  license_type: trimmedOptional(20),
+    .refine(
+      (v) => !v || NATIONAL_ID_REGEX.test(v),
+      "National ID (FAN) must be 6–30 alphanumeric characters",
+    ),
+  // Ethiopian license category — must be one of the official categories
+  license_type: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (v) => !v || ["1", "2", "3", "4", "5", "Public-1", "Public-2", "Public-3"].includes(v),
+      "License type must be a valid Ethiopian category (1–5 or Public-1/2/3)",
+    ),
   license_issue_date: optionalDate("License issue date", { past: true }),
   license_expiry: z
     .string()
     .optional()
     .or(z.literal(""))
-    .refine((v) => !v || !Number.isNaN(Date.parse(v)), "Invalid expiry date"),
+    .refine(
+      (v) => !v || !Number.isNaN(Date.parse(v)),
+      "License expiry is not a valid date",
+    ),
 
   // ----- Employment -----
-  employment_type: trimmedOptional(50),
-  status: trimmedRequired("Status", 1, 50),
+  employment_type: trimmedOptional("Employment type", 50),
+  status: trimmedRequired("Driver status", 1, 50),
   joining_date: optionalDate("Joining date", { past: true }),
   department: trimmedRequired("Assigned location"),
-  experience_years: numericOptional("Experience years", { min: 0, max: 60, integer: true }),
-  route_type: trimmedOptional(50),
+  experience_years: numericOptional("Years of experience", { min: 0, max: 60, integer: true }),
+  // assigned_pool replaces legacy route_type per #5 (optional but validated)
+  assigned_pool: trimmedOptional("Assigned pool", 50),
+  route_type: trimmedOptional("Route type", 50), // kept for legacy edit form
 
-  // ----- Banking -----
-  bank_name: trimmedOptional(150),
-  bank_account: z
+  // ----- Payment (Telebirr replaces bank fields) -----
+  telebirr_account: z
     .string()
     .trim()
-    .max(40, "Maximum 40 characters")
     .optional()
     .or(z.literal(""))
-    .refine((v) => !v || /^[A-Z0-9\-\s]{4,40}$/i.test(v), "Invalid account number"),
+    .refine(
+      (v) => !v || TELEBIRR_REGEX.test(v),
+      "Telebirr account must be 9 digits (e.g. 911234567) or 10 digits (09XXXXXXXX)",
+    ),
 
   // ----- Emergency -----
   emergency_contact_name: z
     .string()
     .trim()
-    .min(2, "Contact name must be at least 2 characters")
-    .max(150, "Maximum 150 characters")
-    .regex(NAME_REGEX, "Only letters, spaces, hyphens, and apostrophes"),
+    .min(2, "Emergency contact name must be at least 2 characters")
+    .max(150, "Emergency contact name must be 150 characters or fewer")
+    .regex(NAME_REGEX, "Emergency contact name may only contain letters, spaces, hyphens, and apostrophes"),
   emergency_contact_phone: z
     .string()
     .trim()
-    .min(1, "Emergency phone is required")
-    .regex(ETH_PHONE_REGEX, "Use Ethiopian format: 09XXXXXXXX"),
-  blood_type: trimmedOptional(10),
+    .min(1, "Emergency contact phone is required")
+    .regex(ETH_PHONE_REGEX, "Emergency phone must be Ethiopian: 09XXXXXXXX or +2519XXXXXXXX"),
+  blood_type: trimmedOptional("Blood type", 10),
 
   // ----- Tags -----
-  rfid_tag: trimmedOptional(100),
-  ibutton_id: trimmedOptional(100),
-  bluetooth_id: trimmedOptional(100),
-  medical_certificate_expiry: z.string().optional().or(z.literal("")),
+  rfid_tag: trimmedOptional("RFID tag", 100),
+  ibutton_id: trimmedOptional("iButton ID", 100),
+  bluetooth_id: trimmedOptional("Bluetooth ID", 100),
+  medical_certificate_expiry: optionalDate("Medical certificate expiry"),
 
   // ----- Credentials -----
   password: z
     .string()
     .min(12, "Password must be at least 12 characters")
-    .max(100, "Maximum 100 characters")
-    .regex(/[A-Z]/, "Must include an uppercase letter")
-    .regex(/[a-z]/, "Must include a lowercase letter")
-    .regex(/[0-9]/, "Must include a digit")
-    .regex(/[!@#$%^&*(),.?":{}|<>]/, "Must include a special character"),
+    .max(100, "Password must be 100 characters or fewer")
+    .regex(/[A-Z]/, "Password must include at least one uppercase letter (A–Z)")
+    .regex(/[a-z]/, "Password must include at least one lowercase letter (a–z)")
+    .regex(/[0-9]/, "Password must include at least one digit (0–9)")
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must include at least one special character (e.g. !@#$%)"),
 
-  notes: trimmedOptional(2000),
+  notes: trimmedOptional("Notes", 2000),
 } as const;
 
 export type DriverFieldName = keyof typeof driverFieldSchemas;
 
-/** Fields that participate in cross-field rules below. */
+/** Cross-field rules with descriptive messages. */
 type CrossFieldRule = (form: Record<string, any>) => Partial<Record<DriverFieldName, string>>;
 
 const crossFieldRules: CrossFieldRule[] = [
@@ -219,7 +251,7 @@ const crossFieldRules: CrossFieldRule[] = [
   (f) => {
     if (f.license_issue_date && f.license_expiry) {
       if (new Date(f.license_expiry) <= new Date(f.license_issue_date)) {
-        return { license_expiry: "Expiry must be after issue date" };
+        return { license_expiry: "License expiry must be after the issue date" };
       }
     }
     return {};
@@ -230,7 +262,7 @@ const crossFieldRules: CrossFieldRule[] = [
       const minJoin = new Date(f.date_of_birth);
       minJoin.setFullYear(minJoin.getFullYear() + MIN_AGE);
       if (new Date(f.joining_date) < minJoin) {
-        return { joining_date: `Driver must be at least ${MIN_AGE} years old at joining` };
+        return { joining_date: `Driver must be at least ${MIN_AGE} years old at joining date` };
       }
     }
     return {};
@@ -244,13 +276,38 @@ const crossFieldRules: CrossFieldRule[] = [
   },
 ];
 
+/**
+ * Compute a license expiry date from issue date + Ethiopian category validity.
+ * Returns ISO yyyy-mm-dd string or empty string.
+ */
+export function computeLicenseExpiry(
+  issueDate: string,
+  category: string,
+  validityYearsByCategory?: Record<string, number>,
+): string {
+  if (!issueDate || !category) return "";
+  const fallback: Record<string, number> = {
+    "1": 5, "2": 5, "3": 5, "4": 3, "5": 3,
+    "Public-1": 3, "Public-2": 3, "Public-3": 3,
+  };
+  const years = validityYearsByCategory?.[category] ?? fallback[category];
+  if (!years) return "";
+  const d = new Date(issueDate);
+  if (Number.isNaN(d.getTime())) return "";
+  d.setFullYear(d.getFullYear() + years);
+  // Subtract 1 day so expiry falls on the day BEFORE the anniversary
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split("T")[0];
+}
+
 /** Validate a single field; returns error message or null. */
 export function validateDriverField(field: DriverFieldName, value: unknown): string | null {
   const schema = driverFieldSchemas[field];
   if (!schema) return null;
   const result = schema.safeParse(value);
   if (result.success) return null;
-  return result.error.errors[0]?.message ?? "Invalid value";
+  // Descriptive fallback if no message — should rarely fire now
+  return result.error.errors[0]?.message ?? `${field.replace(/_/g, " ")} is invalid`;
 }
 
 /** Validate the full form. Returns { ok, errors, firstError } */
@@ -275,7 +332,7 @@ export function validateDriverForm(formData: Record<string, unknown>): {
     });
   });
 
-  // Determine first error in declaration order so we can scroll to it
+  // First error in declaration order so we can scroll to it
   let firstError: { field: DriverFieldName; message: string } | undefined;
   for (const key of Object.keys(driverFieldSchemas) as DriverFieldName[]) {
     if (errors[key]) {
@@ -287,7 +344,7 @@ export function validateDriverForm(formData: Record<string, unknown>): {
   return { ok: Object.keys(errors).length === 0, errors, firstError };
 }
 
-/** Map a field name → which section/heading contains it (for UX hints). */
+/** Map field → section. */
 export const DRIVER_FIELD_TO_SECTION: Record<DriverFieldName, string> = {
   driver_type: "employment-type",
   first_name: "personal", middle_name: "personal", last_name: "personal",
@@ -298,8 +355,9 @@ export const DRIVER_FIELD_TO_SECTION: Record<DriverFieldName, string> = {
   govt_id_type: "legal", license_number: "legal", national_id: "legal",
   license_type: "legal", license_issue_date: "legal", license_expiry: "legal",
   employment_type: "employment", status: "employment", joining_date: "employment",
-  department: "employment", experience_years: "employment", route_type: "employment",
-  bank_name: "banking", bank_account: "banking",
+  department: "employment", experience_years: "employment",
+  assigned_pool: "employment", route_type: "employment",
+  telebirr_account: "payment",
   emergency_contact_name: "emergency", emergency_contact_phone: "emergency",
   blood_type: "emergency",
   rfid_tag: "tags", ibutton_id: "tags", bluetooth_id: "tags",
