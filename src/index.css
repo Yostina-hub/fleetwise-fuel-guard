@@ -1164,3 +1164,53 @@ All colors MUST be HSL.
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* ----- Native date / time inputs: high-contrast picker indicator -----
+   The default browser calendar icon inherits text color, which becomes
+   invisible against the brand lemon-green focus rings or muted inputs.
+   We force a neutral, theme-aware tint and add hover affordance. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"] {
+  color-scheme: light;
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+}
+.dark input[type="date"],
+.dark input[type="time"],
+.dark input[type="datetime-local"],
+.dark input[type="month"],
+.dark input[type="week"] {
+  color-scheme: dark;
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="week"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.75;
+  filter: invert(38%) sepia(8%) saturate(450%) hue-rotate(314deg) brightness(92%) contrast(86%);
+  transition: opacity 150ms ease, transform 150ms ease;
+  padding: 2px;
+  border-radius: 4px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="month"]::-webkit-calendar-picker-indicator:hover,
+input[type="week"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background: hsl(var(--muted));
+}
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dark input[type="month"]::-webkit-calendar-picker-indicator,
+.dark input[type="week"]::-webkit-calendar-picker-indicator {
+  filter: invert(85%) sepia(8%) saturate(180%) hue-rotate(180deg) brightness(110%);
+}
