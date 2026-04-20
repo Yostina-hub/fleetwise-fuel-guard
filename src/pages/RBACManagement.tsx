@@ -46,7 +46,9 @@ import {
   Warehouse,
   Plus,
   Trash2,
+  ShieldPlus,
 } from "lucide-react";
+import { ManageCustomRolesDialog } from "@/components/rbac/ManageCustomRolesDialog";
 
 interface Permission {
   id: string;
@@ -91,6 +93,7 @@ const ALL_ROLES = [
   { value: "driver", label: "Driver", description: "Trips, logbooks, and incidents", color: "text-emerald-400", tier: 5 },
   { value: "technician", label: "Technician", description: "Maintenance and inspections", color: "text-amber-400", tier: 5 },
   { value: "mechanic", label: "Mechanic", description: "Hands-on vehicle repairs", color: "text-orange-400", tier: 5 },
+  { value: "user", label: "User", description: "Basic end-user with view-only access", color: "text-slate-400", tier: 6 },
   { value: "auditor", label: "Auditor", description: "Read-only compliance and audit access", color: "text-purple-400", tier: 6 },
   { value: "viewer", label: "Viewer", description: "Read-only access to dashboards", color: "text-muted-foreground", tier: 6 },
 ];
@@ -133,6 +136,7 @@ const RBACManagement = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("matrix");
+  const [manageRolesOpen, setManageRolesOpen] = useState(false);
   const [userCounts, setUserCounts] = useState<Record<string, number>>({});
 
   // Location Access state
@@ -358,6 +362,9 @@ const RBACManagement = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setManageRolesOpen(true)} className="gap-2">
+              <ShieldPlus className="w-4 h-4" /> Manage Roles
+            </Button>
             <Button variant="outline" onClick={handleReset} disabled={!hasChanges || saving} className="gap-2">
               <RotateCcw className="w-4 h-4" /> Reset
             </Button>
@@ -368,6 +375,8 @@ const RBACManagement = () => {
             </Button>
           </div>
         </div>
+
+        <ManageCustomRolesDialog open={manageRolesOpen} onOpenChange={setManageRolesOpen} />
 
         {/* Role Overview Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">

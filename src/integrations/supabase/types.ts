@@ -2080,6 +2080,89 @@ export type Database = {
           },
         ]
       }
+      custom_role_permissions: {
+        Row: {
+          created_at: string
+          custom_role_id: string
+          id: string
+          permission_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_role_id: string
+          id?: string
+          permission_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_role_id?: string
+          id?: string
+          permission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_role_permissions_custom_role_id_fkey"
+            columns: ["custom_role_id"]
+            isOneToOne: false
+            referencedRelation: "custom_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+          label: string
+          name: string
+          organization_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          label: string
+          name: string
+          organization_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          label?: string
+          name?: string
+          organization_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_roles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dash_cam_events: {
         Row: {
           ai_confidence: number | null
@@ -26458,6 +26541,7 @@ export type Database = {
         | "maintenance_manager"
         | "maintenance_supervisor"
         | "inspection_center"
+        | "user"
       employee_type:
         | "driver"
         | "mechanic"
@@ -26617,6 +26701,7 @@ export const Constants = {
         "maintenance_manager",
         "maintenance_supervisor",
         "inspection_center",
+        "user",
       ],
       employee_type: [
         "driver",
