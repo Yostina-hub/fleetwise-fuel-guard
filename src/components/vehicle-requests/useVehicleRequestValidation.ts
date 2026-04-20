@@ -1,0 +1,78 @@
+/**
+ * useVehicleRequestValidation
+ * ---------------------------
+ * Per-field error + touched tracking for the Fleet (Vehicle) Request form.
+ * Validates on blur and on submit; exposes `getError(field)` so inputs only
+ * show messages after the user has interacted with that field.
+ */
+import { useCallback, useState } from "react";
+import {
+  validateVRField,
+  validateVehicleRequestForm,
+  type VRFieldName,
+  type VRFormValues,
+} from "./vehicleRequestValidation";
+
+export function useVehicleRequestValidation() {
+  const [errors, setErrors] = useState<Partial<Record<VRFieldName, string>>>({});
+  const [touched, setTouched] = useState<Partial<Record<VRFieldName, boolean>>>({});
+
+  const validateField = useCallback(
+    (field: VRFieldName, value: unknown, ctx: Partial<VRFormValues> = {}) => {
+      const msg = validateVRField(field, value, ctx);
+      setErrors((prev) => {
+        const next = { ...prev };
+        if (msg) next[field] = msg;
+        else delete next[field];
+        return next;
+      });
+      return msg;
+    },
+    [],
+  );
+
+  const handleBlur = useCallback(
+    (field: VRFieldName, value: unknown, ctx: Partial<VRFormValues> = {}) => {
+      setTouched((prev) => ({ ...prev, [field]: true }));
+      validateField(field, value, ctx);
+    },
+    [validateField],
+  );
+
+  const validateAll = useCallback((values: VRFormValues) => {
+    const result = validateVehicleRequestForm(values);
+    setErrors(result.errors);
+    setTouched((prev) => {
+      const next = { ...prev };
+      Object.keys(result.errors).forEach((k) => {
+        next[k as VRFieldName] = true;
+      });
+      return next;
+    });
+    return result;
+  }, []);
+
+  const reset = useCallback(() => {
+    setErrors({});
+    setTouched({});
+  }, []);
+
+  const getError = useCallback(
+    (field: VRFieldName): string | undefined =>
+      touched[field] ? errors[field] : undefined,
+    [errors, touched],
+  );
+
+  const errorCount = Object.keys(errors).length;
+
+  return {
+    errors,
+    touched,
+    errorCount,
+    validateField,
+    handleBlur,
+    validateAll,
+    reset,
+    getError,
+  };
+}
