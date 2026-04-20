@@ -500,6 +500,12 @@ const Fleet = () => {
                 <DropdownMenuItem onClick={() => handleExportAll("csv")}>
                   <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPdf}>
+                  <FileDown className="w-4 h-4 mr-2" /> PDF (.pdf)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePrint}>
+                  <Printer className="w-4 h-4 mr-2" /> Print
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button
