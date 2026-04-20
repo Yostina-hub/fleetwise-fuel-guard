@@ -438,6 +438,8 @@ const Fleet = () => {
           totalVehicles={fleetStats.total}
           movingVehicles={fleetStats.moving}
           idleVehicles={fleetStats.idle}
+          idleEngineOnVehicles={fleetStats.idleEngineOn}
+          idleEngineOffVehicles={fleetStats.idleEngineOff}
           offlineVehicles={fleetStats.offline}
           inMaintenance={0}
           avgFuelLevel={0}
