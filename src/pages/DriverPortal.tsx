@@ -18,6 +18,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import DriverQuickStats from "@/components/driver-portal/DriverQuickStats";
 import DriverQuickActions from "@/components/driver-portal/DriverQuickActions";
 import { FuelRequestFormDialog } from "@/components/fuel/FuelRequestFormDialog";
@@ -31,6 +32,7 @@ import PendingPostTripBanner from "@/components/driver-portal/PendingPostTripBan
 import DriverNotificationBanner from "@/components/driver-portal/DriverNotificationBanner";
 import MyRequestsPanel from "@/components/driver-portal/MyRequestsPanel";
 import RequestLicenseRenewalDialog from "@/components/driver-portal/RequestLicenseRenewalDialog";
+import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
 import { IdCard } from "lucide-react";
 
 const DriverPortal = () => {
@@ -49,6 +51,7 @@ const DriverPortal = () => {
   const [showTire, setShowTire] = useState(false);
   const [showInspection, setShowInspection] = useState(false);
   const [showLicenseRenewal, setShowLicenseRenewal] = useState(false);
+  const [activeAssignment, setActiveAssignment] = useState<{ request: any; assignment: any } | null>(null);
   // Override prefill when launching the inspection dialog as a post-trip flow
   // (from the pending banner or from an alert deep-link).
   const [inspectionPrefillOverride, setInspectionPrefillOverride] = useState<{
@@ -169,13 +172,13 @@ const DriverPortal = () => {
   const activeRequest = driverData?.activeRequest;
   const driverName = driver ? `${driver.first_name} ${driver.last_name}` : undefined;
 
-  // Today's & upcoming trips + dispatch jobs
+  // Today's & upcoming trips + dispatch jobs + multi-vehicle request assignments
   const { data: trips } = useQuery({
-    queryKey: ["driver-portal-trips", driverId],
+    queryKey: ["driver-portal-trips", driverId, organizationId],
     queryFn: async () => {
-      if (!driverId) return { active: [], upcoming: [], recent: [] };
+      if (!driverId) return { active: [], upcoming: [], recent: [], requestAssignments: [] };
 
-      const [{ data: active }, { data: upcoming }, { data: recent }] = await Promise.all([
+      const [{ data: active }, { data: upcoming }, { data: recent }, { data: requestAssignments }] = await Promise.all([
         (supabase as any).from("dispatch_jobs").select("id, job_number, status, priority, pickup_location_name, dropoff_location_name, scheduled_pickup_at, actual_pickup_at, actual_dropoff_at, odometer_start, odometer_end, distance_traveled_km")
           .eq("driver_id", driverId).in("status", ["assigned", "dispatched", "in_progress"])
           .order("scheduled_pickup_at", { ascending: true }).limit(10),
@@ -185,8 +188,31 @@ const DriverPortal = () => {
         supabase.from("trips").select("id, start_time, end_time, distance_km, start_location, end_location")
           .eq("driver_id", driverId).eq("status", "completed")
           .order("end_time", { ascending: false }).limit(10),
+        // Multi-vehicle request assignments: each driver checks in/out their
+        // own assigned vehicle within a parent vehicle_request.
+        (supabase as any).from("vehicle_request_assignments")
+          .select(`
+            id, status, driver_checked_in_at, driver_checked_out_at,
+            odometer_start, odometer_end,
+            vehicle:vehicle_id(id, plate_number, make, model),
+            request:vehicle_request_id(
+              id, request_number, status, purpose, destination,
+              needed_from, needed_until
+            )
+          `)
+          .eq("driver_id", driverId)
+          .is("driver_checked_out_at", null)
+          .order("created_at", { ascending: false })
+          .limit(10),
       ]);
-      return { active: active || [], upcoming: upcoming || [], recent: recent || [] };
+      return {
+        active: active || [],
+        upcoming: upcoming || [],
+        recent: recent || [],
+        requestAssignments: (requestAssignments || []).filter(
+          (a: any) => a.request && !["completed", "cancelled", "rejected"].includes(a.request.status),
+        ),
+      };
     },
     enabled: !!driverId,
   });
@@ -300,6 +326,8 @@ const DriverPortal = () => {
         })
       .on("postgres_changes", { event: "*", schema: "public", table: "vehicle_requests", filter: `organization_id=eq.${organizationId}` },
         () => queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "vehicle_request_assignments", filter: `driver_id=eq.${driverId}` },
+        () => queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] }))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [driverId, organizationId, queryClient]);
@@ -516,8 +544,80 @@ const DriverPortal = () => {
                 </div>
               )}
 
+              {/* Multi-vehicle trip request assignments — each driver
+                  checks in/out their own assigned vehicle independently. */}
+              {trips?.requestAssignments?.length ? (
+                <div className="mb-4 space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                    <Car className="w-3.5 h-3.5" aria-hidden="true" /> Vehicle Request Assignments
+                  </h3>
+                  {trips.requestAssignments.map((a: any) => {
+                    const checkedIn = !!a.driver_checked_in_at;
+                    const v = a.vehicle;
+                    const r = a.request;
+                    return (
+                      <div
+                        key={a.id}
+                        className="p-3 rounded-lg border border-primary/20 bg-primary/5"
+                      >
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "text-xs capitalize",
+                                  checkedIn
+                                    ? "bg-success/15 text-success border-success/30"
+                                    : "bg-primary/15 text-primary border-primary/30",
+                                )}
+                              >
+                                {checkedIn ? "Checked In" : "Assigned"}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {r?.request_number || "—"}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {r?.needed_from
+                                  ? format(new Date(r.needed_from), "MMM dd HH:mm")
+                                  : "—"}
+                              </span>
+                            </div>
+                            <p className="text-sm font-medium mt-2 truncate">
+                              {v?.plate_number || "—"} · {v?.make || ""} {v?.model || ""}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                              {r?.purpose || "—"}
+                              {r?.destination ? ` → ${r.destination}` : ""}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={checkedIn ? "outline" : "default"}
+                            className="gap-1 shrink-0"
+                            onClick={() => setActiveAssignment({ request: r, assignment: a })}
+                          >
+                            {checkedIn ? (
+                              <>
+                                <StopCircle className="w-4 h-4" aria-hidden="true" /> Check Out
+                              </>
+                            ) : (
+                              <>
+                                <PlayCircle className="w-4 h-4" aria-hidden="true" /> Check In
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+
               <div className="space-y-3">
-                {trips?.active?.length === 0 && trips?.upcoming?.length === 0 ? (
+                {trips?.active?.length === 0 &&
+                trips?.upcoming?.length === 0 &&
+                !trips?.requestAssignments?.length ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">
                     <CheckCircle2 className="w-10 h-10 mx-auto mb-2 opacity-50" aria-hidden="true" />
                     No active or scheduled assignments
@@ -750,6 +850,17 @@ const DriverPortal = () => {
             ["driver-pending-post-trip"],
           ]}
         />
+        {activeAssignment && (
+          <AssignmentCheckInDialog
+            request={activeAssignment.request}
+            assignment={activeAssignment.assignment}
+            open={!!activeAssignment}
+            onClose={() => {
+              setActiveAssignment(null);
+              queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] });
+            }}
+          />
+        )}
       </div>
     </Layout>
   );

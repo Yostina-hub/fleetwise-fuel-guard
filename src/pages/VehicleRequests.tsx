@@ -93,6 +93,14 @@ const VehicleRequests = () => {
   const vrScope = useVehicleRequestScope();
   const queryClient = useQueryClient();
 
+  // Drivers don't manage requests — they consume their assigned trips on the
+  // Driver Portal. Redirect once we know they're driver-only.
+  useEffect(() => {
+    if (!scopeLoading && isDriverOnly) {
+      window.location.replace("/driver-portal");
+    }
+  }, [scopeLoading, isDriverOnly]);
+
   /**
    * Action permissions by tier (mirrors row-visibility scoping).
    * - all      → admins/managers/dispatchers/auditor → full toolkit

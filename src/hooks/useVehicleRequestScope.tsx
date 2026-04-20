@@ -11,13 +11,11 @@
  *                    operations_manager, dispatcher, auditor
  *   - "operator"   → operator: pool/assignment work queue + own filed
  *                    requests (union)
- *   - "driver"     → driver: only requests assigned to their driver record
- *                    + own filed requests (union)
+ *   - "driver"     → driver: requests assigned to their driver record
+ *                    (primary or any vehicle_request_assignments row) +
+ *                    own filed requests (union)
  *   - "self"       → everyone else (basic user, requester, unknown role):
  *                    only requests they personally filed
- *
- * Components apply this by calling `applyScope(query, scope)` on the
- * Supabase query builder before executing.
  */
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +29,13 @@ export interface VRScope {
   tier: VRScopeTier;
   userId: string | null;
   driverId: string | null;
+  /**
+   * vehicle_request IDs where this driver appears in
+   * vehicle_request_assignments (multi-vehicle requests). Empty for
+   * non-driver tiers. Lets drivers see ALL of their assigned trips, not
+   * just the primary one stored on `vehicle_requests.assigned_driver_id`.
+   */
+  assignedRequestIds: string[];
   loading: boolean;
 }
 
@@ -49,6 +54,7 @@ export const useVehicleRequestScope = (): VRScope => {
   const { organizationId } = useOrganization();
   const { isSuperAdmin, hasRole, loading: permsLoading } = usePermissions();
   const [driverId, setDriverId] = useState<string | null>(null);
+  const [assignedRequestIds, setAssignedRequestIds] = useState<string[]>([]);
   const [resolvingDriver, setResolvingDriver] = useState(true);
 
   const tier: VRScopeTier = useMemo(() => {
@@ -59,27 +65,43 @@ export const useVehicleRequestScope = (): VRScope => {
     return "self";
   }, [isSuperAdmin, hasRole]);
 
-  // Resolve drivers.id for driver-tier users so we can filter
-  // assigned_driver_id in addition to requester_id.
+  // Resolve drivers.id + multi-vehicle assignment IDs for driver-tier users.
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
       if (!user || !organizationId || tier !== "driver") {
         if (!cancelled) {
           setDriverId(null);
+          setAssignedRequestIds([]);
           setResolvingDriver(false);
         }
         return;
       }
       setResolvingDriver(true);
-      const { data } = await supabase
+      const { data: drv } = await supabase
         .from("drivers")
         .select("id")
         .eq("organization_id", organizationId)
         .eq("user_id", user.id)
         .maybeSingle();
+      const dId = drv?.id || null;
+      let reqIds: string[] = [];
+      if (dId) {
+        const { data: assigns } = await (supabase as any)
+          .from("vehicle_request_assignments")
+          .select("vehicle_request_id")
+          .eq("driver_id", dId);
+        reqIds = Array.from(
+          new Set(
+            (assigns || [])
+              .map((a: any) => a.vehicle_request_id)
+              .filter(Boolean),
+          ),
+        );
+      }
       if (!cancelled) {
-        setDriverId(data?.id || null);
+        setDriverId(dId);
+        setAssignedRequestIds(reqIds);
         setResolvingDriver(false);
       }
     };
@@ -93,6 +115,7 @@ export const useVehicleRequestScope = (): VRScope => {
     tier,
     userId: user?.id || null,
     driverId,
+    assignedRequestIds,
     loading: permsLoading || (tier === "driver" && resolvingDriver),
   };
 };
@@ -117,16 +140,21 @@ export function applyVRScope<T>(query: T, scope: VRScope): T {
       // assignment workflow, plus anything they personally filed.
       if (!scope.userId) return q.eq("requester_id", "__never__") as T;
       return q.or(
-        `requester_id.eq.${scope.userId},pool_review_status.not.is.null,assigned_vehicle_id.not.is.null,status.in.(pending,approved,assigned)`
+        `requester_id.eq.${scope.userId},pool_review_status.not.is.null,assigned_vehicle_id.not.is.null,status.in.(pending,approved,assigned)`,
       ) as T;
-    case "driver":
+    case "driver": {
       if (!scope.userId) return q.eq("requester_id", "__never__") as T;
+      const orParts: string[] = [`requester_id.eq.${scope.userId}`];
       if (scope.driverId) {
-        return q.or(
-          `assigned_driver_id.eq.${scope.driverId},requester_id.eq.${scope.userId}`
-        ) as T;
+        orParts.push(`assigned_driver_id.eq.${scope.driverId}`);
       }
-      return q.eq("requester_id", scope.userId) as T;
+      if (scope.assignedRequestIds.length > 0) {
+        // Cap the IN list to avoid overly long URLs (PostgREST limit ~8KB).
+        const capped = scope.assignedRequestIds.slice(0, 200);
+        orParts.push(`id.in.(${capped.join(",")})`);
+      }
+      return q.or(orParts.join(",")) as T;
+    }
     case "self":
     default:
       if (!scope.userId) return q.eq("requester_id", "__never__") as T;
