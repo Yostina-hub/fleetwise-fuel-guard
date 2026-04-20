@@ -385,6 +385,45 @@ const Fleet = () => {
     handleExport(selectedVehicles, true);
   };
 
+  const { organization } = useOrganization();
+
+  const printColumns: PrintColumn[] = useMemo(() => [
+    { key: "plate", label: "Plate", width: 28 },
+    { key: "make", label: "Make", width: 24 },
+    { key: "model", label: "Model", width: 28 },
+    { key: "year", label: "Year", width: 14 },
+    { key: "vehicleType", label: "Type", width: 22 },
+    { key: "fuelType", label: "Fuel", width: 18 },
+    { key: "ownershipType", label: "Ownership", width: 24 },
+    { key: "status", label: "Status", width: 20 },
+    { key: "odometer", label: "Odometer (km)", width: 24, format: (v) => (v != null ? Number(v).toLocaleString() : "—") },
+    { key: "assignedDriver", label: "Driver" },
+  ], []);
+
+  const buildPrintRows = () => {
+    const ids = selectedIds.length > 0 ? selectedIds : null;
+    const list = ids ? vehicles.filter(v => ids.includes(v.vehicleId)) : vehicles;
+    return list;
+  };
+
+  const handlePrint = () => {
+    printRecords(buildPrintRows(), printColumns, {
+      title: selectedIds.length > 0 ? `Vehicles (${selectedIds.length} selected)` : "Vehicle Registry",
+      subtitle: `Page ${currentPage} of ${totalPages} · ${vehicles.length} shown`,
+      filename: "vehicles",
+      organizationName: organization?.name ?? "Fleet Management",
+    });
+  };
+
+  const handleExportPdf = () => {
+    exportRecordsToPdf(buildPrintRows(), printColumns, {
+      title: selectedIds.length > 0 ? `Vehicles (${selectedIds.length} selected)` : "Vehicle Registry",
+      subtitle: `Generated from ${organization?.name ?? "Fleet"}`,
+      filename: "vehicles",
+      organizationName: organization?.name ?? "Fleet Management",
+    });
+  };
+
   // Clear selection when filters change
   useEffect(() => {
     setSelectedIds([]);
