@@ -210,6 +210,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       purpose_for: formData.purpose_for || null,
       specific_pool: formData.specific_pool || null,
       specific_location: formData.specific_location?.trim() || null,
+      assigned_location: formData.assigned_location || null,
       transmission_type: formData.transmission_type || null,
       model_code: formData.model_code?.trim() || null,
       engine_number: formData.engine_number?.trim() || null,
