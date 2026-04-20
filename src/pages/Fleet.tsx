@@ -120,6 +120,9 @@ const Fleet = () => {
   const [fuelTypeFilter, setFuelTypeFilter] = useState("all");
   const [ownershipFilter, setOwnershipFilter] = useState("all");
   const [driverFilter, setDriverFilter] = useState("all");
+  // Client-side filter on the *computed* live status (matches the StatusBadge in the table).
+  // Values: "all" | "moving" | "idle_engine_on" | "idle_engine_off" | "offline"
+  const [liveStatusFilter, setLiveStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const [sortField, setSortField] = useState<string>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -226,15 +229,18 @@ const Fleet = () => {
       
       // Determine status from telemetry - must have fresh data
       let status: "moving" | "idle" | "offline" = "offline";
+      let liveStatus: "moving" | "idle_engine_on" | "idle_engine_off" | "offline" = "offline";
       if (telemetry && isDataFresh && telemetry.device_connected) {
-        // Use speed-based logic: speed > 3 km/h = moving
         const speed = telemetry.speed_kmh || 0;
         if (speed > 3) {
           status = "moving";
+          liveStatus = "moving";
         } else if (telemetry.engine_on || telemetry.ignition_on) {
           status = "idle";
+          liveStatus = "idle_engine_on";
         } else {
           status = "offline"; // Engine off, not moving = stopped/offline
+          liveStatus = "idle_engine_off";
         }
       }
 
@@ -268,6 +274,7 @@ const Fleet = () => {
         longitude: telemetry?.longitude || null,
         lastSeen: telemetry?.last_communication_at || null,
         deviceConnected: telemetry?.device_connected || false,
+        liveStatus,
       };
     });
 
@@ -278,8 +285,13 @@ const Fleet = () => {
       filtered = filtered.filter((v) => !v.assignedDriver);
     }
 
+    // Apply live status filter (driven by clickable stat cards)
+    if (liveStatusFilter !== "all") {
+      filtered = filtered.filter((v) => v.liveStatus === liveStatusFilter);
+    }
+
     return filtered;
-  }, [dbVehicles, driverFilter, driverAssignments, telemetryMap, nextServiceMap]);
+  }, [dbVehicles, driverFilter, liveStatusFilter, driverAssignments, telemetryMap, nextServiceMap]);
 
   const handleVehicleClick = useCallback((vehicle: any) => {
     setSelectedVehicle(vehicle);
