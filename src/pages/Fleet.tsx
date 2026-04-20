@@ -421,6 +421,7 @@ const Fleet = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <FleetAutomationsMenu />
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
               <Upload className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">{t('common.import')}</span>
