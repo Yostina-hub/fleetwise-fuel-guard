@@ -342,28 +342,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   const body = (
     <>
-
-    { id: "type", label: "Type", icon: Sparkles, hint: "Operation" },
-    { id: "schedule", label: "Schedule", icon: CalendarDays, hint: "When" },
-    { id: "route", label: "Route", icon: MapPin, hint: "Where" },
-    { id: "resources", label: "Resources", icon: Layers, hint: "Vehicles & Pool" },
-    { id: "details", label: "Details", icon: FileText, hint: "Purpose & Submit" },
-  ] as const;
-  const tabIndex = TABS.findIndex(t => t.id === activeTab);
-  const goNext = () => setActiveTab(TABS[Math.min(tabIndex + 1, TABS.length - 1)].id as any);
-  const goPrev = () => setActiveTab(TABS[Math.max(tabIndex - 1, 0)].id as any);
-
-  // Per-tab completion indicators
-  const tabComplete: Record<string, boolean> = {
-    type: !!form.request_type,
-    schedule: isDaily ? !!form.date : !!form.start_date,
-    route: !!form.departure_place || !!form.destination,
-    resources: !!form.num_vehicles && !!form.passengers,
-    details: !!form.purpose,
-  };
-
-  const body = (
-    <>
       {!embedded && (
         <div className="relative -m-6 mb-0 px-6 pt-6 pb-5 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-b border-border/50 overflow-hidden">
           <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
