@@ -6981,6 +6981,7 @@ export type Database = {
           address_specific: string | null
           address_woreda: string | null
           address_zone: string | null
+          assigned_pool: string | null
           avatar_url: string | null
           bank_account: string | null
           bank_name: string | null
@@ -7030,6 +7031,7 @@ export type Database = {
           route_type: string | null
           safety_score: number | null
           status: string | null
+          telebirr_account: string | null
           total_distance_km: number | null
           total_trips: number | null
           updated_at: string
@@ -7044,6 +7046,7 @@ export type Database = {
           address_specific?: string | null
           address_woreda?: string | null
           address_zone?: string | null
+          assigned_pool?: string | null
           avatar_url?: string | null
           bank_account?: string | null
           bank_name?: string | null
@@ -7093,6 +7096,7 @@ export type Database = {
           route_type?: string | null
           safety_score?: number | null
           status?: string | null
+          telebirr_account?: string | null
           total_distance_km?: number | null
           total_trips?: number | null
           updated_at?: string
@@ -7107,6 +7111,7 @@ export type Database = {
           address_specific?: string | null
           address_woreda?: string | null
           address_zone?: string | null
+          assigned_pool?: string | null
           avatar_url?: string | null
           bank_account?: string | null
           bank_name?: string | null
@@ -7156,6 +7161,7 @@ export type Database = {
           route_type?: string | null
           safety_score?: number | null
           status?: string | null
+          telebirr_account?: string | null
           total_distance_km?: number | null
           total_trips?: number | null
           updated_at?: string
@@ -12683,6 +12689,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "legal_holds_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      license_category_validity: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          notes: string | null
+          organization_id: string
+          updated_at: string
+          valid_years: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          updated_at?: string
+          valid_years?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          updated_at?: string
+          valid_years?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_category_validity_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
