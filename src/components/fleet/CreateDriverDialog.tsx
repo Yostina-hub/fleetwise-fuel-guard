@@ -522,36 +522,29 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                   className={errClass("experience_years")}
                 />
               </Field>
-              <Field label="Type of Routes">
-                <Select value={formData.route_type} onValueChange={v => set("route_type", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+              <Field label="Assigned Pool">
+                <Select value={formData.assigned_pool} onValueChange={v => set("assigned_pool", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select pool..." /></SelectTrigger>
                   <SelectContent>
-                    {ROUTE_TYPES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                    {ASSIGNED_POOLS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
             </div>
           </Section>
 
-          {/* 1.7 Banking */}
-          <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Banking Information">
+          {/* 1.7 Telebirr (optional) */}
+          <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Telebirr Account (Optional)">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Bank Name" error={validation.getError("bank_name")}>
+              <Field label="Telebirr Account" error={validation.getError("telebirr_account")} hint="Optional — used for payroll/payouts">
                 <Input
-                  value={formData.bank_name}
-                  onChange={e => set("bank_name", e.target.value)}
-                  onBlur={() => onBlur("bank_name")}
-                  maxLength={150}
-                  className={errClass("bank_name")}
-                />
-              </Field>
-              <Field label="Bank Account Number" error={validation.getError("bank_account")}>
-                <Input
-                  value={formData.bank_account}
-                  onChange={e => set("bank_account", e.target.value)}
-                  onBlur={() => onBlur("bank_account")}
-                  maxLength={40}
-                  className={errClass("bank_account")}
+                  value={formData.telebirr_account}
+                  onChange={e => set("telebirr_account", e.target.value.replace(/[^\d+]/g, "").slice(0, 13))}
+                  onBlur={() => onBlur("telebirr_account")}
+                  placeholder="09XXXXXXXX"
+                  maxLength={13}
+                  inputMode="tel"
+                  className={errClass("telebirr_account")}
                 />
               </Field>
             </div>
