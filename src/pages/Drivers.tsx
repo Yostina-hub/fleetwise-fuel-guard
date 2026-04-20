@@ -118,6 +118,8 @@ const Drivers = () => {
       return map;
     },
   });
+
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
