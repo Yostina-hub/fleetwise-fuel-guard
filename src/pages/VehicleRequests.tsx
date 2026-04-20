@@ -1,10 +1,50 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ClipboardList, Plus, Clock, CheckCircle, XCircle, Truck, Eye, MessageSquare, LogIn, Shuffle, Trash2, Undo2, Users } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  ClipboardList,
+  Plus,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Truck,
+  Eye,
+  MessageSquare,
+  LogIn,
+  Shuffle,
+  Trash2,
+  Undo2,
+  Users,
+  Search,
+  Download,
+  Upload,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
+  Sparkles,
+  X,
+  FileText,
+} from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
 import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
@@ -16,20 +56,42 @@ import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/Vehicl
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
 import { DeleteRequestDialog } from "@/components/vehicle-requests/DeleteRequestDialog";
 import { MultiVehicleAssignDialog } from "@/components/vehicle-requests/MultiVehicleAssignDialog";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useDriverScope } from "@/hooks/useDriverScope";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
-import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useDebounce } from "@/hooks/useDebounce";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+type StatusKey = "all" | "pending" | "approved" | "assigned" | "completed" | "rejected" | "cancelled";
+
+const STATUS_TABS: { key: StatusKey; label: string; icon: any; tone: string }[] = [
+  { key: "all", label: "All", icon: ClipboardList, tone: "from-slate-500/20 to-slate-500/5 text-slate-600 dark:text-slate-300" },
+  { key: "pending", label: "Pending", icon: Clock, tone: "from-amber-500/20 to-amber-500/5 text-amber-600 dark:text-amber-400" },
+  { key: "approved", label: "Approved", icon: CheckCircle, tone: "from-emerald-500/20 to-emerald-500/5 text-emerald-600 dark:text-emerald-400" },
+  { key: "assigned", label: "Assigned", icon: Truck, tone: "from-blue-500/20 to-blue-500/5 text-blue-600 dark:text-blue-400" },
+  { key: "completed", label: "Completed", icon: CheckCircle, tone: "from-violet-500/20 to-violet-500/5 text-violet-600 dark:text-violet-400" },
+  { key: "rejected", label: "Rejected", icon: XCircle, tone: "from-rose-500/20 to-rose-500/5 text-rose-600 dark:text-rose-400" },
+];
+
+const PAGE_SIZE = 10;
+
+const REQUEST_TYPE_LABELS: Record<string, string> = {
+  daily_operation: "Daily",
+  project_operation: "Project",
+  field_operation: "Field",
+};
 
 const VehicleRequests = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { isDriverOnly, driverId, userId, loading: scopeLoading } = useDriverScope();
   const queryClient = useQueryClient();
+
+  // dialogs
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<any>(null);
   const [showFeedback, setShowFeedback] = useState<any>(null);
@@ -38,6 +100,15 @@ const VehicleRequests = () => {
   const [showDeallocate, setShowDeallocate] = useState<any>(null);
   const [showDelete, setShowDelete] = useState<any>(null);
   const [showMultiAssign, setShowMultiAssign] = useState<any>(null);
+
+  // filters / search / pagination
+  const [activeStatus, setActiveStatus] = useState<StatusKey>("all");
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 250);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [poolFilter, setPoolFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Realtime subscription for vehicle_requests
   useEffect(() => {
@@ -49,10 +120,12 @@ const VehicleRequests = () => {
         () => {
           queryClient.invalidateQueries({ queryKey: ["vehicle-requests", organizationId] });
           queryClient.invalidateQueries({ queryKey: ["vehicle-request-approvals", organizationId] });
-        }
+        },
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [queryClient, organizationId]);
 
   const { data: requests = [], isLoading } = useQuery({
@@ -60,13 +133,14 @@ const VehicleRequests = () => {
     queryFn: async () => {
       let query = (supabase as any)
         .from("vehicle_requests")
-        .select("*, assigned_vehicle:assigned_vehicle_id(plate_number, make, model), assigned_driver:assigned_driver_id(first_name, last_name)")
+        .select(
+          "*, assigned_vehicle:assigned_vehicle_id(plate_number, make, model), assigned_driver:assigned_driver_id(first_name, last_name)",
+        )
         .eq("organization_id", organizationId!)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(500);
 
-      // RBAC: drivers only see requests they raised themselves.
       if (isDriverOnly) {
         if (!userId) return [];
         query = query.eq("requester_id", userId);
@@ -87,187 +161,596 @@ const VehicleRequests = () => {
         .select("*")
         .eq("organization_id", organizationId!)
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(500);
       if (error) throw error;
       return data || [];
     },
     enabled: !!organizationId,
   });
 
-  const statusColors: Record<string, string> = {
-    pending: "secondary", approved: "default", assigned: "default", rejected: "destructive", completed: "outline", cancelled: "secondary",
+  // counts per status (for tab badges)
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: requests.length };
+    for (const r of requests) c[r.status] = (c[r.status] || 0) + 1;
+    return c;
+  }, [requests]);
+
+  // distinct pools (for filter dropdown)
+  const poolOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of requests) if (r.pool_name) set.add(r.pool_name);
+    return Array.from(set).sort();
+  }, [requests]);
+
+  // filtered list
+  const filtered = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    return requests.filter((r: any) => {
+      if (activeStatus !== "all" && r.status !== activeStatus) return false;
+      if (typeFilter !== "all" && r.request_type !== typeFilter) return false;
+      if (poolFilter !== "all" && r.pool_name !== poolFilter) return false;
+      if (!q) return true;
+      const haystack = [
+        r.request_number,
+        r.requester_name,
+        r.departure_place,
+        r.destination,
+        r.pool_name,
+        r.purpose,
+        r.assigned_vehicle?.plate_number,
+        r.assigned_driver?.first_name,
+        r.assigned_driver?.last_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [requests, activeStatus, debouncedSearch, typeFilter, poolFilter]);
+
+  // pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeStatus, debouncedSearch, typeFilter, poolFilter]);
+
+  // KPI quick numbers
+  const pending = counts["pending"] || 0;
+  const assigned = counts["assigned"] || 0;
+  const completed = counts["completed"] || 0;
+
+  // -------- export / import handlers --------
+  const exportCsv = () => {
+    if (filtered.length === 0) {
+      toast.info("Nothing to export with the current filter.");
+      return;
+    }
+    const headers = [
+      "request_number",
+      "request_type",
+      "status",
+      "requester_name",
+      "departure_place",
+      "destination",
+      "pool_name",
+      "needed_from",
+      "vehicle_plate",
+      "driver",
+      "trip_type",
+      "created_at",
+    ];
+    const rows = filtered.map((r: any) => [
+      r.request_number,
+      r.request_type,
+      r.status,
+      r.requester_name,
+      r.departure_place,
+      r.destination,
+      r.pool_name,
+      r.needed_from,
+      r.assigned_vehicle?.plate_number,
+      [r.assigned_driver?.first_name, r.assigned_driver?.last_name].filter(Boolean).join(" "),
+      r.trip_type,
+      r.created_at,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) =>
+        row
+          .map((v) => {
+            if (v === null || v === undefined) return "";
+            const s = String(v).replace(/"/g, '""');
+            return /[",\n]/.test(s) ? `"${s}"` : s;
+          })
+          .join(","),
+      )
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vehicle-requests-${format(new Date(), "yyyyMMdd-HHmm")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filtered.length} requests`);
   };
 
-  const requestTypeLabels: Record<string, string> = {
-    daily_operation: "Daily",
-    project_operation: "Project",
-    field_operation: "Field",
+  const onImportClick = () => fileInputRef.current?.click();
+  const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    toast.info(`Selected "${file.name}". Use the "New Request" form to add records — bulk CSV import is coming soon.`);
+    e.target.value = "";
   };
 
-  const pending = requests.filter((r: any) => r.status === "pending").length;
-  const assigned = requests.filter((r: any) => r.status === "assigned").length;
-  const completed = requests.filter((r: any) => r.status === "completed").length;
+  const clearFilters = () => {
+    setSearch("");
+    setTypeFilter("all");
+    setPoolFilter("all");
+    setActiveStatus("all");
+  };
+
+  const hasActiveFilters =
+    !!search || typeFilter !== "all" || poolFilter !== "all" || activeStatus !== "all";
 
   return (
     <Layout>
-      <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <ClipboardList className="h-5 w-5 text-white" />
+      <div className="p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
+        {/* ============== HERO HEADER ============== */}
+        <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-blue-500/10 via-background to-violet-500/10 p-5 md:p-6">
+          <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
+          <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-500/10 blur-3xl" />
+          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <ClipboardList className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-black tracking-tight">
+                  {t("pages.vehicle_requests.title", "Vehicle Requests")}
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  {t(
+                    "pages.vehicle_requests.description",
+                    "Request, approve & assign vehicles across pools",
+                  )}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-black tracking-tight">{t('pages.vehicle_requests.title', 'Vehicle Requests')}</h1>
-              <p className="text-muted-foreground text-xs">{t('pages.vehicle_requests.description', 'Request, approve & assign vehicles')}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={exportCsv}>
+                <Download className="w-3.5 h-3.5" /> Export
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={onImportClick}>
+                <Upload className="w-3.5 h-3.5" /> Import
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx"
+                className="hidden"
+                onChange={onImportFile}
+              />
+              <Button
+                size="sm"
+                className="gap-1.5 bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 shadow-md shadow-blue-500/20"
+                onClick={() => setShowCreate(true)}
+              >
+                <Plus className="w-3.5 h-3.5" /> New Request
+              </Button>
             </div>
           </div>
-          <Button size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
-            <Plus className="w-3.5 h-3.5" /> New Request
-          </Button>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-amber-500/10 flex items-center justify-center"><Clock className="w-4 h-4 text-amber-500" /></div>
-            <div><p className="text-xl font-bold">{pending}</p><p className="text-xs text-muted-foreground">Pending</p></div>
-          </CardContent></Card>
-          <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center"><Truck className="w-4 h-4 text-blue-500" /></div>
-            <div><p className="text-xl font-bold">{assigned}</p><p className="text-xs text-muted-foreground">Assigned</p></div>
-          </CardContent></Card>
-          <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-green-500/10 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-green-500" /></div>
-            <div><p className="text-xl font-bold">{completed}</p><p className="text-xs text-muted-foreground">{t('common.completed', 'Completed')}</p></div>
-          </CardContent></Card>
+        {/* ============== KPI QUICK STATS ============== */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+          <KpiCard
+            label="Pending"
+            value={pending}
+            icon={Clock}
+            color="amber"
+          />
+          <KpiCard
+            label="Assigned"
+            value={assigned}
+            icon={Truck}
+            color="blue"
+          />
+          <KpiCard
+            label="Completed"
+            value={completed}
+            icon={CheckCircle}
+            color="emerald"
+          />
         </div>
 
         <VehicleRequestKPI requests={requests} />
 
-        {/* Pool Supervisor Review Panel */}
-        {organizationId && (
-          <PoolReviewPanel requests={requests} organizationId={organizationId} />
-        )}
+        {organizationId && <PoolReviewPanel requests={requests} organizationId={organizationId} />}
 
-        <Card>
-          <CardHeader><CardTitle className="text-sm font-semibold">All Requests</CardTitle></CardHeader>
-          <CardContent>
-            {isLoading ? <div className="animate-pulse h-32" /> : requests.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p>No vehicle requests yet.</p>
-                <p className="text-xs mt-1">Create a new request to get started.</p>
+        {/* ============== MAIN PANEL ============== */}
+        <Card className="overflow-hidden border-border/60 shadow-sm">
+          <CardHeader className="pb-3 border-b bg-muted/30">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-500" />
+                  All Requests
+                  <Badge variant="secondary" className="ml-1 text-[10px]">
+                    {filtered.length}
+                  </Badge>
+                </CardTitle>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={clearFilters}>
+                    <X className="w-3 h-3" /> Clear filters
+                  </Button>
+                )}
+              </div>
+
+              {/* Modern segmented status tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
+                {STATUS_TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeStatus === tab.key;
+                  const count = counts[tab.key] ?? 0;
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveStatus(tab.key)}
+                      className={cn(
+                        "group relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 border",
+                        isActive
+                          ? "bg-gradient-to-br border-transparent shadow-md text-foreground " + tab.tone
+                          : "bg-background/60 border-border/60 text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/60",
+                      )}
+                    >
+                      <Icon className={cn("w-3.5 h-3.5", isActive && "scale-110")} />
+                      <span>{tab.label}</span>
+                      <span
+                        className={cn(
+                          "ml-0.5 inline-flex items-center justify-center text-[10px] font-bold rounded-full min-w-[1.25rem] h-5 px-1.5",
+                          isActive ? "bg-background/80 text-foreground" : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {count}
+                      </span>
+                      {isActive && (
+                        <span className="absolute -bottom-px left-1/2 -translate-x-1/2 h-0.5 w-8 bg-gradient-to-r from-blue-500 to-violet-500 rounded-full" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Smart search + filters */}
+              <div className="flex flex-col md:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by request #, requester, route, pool, plate, driver…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 pr-9 h-10 bg-background"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="h-10 w-[140px] gap-1.5">
+                      <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All types</SelectItem>
+                      <SelectItem value="daily_operation">Daily</SelectItem>
+                      <SelectItem value="project_operation">Project</SelectItem>
+                      <SelectItem value="field_operation">Field</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={poolFilter} onValueChange={setPoolFilter}>
+                    <SelectTrigger className="h-10 w-[160px] gap-1.5">
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+                      <SelectValue placeholder="Pool" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All pools</SelectItem>
+                      {poolOptions.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {p}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="p-6 space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-12 rounded-lg bg-muted/40 animate-pulse" />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 mb-3">
+                  <ClipboardList className="w-8 h-8 opacity-40" />
+                </div>
+                <p className="font-medium">No vehicle requests found</p>
+                <p className="text-xs mt-1">
+                  {hasActiveFilters
+                    ? "Try adjusting your filters or search terms."
+                    : "Create a new request to get started."}
+                </p>
+                {hasActiveFilters && (
+                  <Button variant="outline" size="sm" className="mt-4" onClick={clearFilters}>
+                    Clear filters
+                  </Button>
+                )}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead><tr className="border-b text-xs text-muted-foreground">
-                    <th className="text-left py-2 px-3">Request #</th>
-                    <th className="text-left py-2 px-3">Type</th>
-                    <th className="text-left py-2 px-3">Requester</th>
-                    <th className="text-left py-2 px-3">Route</th>
-                    <th className="text-left py-2 px-3">Pool</th>
-                    <th className="text-left py-2 px-3">Needed From</th>
-                    <th className="text-left py-2 px-3">Vehicle</th>
-                    <th className="text-center py-2 px-3">Trip</th>
-                    <th className="text-center py-2 px-3">Check-in</th>
-                    <th className="text-center py-2 px-3">Status</th>
-                    <th className="text-center py-2 px-3">Actions</th>
-                  </tr></thead>
-                  <tbody>
-                    {requests.map((r: any) => (
-                      <tr key={r.id} className="border-b hover:bg-muted/30">
-                        <td className="py-2 px-3 font-medium">{r.request_number}</td>
-                        <td className="py-2 px-3">
-                          <Badge variant="outline" className="text-[10px]">
-                            {requestTypeLabels[r.request_type] || r.request_type || "—"}
-                          </Badge>
-                        </td>
-                        <td className="py-2 px-3">{r.requester_name}</td>
-                        <td className="py-2 px-3 text-muted-foreground text-xs max-w-[150px] truncate">
-                          {r.departure_place && r.destination
-                            ? `${r.departure_place} → ${r.destination}`
-                            : r.destination || r.departure_place || "—"}
-                        </td>
-                        <td className="py-2 px-3 text-muted-foreground text-xs">
-                          {r.cross_pool_assignment ? (
-                            <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-500">
-                              <Shuffle className="w-2.5 h-2.5 mr-0.5" /> {r.pool_name || "—"}
-                            </Badge>
-                          ) : (r.pool_name || "—")}
-                        </td>
-                        <td className="py-2 px-3 text-muted-foreground">{format(new Date(r.needed_from), "MMM dd, HH:mm")}</td>
-                        <td className="py-2 px-3 text-muted-foreground">{r.assigned_vehicle?.plate_number || "—"}</td>
-                        <td className="py-2 px-3 text-center">
-                          {r.trip_type ? (
-                            <Badge variant="outline" className="text-[10px]">
-                              {r.trip_type === "one_way" ? "One Way" : "Round"}
-                            </Badge>
-                          ) : "—"}
-                        </td>
-                        <td className="py-2 px-3 text-center">
-                          {r.driver_checked_in_at && !r.driver_checked_out_at ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-1.5"
-                              onClick={() => setShowCheckIn(r)}
-                              title="Check out driver"
-                            >
-                              <Badge variant="default" className="text-[10px] bg-green-600 cursor-pointer">In</Badge>
-                            </Button>
-                          ) : r.driver_checked_out_at ? (
-                            <Badge variant="default" className="text-[10px] bg-muted">Out</Badge>
-                          ) : r.status === "assigned" ? (
-                            <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={() => setShowCheckIn(r)}>
-                              <LogIn className="w-3 h-3" />
-                            </Button>
-                          ) : "—"}
-                        </td>
-                        <td className="py-2 px-3 text-center">
-                          <Badge variant={(statusColors[r.status] || "secondary") as any} className="text-[10px]">
-                            {r.status}
-                            {r.auto_closed && " ⚡"}
-                          </Badge>
-                        </td>
-                        <td className="py-2 px-3 text-center">
-                          <Button size="sm" variant="ghost" onClick={() => setShowDetail(r)} title="View"><Eye className="w-3.5 h-3.5" /></Button>
-                          {r.status === "completed" && !r.requester_rating && !r.auto_closed && (
-                            <Button size="sm" variant="ghost" onClick={() => setShowFeedback(r)} title="Give feedback"><MessageSquare className="w-3.5 h-3.5" /></Button>
-                          )}
-                          {r.pool_category === "outsource" && (r.num_vehicles || 1) > 1 && ["approved","pending"].includes(r.status) && (
-                            <Button size="sm" variant="ghost" onClick={() => setShowMultiAssign(r)} title="Multi-vehicle assign"><Users className="w-3.5 h-3.5" /></Button>
-                          )}
-                          {r.status === "assigned" && !r.driver_checked_in_at && (
-                            <Button size="sm" variant="ghost" onClick={() => setShowDeallocate(r)} title="Deallocate vehicle/driver"><Undo2 className="w-3.5 h-3.5 text-amber-500" /></Button>
-                          )}
-                          {!["completed"].includes(r.status) && !r.driver_checked_in_at && (
-                            <Button size="sm" variant="ghost" onClick={() => setShowDelete(r)} title="Remove request"><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
-                          )}
-                        </td>
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40">
+                      <tr className="border-b text-[11px] uppercase tracking-wide text-muted-foreground">
+                        <th className="text-left py-3 px-4 font-semibold">Request #</th>
+                        <th className="text-left py-3 px-3 font-semibold">Type</th>
+                        <th className="text-left py-3 px-3 font-semibold">Requester</th>
+                        <th className="text-left py-3 px-3 font-semibold">Route</th>
+                        <th className="text-left py-3 px-3 font-semibold">Pool</th>
+                        <th className="text-left py-3 px-3 font-semibold">Needed From</th>
+                        <th className="text-left py-3 px-3 font-semibold">Vehicle</th>
+                        <th className="text-center py-3 px-3 font-semibold">Trip</th>
+                        <th className="text-center py-3 px-3 font-semibold">Check-in</th>
+                        <th className="text-center py-3 px-3 font-semibold">Status</th>
+                        <th className="text-center py-3 px-4 font-semibold">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {paginated.map((r: any) => (
+                        <tr
+                          key={r.id}
+                          className="border-b last:border-0 hover:bg-muted/40 transition-colors"
+                        >
+                          <td className="py-3 px-4 font-semibold text-foreground">
+                            <button
+                              onClick={() => setShowDetail(r)}
+                              className="hover:text-blue-500 hover:underline underline-offset-2"
+                            >
+                              {r.request_number}
+                            </button>
+                          </td>
+                          <td className="py-3 px-3">
+                            <Badge variant="outline" className="text-[10px] font-medium">
+                              {REQUEST_TYPE_LABELS[r.request_type] || r.request_type || "—"}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-3 text-foreground">{r.requester_name}</td>
+                          <td className="py-3 px-3 text-muted-foreground text-xs max-w-[180px] truncate">
+                            {r.departure_place && r.destination
+                              ? `${r.departure_place} → ${r.destination}`
+                              : r.destination || r.departure_place || "—"}
+                          </td>
+                          <td className="py-3 px-3 text-xs">
+                            {r.cross_pool_assignment ? (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] border-amber-500/50 text-amber-600 dark:text-amber-400 gap-1"
+                              >
+                                <Shuffle className="w-2.5 h-2.5" /> {r.pool_name || "—"}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">{r.pool_name || "—"}</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-muted-foreground text-xs">
+                            {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
+                          </td>
+                          <td className="py-3 px-3 text-muted-foreground text-xs">
+                            {r.assigned_vehicle?.plate_number || "—"}
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            {r.trip_type ? (
+                              <Badge variant="outline" className="text-[10px]">
+                                {r.trip_type === "one_way" ? "One Way" : "Round"}
+                              </Badge>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            {r.driver_checked_in_at && !r.driver_checked_out_at ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-1.5"
+                                onClick={() => setShowCheckIn(r)}
+                                title="Check out driver"
+                              >
+                                <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-700 cursor-pointer">
+                                  In
+                                </Badge>
+                              </Button>
+                            ) : r.driver_checked_out_at ? (
+                              <Badge variant="secondary" className="text-[10px]">Out</Badge>
+                            ) : r.status === "assigned" ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-1.5"
+                                onClick={() => setShowCheckIn(r)}
+                              >
+                                <LogIn className="w-3 h-3" />
+                              </Button>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <StatusPill status={r.status} autoClosed={r.auto_closed} />
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center gap-0.5">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={() => setShowDetail(r)}
+                                title="View"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </Button>
+                              {r.status === "completed" && !r.requester_rating && !r.auto_closed && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => setShowFeedback(r)}
+                                  title="Give feedback"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
+                              {r.pool_category === "outsource" &&
+                                (r.num_vehicles || 1) > 1 &&
+                                ["approved", "pending"].includes(r.status) && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => setShowMultiAssign(r)}
+                                    title="Multi-vehicle assign"
+                                  >
+                                    <Users className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              {r.status === "assigned" && !r.driver_checked_in_at && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => setShowDeallocate(r)}
+                                  title="Deallocate vehicle/driver"
+                                >
+                                  <Undo2 className="w-3.5 h-3.5 text-amber-500" />
+                                </Button>
+                              )}
+                              {!["completed"].includes(r.status) && !r.driver_checked_in_at && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => setShowDelete(r)}
+                                  title="Remove request"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t bg-muted/20">
+                  <p className="text-xs text-muted-foreground">
+                    Showing{" "}
+                    <span className="font-semibold text-foreground">
+                      {(safePage - 1) * PAGE_SIZE + 1}
+                    </span>
+                    –
+                    <span className="font-semibold text-foreground">
+                      {Math.min(safePage * PAGE_SIZE, filtered.length)}
+                    </span>{" "}
+                    of <span className="font-semibold text-foreground">{filtered.length}</span> requests
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={safePage === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    {buildPageList(safePage, totalPages).map((p, i) =>
+                      p === "…" ? (
+                        <span key={`e-${i}`} className="px-2 text-xs text-muted-foreground">
+                          …
+                        </span>
+                      ) : (
+                        <Button
+                          key={p}
+                          variant={p === safePage ? "default" : "outline"}
+                          size="sm"
+                          className={cn(
+                            "h-8 min-w-8 px-2.5 text-xs",
+                            p === safePage &&
+                              "bg-gradient-to-br from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 border-transparent",
+                          )}
+                          onClick={() => setPage(p as number)}
+                        >
+                          {p}
+                        </Button>
+                      ),
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safePage === totalPages}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
 
+        {/* Dialogs */}
         <UnifiedVehicleRequestDialog open={showCreate} onOpenChange={setShowCreate} />
 
         {showDetail && (
           <Dialog open={!!showDetail} onOpenChange={() => setShowDetail(null)}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Request {showDetail.request_number}</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-500" />
+                  Request {showDetail.request_number}
+                </DialogTitle>
               </DialogHeader>
               <VehicleRequestWorkflowProgress request={showDetail} />
               <VehicleRequestApprovalFlow
                 request={showDetail}
                 approvals={approvals}
                 onClose={() => setShowDetail(null)}
-                onCheckIn={() => { setShowDetail(null); setShowCheckIn(showDetail); }}
-                onCrossPool={() => { setShowDetail(null); setShowCrossPool(showDetail); }}
+                onCheckIn={() => {
+                  setShowDetail(null);
+                  setShowCheckIn(showDetail);
+                }}
+                onCrossPool={() => {
+                  setShowDetail(null);
+                  setShowCrossPool(showDetail);
+                }}
               />
             </DialogContent>
           </Dialog>
@@ -280,7 +763,6 @@ const VehicleRequests = () => {
             onClose={() => setShowFeedback(null)}
           />
         )}
-
         {showCheckIn && (
           <DriverCheckInDialog
             request={showCheckIn}
@@ -288,7 +770,6 @@ const VehicleRequests = () => {
             onClose={() => setShowCheckIn(null)}
           />
         )}
-
         {showCrossPool && (
           <CrossPoolAssignmentDialog
             request={showCrossPool}
@@ -296,7 +777,6 @@ const VehicleRequests = () => {
             onClose={() => setShowCrossPool(null)}
           />
         )}
-
         {showDeallocate && (
           <DeallocateRequestDialog
             request={showDeallocate}
@@ -304,16 +784,18 @@ const VehicleRequests = () => {
             onClose={() => setShowDeallocate(null)}
           />
         )}
-
         {showDelete && (
           <DeleteRequestDialog
             request={showDelete}
             open={!!showDelete}
             onClose={() => setShowDelete(null)}
-            isOwnDraft={isDriverOnly && showDelete.requester_id === userId && showDelete.status === "pending"}
+            isOwnDraft={
+              isDriverOnly &&
+              showDelete.requester_id === userId &&
+              showDelete.status === "pending"
+            }
           />
         )}
-
         {showMultiAssign && (
           <MultiVehicleAssignDialog
             request={showMultiAssign}
@@ -325,5 +807,82 @@ const VehicleRequests = () => {
     </Layout>
   );
 };
+
+// ============== sub-components ==============
+
+const KpiCard = ({
+  label,
+  value,
+  icon: Icon,
+  color,
+}: {
+  label: string;
+  value: number;
+  icon: any;
+  color: "amber" | "blue" | "emerald";
+}) => {
+  const palette: Record<string, string> = {
+    amber: "from-amber-500/15 to-amber-500/5 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    blue: "from-blue-500/15 to-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20",
+    emerald:
+      "from-emerald-500/15 to-emerald-500/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+  };
+  return (
+    <Card
+      className={cn(
+        "border bg-gradient-to-br hover:shadow-md transition-shadow",
+        palette[color],
+      )}
+    >
+      <CardContent className="p-4 flex items-center gap-3">
+        <div
+          className={cn(
+            "h-11 w-11 rounded-xl flex items-center justify-center backdrop-blur-sm bg-background/40",
+          )}
+        >
+          <Icon className="w-5 h-5" />
+        </div>
+        <div>
+          <p className="text-2xl font-black leading-none">{value}</p>
+          <p className="text-xs text-muted-foreground mt-1 font-medium">{label}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const StatusPill = ({ status, autoClosed }: { status: string; autoClosed?: boolean }) => {
+  const map: Record<string, string> = {
+    pending: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
+    approved: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+    assigned: "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30",
+    completed: "bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-500/30",
+    rejected: "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30",
+    cancelled: "bg-muted text-muted-foreground border-border",
+  };
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize",
+        map[status] || "bg-muted text-muted-foreground border-border",
+      )}
+    >
+      {status}
+      {autoClosed && <span className="text-[9px]">⚡</span>}
+    </span>
+  );
+};
+
+function buildPageList(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "…")[] = [1];
+  if (current > 3) pages.push("…");
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (current < total - 2) pages.push("…");
+  pages.push(total);
+  return pages;
+}
 
 export default VehicleRequests;
