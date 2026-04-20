@@ -710,6 +710,14 @@ const Fleet = () => {
                       </button>
                     </Badge>
                   )}
+                  {liveStatusFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1">
+                      Live: {liveStatusFilter === "idle_engine_on" ? "Idle • Engine On" : liveStatusFilter === "idle_engine_off" ? "Idle • Engine Off" : liveStatusFilter.charAt(0).toUpperCase() + liveStatusFilter.slice(1)}
+                      <button type="button" onClick={() => setLiveStatusFilter("all")} aria-label="Remove live status filter">
+                        <X className="w-3 h-3 cursor-pointer" aria-hidden="true" />
+                      </button>
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>
@@ -717,6 +725,7 @@ const Fleet = () => {
         </Card>
 
         {/* Show skeletons during initial load, but keep showing data during pagination */}
+        <div id="fleet-vehicle-list" className="scroll-mt-24" />
         {loading && vehicles.length === 0 ? (
           <div className="space-y-6">
             <StatsRowSkeleton count={4} />
