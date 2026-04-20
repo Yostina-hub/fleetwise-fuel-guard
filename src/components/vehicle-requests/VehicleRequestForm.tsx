@@ -882,7 +882,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         const isLast = tabIndex === TABS.length - 1;
         const FooterInner = (
           <div className="flex w-full items-center justify-between gap-3">
-            <Button variant="ghost" size="sm" onClick={() => { setForm(initialForm); }} className="text-muted-foreground">
+            <Button variant="ghost" size="sm" onClick={() => { setForm(initialForm); validation.reset(); }} className="text-muted-foreground">
               Clear
             </Button>
             <div className="flex items-center gap-2">
@@ -898,7 +898,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Button>
               ) : (
                 <Button
-                  onClick={() => createMutation.mutate()}
+                  onClick={handleSubmit}
                   disabled={!canSubmit || createMutation.isPending}
                   className="gap-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg shadow-emerald-500/30"
                 >
