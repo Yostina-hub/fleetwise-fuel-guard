@@ -178,10 +178,13 @@ function Field({ label, required, hint, error, children, span = 1 }: {
 }
 
 /* ----- Tab 1: Identity (plate, purpose, location, type/group) ----- */
-function IdentityPane({ formData, set, plateNumber }: Props) {
+function IdentityPane({ formData, set, plateNumber, onBlur, getError }: Props) {
+  const err = (k: string) => getError?.(k);
+  const blur = (k: string) => () => onBlur?.(k, formData[k]);
+  const blurSelect = (k: string, v: string) => { set(k, v); onBlur?.(k, v); };
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Field label="Plate Number" required span={3}>
+      <Field label="Plate Number" required span={3} error={err("plate_number_part")}>
         <div className="grid grid-cols-3 gap-2">
           <Select value={formData.plate_code} onValueChange={v => set("plate_code", v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -194,6 +197,7 @@ function IdentityPane({ formData, set, plateNumber }: Props) {
           <Input
             value={formData.plate_number_part}
             onChange={e => set("plate_number_part", e.target.value.replace(/\D/g, "").slice(0, 5))}
+            onBlur={blur("plate_number_part")}
             placeholder="12345"
             maxLength={5}
           />
@@ -204,8 +208,8 @@ function IdentityPane({ formData, set, plateNumber }: Props) {
         </div>
       </Field>
 
-      <Field label="Purpose For" required>
-        <Select value={formData.purpose_for || ""} onValueChange={v => set("purpose_for", v)}>
+      <Field label="Purpose For" required error={err("purpose_for")}>
+        <Select value={formData.purpose_for || ""} onValueChange={v => blurSelect("purpose_for", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
             {PURPOSE_FOR_OPTIONS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
@@ -213,8 +217,8 @@ function IdentityPane({ formData, set, plateNumber }: Props) {
         </Select>
       </Field>
 
-      <Field label="Specific Pool">
-        <Select value={formData.specific_pool || ""} onValueChange={v => set("specific_pool", v)}>
+      <Field label="Specific Pool" error={err("specific_pool")}>
+        <Select value={formData.specific_pool || ""} onValueChange={v => blurSelect("specific_pool", v)}>
           <SelectTrigger><SelectValue placeholder="e.g. NAAZ, SR..." /></SelectTrigger>
           <SelectContent>
             {SPECIFIC_POOL_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
@@ -222,20 +226,20 @@ function IdentityPane({ formData, set, plateNumber }: Props) {
         </Select>
       </Field>
 
-      <Field label="Specific Location">
-        <Input value={formData.specific_location || ""} onChange={e => set("specific_location", e.target.value)} placeholder="Branch / site name" />
+      <Field label="Specific Location" error={err("specific_location")}>
+        <Input value={formData.specific_location || ""} onChange={e => set("specific_location", e.target.value)} onBlur={blur("specific_location")} placeholder="Branch / site name" />
       </Field>
 
-      <Field label="Vehicle Type" required>
-        <Select value={formData.vehicle_type} onValueChange={v => set("vehicle_type", v)}>
+      <Field label="Vehicle Type" required error={err("vehicle_type")}>
+        <Select value={formData.vehicle_type} onValueChange={v => blurSelect("vehicle_type", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
             {VEHICLE_TYPES_OPTIONS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </Field>
-      <Field label="Group" required>
-        <Select value={formData.vehicle_group} onValueChange={v => set("vehicle_group", v)}>
+      <Field label="Group" required error={err("vehicle_group")}>
+        <Select value={formData.vehicle_group} onValueChange={v => blurSelect("vehicle_group", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
             {VEHICLE_GROUPS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
@@ -247,50 +251,53 @@ function IdentityPane({ formData, set, plateNumber }: Props) {
 }
 
 /* ----- Tab 2: Specifications (make/model, identifiers, drivetrain, energy) ----- */
-function SpecPane({ formData, set }: { formData: any; set: SetFn }) {
+function SpecPane({ formData, set, onBlur, getError }: { formData: any; set: SetFn; onBlur?: BlurFn; getError?: ErrFn }) {
+  const err = (k: string) => getError?.(k);
+  const blur = (k: string) => () => onBlur?.(k, formData[k]);
+  const blurSelect = (k: string, v: string) => { set(k, v); onBlur?.(k, v); };
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Field label="Make" required><Input value={formData.make} onChange={e => set("make", e.target.value)} placeholder="e.g. Toyota" /></Field>
-      <Field label="Model" required><Input value={formData.model} onChange={e => set("model", e.target.value)} placeholder="e.g. Hilux" /></Field>
-      <Field label="Model Code"><Input value={formData.model_code || ""} onChange={e => set("model_code", e.target.value)} placeholder="e.g. DD1022T" /></Field>
+      <Field label="Make" required error={err("make")}><Input value={formData.make} onChange={e => set("make", e.target.value)} onBlur={blur("make")} placeholder="e.g. Toyota" maxLength={100} /></Field>
+      <Field label="Model" required error={err("model")}><Input value={formData.model} onChange={e => set("model", e.target.value)} onBlur={blur("model")} placeholder="e.g. Hilux" maxLength={100} /></Field>
+      <Field label="Model Code" error={err("model_code")}><Input value={formData.model_code || ""} onChange={e => set("model_code", e.target.value)} onBlur={blur("model_code")} placeholder="e.g. DD1022T" maxLength={50} /></Field>
 
-      <Field label="Manufactured Year" required>
-        <Input type="number" value={formData.year} onChange={e => set("year", parseInt(e.target.value) || new Date().getFullYear())} placeholder="YYYY" />
+      <Field label="Manufactured Year" required error={err("year")}>
+        <Input type="number" value={formData.year} onChange={e => set("year", parseInt(e.target.value) || new Date().getFullYear())} onBlur={blur("year")} placeholder="YYYY" />
       </Field>
-      <Field label="MFG Date" hint="Exact factory date (optional)">
-        <Input type="date" value={formData.mfg_date || ""} onChange={e => set("mfg_date", e.target.value)} />
+      <Field label="MFG Date" hint="Exact factory date (optional)" error={err("mfg_date")}>
+        <Input type="date" value={formData.mfg_date || ""} onChange={e => set("mfg_date", e.target.value)} onBlur={blur("mfg_date")} />
       </Field>
-      <Field label="Color"><Input value={formData.color} onChange={e => set("color", e.target.value)} placeholder="e.g. White" /></Field>
+      <Field label="Color" error={err("color")}><Input value={formData.color} onChange={e => set("color", e.target.value)} onBlur={blur("color")} placeholder="e.g. White" maxLength={40} /></Field>
 
-      <Field label="Chassis Number (VIN)" span={2}>
-        <Input value={formData.vin} onChange={e => set("vin", e.target.value)} maxLength={17} placeholder="17-character VIN" />
+      <Field label="Chassis Number (VIN)" span={2} error={err("vin")}>
+        <Input value={formData.vin} onChange={e => set("vin", e.target.value.toUpperCase())} onBlur={blur("vin")} maxLength={17} placeholder="17-character VIN" />
       </Field>
-      <Field label="Engine Number">
-        <Input value={formData.engine_number || ""} onChange={e => set("engine_number", e.target.value)} placeholder="e.g. 4JB1TI-XXXX" />
+      <Field label="Engine Number" error={err("engine_number")}>
+        <Input value={formData.engine_number || ""} onChange={e => set("engine_number", e.target.value)} onBlur={blur("engine_number")} placeholder="e.g. 4JB1TI-XXXX" maxLength={50} />
       </Field>
 
-      <Field label="Transmission" required>
-        <Select value={formData.transmission_type || ""} onValueChange={v => set("transmission_type", v)}>
+      <Field label="Transmission" required error={err("transmission_type")}>
+        <Select value={formData.transmission_type || ""} onValueChange={v => blurSelect("transmission_type", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
             {TRANSMISSION_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </Field>
-      <Field label="Drive Type" required>
-        <Select value={formData.drive_type} onValueChange={v => set("drive_type", v)}>
+      <Field label="Drive Type" required error={err("drive_type")}>
+        <Select value={formData.drive_type} onValueChange={v => blurSelect("drive_type", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
             {DRIVE_TYPES.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </Field>
-      <Field label="Engine CC">
-        <Input type="number" min={0} value={formData.engine_cc || ""} onChange={e => set("engine_cc", e.target.value)} placeholder="e.g. 2495" />
+      <Field label="Engine CC" error={err("engine_cc")}>
+        <Input type="number" min={0} value={formData.engine_cc || ""} onChange={e => set("engine_cc", e.target.value)} onBlur={blur("engine_cc")} placeholder="e.g. 2495" />
       </Field>
 
-      <Field label="Energy Type" required span={3}>
-        <Select value={formData.fuel_type} onValueChange={v => set("fuel_type", v)}>
+      <Field label="Energy Type" required span={3} error={err("fuel_type")}>
+        <Select value={formData.fuel_type} onValueChange={v => blurSelect("fuel_type", v)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {ENERGY_SOURCES.map(src => (
@@ -309,7 +316,10 @@ function SpecPane({ formData, set }: { formData: any; set: SetFn }) {
 }
 
 /* ----- Tab 3: Valuation (capacity, pricing, condition, class) ----- */
-function ValuePane({ formData, set }: { formData: any; set: SetFn }) {
+function ValuePane({ formData, set, onBlur, getError }: { formData: any; set: SetFn; onBlur?: BlurFn; getError?: ErrFn }) {
+  const err = (k: string) => getError?.(k);
+  const blur = (k: string) => () => onBlur?.(k, formData[k]);
+  const blurSelect = (k: string, v: string) => { set(k, v); onBlur?.(k, v); };
   const age = formData.year ? Math.max(0, new Date().getFullYear() - Number(formData.year)) : null;
   const depreciation =
     formData.purchasing_price && formData.current_market_price
@@ -320,27 +330,27 @@ function ValuePane({ formData, set }: { formData: any; set: SetFn }) {
     <div className="space-y-5">
       {/* Capacity row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Field label="Seating Capacity">
-          <Input type="number" min={0} value={formData.seating_capacity || ""} onChange={e => set("seating_capacity", e.target.value)} placeholder="e.g. 4" />
+        <Field label="Seating Capacity" error={err("seating_capacity")}>
+          <Input type="number" min={0} value={formData.seating_capacity || ""} onChange={e => set("seating_capacity", e.target.value)} onBlur={blur("seating_capacity")} placeholder="e.g. 4" />
         </Field>
-        <Field label="Loading Capacity (Quintal)">
-          <Input type="number" min={0} step="0.1" value={formData.loading_capacity_quintal || ""} onChange={e => set("loading_capacity_quintal", e.target.value)} placeholder="e.g. 7" />
+        <Field label="Loading Capacity (Quintal)" error={err("loading_capacity_quintal")}>
+          <Input type="number" min={0} step="0.1" value={formData.loading_capacity_quintal || ""} onChange={e => set("loading_capacity_quintal", e.target.value)} onBlur={blur("loading_capacity_quintal")} placeholder="e.g. 7" />
         </Field>
-        <Field label="Fuel Standard (km/L)">
-          <Input type="number" min={0} step="0.1" value={formData.fuel_standard_km_per_liter || ""} onChange={e => set("fuel_standard_km_per_liter", e.target.value)} placeholder="e.g. 12.5" />
+        <Field label="Fuel Standard (km/L)" error={err("fuel_standard_km_per_liter")}>
+          <Input type="number" min={0} step="0.1" value={formData.fuel_standard_km_per_liter || ""} onChange={e => set("fuel_standard_km_per_liter", e.target.value)} onBlur={blur("fuel_standard_km_per_liter")} placeholder="e.g. 12.5" />
         </Field>
       </div>
 
       {/* Pricing row + auto stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Field label="Year of Ownership">
-          <Input type="number" value={formData.year_of_ownership || ""} onChange={e => set("year_of_ownership", e.target.value)} placeholder="YYYY" />
+        <Field label="Year of Ownership" error={err("year_of_ownership")}>
+          <Input type="number" value={formData.year_of_ownership || ""} onChange={e => set("year_of_ownership", e.target.value)} onBlur={blur("year_of_ownership")} placeholder="YYYY" />
         </Field>
-        <Field label="Purchasing Price (ETB)">
-          <Input type="number" min={0} value={formData.purchasing_price || ""} onChange={e => set("purchasing_price", e.target.value)} placeholder="0" />
+        <Field label="Purchasing Price (ETB)" error={err("purchasing_price")}>
+          <Input type="number" min={0} value={formData.purchasing_price || ""} onChange={e => set("purchasing_price", e.target.value)} onBlur={blur("purchasing_price")} placeholder="0" />
         </Field>
-        <Field label="Current Market Price (ETB)">
-          <Input type="number" min={0} value={formData.current_market_price || ""} onChange={e => set("current_market_price", e.target.value)} placeholder="0" />
+        <Field label="Current Market Price (ETB)" error={err("current_market_price")}>
+          <Input type="number" min={0} value={formData.current_market_price || ""} onChange={e => set("current_market_price", e.target.value)} onBlur={blur("current_market_price")} placeholder="0" />
         </Field>
       </div>
 
@@ -351,8 +361,8 @@ function ValuePane({ formData, set }: { formData: any; set: SetFn }) {
       </div>
 
       {/* Condition */}
-      <Field label="Current Condition">
-        <Select value={formData.current_condition || ""} onValueChange={v => set("current_condition", v)}>
+      <Field label="Current Condition" error={err("current_condition")}>
+        <Select value={formData.current_condition || ""} onValueChange={v => blurSelect("current_condition", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
             {CURRENT_CONDITION_OPTIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
