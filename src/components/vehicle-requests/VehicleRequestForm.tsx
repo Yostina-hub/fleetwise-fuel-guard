@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { DateTimePicker, combineDateAndTime } from "@/components/ui/date-time-picker";
 import { LocationPickerField } from "@/components/shared/LocationPickerField";
-import { VEHICLE_TYPES_OPTIONS } from "@/components/fleet/formConstants";
+import { VEHICLE_TYPES_OPTIONS, ASSIGNED_POOLS } from "@/components/fleet/formConstants";
 import { AlertCircle } from "lucide-react";
 import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm } from "./vehicleRequestValidation";
@@ -141,6 +141,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
+
+  // Default duration (in days) per request type — used to auto-derive end_date
+  // dynamically from start_date so requesters don't have to compute it manually.
+  // Users can still override the picker; we only fill when end_date is empty
+  // OR when it's still equal to the previously-derived default.
+  const DEFAULT_DURATION_DAYS: Record<string, number> = {
+    daily_operation: 0,
+    project_operation: 7,
+    field_operation: 30,
+  };
 
   // While impersonating, force the form to file the request as the impersonated
   // user so requester_id matches what they see in /my-requests, and approval
