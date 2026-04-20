@@ -621,6 +621,8 @@ const VehicleRequests = () => {
                               </div>
                             )}
                           </td>
+                          <td className="py-3 px-3 text-center">
+                            {r.trip_type ? (
                               <Badge variant="outline" className="text-[10px]">
                                 {r.trip_type === "one_way" ? "One Way" : "Round"}
                               </Badge>
