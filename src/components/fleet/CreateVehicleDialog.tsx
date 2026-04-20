@@ -339,14 +339,14 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
               <TabsContent value="compliance" className="mt-0">
                 <Section icon={<Shield className="w-5 h-5 text-primary" />} title="Legal & Compliance">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Field label="Registration Certificate No" error={fieldValidation.getError("registration_cert_no")}>
-                      <Input value={formData.registration_cert_no} onChange={e => set("registration_cert_no", e.target.value)} onBlur={() => fieldValidation.handleBlur("registration_cert_no", formData.registration_cert_no)} maxLength={100} />
+                    <Field label="Registration Certificate No" error={fieldValidation.getError("registration_cert_no")} status={fieldValidation.getStatus("registration_cert_no", formData.registration_cert_no)}>
+                      <Input value={formData.registration_cert_no} onChange={e => { const v = sanitizeWhileTyping(e.target.value).slice(0,100); set("registration_cert_no", v); fieldValidation.handleChange("registration_cert_no", v); }} onBlur={() => fieldValidation.handleBlur("registration_cert_no", formData.registration_cert_no)} maxLength={100} />
                     </Field>
                     <Field label="Registration Expiry" error={fieldValidation.getError("registration_expiry")}>
                       <DatePickerField value={formData.registration_expiry} onChange={v => set("registration_expiry", v)} onBlur={() => fieldValidation.handleBlur("registration_expiry", formData.registration_expiry)} />
                     </Field>
-                    <Field label="Insurance Policy No" error={fieldValidation.getError("insurance_policy_no")}>
-                      <Input value={formData.insurance_policy_no} onChange={e => set("insurance_policy_no", e.target.value)} onBlur={() => fieldValidation.handleBlur("insurance_policy_no", formData.insurance_policy_no)} maxLength={100} />
+                    <Field label="Insurance Policy No" error={fieldValidation.getError("insurance_policy_no")} status={fieldValidation.getStatus("insurance_policy_no", formData.insurance_policy_no)}>
+                      <Input value={formData.insurance_policy_no} onChange={e => { const v = sanitizeWhileTyping(e.target.value).slice(0,100); set("insurance_policy_no", v); fieldValidation.handleChange("insurance_policy_no", v); }} onBlur={() => fieldValidation.handleBlur("insurance_policy_no", formData.insurance_policy_no)} maxLength={100} />
                     </Field>
                     <Field label="Insurance Expiry" error={fieldValidation.getError("insurance_expiry")}>
                       <DatePickerField value={formData.insurance_expiry} onChange={v => set("insurance_expiry", v)} onBlur={() => fieldValidation.handleBlur("insurance_expiry", formData.insurance_expiry)} />
@@ -386,11 +386,11 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Load Capacity (kg)" error={fieldValidation.getError("capacity_kg")}>
-                      <Input type="number" min={0} value={formData.capacity_kg} onChange={e => set("capacity_kg", e.target.value)} onBlur={() => fieldValidation.handleBlur("capacity_kg", formData.capacity_kg)} />
+                    <Field label="Load Capacity (kg)" error={fieldValidation.getError("capacity_kg")} status={fieldValidation.getStatus("capacity_kg", formData.capacity_kg)}>
+                      <Input inputMode="decimal" value={formData.capacity_kg} onChange={e => { const v = sanitizeNumeric(e.target.value); set("capacity_kg", v); fieldValidation.handleChange("capacity_kg", v); }} onBlur={() => fieldValidation.handleBlur("capacity_kg", formData.capacity_kg)} />
                     </Field>
-                    <Field label="Cargo Volume (m³)" error={fieldValidation.getError("capacity_volume")}>
-                      <Input type="number" min={0} step={0.1} value={formData.capacity_volume} onChange={e => set("capacity_volume", e.target.value)} onBlur={() => fieldValidation.handleBlur("capacity_volume", formData.capacity_volume)} />
+                    <Field label="Cargo Volume (m³)" error={fieldValidation.getError("capacity_volume")} status={fieldValidation.getStatus("capacity_volume", formData.capacity_volume)}>
+                      <Input inputMode="decimal" value={formData.capacity_volume} onChange={e => { const v = sanitizeNumeric(e.target.value); set("capacity_volume", v); fieldValidation.handleChange("capacity_volume", v); }} onBlur={() => fieldValidation.handleBlur("capacity_volume", formData.capacity_volume)} />
                     </Field>
                     <Field label="Temperature Control">
                       <Select value={formData.temperature_control} onValueChange={v => set("temperature_control", v)}>
@@ -409,14 +409,14 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="GPS Device ID" error={fieldValidation.getError("gps_device_id")}>
-                      <Input value={formData.gps_device_id} onChange={e => set("gps_device_id", e.target.value)} onBlur={() => fieldValidation.handleBlur("gps_device_id", formData.gps_device_id)} disabled={formData.gps_installed !== "true"} maxLength={100} />
+                    <Field label="GPS Device ID" error={fieldValidation.getError("gps_device_id")} status={fieldValidation.getStatus("gps_device_id", formData.gps_device_id)}>
+                      <Input value={formData.gps_device_id} onChange={e => { const v = sanitizeWhileTyping(e.target.value).slice(0,100); set("gps_device_id", v); fieldValidation.handleChange("gps_device_id", v); }} onBlur={() => fieldValidation.handleBlur("gps_device_id", formData.gps_device_id)} disabled={formData.gps_installed !== "true"} maxLength={100} />
                     </Field>
-                    <Field label="Odometer (km)" error={fieldValidation.getError("odometer_km")}>
-                      <Input type="number" min={0} value={formData.odometer_km} onChange={e => set("odometer_km", e.target.value)} onBlur={() => fieldValidation.handleBlur("odometer_km", formData.odometer_km)} />
+                    <Field label="Odometer (km)" error={fieldValidation.getError("odometer_km")} status={fieldValidation.getStatus("odometer_km", formData.odometer_km)}>
+                      <Input inputMode="decimal" value={formData.odometer_km} onChange={e => { const v = sanitizeNumeric(e.target.value); set("odometer_km", v); fieldValidation.handleChange("odometer_km", v); }} onBlur={() => fieldValidation.handleBlur("odometer_km", formData.odometer_km)} />
                     </Field>
-                    <Field label="Tank Capacity (L)" error={fieldValidation.getError("tank_capacity_liters")}>
-                      <Input type="number" min={0} value={formData.tank_capacity_liters} onChange={e => set("tank_capacity_liters", e.target.value)} onBlur={() => fieldValidation.handleBlur("tank_capacity_liters", formData.tank_capacity_liters)} />
+                    <Field label="Tank Capacity (L)" error={fieldValidation.getError("tank_capacity_liters")} status={fieldValidation.getStatus("tank_capacity_liters", formData.tank_capacity_liters)}>
+                      <Input inputMode="decimal" value={formData.tank_capacity_liters} onChange={e => { const v = sanitizeNumeric(e.target.value); set("tank_capacity_liters", v); fieldValidation.handleChange("tank_capacity_liters", v); }} onBlur={() => fieldValidation.handleBlur("tank_capacity_liters", formData.tank_capacity_liters)} />
                     </Field>
                     <Field label="Vehicle Status">
                       <Select value={formData.status} onValueChange={v => set("status", v)}>
@@ -474,8 +474,8 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Full Name / Company Name" error={fieldValidation.getError("owner_full_name")}>
-                      <Input value={formData.owner_full_name} onChange={e => set("owner_full_name", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_full_name", formData.owner_full_name)} maxLength={200} />
+                    <Field label="Full Name / Company Name" error={fieldValidation.getError("owner_full_name")} status={fieldValidation.getStatus("owner_full_name", formData.owner_full_name)}>
+                      <Input value={formData.owner_full_name} onChange={e => { const v = sanitizeWhileTyping(e.target.value).slice(0,200); set("owner_full_name", v); fieldValidation.handleChange("owner_full_name", v); }} onBlur={() => fieldValidation.handleBlur("owner_full_name", formData.owner_full_name)} maxLength={200} />
                     </Field>
                     <Field label="Assigned Location *">
                       <AssignedLocationPicker
@@ -483,14 +483,14 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         onChange={(v) => set("owner_department", v)}
                       />
                     </Field>
-                    <Field label="Contact Person" error={fieldValidation.getError("owner_contact_person")}>
-                      <Input value={formData.owner_contact_person} onChange={e => set("owner_contact_person", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_contact_person", formData.owner_contact_person)} maxLength={150} />
+                    <Field label="Contact Person" error={fieldValidation.getError("owner_contact_person")} status={fieldValidation.getStatus("owner_contact_person", formData.owner_contact_person)}>
+                      <Input value={formData.owner_contact_person} onChange={e => { const v = sanitizeWhileTyping(e.target.value).slice(0,150); set("owner_contact_person", v); fieldValidation.handleChange("owner_contact_person", v); }} onBlur={() => fieldValidation.handleBlur("owner_contact_person", formData.owner_contact_person)} maxLength={150} />
                     </Field>
-                    <Field label="Phone" error={fieldValidation.getError("owner_phone")}>
-                      <Input value={formData.owner_phone} onChange={e => set("owner_phone", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_phone", formData.owner_phone)} placeholder="+251 9XX XXX XXX" />
+                    <Field label="Phone" error={fieldValidation.getError("owner_phone")} status={fieldValidation.getStatus("owner_phone", formData.owner_phone)}>
+                      <Input value={formData.owner_phone} onChange={e => { const v = sanitizePhone(e.target.value); set("owner_phone", v); fieldValidation.handleChange("owner_phone", v); }} onBlur={() => fieldValidation.handleBlur("owner_phone", formData.owner_phone)} placeholder="+251 9XX XXX XXX" />
                     </Field>
-                    <Field label="Email" error={fieldValidation.getError("owner_email")}>
-                      <Input type="email" value={formData.owner_email} onChange={e => set("owner_email", e.target.value)} onBlur={() => fieldValidation.handleBlur("owner_email", formData.owner_email)} placeholder="name@example.com" />
+                    <Field label="Email" error={fieldValidation.getError("owner_email")} status={fieldValidation.getStatus("owner_email", formData.owner_email)}>
+                      <Input type="email" value={formData.owner_email} onChange={e => { const v = sanitizeEmail(e.target.value); set("owner_email", v); fieldValidation.handleChange("owner_email", v); }} onBlur={() => fieldValidation.handleBlur("owner_email", formData.owner_email)} placeholder="name@example.com" />
                     </Field>
                     <CascadingLocationSelector
                       region={formData.owner_region}
