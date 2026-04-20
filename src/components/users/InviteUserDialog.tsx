@@ -27,7 +27,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -42,10 +44,13 @@ import {
   RefreshCw,
   ShieldCheck,
   UserPlus,
+  IdCard,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useOrganization } from "@/hooks/useOrganization";
 import { cn } from "@/lib/utils";
+import { APP_ROLES, ROLES_BY_GROUP, type AppRole } from "@/lib/workflow-engine/appRoles";
+import CreateDriverDialog from "@/components/fleet/CreateDriverDialog";
 
 /* ---------------------------------------------------------------- */
 /*  Sanitization helpers                                            */
