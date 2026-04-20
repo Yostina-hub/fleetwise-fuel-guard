@@ -599,30 +599,52 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <DateTimePicker label="Date" date={form.date} onDateChange={d => update("date", d)} required minDate={new Date()} hideTime />
                 </div>
                 <div>
-                  <Label className="text-primary font-medium">Start Time</Label>
-                  <Input type="time" value={form.start_time} onChange={e => update("start_time", e.target.value)} required />
+                  <Label className="text-primary font-medium">Start Time <span className="text-destructive">*</span></Label>
+                  <Input type="time" value={form.start_time} onChange={e => update("start_time", e.target.value)} required className="h-10" />
                 </div>
                 <div>
-                  <Label className="text-primary font-medium">End Time</Label>
-                  <Input type="time" value={form.end_time} onChange={e => update("end_time", e.target.value)} required />
+                  <Label className="text-primary font-medium">End Time <span className="text-destructive">*</span></Label>
+                  <Input type="time" value={form.end_time} onChange={e => update("end_time", e.target.value)} required className="h-10" />
                 </div>
               </div>
             ) : (
               <div className={`grid grid-cols-1 ${isProject ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4`}>
                 <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => update("start_date", d)} required minDate={new Date()} hideTime />
-                <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => update("end_date", d)} minDate={form.start_date} hideTime />
+                <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => update("end_date", d)} required={isProject} minDate={form.start_date} hideTime />
                 {isProject && (
                   <div>
-                    <Label className="text-primary font-medium">Project Number</Label>
-                    <Input value={form.project_number} onChange={e => update("project_number", e.target.value)} placeholder="Project Number" />
+                    <Label className="text-primary font-medium">Project Number <span className="text-destructive">*</span></Label>
+                    <Input value={form.project_number} onChange={e => update("project_number", e.target.value)} placeholder="e.g. PRJ-2026-001" className="h-10" />
                   </div>
                 )}
               </div>
             )}
+
+            {/* Live duration summary */}
+            {durationLabel && (
+              <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span className="text-muted-foreground">Estimated duration:</span>
+                <Badge variant="secondary" className="font-semibold">{durationLabel}</Badge>
+              </div>
+            )}
+
+            {/* Validation messages */}
+            {validationErrors.length > 0 && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive space-y-1">
+                {validationErrors.map((e, i) => (
+                  <div key={i} className="flex items-start gap-1.5">
+                    <X className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    <span>{e}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {isField && (
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-xs text-muted-foreground">
-                <p className="font-medium text-blue-400">Field Operation Note:</p>
-                <p>Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled.</p>
+              <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-xs text-muted-foreground">
+                <p className="font-medium text-blue-400">Field Operation Note</p>
+                <p>Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled for the duration of the trip.</p>
               </div>
             )}
           </TabsContent>
