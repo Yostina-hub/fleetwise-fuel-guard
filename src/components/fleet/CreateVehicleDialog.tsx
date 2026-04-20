@@ -61,7 +61,7 @@ const initialForm = {
   owner_contact_person: "", owner_phone: "", owner_email: "",
   owner_region: "", owner_zone: "", owner_woreda: "",
   owner_govt_id: "", owner_tax_id: "", owner_status: "active",
-  purpose_for: "", specific_pool: "", specific_location: "",
+  purpose_for: "", specific_pool: "", specific_location: "", assigned_location: "",
   transmission_type: "", model_code: "", engine_number: "",
   mfg_date: "", year_of_ownership: "",
   seating_capacity: "", loading_capacity_quintal: "", engine_cc: "",
