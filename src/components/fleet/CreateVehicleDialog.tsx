@@ -264,17 +264,31 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
             <div className="p-6">
               <TabsContent value="basic" className="mt-0">
                 <Section title="Basic Vehicle Information" icon={<LayoutPanelTop className="w-5 h-5 text-primary" />}>
-                  <BasicInfoTabs formData={formData} set={set} plateNumber={plateNumber} />
+                  <BasicInfoTabs
+                    formData={formData}
+                    set={set}
+                    plateNumber={plateNumber}
+                    onBlur={(field, value) => fieldValidation.handleBlur(field as VehicleFieldName, value)}
+                    getError={(field) => fieldValidation.getError(field as VehicleFieldName)}
+                  />
                 </Section>
               </TabsContent>
 
               <TabsContent value="compliance" className="mt-0">
                 <Section icon={<Shield className="w-5 h-5 text-primary" />} title="Legal & Compliance">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Field label="Registration Certificate No"><Input value={formData.registration_cert_no} onChange={e => set("registration_cert_no", e.target.value)} /></Field>
-                    <Field label="Registration Expiry"><Input type="date" value={formData.registration_expiry} onChange={e => set("registration_expiry", e.target.value)} /></Field>
-                    <Field label="Insurance Policy No"><Input value={formData.insurance_policy_no} onChange={e => set("insurance_policy_no", e.target.value)} /></Field>
-                    <Field label="Insurance Expiry"><Input type="date" value={formData.insurance_expiry} onChange={e => set("insurance_expiry", e.target.value)} /></Field>
+                    <Field label="Registration Certificate No" error={fieldValidation.getError("registration_cert_no")}>
+                      <Input value={formData.registration_cert_no} onChange={e => set("registration_cert_no", e.target.value)} onBlur={() => fieldValidation.handleBlur("registration_cert_no", formData.registration_cert_no)} maxLength={100} />
+                    </Field>
+                    <Field label="Registration Expiry" error={fieldValidation.getError("registration_expiry")}>
+                      <Input type="date" value={formData.registration_expiry} onChange={e => set("registration_expiry", e.target.value)} onBlur={() => fieldValidation.handleBlur("registration_expiry", formData.registration_expiry)} />
+                    </Field>
+                    <Field label="Insurance Policy No" error={fieldValidation.getError("insurance_policy_no")}>
+                      <Input value={formData.insurance_policy_no} onChange={e => set("insurance_policy_no", e.target.value)} onBlur={() => fieldValidation.handleBlur("insurance_policy_no", formData.insurance_policy_no)} maxLength={100} />
+                    </Field>
+                    <Field label="Insurance Expiry" error={fieldValidation.getError("insurance_expiry")}>
+                      <Input type="date" value={formData.insurance_expiry} onChange={e => set("insurance_expiry", e.target.value)} onBlur={() => fieldValidation.handleBlur("insurance_expiry", formData.insurance_expiry)} />
+                    </Field>
                     <Field label="Commercial Permit">
                       <Select value={formData.commercial_permit} onValueChange={v => set("commercial_permit", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -284,7 +298,9 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Permit Expiry"><Input type="date" value={formData.permit_expiry} onChange={e => set("permit_expiry", e.target.value)} /></Field>
+                    <Field label="Permit Expiry" error={fieldValidation.getError("permit_expiry")}>
+                      <Input type="date" value={formData.permit_expiry} onChange={e => set("permit_expiry", e.target.value)} onBlur={() => fieldValidation.handleBlur("permit_expiry", formData.permit_expiry)} />
+                    </Field>
                   </div>
                 </Section>
               </TabsContent>
@@ -457,11 +473,19 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm">{label}</Label>
-      {children}
+      <Label className={`text-sm ${error ? "text-destructive" : ""}`}>{label}</Label>
+      <div className={error ? "[&_input]:border-destructive [&_button]:border-destructive [&_input]:ring-destructive/20" : ""}>
+        {children}
+      </div>
+      {error && (
+        <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+          {error}
+        </p>
+      )}
     </div>
   );
 }
