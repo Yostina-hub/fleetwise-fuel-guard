@@ -259,6 +259,22 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
             {/* 2.3 Operational Details */}
             <Section icon={<Settings className="w-5 h-5 text-primary" />} title="Operational Details">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Field label="Vehicle Category">
+                  <Select value={formData.vehicle_category} onValueChange={v => set("vehicle_category", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>
+                      {VEHICLE_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Route Type">
+                  <Select value={formData.route_type} onValueChange={v => set("route_type", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ROUTE_TYPES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
                 <Field label="Load Capacity (kg)"><Input type="number" min={0} value={formData.capacity_kg} onChange={e => set("capacity_kg", e.target.value)} /></Field>
                 <Field label="Cargo Volume (m³)"><Input type="number" min={0} step={0.1} value={formData.capacity_volume} onChange={e => set("capacity_volume", e.target.value)} /></Field>
                 <Field label="Temperature Control">
