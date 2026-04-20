@@ -5,8 +5,10 @@ import { useOrganization } from "./useOrganization";
 interface FleetStats {
   total: number;
   moving: number;
-  idle: number;
-  offline: number;
+  idle: number;          // total idle (engine on + engine off) — kept for backward compat
+  idleEngineOn: number;  // connected, engine on, speed = 0
+  idleEngineOff: number; // connected, engine off (parked but reachable)
+  offline: number;       // device not connected
 }
 
 interface UseFleetStatsOptions {
@@ -19,7 +21,7 @@ interface UseFleetStatsOptions {
 
 export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
   const { organizationId } = useOrganization();
-  const [stats, setStats] = useState<FleetStats>({ total: 0, moving: 0, idle: 0, offline: 0 });
+  const [stats, setStats] = useState<FleetStats>({ total: 0, moving: 0, idle: 0, idleEngineOn: 0, idleEngineOff: 0, offline: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
@@ -33,7 +35,7 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
 
   const fetchStats = useCallback(async () => {
     if (!organizationId) {
-      setStats({ total: 0, moving: 0, idle: 0, offline: 0 });
+      setStats({ total: 0, moving: 0, idle: 0, idleEngineOn: 0, idleEngineOff: 0, offline: 0 });
       setLoading(false);
       return;
     }
@@ -68,7 +70,7 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
       if (vehicleError) throw vehicleError;
 
       if (!vehicles || vehicles.length === 0) {
-        setStats({ total: 0, moving: 0, idle: 0, offline: 0 });
+        setStats({ total: 0, moving: 0, idle: 0, idleEngineOn: 0, idleEngineOff: 0, offline: 0 });
         setLoading(false);
         return;
       }
@@ -99,7 +101,8 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
 
       // Calculate stats based on telemetry
       let moving = 0;
-      let idle = 0;
+      let idleEngineOn = 0;
+      let idleEngineOff = 0;
       let offline = 0;
 
       vehicleIds.forEach(id => {
@@ -107,15 +110,17 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
         if (t?.device_connected) {
           if (t.engine_on && t.speed_kmh > 0) {
             moving++;
+          } else if (t.engine_on) {
+            idleEngineOn++;   // engine running, not moving (wasting fuel)
           } else {
-            idle++;
+            idleEngineOff++;  // parked but device reachable
           }
         } else {
           offline++;
         }
       });
 
-      setStats({ total, moving, idle, offline });
+      setStats({ total, moving, idle: idleEngineOn + idleEngineOff, idleEngineOn, idleEngineOff, offline });
     } catch (err) {
       console.error("Error fetching fleet stats:", err);
       setError(err instanceof Error ? err : new Error("Failed to fetch fleet stats"));
