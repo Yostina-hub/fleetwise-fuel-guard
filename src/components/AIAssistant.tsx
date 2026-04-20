@@ -353,7 +353,7 @@ export const AIAssistant = () => {
                           title="Copy"
                         >
                           {copiedIndex === index ? (
-                            <Check className="h-3 w-3 text-emerald-600" />
+                            <Check className="h-3 w-3 text-primary" />
                           ) : (
                             <Copy className="h-3 w-3 text-muted-foreground" />
                           )}
