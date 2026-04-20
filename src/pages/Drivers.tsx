@@ -44,6 +44,15 @@ import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
 import DriversQuickStats from "@/components/fleet/DriversQuickStats";
 import DriversQuickActions from "@/components/fleet/DriversQuickActions";
 import DriverCategoryCards from "@/components/fleet/DriverCategoryCards";
+import DriverColumnsPicker from "@/components/fleet/DriverColumnsPicker";
+import {
+  DRIVER_COLUMNS,
+  COLUMN_BY_ID,
+  DEFAULT_VISIBLE_COLUMNS,
+  loadVisibleColumns,
+  saveVisibleColumns,
+  type DriverColumnId,
+} from "@/components/fleet/driverTableColumns";
 import { exportDriversToCSV, exportAllDriversToCSV } from "@/components/fleet/DriverExportUtils";
 import { 
   Users, 
