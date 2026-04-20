@@ -31,6 +31,7 @@ import PendingPostTripBanner from "@/components/driver-portal/PendingPostTripBan
 import DriverNotificationBanner from "@/components/driver-portal/DriverNotificationBanner";
 import MyRequestsPanel from "@/components/driver-portal/MyRequestsPanel";
 import RequestLicenseRenewalDialog from "@/components/driver-portal/RequestLicenseRenewalDialog";
+import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
 import { IdCard } from "lucide-react";
 
 const DriverPortal = () => {
@@ -49,6 +50,7 @@ const DriverPortal = () => {
   const [showTire, setShowTire] = useState(false);
   const [showInspection, setShowInspection] = useState(false);
   const [showLicenseRenewal, setShowLicenseRenewal] = useState(false);
+  const [activeAssignment, setActiveAssignment] = useState<{ request: any; assignment: any } | null>(null);
   // Override prefill when launching the inspection dialog as a post-trip flow
   // (from the pending banner or from an alert deep-link).
   const [inspectionPrefillOverride, setInspectionPrefillOverride] = useState<{
