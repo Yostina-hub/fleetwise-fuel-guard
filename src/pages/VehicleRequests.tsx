@@ -90,6 +90,7 @@ const VehicleRequests = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { isDriverOnly, driverId, userId, loading: scopeLoading } = useDriverScope();
+  const vrScope = useVehicleRequestScope();
   const queryClient = useQueryClient();
 
   // dialogs
