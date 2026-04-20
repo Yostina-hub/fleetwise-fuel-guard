@@ -18,6 +18,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import DriverQuickStats from "@/components/driver-portal/DriverQuickStats";
 import DriverQuickActions from "@/components/driver-portal/DriverQuickActions";
 import { FuelRequestFormDialog } from "@/components/fuel/FuelRequestFormDialog";
