@@ -36,7 +36,7 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import type { Driver } from "@/hooks/useDrivers";
 import LicenseExpiryBadge from "./LicenseExpiryBadge";
-import { DriverVerificationPanel } from "@/components/drivers/DriverVerificationPanel";
+
 import ProvisionDriverAccountButton from "@/components/fleet/ProvisionDriverAccountButton";
 
 interface DriverDetailDialogProps {
@@ -395,22 +395,6 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
               </Card>
             )}
 
-            {/* Driver Verification Panel */}
-            <DriverVerificationPanel 
-              driver={{
-                id: driver.id,
-                first_name: driver.first_name,
-                last_name: driver.last_name,
-                license_number: driver.license_number,
-                national_id: (driver as any).national_id,
-                national_id_verified: (driver as any).national_id_verified,
-                license_verified: (driver as any).license_verified,
-                verification_status: (driver as any).verification_status,
-                verified_by: (driver as any).verified_by,
-                verified_at: (driver as any).verified_at,
-                verification_notes: (driver as any).verification_notes,
-              }}
-            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* License Information */}
               <Card>
