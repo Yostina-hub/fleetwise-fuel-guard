@@ -142,6 +142,18 @@ export const PATH_ROLE_ACCESS: Record<string, string[]> = {
  * Check if a path is accessible to the given roles.
  * @returns true if user can see this item
  */
+/**
+ * Paths a basic 'user' (Requester) is allowed to see.
+ * Anything outside this allow-list is hidden, even if the path defaults to "all".
+ * Keeps the requester portal minimal and prevents accidental exposure of fleet/admin tooling.
+ */
+const BASIC_USER_ALLOWED_PATHS = new Set<string>([
+  "/my-requests",
+  "/my-license",
+  "/notification-center",
+  "/alerts",
+]);
+
 export function isPathAccessible(path: string, userRoles: string[]): boolean {
   // Super admin sees everything
   if (userRoles.includes("super_admin")) return true;
@@ -153,11 +165,25 @@ export function isPathAccessible(path: string, userRoles: string[]): boolean {
     ? basePath.slice(0, -1)
     : basePath;
 
+  // Basic 'user' role (Requester) — strict allow-list only.
+  // Only applies when the user has NO elevated role.
+  const elevatedRoles = [
+    "super_admin", "org_admin", "fleet_manager", "operations_manager",
+    "operator", "technician", "driver", "auditor", "viewer",
+    "finance_manager", "sourcing_manager", "insurance_admin",
+    "fleet_owner", "mechanic", "dispatcher",
+  ];
+  const isBasicUserOnly =
+    userRoles.includes("user") && !userRoles.some((r) => elevatedRoles.includes(r));
+  if (isBasicUserOnly) {
+    return BASIC_USER_ALLOWED_PATHS.has(normalized);
+  }
+
   const allowedRoles = PATH_ROLE_ACCESS[normalized];
 
-  // Not in map → visible to all
+  // Not in map → visible to all (non-basic-user) authenticated users
   if (allowedRoles === undefined) return true;
-  // Empty array → visible to all
+  // Empty array → visible to all (non-basic-user) authenticated users
   if (allowedRoles.length === 0) return true;
 
   return userRoles.some((r) => allowedRoles.includes(r));
