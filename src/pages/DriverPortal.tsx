@@ -169,13 +169,13 @@ const DriverPortal = () => {
   const activeRequest = driverData?.activeRequest;
   const driverName = driver ? `${driver.first_name} ${driver.last_name}` : undefined;
 
-  // Today's & upcoming trips + dispatch jobs
+  // Today's & upcoming trips + dispatch jobs + multi-vehicle request assignments
   const { data: trips } = useQuery({
-    queryKey: ["driver-portal-trips", driverId],
+    queryKey: ["driver-portal-trips", driverId, organizationId],
     queryFn: async () => {
-      if (!driverId) return { active: [], upcoming: [], recent: [] };
+      if (!driverId) return { active: [], upcoming: [], recent: [], requestAssignments: [] };
 
-      const [{ data: active }, { data: upcoming }, { data: recent }] = await Promise.all([
+      const [{ data: active }, { data: upcoming }, { data: recent }, { data: requestAssignments }] = await Promise.all([
         (supabase as any).from("dispatch_jobs").select("id, job_number, status, priority, pickup_location_name, dropoff_location_name, scheduled_pickup_at, actual_pickup_at, actual_dropoff_at, odometer_start, odometer_end, distance_traveled_km")
           .eq("driver_id", driverId).in("status", ["assigned", "dispatched", "in_progress"])
           .order("scheduled_pickup_at", { ascending: true }).limit(10),
@@ -185,8 +185,31 @@ const DriverPortal = () => {
         supabase.from("trips").select("id, start_time, end_time, distance_km, start_location, end_location")
           .eq("driver_id", driverId).eq("status", "completed")
           .order("end_time", { ascending: false }).limit(10),
+        // Multi-vehicle request assignments: each driver checks in/out their
+        // own assigned vehicle within a parent vehicle_request.
+        (supabase as any).from("vehicle_request_assignments")
+          .select(`
+            id, status, driver_checked_in_at, driver_checked_out_at,
+            odometer_start, odometer_end,
+            vehicle:vehicle_id(id, plate_number, make, model),
+            request:vehicle_request_id(
+              id, request_number, status, purpose, destination,
+              needed_from, needed_until
+            )
+          `)
+          .eq("driver_id", driverId)
+          .is("driver_checked_out_at", null)
+          .order("created_at", { ascending: false })
+          .limit(10),
       ]);
-      return { active: active || [], upcoming: upcoming || [], recent: recent || [] };
+      return {
+        active: active || [],
+        upcoming: upcoming || [],
+        recent: recent || [],
+        requestAssignments: (requestAssignments || []).filter(
+          (a: any) => a.request && !["completed", "cancelled", "rejected"].includes(a.request.status),
+        ),
+      };
     },
     enabled: !!driverId,
   });
