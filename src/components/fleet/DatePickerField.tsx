@@ -93,7 +93,7 @@ export function DatePickerField({
         <Calendar
           mode="single"
           selected={date}
-          onSelect={(d) => onChange(d ? format(d, ISO) : "")}
+          onSelect={(d) => { onChange(d ? format(d, ISO) : ""); if (d) setOpen(false); }}
           disabled={(d) => {
             if (minDate && d < minDate) return true;
             if (maxDate && d > maxDate) return true;
