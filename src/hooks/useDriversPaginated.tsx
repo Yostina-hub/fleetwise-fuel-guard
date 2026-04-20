@@ -3,6 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import type { Driver } from "./useDrivers";
 
+export type DriverSortField =
+  | "last_name"
+  | "first_name"
+  | "employee_id"
+  | "hire_date"
+  | "license_expiry"
+  | "created_at"
+  | "status";
+
 interface UseDriversPaginatedOptions {
   pageSize?: number;
   searchQuery?: string;
@@ -10,6 +19,8 @@ interface UseDriversPaginatedOptions {
   driverTypeFilter?: string;
   employmentTypeFilter?: string;
   assignmentFilter?: "all" | "assigned" | "unassigned";
+  sortBy?: DriverSortField;
+  sortDir?: "asc" | "desc";
 }
 
 interface StatusCounts {
@@ -60,6 +71,8 @@ export const useDriversPaginated = (
     driverTypeFilter = "all",
     employmentTypeFilter = "all",
     assignmentFilter = "all",
+    sortBy = "last_name",
+    sortDir = "asc",
   } = options;
   const { organizationId } = useOrganization();
 
@@ -186,7 +199,14 @@ export const useDriversPaginated = (
       // data query
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
-      let dataQ = supabase.from("drivers").select("*").eq("organization_id", organizationId).order("last_name", { ascending: true }).range(from, to);
+      let dataQ = supabase
+        .from("drivers")
+        .select("*")
+        .eq("organization_id", organizationId)
+        .order(sortBy, { ascending: sortDir === "asc", nullsFirst: false })
+        // Stable secondary sort so paging stays deterministic when many rows tie
+        .order("last_name", { ascending: true })
+        .range(from, to);
       dataQ = applyFilters(dataQ, assignedSet);
       const { data, error: dErr } = await dataQ;
       if (dErr) throw dErr;
@@ -205,7 +225,7 @@ export const useDriversPaginated = (
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [organizationId, pageSize, applyFilters, fetchAssignedDriverIds, fetchCategoryCounts, fetchStatusCounts]);
+  }, [organizationId, pageSize, applyFilters, fetchAssignedDriverIds, fetchCategoryCounts, fetchStatusCounts, sortBy, sortDir]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading || !organizationId) return;
@@ -214,7 +234,13 @@ export const useDriversPaginated = (
       const nextPage = currentPage + 1;
       const from = (nextPage - 1) * pageSize;
       const to = from + pageSize - 1;
-      let q = supabase.from("drivers").select("*").eq("organization_id", organizationId).order("last_name", { ascending: true }).range(from, to);
+      let q = supabase
+        .from("drivers")
+        .select("*")
+        .eq("organization_id", organizationId)
+        .order(sortBy, { ascending: sortDir === "asc", nullsFirst: false })
+        .order("last_name", { ascending: true })
+        .range(from, to);
       q = applyFilters(q, assignedDriverIds);
       const { data, error: fErr } = await q;
       if (fErr) throw fErr;
@@ -227,7 +253,7 @@ export const useDriversPaginated = (
     } finally {
       setLoading(false);
     }
-  }, [organizationId, currentPage, pageSize, hasMore, loading, applyFilters, assignedDriverIds, totalCount]);
+  }, [organizationId, currentPage, pageSize, hasMore, loading, applyFilters, assignedDriverIds, totalCount, sortBy, sortDir]);
 
   const refetch = useCallback(() => {
     isFirstLoad.current = false;
@@ -237,7 +263,7 @@ export const useDriversPaginated = (
   useEffect(() => {
     isFirstLoad.current = true;
     loadPage(1);
-  }, [organizationId, searchQuery, statusFilter, driverTypeFilter, employmentTypeFilter, assignmentFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [organizationId, searchQuery, statusFilter, driverTypeFilter, employmentTypeFilter, assignmentFilter, sortBy, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!organizationId) return;

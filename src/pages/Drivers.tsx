@@ -100,6 +100,8 @@ const Drivers = () => {
   const [driverTypeFilter, setDriverTypeFilter] = useState("all");
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState("all");
   const [assignmentFilter, setAssignmentFilter] = useState<"all" | "assigned" | "unassigned">("all");
+  const [sortBy, setSortBy] = useState<"last_name" | "first_name" | "employee_id" | "hire_date" | "license_expiry" | "created_at" | "status">("last_name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [isExporting, setIsExporting] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<DriverColumnId[]>(() => loadVisibleColumns());
   const updateVisibleColumns = (cols: DriverColumnId[]) => {
@@ -131,6 +133,8 @@ const Drivers = () => {
     driverTypeFilter,
     employmentTypeFilter,
     assignmentFilter,
+    sortBy,
+    sortDir,
   });
 
   // Fetch vehicle assignments for the drivers shown on the current page
@@ -297,7 +301,9 @@ const Drivers = () => {
     driverTypeFilter !== "all" ||
     employmentTypeFilter !== "all" ||
     assignmentFilter !== "all" ||
-    searchQuery.length > 0;
+    searchQuery.length > 0 ||
+    sortBy !== "last_name" ||
+    sortDir !== "asc";
 
   const clearAllFilters = () => {
     setSearchQuery("");
@@ -305,7 +311,22 @@ const Drivers = () => {
     setDriverTypeFilter("all");
     setEmploymentTypeFilter("all");
     setAssignmentFilter("all");
+    setSortBy("last_name");
+    setSortDir("asc");
   };
+
+  // Order labels adapt to the active sort field for clarity
+  const SORT_FIELD_OPTIONS: { value: typeof sortBy; label: string; orderLabels: { asc: string; desc: string } }[] = [
+    { value: "last_name", label: "Last name", orderLabels: { asc: "A → Z", desc: "Z → A" } },
+    { value: "first_name", label: "First name", orderLabels: { asc: "A → Z", desc: "Z → A" } },
+    { value: "employee_id", label: "Employee ID", orderLabels: { asc: "A → Z", desc: "Z → A" } },
+    { value: "hire_date", label: "Hire date", orderLabels: { asc: "Oldest first", desc: "Newest first" } },
+    { value: "license_expiry", label: "License expiry", orderLabels: { asc: "Soonest first", desc: "Latest first" } },
+    { value: "created_at", label: "Date added", orderLabels: { asc: "Oldest first", desc: "Newest first" } },
+    { value: "status", label: "Status", orderLabels: { asc: "A → Z", desc: "Z → A" } },
+  ];
+  const activeOrderLabels =
+    SORT_FIELD_OPTIONS.find((s) => s.value === sortBy)?.orderLabels ?? { asc: "Ascending", desc: "Descending" };
 
   return (
     <Layout>
@@ -483,6 +504,42 @@ const Drivers = () => {
                   <SelectItem value="active">{t('common.active', 'Active')}</SelectItem>
                   <SelectItem value="inactive">{t('common.inactive', 'Inactive')}</SelectItem>
                   <SelectItem value="suspended">{t('common.suspended', 'Suspended')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Sort By */}
+            <div>
+              <Label htmlFor="driver-sort-by" className="sr-only">Sort drivers by field</Label>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                <SelectTrigger
+                  id="driver-sort-by"
+                  aria-label="Sort drivers by"
+                  className="w-full md:w-[180px] h-10 bg-background/50 border-border/50"
+                >
+                  <span className="text-xs text-muted-foreground mr-1.5">Sort:</span>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_FIELD_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Sort direction */}
+            <div>
+              <Label htmlFor="driver-sort-dir" className="sr-only">Sort order</Label>
+              <Select value={sortDir} onValueChange={(v) => setSortDir(v as "asc" | "desc")}>
+                <SelectTrigger
+                  id="driver-sort-dir"
+                  aria-label="Sort order"
+                  className="w-full md:w-[160px] h-10 bg-background/50 border-border/50"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="asc">{activeOrderLabels.asc}</SelectItem>
+                  <SelectItem value="desc">{activeOrderLabels.desc}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

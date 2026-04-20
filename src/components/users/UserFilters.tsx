@@ -64,8 +64,17 @@ const defaultFilters: FilterState = {
   datePreset: "all",
   dateFrom: undefined,
   dateTo: undefined,
-  sortBy: "created_at",
-  sortDir: "desc",
+  sortBy: "name",
+  sortDir: "asc",
+};
+
+// Order option labels depend on the chosen sort field, so the dropdown stays
+// intuitive (A–Z for text fields, Newest/Oldest for dates, High/Low for counts).
+const ORDER_LABELS: Record<string, { asc: string; desc: string }> = {
+  name: { asc: "A → Z", desc: "Z → A" },
+  email: { asc: "A → Z", desc: "Z → A" },
+  roles: { asc: "Fewest first", desc: "Most first" },
+  created_at: { asc: "Oldest first", desc: "Newest first" },
 };
 
 interface UserFiltersProps {
@@ -83,7 +92,7 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
     if (filters.role !== "all") count++;
     if (filters.status !== "all") count++;
     if (filters.datePreset !== "all") count++;
-    if (filters.sortBy !== "created_at" || filters.sortDir !== "desc") count++;
+    if (filters.sortBy !== "name" || filters.sortDir !== "asc") count++;
     return count;
   }, [filters]);
 
@@ -320,8 +329,8 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
                     <Select value={filters.sortDir} onValueChange={v => updateFilter("sortDir", v as "asc" | "desc")}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="desc">Newest First</SelectItem>
-                        <SelectItem value="asc">Oldest First</SelectItem>
+                        <SelectItem value="asc">{ORDER_LABELS[filters.sortBy]?.asc ?? "Ascending"}</SelectItem>
+                        <SelectItem value="desc">{ORDER_LABELS[filters.sortBy]?.desc ?? "Descending"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
