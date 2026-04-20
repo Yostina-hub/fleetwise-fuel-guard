@@ -33,7 +33,7 @@ export const MultiVehicleAssignDialog = ({ request, open, onClose }: Props) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("drivers")
-        .select("id, first_name, last_name")
+        .select("id, first_name, last_name, phone")
         .eq("organization_id", request.organization_id)
         .eq("status", "active")
         .order("first_name").limit(100);
