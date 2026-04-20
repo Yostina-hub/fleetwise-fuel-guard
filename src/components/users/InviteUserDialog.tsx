@@ -143,10 +143,19 @@ const InviteUserDialog = ({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const availableRoles = useMemo(
-    () => allRoles.filter((r) => isSuperAdmin || !r.adminOnly),
-    [isSuperAdmin],
-  );
+  /** Roles the current actor is allowed to assign (admin-only roles hidden from non-super_admin),
+   *  grouped by tier so the dropdown stays scannable when there are 20+ roles. */
+  const visibleGroups = useMemo(() => {
+    const groupOrder = ["Administration", "Management", "Operations", "Field", "Read-only"] as const;
+    return groupOrder
+      .map((g) => ({
+        group: g,
+        roles: (ROLES_BY_GROUP[g] ?? []).filter(
+          (r) => isSuperAdmin || !ADMIN_ONLY_ROLES.has(r.value),
+        ),
+      }))
+      .filter((g) => g.roles.length > 0);
+  }, [isSuperAdmin]);
 
   /* ---- validation ---- */
   const validateField = (
