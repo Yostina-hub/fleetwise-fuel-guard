@@ -14,11 +14,15 @@ import {
 } from "./formConstants";
 
 type SetFn = (field: string, value: string | number) => void;
+type BlurFn = (field: string, value: unknown) => void;
+type ErrFn = (field: string) => string | undefined;
 
 interface Props {
   formData: any;
   set: SetFn;
   plateNumber: string;
+  onBlur?: BlurFn;
+  getError?: ErrFn;
 }
 
 const tabs = [
