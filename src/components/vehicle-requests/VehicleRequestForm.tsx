@@ -365,7 +365,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     errorCount === 0;
 
   const handleSubmit = () => {
-    const sanitized = sanitizeVehicleRequestForm(form as any);
+    const sanitized = sanitizeVehicleRequestForm(form as any) as any;
     setForm((f) => ({ ...f, ...sanitized }));
     const result = validateAll({ ...form, ...sanitized } as any);
     if (!result.valid) {
