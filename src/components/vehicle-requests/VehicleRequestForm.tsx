@@ -74,8 +74,24 @@ const initialForm = {
 export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
   const { organizationId, isSuperAdmin } = useOrganization();
-  const { user, roles: userRoles } = useAuth();
+  const {
+    user,
+    profile,
+    roles: userRoles,
+    isImpersonating,
+    realUser,
+    realProfile,
+    realRoles,
+  } = useAuth();
   const queryClient = useQueryClient();
+
+  // When a super_admin is impersonating, the override puts the impersonated
+  // user into `useAuth().user` — but `supabase.auth.getUser()` still returns
+  // the super_admin's JWT identity. Treat impersonation as a first-class
+  // "on behalf of" so inserts get the impersonated user's id and approval
+  // routing uses their role (not the super_admin's auto-approve).
+  const isRealSuperAdmin =
+    isImpersonating || realRoles.some((r) => r.role === "super_admin") || isSuperAdmin;
 
   // Drivers cannot initiate fleet/vehicle requests — only end-users, supervisors,
   // and managers can. A user counts as "driver-only" when they hold the driver
@@ -125,6 +141,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
+
+  // While impersonating, force the form to file the request as the impersonated
+  // user so requester_id matches what they see in /my-requests, and approval
+  // routing uses the impersonated user's role (not the super_admin's).
+  useEffect(() => {
+    if (!isImpersonating || !user?.id) return;
+    setOnBehalfOf((prev) => {
+      if (prev && prev.id === user.id) return prev;
+      return {
+        id: user.id,
+        name: profile?.full_name || user.email || "Impersonated user",
+        email: user.email || "",
+        type: "user",
+      };
+    });
+  }, [isImpersonating, user?.id, user?.email, profile?.full_name]);
 
   // Fetch both users and drivers for the combined picker
   const { data: orgPeople = [] } = useQuery({
@@ -203,16 +235,26 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const user = (await supabase.auth.getUser()).data.user;
-      const profile = (await supabase.from("profiles").select("full_name").eq("id", user!.id).single()).data;
+      // The JWT identity (always the real signed-in user — super_admin while
+      // impersonating). Used only as a fallback when there's no impersonation
+      // override in play.
+      const jwtUser = (await supabase.auth.getUser()).data.user;
+      const jwtProfile = (await supabase.from("profiles").select("full_name").eq("id", jwtUser!.id).single()).data;
 
-      // Super admin may file on behalf of another user; otherwise use self.
-      const requesterId = isSuperAdmin && onBehalfOf ? onBehalfOf.id : user!.id;
-      const requesterName = isSuperAdmin && onBehalfOf
-        ? onBehalfOf.name
-        : (profile?.full_name || user!.email || "Unknown");
-      const filedOnBehalfNote = isSuperAdmin && onBehalfOf
-        ? ` (filed by ${profile?.full_name || user!.email} on behalf of ${onBehalfOf.name})`
+      // Acting identity = impersonated user when present, else JWT user.
+      const actingUser = user ?? jwtUser;
+      const actingProfile = profile ?? jwtProfile;
+
+      // Real super_admin can file on behalf of someone else (manual picker OR
+      // automatic impersonation override). Otherwise we file as the acting user.
+      const useOnBehalf = isRealSuperAdmin && !!onBehalfOf;
+      const requesterId = useOnBehalf ? onBehalfOf!.id : actingUser!.id;
+      const requesterName = useOnBehalf
+        ? onBehalfOf!.name
+        : (actingProfile?.full_name || actingUser!.email || "Unknown");
+      const filerName = realProfile?.full_name || realUser?.email || jwtProfile?.full_name || jwtUser?.email || "Admin";
+      const filedOnBehalfNote = useOnBehalf
+        ? ` (filed by ${filerName} on behalf of ${onBehalfOf!.name}${isImpersonating ? " — via impersonation" : ""})`
         : "";
 
       let neededFrom: string;
@@ -306,7 +348,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     },
     onSuccess: (data: any) => {
       toast.success(
-        isSuperAdmin && onBehalfOf
+        isRealSuperAdmin && onBehalfOf
           ? `Vehicle request submitted on behalf of ${onBehalfOf.name}`
           : "Vehicle request submitted successfully"
       );
