@@ -137,8 +137,11 @@ const Fleet = () => {
   // Debounce search to avoid too many queries
   const debouncedSearch = useDebounce(searchInput, 300);
 
-  // Use paginated hook for scalability - fixed 10 items per page with server-side filters
-  const PAGE_SIZE = 10;
+  // Use paginated hook for scalability - fixed 10 items per page with server-side filters.
+  // When a live-telemetry filter is active (idle_engine_on / idle_engine_off / moving / offline)
+  // we need to evaluate it against ALL vehicles in the org, since live status is computed
+  // client-side from telemetry. Bump the page size so the client filter has the full set.
+  const PAGE_SIZE = liveStatusFilter !== "all" ? 500 : 10;
   const {
     vehicles: dbVehicles,
     loading,
