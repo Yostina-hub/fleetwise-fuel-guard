@@ -387,6 +387,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowsMultipleVehicles]);
 
+  // Dynamic end-date: auto-derive from start_date + operation-type default.
+  // Only fills when end_date is empty so a manual override is preserved.
+  useEffect(() => {
+    if (isDaily) return;
+    if (!form.start_date) return;
+    if (form.end_date) return;
+    const days = DEFAULT_DURATION_DAYS[form.request_type] ?? 0;
+    const derived = new Date(form.start_date);
+    derived.setDate(derived.getDate() + days);
+    setForm((f) => ({ ...f, end_date: derived }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.start_date, form.request_type, isDaily]);
+
   // Professional, descriptive validation (per-field, on blur + on submit).
   const validation = useVehicleRequestValidation();
   const { getError, handleBlur, validateAll, errorCount } = validation;
@@ -863,25 +876,30 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label className="text-primary font-medium">Pool Category</Label>
-                <Select value={form.pool_category} onValueChange={v => { update("pool_category", v); update("pool_name", ""); }}>
-                  <SelectTrigger className="h-10"><SelectValue placeholder="Select Pool Category" /></SelectTrigger>
+              <div className="md:col-span-2">
+                <Label className="text-primary font-medium">Assigned Pool</Label>
+                <Select value={form.pool_name} onValueChange={v => {
+                  // Derive a category bucket so downstream filters/reports keep working.
+                  const found = ASSIGNED_POOLS.find(p => p.value === v);
+                  const cat = found?.group === "Corporate Pools" ? "corporate"
+                            : found?.group === "Regional Pools" ? "region"
+                            : "zone";
+                  update("pool_name", v);
+                  update("pool_category", cat);
+                }}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select Assigned Pool" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="corporate">Corporate</SelectItem>
-                    <SelectItem value="zone">Zone</SelectItem>
-                    <SelectItem value="region">Region</SelectItem>
+                    {["Corporate Pools", "Regional Pools", "Other"].map(group => (
+                      <SelectGroup key={group}>
+                        <SelectLabel>{group}</SelectLabel>
+                        {ASSIGNED_POOLS.filter(p => p.group === group).map(p => (
+                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <Label className="text-primary font-medium">Pool</Label>
-                <Select value={form.pool_name} onValueChange={v => update("pool_name", v)} disabled={!form.pool_category}>
-                  <SelectTrigger className="h-10"><SelectValue placeholder={form.pool_category ? "Select Pool" : "Select category first"} /></SelectTrigger>
-                  <SelectContent>
-                    {filteredPools.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <p className="text-[11px] text-muted-foreground mt-1">Operational pool the trip will be served from.</p>
               </div>
               <div className="md:col-span-2">
                 <Label className="text-primary font-medium">Contact Phone (during trip)</Label>
