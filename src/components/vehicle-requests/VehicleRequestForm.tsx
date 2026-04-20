@@ -229,7 +229,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         requester_id: requesterId,
         requester_name: requesterName,
         request_type: form.request_type,
-        purpose: form.purpose + filedOnBehalfNote,
+        purpose:
+          form.purpose +
+          filedOnBehalfNote +
+          (form.contact_phone ? `\n\nContact phone: ${form.contact_phone}` : ""),
         needed_from: neededFrom,
         needed_until: neededUntil,
         departure_place: form.departure_place || null,
@@ -238,7 +241,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         departure_lng: form.departure_lng,
         destination_lat: form.destination_lat,
         destination_lng: form.destination_lng,
-        num_vehicles: parseInt(form.num_vehicles) || 1,
+        num_vehicles: allowsMultipleVehicles ? (parseInt(form.num_vehicles) || 1) : 1,
         passengers: parseInt(form.passengers) || 1,
         vehicle_type: form.vehicle_type || null,
         trip_type: form.trip_type || null,
@@ -247,6 +250,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         start_time: form.start_time || null,
         end_time: form.end_time || null,
         project_number: form.request_type === "project_operation" ? (form.project_number || null) : null,
+        priority: form.priority || "normal",
         status: "pending",
       };
 
