@@ -467,7 +467,27 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
 
               <TabsContent value="notes" className="mt-0">
                 <Section icon={<FileText className="w-5 h-5 text-primary" />} title="Additional Information">
-                  <Textarea value={formData.notes} onChange={e => set("notes", e.target.value)} placeholder="Additional information..." rows={6} />
+                  <div className="space-y-1.5">
+                    <Textarea
+                      value={formData.notes}
+                      onChange={e => set("notes", e.target.value)}
+                      onBlur={() => fieldValidation.handleBlur("notes", formData.notes)}
+                      placeholder="Additional information..."
+                      rows={6}
+                      maxLength={2000}
+                      className={fieldValidation.getError("notes") ? "border-destructive" : ""}
+                    />
+                    {fieldValidation.getError("notes") ? (
+                      <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {fieldValidation.getError("notes")}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground text-right">
+                        {formData.notes.length}/2000 characters
+                      </p>
+                    )}
+                  </div>
                 </Section>
               </TabsContent>
             </div>
