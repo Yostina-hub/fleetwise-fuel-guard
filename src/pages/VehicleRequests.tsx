@@ -346,19 +346,23 @@ const VehicleRequests = () => {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={exportCsv}>
-                <Download className="w-3.5 h-3.5" /> Export
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={onImportClick}>
-                <Upload className="w-3.5 h-3.5" /> Import
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx"
-                className="hidden"
-                onChange={onImportFile}
-              />
+              {canExportImport && (
+                <>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={exportCsv}>
+                    <Download className="w-3.5 h-3.5" /> Export
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={onImportClick}>
+                    <Upload className="w-3.5 h-3.5" /> Import
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,.xlsx"
+                    className="hidden"
+                    onChange={onImportFile}
+                  />
+                </>
+              )}
               <Button
                 size="sm"
                 className="gap-1.5 bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 shadow-md shadow-blue-500/20"
