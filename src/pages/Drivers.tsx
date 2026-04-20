@@ -517,7 +517,7 @@ const Drivers = () => {
                         onEdit: () => handleEditDriver(driver),
                         onDelete: () => handleDeleteDriver(driver),
                         onScoring: () => navigate(`/driver-scoring`),
-                        t,
+                        t: (key: string, fallback?: string) => t(key, fallback ?? key) as string,
                       };
                       return (
                         <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50">
