@@ -179,6 +179,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       setPhotoFrontFile(null); setPhotoBackFile(null); setPhotoLeftFile(null); setPhotoRightFile(null);
       fieldValidation.reset();
       setActiveSection("basic");
+      clearDraft(DRAFT_KEY, organizationId);
       onOpenChange(false);
     },
     onError: (error: any) => {
