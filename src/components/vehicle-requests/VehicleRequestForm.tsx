@@ -672,14 +672,41 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     </>
   );
 
+  // Driver-only users get a friendly explainer instead of the form.
+  const blockedBody = (
+    <div className="space-y-3 py-4 text-center">
+      <DialogHeader>
+        <DialogTitle className="flex items-center justify-center gap-2">
+          <Car className="w-5 h-5 text-primary" />
+          Fleet Requests Are Not Available
+        </DialogTitle>
+        <DialogDescription className="pt-2">
+          Drivers cannot initiate fleet requests. Vehicle requests are filed by
+          end-users, supervisors, dispatchers, and managers — who then assign
+          you to the trip after approval.
+        </DialogDescription>
+      </DialogHeader>
+      <p className="text-sm text-muted-foreground">
+        Please ask your supervisor or dispatcher to file a request on your behalf.
+      </p>
+      {!embedded && (
+        <DialogFooter className="sm:justify-center pt-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('common.close', 'Close')}
+          </Button>
+        </DialogFooter>
+      )}
+    </div>
+  );
+
   if (embedded) {
-    return <div className="space-y-4">{body}</div>;
+    return <div className="space-y-4">{isDriverOnly ? blockedBody : body}</div>;
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        {body}
+        {isDriverOnly ? blockedBody : body}
       </DialogContent>
     </Dialog>
   );
