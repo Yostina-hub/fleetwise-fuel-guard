@@ -656,17 +656,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
             )}
 
-            {/* Validation messages */}
-            {validationErrors.length > 0 && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive space-y-1">
-                {validationErrors.map((e, i) => (
-                  <div key={i} className="flex items-start gap-1.5">
-                    <X className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                    <span>{e}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Per-field errors are rendered inline below their inputs. */}
 
             {isField && (
               <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-xs text-muted-foreground">
