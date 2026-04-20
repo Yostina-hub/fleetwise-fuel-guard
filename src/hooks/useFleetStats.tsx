@@ -59,7 +59,11 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
         vehicleQuery = vehicleQuery.eq("fuel_type", fuelTypeFilter);
       }
       if (ownershipFilter !== "all") {
-        vehicleQuery = vehicleQuery.eq("ownership_type", ownershipFilter);
+        if (ownershipFilter === "unspecified") {
+          vehicleQuery = vehicleQuery.or("ownership_type.is.null,ownership_type.eq.");
+        } else {
+          vehicleQuery = vehicleQuery.eq("ownership_type", ownershipFilter);
+        }
       }
       if (searchQuery) {
         vehicleQuery = vehicleQuery.or(
