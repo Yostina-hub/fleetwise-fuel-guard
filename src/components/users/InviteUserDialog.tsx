@@ -72,14 +72,11 @@ const sanitizeFullName = (v: string): string =>
 /*  Zod schema                                                      */
 /* ---------------------------------------------------------------- */
 
-const ROLE_VALUES = [
-  "super_admin",
-  "org_admin",
-  "operator",
-  "fleet_manager",
-  "driver",
-  "technician",
-] as const;
+/** Roles whitelisted by the create-user edge function (mirrors validateEnum). */
+const ROLE_VALUES = APP_ROLES.map((r) => r.value) as [AppRole, ...AppRole[]];
+
+/** Roles only super_admin may assign (admin tier). */
+const ADMIN_ONLY_ROLES: ReadonlySet<AppRole> = new Set(["super_admin", "org_admin"]);
 
 const NAME_REGEX = /^[\p{L}][\p{L}\s'.-]{0,99}$/u;
 
@@ -112,19 +109,6 @@ const inviteUserSchema = z.object({
 });
 
 type FieldErrors = Partial<Record<keyof z.infer<typeof inviteUserSchema>, string>>;
-
-/* ---------------------------------------------------------------- */
-/*  Roles                                                           */
-/* ---------------------------------------------------------------- */
-
-const allRoles: { value: (typeof ROLE_VALUES)[number]; label: string; adminOnly?: boolean }[] = [
-  { value: "super_admin", label: "Super Admin", adminOnly: true },
-  { value: "org_admin", label: "Org Admin", adminOnly: true },
-  { value: "operator", label: "Operator" },
-  { value: "fleet_manager", label: "Fleet Manager" },
-  { value: "driver", label: "Driver" },
-  { value: "technician", label: "Technician" },
-];
 
 /* ---------------------------------------------------------------- */
 /*  Component                                                       */
