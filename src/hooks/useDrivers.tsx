@@ -42,6 +42,44 @@ export interface Driver {
   employment_type?: string;
   department?: string;
   outsource_company?: string;
+  // Identity & demographics
+  middle_name?: string;
+  gender?: string;
+  date_of_birth?: string;
+  national_id?: string;
+  national_id_verified?: boolean;
+  national_id_url?: string;
+  govt_id_type?: string;
+  // License extra
+  license_type?: string;
+  license_issue_date?: string;
+  license_verified?: boolean;
+  license_front_url?: string;
+  license_back_url?: string;
+  // Address
+  address_region?: string;
+  address_zone?: string;
+  address_woreda?: string;
+  address_specific?: string;
+  // Employment extra
+  joining_date?: string;
+  experience_years?: number;
+  route_type?: string;
+  assigned_pool?: string;
+  // Verification
+  verification_status?: string;
+  verified_by?: string;
+  verified_at?: string;
+  verification_notes?: string;
+  processing_restricted?: boolean;
+  processing_restricted_at?: string;
+  processing_restricted_reason?: string;
+  // Banking
+  bank_name?: string;
+  bank_account?: string;
+  telebirr_account?: string;
+  // Misc
+  blood_type?: string;
 }
 
 export const useDrivers = () => {

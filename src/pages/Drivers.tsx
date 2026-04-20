@@ -44,6 +44,15 @@ import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
 import DriversQuickStats from "@/components/fleet/DriversQuickStats";
 import DriversQuickActions from "@/components/fleet/DriversQuickActions";
 import DriverCategoryCards from "@/components/fleet/DriverCategoryCards";
+import DriverColumnsPicker from "@/components/fleet/DriverColumnsPicker";
+import {
+  DRIVER_COLUMNS,
+  COLUMN_BY_ID,
+  DEFAULT_VISIBLE_COLUMNS,
+  loadVisibleColumns,
+  saveVisibleColumns,
+  type DriverColumnId,
+} from "@/components/fleet/driverTableColumns";
 import { exportDriversToCSV, exportAllDriversToCSV } from "@/components/fleet/DriverExportUtils";
 import { 
   Users, 
@@ -85,6 +94,16 @@ const Drivers = () => {
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState("all");
   const [assignmentFilter, setAssignmentFilter] = useState<"all" | "assigned" | "unassigned">("all");
   const [isExporting, setIsExporting] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<DriverColumnId[]>(() => loadVisibleColumns());
+  const updateVisibleColumns = (cols: DriverColumnId[]) => {
+    setVisibleColumns(cols);
+    saveVisibleColumns(cols);
+  };
+  const visibleColumnDefs = useMemo(
+    () => visibleColumns.map((id) => COLUMN_BY_ID[id]).filter(Boolean),
+    [visibleColumns],
+  );
+  const isColVisible = (id: DriverColumnId) => visibleColumns.includes(id);
   
   const PAGE_SIZE = 10;
   const { 
