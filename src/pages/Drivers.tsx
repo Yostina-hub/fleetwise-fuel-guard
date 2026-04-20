@@ -55,6 +55,7 @@ import {
   type DriverColumnId,
 } from "@/components/fleet/driverTableColumns";
 import { exportDriversToCSV, exportAllDriversToCSV } from "@/components/fleet/DriverExportUtils";
+import { printRecords, exportRecordsToPdf, type PrintColumn } from "@/components/fleet/printUtils";
 import { 
   Users, 
   Search, 
@@ -75,6 +76,9 @@ import {
   Activity,
   Upload,
   Download,
+  Printer,
+  FileDown,
+  ChevronDown,
   X
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
