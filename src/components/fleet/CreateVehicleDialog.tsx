@@ -541,8 +541,15 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
           </ScrollArea>
         </Tabs>
 
-        <DialogFooter className="p-6 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+        <DialogFooter className="p-6 pt-4 border-t gap-2 sm:gap-2">
+          {isDirty && (
+            <Button variant="ghost" onClick={handleDiscardDraft} className="text-destructive hover:text-destructive">
+              Discard draft
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {isDirty ? "Close & keep draft" : "Cancel"}
+          </Button>
           <Button onClick={handleSubmit} disabled={createMutation.isPending} className="min-w-[120px]">
             {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Register Vehicle
