@@ -235,16 +235,26 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const user = (await supabase.auth.getUser()).data.user;
-      const profile = (await supabase.from("profiles").select("full_name").eq("id", user!.id).single()).data;
+      // The JWT identity (always the real signed-in user — super_admin while
+      // impersonating). Used only as a fallback when there's no impersonation
+      // override in play.
+      const jwtUser = (await supabase.auth.getUser()).data.user;
+      const jwtProfile = (await supabase.from("profiles").select("full_name").eq("id", jwtUser!.id).single()).data;
 
-      // Super admin may file on behalf of another user; otherwise use self.
-      const requesterId = isSuperAdmin && onBehalfOf ? onBehalfOf.id : user!.id;
-      const requesterName = isSuperAdmin && onBehalfOf
-        ? onBehalfOf.name
-        : (profile?.full_name || user!.email || "Unknown");
-      const filedOnBehalfNote = isSuperAdmin && onBehalfOf
-        ? ` (filed by ${profile?.full_name || user!.email} on behalf of ${onBehalfOf.name})`
+      // Acting identity = impersonated user when present, else JWT user.
+      const actingUser = user ?? jwtUser;
+      const actingProfile = profile ?? jwtProfile;
+
+      // Real super_admin can file on behalf of someone else (manual picker OR
+      // automatic impersonation override). Otherwise we file as the acting user.
+      const useOnBehalf = isRealSuperAdmin && !!onBehalfOf;
+      const requesterId = useOnBehalf ? onBehalfOf!.id : actingUser!.id;
+      const requesterName = useOnBehalf
+        ? onBehalfOf!.name
+        : (actingProfile?.full_name || actingUser!.email || "Unknown");
+      const filerName = realProfile?.full_name || realUser?.email || jwtProfile?.full_name || jwtUser?.email || "Admin";
+      const filedOnBehalfNote = useOnBehalf
+        ? ` (filed by ${filerName} on behalf of ${onBehalfOf!.name}${isImpersonating ? " — via impersonation" : ""})`
         : "";
 
       let neededFrom: string;
