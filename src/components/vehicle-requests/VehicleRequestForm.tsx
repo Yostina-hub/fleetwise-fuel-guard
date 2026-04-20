@@ -348,7 +348,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     },
     onSuccess: (data: any) => {
       toast.success(
-        isSuperAdmin && onBehalfOf
+        isRealSuperAdmin && onBehalfOf
           ? `Vehicle request submitted on behalf of ${onBehalfOf.name}`
           : "Vehicle request submitted successfully"
       );
