@@ -23181,6 +23181,60 @@ export type Database = {
           },
         ]
       }
+      vehicle_request_comments: {
+        Row: {
+          author_id: string
+          author_name: string | null
+          author_role: string | null
+          body: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          organization_id: string
+          request_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          author_name?: string | null
+          author_role?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          organization_id: string
+          request_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          author_name?: string | null
+          author_role?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          organization_id?: string
+          request_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_request_comments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_request_comments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_requests: {
         Row: {
           actual_assignment_minutes: number | null
@@ -26275,6 +26329,7 @@ export type Database = {
         Args: { p_notes?: string; p_request_id: string; p_result: string }
         Returns: undefined
       }
+      is_basic_user_only: { Args: { _user_id: string }; Returns: boolean }
       is_driver_only: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_vehicle_online: { Args: { vehicle_uuid: string }; Returns: boolean }
