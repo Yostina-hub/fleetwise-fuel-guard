@@ -13,6 +13,7 @@ import {
   CURRENT_CONDITION_OPTIONS, SAFETY_COMFORT_CATEGORIES, ASSIGNED_LOCATIONS,
 } from "./formConstants";
 import { AssignedLocationPicker } from "./AssignedLocationPicker";
+import { DatePickerField } from "./DatePickerField";
 
 type SetFn = (field: string, value: string | number) => void;
 type BlurFn = (field: string, value: unknown) => void;
@@ -273,7 +274,7 @@ function SpecPane({ formData, set, onBlur, getError }: { formData: any; set: Set
         <Input type="number" value={formData.year} onChange={e => set("year", parseInt(e.target.value) || new Date().getFullYear())} onBlur={blur("year")} placeholder="YYYY" />
       </Field>
       <Field label="MFG Date" hint="Exact factory date (optional)" error={err("mfg_date")}>
-        <Input type="date" value={formData.mfg_date || ""} onChange={e => set("mfg_date", e.target.value)} onBlur={blur("mfg_date")} />
+        <DatePickerField value={formData.mfg_date || ""} onChange={v => set("mfg_date", v)} onBlur={blur("mfg_date")} maxDate={new Date()} />
       </Field>
       <Field label="Color" error={err("color")}><Input value={formData.color} onChange={e => set("color", e.target.value)} onBlur={blur("color")} placeholder="e.g. White" maxLength={40} /></Field>
 

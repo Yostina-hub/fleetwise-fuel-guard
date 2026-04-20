@@ -26,6 +26,7 @@ import {
   ADMIN_REGIONS,
 } from "./formConstants";
 import { AssignedLocationPicker } from "./AssignedLocationPicker";
+import { DatePickerField } from "./DatePickerField";
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
 
@@ -383,9 +384,9 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
               <Section icon={<Shield className="w-5 h-5 text-primary" />} title="Legal & Compliance">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Field label="Registration Certificate No"><Input value={formData.registration_cert_no} onChange={e => set("registration_cert_no", e.target.value)} /></Field>
-                  <Field label="Registration Expiry"><Input type="date" value={formData.registration_expiry} onChange={e => set("registration_expiry", e.target.value)} /></Field>
+                  <Field label="Registration Expiry"><DatePickerField value={formData.registration_expiry || ""} onChange={v => set("registration_expiry", v)} /></Field>
                   <Field label="Insurance Policy No"><Input value={formData.insurance_policy_no} onChange={e => set("insurance_policy_no", e.target.value)} /></Field>
-                  <Field label="Insurance Expiry"><Input type="date" value={formData.insurance_expiry} onChange={e => set("insurance_expiry", e.target.value)} /></Field>
+                  <Field label="Insurance Expiry"><DatePickerField value={formData.insurance_expiry || ""} onChange={v => set("insurance_expiry", v)} /></Field>
                   <Field label="Commercial Permit">
                     <Select value={formData.commercial_permit} onValueChange={v => set("commercial_permit", v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -395,7 +396,7 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                       </SelectContent>
                     </Select>
                   </Field>
-                  <Field label="Permit Expiry"><Input type="date" value={formData.permit_expiry} onChange={e => set("permit_expiry", e.target.value)} /></Field>
+                  <Field label="Permit Expiry"><DatePickerField value={formData.permit_expiry || ""} onChange={v => set("permit_expiry", v)} /></Field>
                 </div>
               </Section>
 
