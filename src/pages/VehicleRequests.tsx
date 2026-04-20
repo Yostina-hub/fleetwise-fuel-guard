@@ -852,13 +852,15 @@ const KpiCard = ({
 };
 
 const StatusPill = ({ status, autoClosed }: { status: string; autoClosed?: boolean }) => {
+  // Ethio Telecom brand palette: blue #0072BC, teal/green #00A693, orange #F7941D, lime #8DC63F
   const map: Record<string, string> = {
-    pending: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
-    approved: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
-    assigned: "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30",
-    completed: "bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-500/30",
+    pending: "bg-[#F7941D]/15 text-[#F7941D] border-[#F7941D]/30",
+    approved: "bg-[#8DC63F]/15 text-[#6BA52F] dark:text-[#8DC63F] border-[#8DC63F]/30",
+    assigned: "bg-[#0072BC]/15 text-[#0072BC] dark:text-[#3DA1E0] border-[#0072BC]/30",
+    completed: "bg-[#00A693]/15 text-[#00A693] border-[#00A693]/30",
     rejected: "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30",
     cancelled: "bg-muted text-muted-foreground border-border",
+    closed: "bg-[#0072BC]/10 text-[#0072BC] dark:text-[#3DA1E0] border-[#0072BC]/20",
   };
   return (
     <span
