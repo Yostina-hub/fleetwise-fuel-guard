@@ -571,6 +571,15 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
           <Button size="sm" variant="outline" onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
         )}
       </div>
+
+      {activeAssignment && (
+        <AssignmentCheckInDialog
+          request={request}
+          assignment={activeAssignment}
+          open={!!activeAssignment}
+          onClose={() => setActiveAssignment(null)}
+        />
+      )}
     </div>
   );
 };
