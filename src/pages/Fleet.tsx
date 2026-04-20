@@ -467,6 +467,18 @@ const Fleet = () => {
           }}
         />
 
+        {/* Ownership Type Quick Stats */}
+        <FleetOwnershipStats
+          buckets={ownershipStats.buckets}
+          activeFilter={ownershipFilter}
+          onFilterChange={(key) => {
+            setOwnershipFilter(key);
+            setTimeout(() => {
+              document.getElementById("fleet-vehicle-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 50);
+          }}
+        />
+
 
         {/* Bulk Actions Toolbar */}
         {selectedIds.length > 0 && (
