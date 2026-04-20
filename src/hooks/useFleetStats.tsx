@@ -82,20 +82,28 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
       // Fetch telemetry for all filtered vehicles to determine real-time status
       const { data: telemetry, error: telemetryError } = await supabase
         .from("vehicle_telemetry")
-        .select("vehicle_id, device_connected, engine_on, speed_kmh, last_communication_at")
+        .select("vehicle_id, device_connected, engine_on, ignition_on, speed_kmh, last_communication_at")
         .in("vehicle_id", vehicleIds)
         .order("last_communication_at", { ascending: false });
 
       if (telemetryError) throw telemetryError;
 
       // Get latest telemetry per vehicle
-      const telemetryMap = new Map<string, { device_connected: boolean; engine_on: boolean; speed_kmh: number }>();
+      const telemetryMap = new Map<string, {
+        device_connected: boolean;
+        engine_on: boolean;
+        ignition_on?: boolean;
+        speed_kmh: number;
+        last_communication_at?: string | null;
+      }>();
       telemetry?.forEach(t => {
         if (!telemetryMap.has(t.vehicle_id)) {
           telemetryMap.set(t.vehicle_id, {
             device_connected: t.device_connected || false,
             engine_on: t.engine_on || false,
-            speed_kmh: t.speed_kmh || 0
+            ignition_on: t.ignition_on || false,
+            speed_kmh: t.speed_kmh || 0,
+            last_communication_at: t.last_communication_at || null,
           });
         }
       });
