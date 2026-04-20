@@ -27,6 +27,8 @@ import { TerminalSettingsPanel } from "@/components/fleet/TerminalSettingsPanel"
 import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
 import { VehicleTableView } from "@/components/fleet/VehicleTableView";
 import { useFleetExport } from "@/components/fleet/FleetExportUtils";
+import { printRecords, exportRecordsToPdf, type PrintColumn } from "@/components/fleet/printUtils";
+import { useOrganization } from "@/hooks/useOrganization";
 import FleetQuickStats from "@/components/fleet/FleetQuickStats";
 import FleetOwnershipStats from "@/components/fleet/FleetOwnershipStats";
 import { useFleetOwnershipStats } from "@/hooks/useFleetOwnershipStats";
@@ -49,6 +51,8 @@ import {
   ChevronDown,
   FileSpreadsheet,
   FileText,
+  Printer,
+  FileDown,
 } from "lucide-react";
 import {
   DropdownMenu,
