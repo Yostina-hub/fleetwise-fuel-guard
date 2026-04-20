@@ -29,7 +29,7 @@ import { VehicleTableView } from "@/components/fleet/VehicleTableView";
 import { useFleetExport } from "@/components/fleet/FleetExportUtils";
 import FleetQuickStats from "@/components/fleet/FleetQuickStats";
 import FleetQuickActions from "@/components/fleet/FleetQuickActions";
-import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
+import { FleetAutomationsMenu } from "@/components/fleet/FleetAutomationsMenu";
 import { VehicleGridSkeleton, StatsRowSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
 import { 
