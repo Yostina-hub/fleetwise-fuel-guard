@@ -134,7 +134,11 @@ export const useVehiclesPaginated = (
         }
 
         if (ownershipFilter !== "all") {
-          query = query.eq("ownership_type", ownershipFilter);
+          if (ownershipFilter === "unspecified") {
+            query = query.or("ownership_type.is.null,ownership_type.eq.");
+          } else {
+            query = query.eq("ownership_type", ownershipFilter);
+          }
         }
 
         if (searchQuery) {
@@ -194,7 +198,11 @@ export const useVehiclesPaginated = (
       }
 
       if (ownershipFilter !== "all") {
-        query = query.eq("ownership_type", ownershipFilter);
+        if (ownershipFilter === "unspecified") {
+          query = query.or("ownership_type.is.null,ownership_type.eq.");
+        } else {
+          query = query.eq("ownership_type", ownershipFilter);
+        }
       }
 
       if (searchQuery) {
