@@ -333,76 +333,64 @@ const TripManagement = () => {
                 </div>
               </div>
             ) : viewMode === "pipeline" ? (
-              <TripPipelineBoard
-                trips={filteredTrips}
-                onSubmit={(id) => submitRequest.mutate(id)}
+              <VehicleRequestPipelineBoard
+                requests={filteredTrips}
                 onApprove={canApprove ? handleQuickApprove : undefined}
                 onReject={canApprove ? handleQuickReject : undefined}
                 onViewDetails={handleViewDetails}
-                isSubmitting={submitRequest.isPending}
+                onAssign={(req) => { setSelectedTrip(req); setAssignOpen(true); }}
                 visibleColumns={statusFilter ? [statusFilter] : undefined}
               />
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 <AnimatePresence mode="popLayout">
-                  {filteredTrips.map((trip: any) => (
-                    <TripCard
-                      key={trip.id}
-                      trip={trip}
-                      onSubmit={(id) => submitRequest.mutate(id)}
+                  {filteredTrips.map((req: any) => (
+                    <VehicleRequestCard
+                      key={req.id}
+                      request={req}
                       onApprove={canApprove ? handleQuickApprove : undefined}
                       onReject={canApprove ? handleQuickReject : undefined}
                       onViewDetails={handleViewDetails}
-                      isSubmitting={submitRequest.isPending}
+                      onAssign={(r) => { setSelectedTrip(r); setAssignOpen(true); }}
                     />
                   ))}
                 </AnimatePresence>
                 {filteredTrips.length === 0 && (
                   <div className="col-span-full text-center py-16 text-muted-foreground">
-                    No trips found. Create your first trip request above.
+                    No requests found. Create one with “Full Request” above.
                   </div>
                 )}
               </div>
             ) : (
               <div className="space-y-1.5">
                 <AnimatePresence mode="popLayout">
-                  {filteredTrips.map((trip: any) => (
+                  {filteredTrips.map((req: any) => (
                     <motion.div
-                      key={trip.id}
+                      key={req.id}
                       layout
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      onClick={() => handleViewDetails(trip)}
+                      onClick={() => handleViewDetails(req)}
                       className="flex items-center gap-4 px-4 py-2.5 rounded-lg border border-border bg-card hover:border-primary/30 hover:bg-primary/5 cursor-pointer transition-colors"
                     >
                       <span className="font-mono text-xs font-semibold text-primary w-24 shrink-0">
-                        {trip.request_number}
+                        {req.request_number ?? req.id.slice(0, 8)}
                       </span>
-                      <span className="text-sm truncate flex-1">{trip.purpose}</span>
-                      <span className="text-xs text-muted-foreground w-28 shrink-0 hidden md:block">
-                        {trip.pickup_geofence?.name || "—"}
+                      <span className="text-sm truncate flex-1">{req.purpose || "(no purpose)"}</span>
+                      <span className="text-xs text-muted-foreground w-32 shrink-0 hidden md:block">
+                        {req.pool_name || req.pool_location || "—"}
                       </span>
                       <span className="text-xs text-muted-foreground w-32 shrink-0 hidden lg:block">
-                        {new Date(trip.pickup_at).toLocaleDateString()}
+                        {req.needed_from ? new Date(req.needed_from).toLocaleDateString() : "—"}
                       </span>
-                      <StatusPill status={trip.status} />
-                      {trip.status === "draft" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 text-[10px] gap-1"
-                          onClick={(e) => { e.stopPropagation(); submitRequest.mutate(trip.id); }}
-                        >
-                          Submit
-                        </Button>
-                      )}
+                      <StatusPill status={req.status} />
                     </motion.div>
                   ))}
                 </AnimatePresence>
                 {filteredTrips.length === 0 && (
                   <div className="text-center py-16 text-muted-foreground">
-                    No trips found.
+                    No requests found.
                   </div>
                 )}
               </div>
