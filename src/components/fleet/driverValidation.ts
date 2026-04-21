@@ -21,8 +21,10 @@ const NAME_REGEX = /^[\p{L}\s'.-]+$/u;
 const ETH_PHONE_REGEX = /^(?:09\d{8}|\+2519\d{8})$/;
 // Telebirr: typically 9 digits (without leading 0) or full 10-digit phone
 const TELEBIRR_REGEX = /^(?:9\d{8}|09\d{8})$/;
-// FAN / National ID: digits, possibly with dashes, 6–30 chars
-const NATIONAL_ID_REGEX = /^[A-Z0-9-]{6,30}$/i;
+// Ethiopian Fayda (FAN) National ID: exactly 12 digits.
+// We strip spaces and dashes during validation so common formatting variants
+// (e.g. "1234-5678-9012") still pass without surprising the operator.
+const NATIONAL_ID_FAN_REGEX = /^\d{12}$/;
 
 // ----- Reusable atoms with descriptive errors -----
 const trimmedOptional = (label: string, max: number) =>
@@ -164,8 +166,8 @@ export const driverFieldSchemas = {
     .optional()
     .or(z.literal(""))
     .refine(
-      (v) => !v || NATIONAL_ID_REGEX.test(v),
-      "National ID (FAN) must be 6–30 alphanumeric characters",
+      (v) => !v || NATIONAL_ID_FAN_REGEX.test(v.replace(/[\s-]/g, "")),
+      "National ID (FAN) must be exactly 12 digits (e.g. 123456789012)",
     ),
   // Ethiopian license category — must be one of the official categories
   license_type: z
