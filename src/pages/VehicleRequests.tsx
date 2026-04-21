@@ -28,6 +28,8 @@ import {
   XCircle,
   Truck,
   Eye,
+  Pencil,
+  RotateCcw,
   MessageSquare,
   LogIn,
   Shuffle,
