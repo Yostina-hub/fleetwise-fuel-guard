@@ -98,7 +98,7 @@ export const useVehiclesPaginated = (
    */
   const resolveScopeDepotIds = useCallback(async (): Promise<string[] | null> => {
     if (scopeFilter === "all") return null;
-    let depotQuery = supabase.from("depots").select("id").eq("depot_type", scopeFilter);
+    let depotQuery: any = supabase.from("depots").select("id").eq("depot_type", scopeFilter);
     if (!isViewingAllOrgs && organizationId) {
       depotQuery = depotQuery.eq("organization_id", organizationId);
     }
