@@ -32,6 +32,9 @@ interface Props {
   onChange?: ChangeFn;
   getError?: ErrFn;
   getStatus?: StatusFn;
+  /** Optional controlled sub-tab (identity | spec | value). */
+  activeSubTab?: BasicSubTabId;
+  onSubTabChange?: (id: BasicSubTabId) => void;
 }
 
 const tabs = [
@@ -40,12 +43,21 @@ const tabs = [
   { id: "value",    label: "Valuation",      icon: Gauge,  hint: "Pricing, capacity & class" },
 ] as const;
 
+export type BasicSubTabId = typeof tabs[number]["id"];
+
 // Single source of truth — drives both tab rendering AND completion math.
-const TAB_FIELDS: Record<typeof tabs[number]["id"], string[]> = {
+export const TAB_FIELDS: Record<BasicSubTabId, string[]> = {
   identity: ["plate_number_part", "purpose_for", "specific_pool", "specific_location", "assigned_location", "vehicle_type", "vehicle_group"],
   spec:     ["make", "model", "model_code", "year", "mfg_date", "color", "vin", "engine_number", "transmission_type", "drive_type", "engine_cc", "fuel_type"],
   value:    ["purchasing_price", "current_market_price", "current_condition", "fuel_standard_km_per_liter", "seating_capacity", "loading_capacity_quintal", "year_of_ownership", "safety_comfort_category"],
 };
+
+/** Reverse map: field → sub-tab. Useful for jumping to an errored field. */
+export const BASIC_FIELD_TO_SUBTAB: Record<string, BasicSubTabId> = Object.entries(TAB_FIELDS)
+  .reduce((acc, [tabId, fields]) => {
+    fields.forEach((f) => { acc[f] = tabId as BasicSubTabId; });
+    return acc;
+  }, {} as Record<string, BasicSubTabId>);
 
 export default function BasicInfoTabs({ formData, set, plateNumber, onBlur, onChange, getError, getStatus }: Props) {
   const [active, setActive] = useState<typeof tabs[number]["id"]>("identity");
