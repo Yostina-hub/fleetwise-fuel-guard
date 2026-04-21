@@ -17,6 +17,8 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useDriverScope } from "@/hooks/useDriverScope";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
+import { subDays, startOfDay, endOfDay } from "date-fns";
 
 const statusColors: Record<string, string> = {
   pending: "secondary", approved: "default", assigned: "default",
