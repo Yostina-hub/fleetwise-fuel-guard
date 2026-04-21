@@ -19,6 +19,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { DateTimePicker, combineDateAndTime } from "@/components/ui/date-time-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 import { LocationPickerField } from "@/components/shared/LocationPickerField";
 import { VEHICLE_TYPES_OPTIONS, ASSIGNED_POOLS } from "@/components/fleet/formConstants";
 import { AlertCircle } from "lucide-react";
