@@ -15,7 +15,7 @@
  * (enforced server-side by `is_basic_user_only` policy).
  */
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,8 @@ import {
   Loader2,
   RefreshCw,
   Eye,
+  Pencil,
+  Trash2,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -58,6 +60,18 @@ import {
   RequestDetailDrawer,
   type RequestDetail,
 } from "@/components/requester-portal/RequestDetailDrawer";
+import { EditRequestDialog } from "@/components/requester-portal/EditRequestDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 type StatusFilter = "all" | (typeof REQUEST_STATUSES)[number];
 
@@ -65,12 +79,42 @@ const RequesterPortal = () => {
   const { user } = useAuth();
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
+  const { toast } = useToast();
 
   const [openNew, setOpenNew] = useState(false);
   const [activeTab, setActiveTab] = useState<"requests" | "history">("requests");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selected, setSelected] = useState<RequestDetail | null>(null);
+  // Edit / delete are only available while a request is still `pending`
+  // (i.e. the approver has not acted on it yet). After approval the
+  // requester can only view / cancel via the detail drawer.
+  const [editing, setEditing] = useState<RequestDetail | null>(null);
+  const [deleting, setDeleting] = useState<RequestDetail | null>(null);
+
+  const deleteRequest = useMutation({
+    mutationFn: async (r: RequestDetail) => {
+      // Server-side gate via `.eq('status','pending')` — if status changed
+      // since render the row simply isn't matched, preventing accidental loss.
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .delete()
+        .eq("id", r.id)
+        .eq("status", "pending");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Request deleted" });
+      qc.invalidateQueries({ queryKey: ["my-vehicle-requests"] });
+      setDeleting(null);
+    },
+    onError: (e: any) =>
+      toast({
+        title: "Delete failed",
+        description: e.message,
+        variant: "destructive",
+      }),
+  });
 
   // Fetch this user's requests
   const { data: requests = [], isLoading, refetch } = useQuery({
@@ -262,6 +306,8 @@ const RequesterPortal = () => {
               loading={isLoading}
               items={filtered}
               onOpen={(r) => setSelected(r)}
+              onEdit={(r) => setEditing(r)}
+              onDelete={(r) => setDeleting(r)}
               emptyTitle="No requests yet"
               emptyHint='Click "New Request" to submit your first vehicle request.'
             />
@@ -273,6 +319,8 @@ const RequesterPortal = () => {
               loading={isLoading}
               items={history}
               onOpen={(r) => setSelected(r)}
+              onEdit={(r) => setEditing(r)}
+              onDelete={(r) => setDeleting(r)}
               emptyTitle="No closed requests"
               emptyHint="Completed, rejected and cancelled requests appear here."
             />
@@ -295,6 +343,35 @@ const RequesterPortal = () => {
         onOpenChange={(o) => !o && setSelected(null)}
         canCancel
       />
+      <EditRequestDialog
+        request={editing}
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+      />
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Request <span className="font-mono">{deleting?.request_number}</span> will
+              be permanently removed. This can only be done while the request is still pending.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteRequest.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleting) deleteRequest.mutate(deleting);
+              }}
+              disabled={deleteRequest.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteRequest.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
@@ -416,12 +493,16 @@ function RequestList({
   loading,
   items,
   onOpen,
+  onEdit,
+  onDelete,
   emptyTitle,
   emptyHint,
 }: {
   loading: boolean;
   items: RequestDetail[];
   onOpen: (r: RequestDetail) => void;
+  onEdit: (r: RequestDetail) => void;
+  onDelete: (r: RequestDetail) => void;
   emptyTitle: string;
   emptyHint: string;
 }) {
@@ -556,15 +637,41 @@ function RequestList({
                       </Badge>
                     </td>
                     <td className="py-2 px-3 text-center">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        title="View"
-                        onClick={() => onOpen(r)}
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </Button>
+                      {/* Edit / Delete are gated on `pending` — once the
+                          approver acts the requester can only view. */}
+                      <div className="inline-flex items-center gap-0.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          title="View"
+                          onClick={() => onOpen(r)}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        {r.status === "pending" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              title="Edit"
+                              onClick={() => onEdit(r)}
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              title="Delete"
+                              onClick={() => onDelete(r)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
