@@ -99,20 +99,60 @@ export function MapLocationPickerDialog({
   };
 
   /**
-   * Try the browser's Geolocation API. If the requester grants permission
-   * we use *their* current position as the map center, otherwise we fall
-   * back to the supplied initialLat/initialLng (Addis Ababa center).
+   * Ask the browser for the user's current location. Resolves with `null` if
+   * geolocation is unavailable, denied, or the request times out. Logs the
+   * exact reason to the console so users can debug "why didn't it find me?".
+   *
+   * NOTE: this works best when called as a result of a user gesture (button
+   * click). The auto-attempt on dialog open may be silently denied in
+   * permissions-restricted contexts (e.g. the Lovable preview iframe without
+   * `allow="geolocation"`); the explicit "Use my location" button below is
+   * the reliable path.
    */
   const requestCurrentLocation = (): Promise<{ lat: number; lng: number } | null> =>
     new Promise((resolve) => {
-      if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
-      const timer = setTimeout(() => resolve(null), 6000);
+      if (typeof navigator === "undefined" || !navigator.geolocation) {
+        console.warn("[MapPicker] geolocation API unavailable in this browser");
+        return resolve(null);
+      }
+      const timer = setTimeout(() => {
+        console.warn("[MapPicker] geolocation request timed out");
+        resolve(null);
+      }, 12000);
       navigator.geolocation.getCurrentPosition(
-        (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
-        () => { clearTimeout(timer); resolve(null); },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 60_000 },
+        (pos) => {
+          clearTimeout(timer);
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        (err) => {
+          clearTimeout(timer);
+          console.warn("[MapPicker] geolocation error:", err.code, err.message);
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30_000 },
       );
     });
+
+  /**
+   * Explicit "Use my location" handler — fires from a user click so the
+   * browser will reliably show its permission prompt. Re-centers the map and
+   * refreshes the location-name field via reverse geocoding.
+   */
+  const useMyLocation = async () => {
+    setIsLocating(true);
+    const here = await requestCurrentLocation();
+    setIsLocating(false);
+    if (!here) {
+      setSearchError(
+        "Couldn't access your location. Make sure location permission is allowed for this site, then try again.",
+      );
+      return;
+    }
+    setLat(parseFloat(here.lat.toFixed(6)));
+    setLng(parseFloat(here.lng.toFixed(6)));
+    const name = await reverseGeocode(here.lat, here.lng);
+    if (name) setLocationName(name);
+  };
 
   useEffect(() => {
     if (!open) return;
