@@ -170,11 +170,11 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
                         <span>{driver.first_name} {driver.last_name}</span>
                         <span className="text-muted-foreground text-xs">- {driver.license_number}</span>
                         {isVerified ? (
-                          <Badge variant="outline" className="ml-auto gap-1 border-emerald-500/40 text-emerald-600 text-[10px] py-0">
+                          <Badge variant="outline" className="ml-auto gap-1 border-success/40 text-success text-[10px] py-0">
                             <ShieldCheck className="w-3 h-3" /> Verified
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="ml-auto gap-1 border-amber-500/40 text-amber-600 text-[10px] py-0">
+                          <Badge variant="outline" className="ml-auto gap-1 border-warning/40 text-warning text-[10px] py-0">
                             <ShieldAlert className="w-3 h-3" /> Unverified
                           </Badge>
                         )}
