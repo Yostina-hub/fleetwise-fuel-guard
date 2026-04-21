@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Building2, Landmark, Handshake, KeyRound, Wrench, FileQuestion, Users } from "lucide-react";
+import { Building2, Landmark, Handshake, KeyRound, Wrench, FileQuestion, Users, Network, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface OwnershipCategory {
@@ -29,6 +29,24 @@ export const OWNERSHIP_CATEGORIES: OwnershipCategory[] = [
     color: "text-emerald-500",
     bg: "bg-emerald-500/10",
     ring: "ring-emerald-500/50",
+  },
+  {
+    key: "ethio_telecom",
+    label: "Ethio Telecom",
+    description: "ET-owned fleet",
+    icon: Network,
+    color: "text-sky-500",
+    bg: "bg-sky-500/10",
+    ring: "ring-sky-500/50",
+  },
+  {
+    key: "outsourced",
+    label: "Outsource",
+    description: "Outsourced supplier",
+    icon: Briefcase,
+    color: "text-orange-500",
+    bg: "bg-orange-500/10",
+    ring: "ring-orange-500/50",
   },
   {
     key: "commercial",
@@ -117,7 +135,7 @@ export const FleetOwnershipStats = ({
           </button>
         )}
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
         {OWNERSHIP_CATEGORIES.map((cat) => {
           const value = buckets[cat.key] ?? 0;
           const isActive = activeFilter === cat.key;
