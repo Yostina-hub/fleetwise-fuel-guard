@@ -253,8 +253,10 @@ export function MapLocationPickerDialog({
     const newLng = parseFloat(result.lon);
     setLat(parseFloat(newLat.toFixed(6)));
     setLng(parseFloat(newLng.toFixed(6)));
-    setLocationName(result.display_name.split(",")[0]);
-    setSearchQuery(result.display_name.split(",")[0]);
+    // Use the full place name from the map result so the saved location
+    // matches exactly what the user picked on the map.
+    setLocationName(result.display_name);
+    setSearchQuery(result.display_name);
     setSearchResults([]);
 
     if (mapRef.current) {
