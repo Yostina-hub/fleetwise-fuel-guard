@@ -60,6 +60,7 @@ import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/Vehicl
 import { MyVehicleRequestsSummary } from "@/components/vehicle-requests/MyVehicleRequestsSummary";
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
 import { DeleteRequestDialog } from "@/components/vehicle-requests/DeleteRequestDialog";
+import { EditRequestDialog } from "@/components/vehicle-requests/EditRequestDialog";
 import { MultiVehicleAssignDialog } from "@/components/vehicle-requests/MultiVehicleAssignDialog";
 import BulkImportVehicleRequestsDialog from "@/components/vehicle-requests/BulkImportVehicleRequestsDialog";
 import * as XLSX from "xlsx";
