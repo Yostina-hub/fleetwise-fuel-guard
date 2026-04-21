@@ -390,7 +390,7 @@ export const ErpOracleQueueCard = () => {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
               <Cable className="h-4 w-4" />
@@ -400,10 +400,42 @@ export const ErpOracleQueueCard = () => {
               Delegation/approval events automatically push to Oracle ERP every 5 minutes.
             </p>
           </div>
-          <Button size="sm" variant="outline" onClick={runNow} disabled={running || loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${running ? "animate-spin" : ""}`} />
-            Run sync now
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={bulkRetryFailed}
+              disabled={
+                bulkRetrying ||
+                running ||
+                loading ||
+                counts.failed + counts.awaiting_credentials === 0
+              }
+              title="Reset all failed + awaiting events to pending and run sync"
+            >
+              <Zap className={`h-4 w-4 mr-2 ${bulkRetrying ? "animate-pulse" : ""}`} />
+              Retry all failed
+              {counts.failed + counts.awaiting_credentials > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {counts.failed + counts.awaiting_credentials}
+                </Badge>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={exportCsv}
+              disabled={exporting || loading}
+              title="Download full ERP outbox as CSV for audit"
+            >
+              <Download className={`h-4 w-4 mr-2 ${exporting ? "animate-pulse" : ""}`} />
+              Export CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={runNow} disabled={running || loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${running ? "animate-spin" : ""}`} />
+              Run sync now
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
