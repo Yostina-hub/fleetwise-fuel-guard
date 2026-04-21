@@ -45,10 +45,17 @@ export function TimePicker({
 }: TimePickerProps) {
   const [open, setOpen] = React.useState(false);
 
+  // Parse partials too: "14:" (hour only) or ":30" (minute only) so users
+  // can see which half they still need to pick.
   const [hh, mm] = React.useMemo(() => {
-    if (!value || !/^\d{1,2}:\d{2}/.test(value)) return ["", ""] as const;
-    const [h, m] = value.split(":");
-    return [pad(parseInt(h, 10)), pad(parseInt(m, 10))] as const;
+    if (!value) return ["", ""] as const;
+    const [h = "", m = ""] = value.split(":");
+    const hNum = h ? parseInt(h, 10) : NaN;
+    const mNum = m ? parseInt(m, 10) : NaN;
+    return [
+      Number.isFinite(hNum) ? pad(hNum) : "",
+      Number.isFinite(mNum) ? pad(mNum) : "",
+    ] as const;
   }, [value]);
 
   const hours = React.useMemo(() => Array.from({ length: 24 }, (_, i) => pad(i)), []);
@@ -57,10 +64,14 @@ export function TimePicker({
     [minuteStep],
   );
 
-  const setHour = (h: string) => onChange(`${h}:${mm || "00"}`);
-  const setMinute = (m: string) => onChange(`${hh || "00"}:${m}`);
+  // Both hour and minute must be explicitly chosen — never silently default
+  // the missing component to "00", which would let users submit a half-picked
+  // time that looks complete (e.g. picking "14" → "14:00") and bypass the
+  // "End time required" validation.
+  const setHour = (h: string) => onChange(mm ? `${h}:${mm}` : `${h}:`);
+  const setMinute = (m: string) => onChange(hh ? `${hh}:${m}` : `:${m}`);
 
-  const display = hh && mm ? `${hh}:${mm}` : "";
+  const display = hh && mm ? `${hh}:${mm}` : (hh || mm) ? `${hh || "--"}:${mm || "--"}` : "";
 
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) onBlur?.(); }}>
