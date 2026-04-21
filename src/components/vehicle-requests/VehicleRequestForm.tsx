@@ -43,15 +43,35 @@ const POOL_HIERARCHY: Record<string, string[]> = {
   region: ["NR", "SR"],
 };
 
-const initialForm = {
+/**
+ * Build a "HH:MM" string from a Date, rounded *up* to the next 5-minute mark.
+ * Used so the form's default Start Time always reflects the requester's
+ * current machine time (not a stale 08:00) and is never already in the past
+ * by the time they finish filling the form.
+ */
+const roundedNowHHMM = (offsetMinutes = 0): string => {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() + offsetMinutes);
+  // round up to next 5-min boundary
+  const rem = d.getMinutes() % 5;
+  if (rem !== 0) d.setMinutes(d.getMinutes() + (5 - rem));
+  d.setSeconds(0, 0);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+};
+
+const buildInitialForm = () => ({
   request_type: "daily_operation",
   date: undefined as Date | undefined,
-  start_time: "08:00",
-  end_time: "17:00",
+  // Default to the requester's current machine time (rounded up to next 5 min).
+  // End defaults to start + 60 min so the slot is always valid out of the box.
+  start_time: roundedNowHHMM(),
+  end_time: roundedNowHHMM(60),
   start_date: undefined as Date | undefined,
-  start_date_time: "08:00",
+  start_date_time: roundedNowHHMM(),
   end_date: undefined as Date | undefined,
-  end_date_time: "18:00",
+  end_date_time: roundedNowHHMM(60),
   departure_place: "",
   destination: "",
   departure_lat: null as number | null,
@@ -69,7 +89,9 @@ const initialForm = {
   // New: priority + contact phone — surfaced for dispatch/approver context.
   priority: "normal",
   contact_phone: "",
-};
+});
+
+const initialForm = buildInitialForm();
 
 export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
