@@ -26292,6 +26292,10 @@ export type Database = {
         Returns: undefined
       }
       form_intent: { Args: { form_key: string }; Returns: string }
+      generate_vehicle_request_number: {
+        Args: { p_org_id: string; p_request_type?: string }
+        Returns: string
+      }
       generate_workflow_reference: {
         Args: { _org_id: string; _workflow_type: string }
         Returns: string
