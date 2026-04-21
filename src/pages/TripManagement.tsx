@@ -14,6 +14,16 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { useApprovals } from "@/hooks/useApprovals";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -125,6 +135,11 @@ const TripManagement = () => {
   const [exportOpen, setExportOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  // Reject-reason prompt — approvers must explain why a request is rejected
+  // so the requester sees actionable feedback (no silent rejections).
+  const [rejectTarget, setRejectTarget] = useState<{ tripId: string; requestNumber?: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "trips");
 
   // Sync tab from URL changes (sidebar deep links)
@@ -186,14 +201,52 @@ const TripManagement = () => {
     }
   };
 
+  // Quick-reject now opens a small dialog so the approver MUST supply a
+  // reason. The actual mutation runs in `submitReject` below.
   const handleQuickReject = async (tripId: string) => {
-    const approval = pendingApprovals?.find((a: any) => a.trip_request_id === tripId);
-    if (approval) {
-      await rejectRequest.mutateAsync({
-        approvalId: approval.id,
-        requestId: tripId,
-        comment: "Rejected via quick action",
-      });
+    const req = (requests || []).find((r: any) => r.id === tripId);
+    setRejectReason("");
+    setRejectTarget({ tripId, requestNumber: req?.request_number });
+  };
+
+  const submitReject = async () => {
+    if (!rejectTarget) return;
+    const reason = rejectReason.trim();
+    if (!reason) {
+      toast.error("Rejection reason is required");
+      return;
+    }
+    setRejectSubmitting(true);
+    try {
+      const approval = pendingApprovals?.find(
+        (a: any) => a.trip_request_id === rejectTarget.tripId,
+      );
+      if (approval) {
+        await rejectRequest.mutateAsync({
+          approvalId: approval.id,
+          requestId: rejectTarget.tripId,
+          comment: reason,
+        });
+      } else {
+        // No legacy trip_approvals row — write rejection directly onto the
+        // unified vehicle_requests row so the requester sees the reason.
+        const { error } = await (supabase as any)
+          .from("vehicle_requests")
+          .update({
+            status: "rejected",
+            approval_status: "rejected",
+            rejection_reason: reason,
+          })
+          .eq("id", rejectTarget.tripId);
+        if (error) throw error;
+        toast.success("Request rejected");
+      }
+      setRejectTarget(null);
+      setRejectReason("");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to reject request");
+    } finally {
+      setRejectSubmitting(false);
     }
   };
 
@@ -474,9 +527,71 @@ const TripManagement = () => {
       <ExportScheduleDialog open={exportOpen} onOpenChange={setExportOpen} />
       <UnifiedVehicleRequestDialog open={createOpen} onOpenChange={setCreateOpen} source="trip_management" />
       <CreateAssignmentDialog open={assignOpen} onOpenChange={setAssignOpen} />
+
+      {/* Reject-with-reason prompt — invoked by the kanban "X" quick action.
+          A reason is mandatory so the requester always gets actionable feedback. */}
+      <RejectReasonDialog
+        open={!!rejectTarget}
+        requestNumber={rejectTarget?.requestNumber}
+        reason={rejectReason}
+        onReasonChange={setRejectReason}
+        submitting={rejectSubmitting}
+        onCancel={() => { setRejectTarget(null); setRejectReason(""); }}
+        onConfirm={submitReject}
+      />
     </Layout>
   );
 };
+
+/* Small inline dialog component — kept here because it's only used by this page. */
+function RejectReasonDialog({
+  open, requestNumber, reason, onReasonChange, submitting, onCancel, onConfirm,
+}: {
+  open: boolean;
+  requestNumber?: string;
+  reason: string;
+  onReasonChange: (v: string) => void;
+  submitting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>Reject vehicle request</DialogTitle>
+          <DialogDescription>
+            {requestNumber
+              ? <>Provide a reason for rejecting <span className="font-mono">{requestNumber}</span>. The requester will be notified.</>
+              : "Provide a reason — the requester will be notified."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Label htmlFor="rej-reason">Rejection reason *</Label>
+          <Textarea
+            id="rej-reason"
+            value={reason}
+            onChange={(e) => onReasonChange(e.target.value)}
+            placeholder="e.g. Vehicle not available on requested date"
+            rows={4}
+            maxLength={500}
+            autoFocus
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} disabled={submitting}>Cancel</Button>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={submitting || !reason.trim()}
+          >
+            {submitting ? "Rejecting…" : "Confirm rejection"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const StatusPill = ({ status }: { status: string }) => {
   const styles: Record<string, string> = {
