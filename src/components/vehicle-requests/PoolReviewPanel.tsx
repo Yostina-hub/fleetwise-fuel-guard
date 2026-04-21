@@ -122,6 +122,8 @@ const consolidateRequests = (requests: any[]): { groups: ConsolidatedGroup[]; un
   return { groups: consolidatedGroups, ungrouped };
 };
 
+type ContractDecision = "approved" | "rejected" | "changes_requested";
+
 export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   const queryClient = useQueryClient();
   const { available } = useAvailableVehicles();
@@ -129,6 +131,24 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [selectedDriver, setSelectedDriver] = useState("");
   const [showConsolidated, setShowConsolidated] = useState(true);
+
+  // Contract-style decision dialog state
+  const [contractTarget, setContractTarget] = useState<{ requestId: string; requestNumber: string } | null>(null);
+  const [contractDecision, setContractDecision] = useState<ContractDecision>("approved");
+  const [contractConditions, setContractConditions] = useState("");
+  const [contractNotes, setContractNotes] = useState("");
+
+  const openContractDialog = (r: any, decision: ContractDecision = "approved") => {
+    setContractTarget({ requestId: r.id, requestNumber: r.request_number });
+    setContractDecision(decision);
+    setContractConditions(r.pool_review_conditions || "");
+    setContractNotes(r.pool_review_notes || "");
+  };
+  const closeContractDialog = () => {
+    setContractTarget(null);
+    setContractConditions("");
+    setContractNotes("");
+  };
 
   // Available drivers for assignment
   const { data: availableDrivers = [] } = useQuery({
