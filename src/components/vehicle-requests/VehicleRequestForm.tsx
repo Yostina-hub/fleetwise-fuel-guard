@@ -1048,11 +1048,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
 
-        {/* Single-page form — sections render one after another, scroll naturally */}
+        {/* Tabbed form — only the active section is rendered (matches the registration form's BasicInfoTabs UX) */}
         <div className="space-y-6">
 
           {/* TYPE SECTION */}
-          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
+          <section className={`rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in ${activeTab === "type" ? "" : "hidden"}`}>
             <div className="flex items-center gap-2.5 pb-3 border-b border-border">
               <Layers className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Operation Type</h3>
@@ -1096,7 +1096,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE SECTION */}
-          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
+          <section className={`rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in ${activeTab === "schedule" ? "" : "hidden"}`}>
             <div className="flex items-center gap-2.5 pb-3 border-b border-border">
               <CalendarDays className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Schedule</h3>
@@ -1208,7 +1208,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* ROUTE SECTION */}
-          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
+          <section className={`rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in ${activeTab === "route" ? "" : "hidden"}`}>
             <div className="flex items-center gap-2.5 pb-3 border-b border-border">
               <Route className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Route</h3>
@@ -1355,7 +1355,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* RESOURCES SECTION */}
-          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
+          <section className={`rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in ${activeTab === "resources" ? "" : "hidden"}`}>
             <div className="flex items-center gap-2.5 pb-3 border-b border-border">
               <Car className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Vehicle &amp; Pool</h3>
@@ -1589,7 +1589,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* DETAILS SECTION */}
-          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
+          <section className={`rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in ${activeTab === "details" ? "" : "hidden"}`}>
             <div className="flex items-center gap-2.5 pb-3 border-b border-border">
               <FileText className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Purpose &amp; Submit</h3>
