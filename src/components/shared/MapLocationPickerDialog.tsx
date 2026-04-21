@@ -68,8 +68,11 @@ export function MapLocationPickerDialog({
       });
       if (!res.ok) return null;
       const json = await res.json();
-      const display = json?.display_name || json?.address?.road || json?.results?.[0]?.display_name;
-      return display ? String(display).split(",").slice(0, 2).join(", ") : null;
+      // Prefer the map's full place name so the picker reflects exactly what
+      // the map shows (e.g. "Bole Road, Addis Ababa, Ethiopia") rather than
+      // an aggressively trimmed street label.
+      const display = json?.display_name || json?.results?.[0]?.display_name || json?.address?.road;
+      return display ? String(display) : null;
     } catch {
       return null;
     }
@@ -250,8 +253,10 @@ export function MapLocationPickerDialog({
     const newLng = parseFloat(result.lon);
     setLat(parseFloat(newLat.toFixed(6)));
     setLng(parseFloat(newLng.toFixed(6)));
-    setLocationName(result.display_name.split(",")[0]);
-    setSearchQuery(result.display_name.split(",")[0]);
+    // Use the full place name from the map result so the saved location
+    // matches exactly what the user picked on the map.
+    setLocationName(result.display_name);
+    setSearchQuery(result.display_name);
     setSearchResults([]);
 
     if (mapRef.current) {
