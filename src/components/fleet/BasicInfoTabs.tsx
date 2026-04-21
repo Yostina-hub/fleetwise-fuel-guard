@@ -59,8 +59,13 @@ export const BASIC_FIELD_TO_SUBTAB: Record<string, BasicSubTabId> = Object.entri
     return acc;
   }, {} as Record<string, BasicSubTabId>);
 
-export default function BasicInfoTabs({ formData, set, plateNumber, onBlur, onChange, getError, getStatus }: Props) {
-  const [active, setActive] = useState<typeof tabs[number]["id"]>("identity");
+export default function BasicInfoTabs({ formData, set, plateNumber, onBlur, onChange, getError, getStatus, activeSubTab, onSubTabChange }: Props) {
+  const [internalActive, setInternalActive] = useState<BasicSubTabId>("identity");
+  const active = activeSubTab ?? internalActive;
+  const setActive = (id: BasicSubTabId) => {
+    setInternalActive(id);
+    onSubTabChange?.(id);
+  };
 
   const completion = useMemo(() => {
     const out: Record<string, number> = {};
