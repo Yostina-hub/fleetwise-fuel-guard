@@ -375,11 +375,21 @@ function IdentityPane(props: PaneProps) {
             }
           }}
         >
-          <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
+          <SelectTrigger className="h-10">
+            <SelectValue placeholder="Select category...">
+              {formData.specific_pool && <PoolCategoryChip value={formData.specific_pool} />}
+            </SelectValue>
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Corporate">Corporate</SelectItem>
-            <SelectItem value="Zone">Zone</SelectItem>
-            <SelectItem value="Region">Region</SelectItem>
+            <SelectItem value="Corporate">
+              <PoolCategoryChip value="Corporate" />
+            </SelectItem>
+            <SelectItem value="Zone">
+              <PoolCategoryChip value="Zone" />
+            </SelectItem>
+            <SelectItem value="Region">
+              <PoolCategoryChip value="Region" />
+            </SelectItem>
           </SelectContent>
         </Select>
       </Field>
@@ -394,13 +404,29 @@ function IdentityPane(props: PaneProps) {
           }}
           disabled={!formData.specific_pool}
         >
-          <SelectTrigger className={!formData.specific_pool ? "opacity-50" : ""}>
-            <SelectValue placeholder={formData.specific_pool ? "Select location..." : "Pick category first"} />
+          <SelectTrigger className={`h-10 ${!formData.specific_pool ? "opacity-50" : ""}`}>
+            <SelectValue placeholder={formData.specific_pool ? "Select location..." : "Pick category first"}>
+              {formData.assigned_location && (
+                <span className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  <span className="truncate">
+                    {ASSIGNED_LOCATIONS.find(l => l.value === formData.assigned_location)?.label || formData.assigned_location}
+                  </span>
+                </span>
+              )}
+            </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-72">
             {ASSIGNED_LOCATIONS
               .filter(l => l.group === formData.specific_pool)
-              .map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+              .map(l => (
+                <SelectItem key={l.value} value={l.value}>
+                  <span className="flex items-center gap-2">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                    {l.label}
+                  </span>
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
         {formData.assigned_location && (
