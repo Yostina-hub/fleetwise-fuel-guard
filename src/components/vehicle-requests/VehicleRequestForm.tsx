@@ -878,8 +878,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {HeaderInner}
         </div>
       ) : (
-        <div className="relative -m-6 mb-0 px-6 pt-6 pb-5 border-b border-border/60 bg-card">
-          <DialogHeader className="relative">
+        <div className="px-6 sm:px-8 pt-6 pb-5 border-b border-border/60 bg-card sticky top-0 z-10">
+          <DialogHeader>
             <DialogTitle className="sr-only">Vehicle Request</DialogTitle>
             <DialogDescription className="sr-only">
               Vehicle request form — fill in the sections and submit.
@@ -889,7 +889,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         </div>
       )}
 
-      <div className="px-1 pt-4 space-y-4">
+      <div className={`${embedded ? "px-1" : "px-6 sm:px-8"} pt-6 pb-2 space-y-5`}>
         {/* Draft restored notice */}
         {restoredAt && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs animate-fade-in">
@@ -1002,16 +1002,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         <MyVehicleRequestsSummary variant="compact" />
 
         {/* Single-page form — sections render one after another, scroll naturally */}
-        <div className="space-y-8">
+        <div className="space-y-6">
 
           {/* TYPE SECTION */}
-          <section className="space-y-3 animate-fade-in">
-            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">1</span>
-              <h3 className="text-base font-semibold text-foreground">Operation Type</h3>
+          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
+            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">1</span>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-foreground leading-tight">Operation Type</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Pick the kind of trip you're requesting.</p>
+              </div>
             </div>
-            <Label className="text-foreground font-medium text-sm">Vehicle Request Type</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
               {[
                 { v: "daily_operation", title: "Daily Operation", desc: "Single-day trip with start & end time", icon: Clock },
                 { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip (02:00 – 12:00 window)", icon: Moon },
@@ -1050,10 +1052,13 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE SECTION */}
-          <section className="space-y-4 animate-fade-in">
-            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">2</span>
-              <h3 className="text-base font-semibold text-foreground">Schedule</h3>
+          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
+            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">2</span>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-foreground leading-tight">Schedule</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">When does the trip start and end?</p>
+              </div>
             </div>
             {/* Working-hours policy banner — Project / operational only */}
             {isProject && workingHoursPolicy && (() => {
@@ -1085,13 +1090,13 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
             )}
             {isDaily ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                 <div className="md:col-span-1">
                   <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }} required minDate={new Date()} hideTime />
                   <FieldError field="date" />
                 </div>
                 <div>
-                  <Label className="text-primary font-medium">Start Time <span className="text-destructive">*</span></Label>
+                  <Label className="text-primary font-medium text-sm mb-1.5 block">Start Time <span className="text-destructive">*</span></Label>
                   <TimePicker
                     value={form.start_time}
                     onChange={v => update("start_time", v)}
@@ -1101,7 +1106,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <FieldError field="start_time" />
                 </div>
                 <div>
-                  <Label className="text-primary font-medium">End Time <span className="text-destructive">*</span></Label>
+                  <Label className="text-primary font-medium text-sm mb-1.5 block">End Time <span className="text-destructive">*</span></Label>
                   <TimePicker
                     value={form.end_time}
                     onChange={v => update("end_time", v)}
@@ -1112,7 +1117,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               </div>
             ) : (
-              <div className={`grid grid-cols-1 ${isProject ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4`}>
+              <div className={`grid grid-cols-1 ${isProject ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4 sm:gap-5`}>
                 <div>
                   <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime />
                   <FieldError field="start_date" />
@@ -1162,12 +1167,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* ROUTE SECTION */}
-          <section className="space-y-4 animate-fade-in">
-            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">3</span>
-              <h3 className="text-base font-semibold text-foreground">Route</h3>
+          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
+            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">3</span>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-foreground leading-tight">Route</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Where does the trip start, stop, and end?</p>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
               <LocationPickerField
                 label="Departure Place"
                 value={form.departure_place}
@@ -1206,7 +1214,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <Label className="text-primary font-medium flex items-center gap-1">
+                  <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                     <Route className="w-3.5 h-3.5" /> Intermediate Stops
                     <FieldHint>
                       Add ordered waypoints between Departure and Final Destination. Driver will visit them in this order.
@@ -1297,7 +1305,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             </div>
 
             <div>
-              <Label className="text-primary font-medium flex items-center gap-1"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
+              <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
               <Select value={form.trip_type} onValueChange={v => update("trip_type", v)}>
                 <SelectTrigger><SelectValue placeholder="Select Trip Type" /></SelectTrigger>
                 <SelectContent>
@@ -1309,12 +1317,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* RESOURCES SECTION */}
-          <section className="space-y-4 animate-fade-in">
-            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">4</span>
-              <h3 className="text-base font-semibold text-foreground">Vehicle & Pool</h3>
+          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
+            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">4</span>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-foreground leading-tight">Vehicle &amp; Pool</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">How many seats, what kind of vehicle, and which pool serves it.</p>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
               <VRField
                 id="vr-num-vehicles"
                 label={
@@ -1362,7 +1373,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 />
               </VRField>
               <div>
-                <Label className="text-primary font-medium flex items-center gap-1">
+                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                   Cargo / Equipment <span className="text-destructive">*</span>
                   <FieldHint>Required — helps recommend the smallest sufficient vehicle and reserve cargo capacity.</FieldHint>
                 </Label>
@@ -1417,7 +1428,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               )}
 
               <div className="md:col-span-2">
-                <Label className="text-primary font-medium flex items-center gap-2">
+                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-2">
                   Vehicle Type
                   {recommendation && form.vehicle_type === recommendation.value && (
                     <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 gap-1">
@@ -1467,7 +1478,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               {/* Justification — only shown when over-spec'd */}
               {isUpgrade && (
                 <div className="md:col-span-2 animate-fade-in">
-                  <Label className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                  <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1.5 flex items-center gap-1.5">
                     Why is {chosenProfile?.label} needed instead of {recommendation?.label}? <span className="text-destructive">*</span>
                     <FieldHint tone="warning">
                       Visible to your approver. Be specific — generic reasons may be rejected.
@@ -1483,7 +1494,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               )}
               <div>
-                <Label className="text-primary font-medium">Priority</Label>
+                <Label className="text-primary font-medium text-sm mb-1.5 block">Priority</Label>
                 <Select value={form.priority} onValueChange={v => update("priority", v)}>
                   <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -1495,7 +1506,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Select>
               </div>
               <div className="md:col-span-2">
-                <Label className="text-primary font-medium flex items-center gap-1">
+                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                   Assigned Pool
                   <FieldHint>Operational pool the trip will be served from.</FieldHint>
                 </Label>
@@ -1543,13 +1554,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* DETAILS SECTION */}
-          <section className="space-y-4 animate-fade-in">
-            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">5</span>
-              <h3 className="text-base font-semibold text-foreground">Purpose & Submit</h3>
+          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
+            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">5</span>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-foreground leading-tight">Purpose &amp; Submit</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Tell us why this trip is needed, then submit for approval.</p>
+              </div>
             </div>
             <div>
-              <Label className="text-primary font-medium flex items-center gap-1">
+              <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                 Business Purpose Category <span className="text-destructive">*</span>
                 <FieldHint>
                   Fleet vehicles are for business use only. Personal or family trips are not permitted.
@@ -1605,7 +1619,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               })()}
             </div>
             <div>
-              <Label className="text-primary font-medium flex items-center gap-1">
+              <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                 Department / Division
                 <FieldHint>
                   The unit this trip is charged to / belongs to. Helps approval routing & reporting.
@@ -1693,7 +1707,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         return embedded ? (
           <div className="pt-4 border-t border-border/60 mt-4">{FooterInner}</div>
         ) : (
-          <DialogFooter className="-mx-6 -mb-6 px-6 py-3.5 mt-6 bg-muted/30 border-t border-border/60 sm:justify-between">
+          <DialogFooter className="px-6 sm:px-8 py-4 mt-6 bg-muted/30 border-t border-border/60 sm:justify-between sticky bottom-0 z-10">
             {FooterInner}
           </DialogFooter>
         );
@@ -1735,7 +1749,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-6">
+      <DialogContent className="max-w-5xl max-h-[94vh] overflow-y-auto p-0 gap-0">
         {isDriverOnly ? blockedBody : body}
       </DialogContent>
     </Dialog>
