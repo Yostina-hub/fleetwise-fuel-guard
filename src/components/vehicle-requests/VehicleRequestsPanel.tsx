@@ -55,6 +55,11 @@ export const VehicleRequestsPanel = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [poolFilter, setPoolFilter] = useState("all");
+  // Date-range filter — defaults to last 30 days of `needed_from`. Inclusive at both ends.
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({
+    start: startOfDay(subDays(new Date(), 30)),
+    end: endOfDay(new Date()),
+  });
 
   // Sorting — default newest first by needed_from to match operational expectations.
   const [sortKey, setSortKey] = useState<SortKey>("needed_from");
