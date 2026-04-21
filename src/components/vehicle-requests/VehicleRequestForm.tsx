@@ -288,6 +288,55 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     enabled: !!organizationId && open,
   });
 
+  // ── Working-hours policy (per-tenant, configurable) ───────────────────────
+  // Loaded from organization_settings. Used to hard-block Project /
+  // operational requests that fall outside the org's working window.
+  const { data: workingHoursPolicy } = useQuery({
+    queryKey: ["vr-working-hours-policy", organizationId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("organization_settings")
+        .select("vr_working_days, vr_working_start_time, vr_working_end_time")
+        .eq("organization_id", organizationId!)
+        .maybeSingle();
+      return {
+        days: (data?.vr_working_days as number[] | null) ?? [1, 2, 3, 4, 5],
+        start: (data?.vr_working_start_time as string | null) ?? "08:00",
+        end: (data?.vr_working_end_time as string | null) ?? "17:00",
+      };
+    },
+    enabled: !!organizationId && open,
+    staleTime: 5 * 60_000,
+  });
+
+  /**
+   * Validate a date-range against the org working-hours policy. Returns the
+   * first human-readable violation, or null if compliant. Pure function —
+   * tested by the form's submit handler before calling the mutation.
+   */
+  const checkWorkingHours = (from: Date | null, to: Date | null): string | null => {
+    if (!workingHoursPolicy || !from) return null;
+    const { days, start, end } = workingHoursPolicy;
+    const [sH, sM] = start.slice(0, 5).split(":").map(Number);
+    const [eH, eM] = end.slice(0, 5).split(":").map(Number);
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const winLabel = `${start.slice(0, 5)}–${end.slice(0, 5)} on ${days.map((d) => dayNames[d]).join(", ")}`;
+
+    const points: Date[] = to ? [from, to] : [from];
+    for (const p of points) {
+      if (!days.includes(p.getDay())) {
+        return `Working-hours policy: ${dayNames[p.getDay()]} is not an allowed working day. Allowed window: ${winLabel}.`;
+      }
+      const mins = p.getHours() * 60 + p.getMinutes();
+      const startMins = sH * 60 + sM;
+      const endMins = eH * 60 + eM;
+      if (mins < startMins || mins > endMins) {
+        return `Working-hours policy: ${p.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} is outside the working window. Allowed window: ${winLabel}.`;
+      }
+    }
+    return null;
+  };
+
   const filteredPools = useMemo(() => {
     if (!form.pool_category) return [];
     const dbPools = pools.filter((p: any) => p.category === form.pool_category);
