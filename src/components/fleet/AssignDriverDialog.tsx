@@ -184,6 +184,17 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
             </div>
           )}
 
+          {/* Search */}
+          <div className="space-y-2">
+            <Label htmlFor="driver-search">Search</Label>
+            <Input
+              id="driver-search"
+              placeholder="Name, license # or phone…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
           {/* Driver Selection */}
           <div className="space-y-2">
             <Label>Select Driver</Label>
@@ -197,6 +208,8 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
                 </SelectItem>
                 {activeDrivers.map((driver) => {
                   const isVerified = (driver as any).verification_status === 'verified';
+                  const busyOn = (driverAssignments as any)[driver.id];
+                  const busyElsewhere = busyOn && busyOn.vehicleId !== vehicle?.vehicleId;
                   return (
                     <SelectItem key={driver.id} value={driver.id}>
                       <div className="flex items-center gap-2">
@@ -207,7 +220,12 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
                         </Avatar>
                         <span>{driver.first_name} {driver.last_name}</span>
                         <span className="text-muted-foreground text-xs">- {driver.license_number}</span>
-                        {isVerified ? (
+                        {busyElsewhere && (
+                          <Badge variant="outline" className="ml-auto gap-1 border-warning/40 text-warning text-[10px] py-0">
+                            On {busyOn.plate}
+                          </Badge>
+                        )}
+                        {!busyElsewhere && (isVerified ? (
                           <Badge variant="outline" className="ml-auto gap-1 border-success/40 text-success text-[10px] py-0">
                             <ShieldCheck className="w-3 h-3" /> Verified
                           </Badge>
@@ -215,7 +233,7 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
                           <Badge variant="outline" className="ml-auto gap-1 border-warning/40 text-warning text-[10px] py-0">
                             <ShieldAlert className="w-3 h-3" /> Unverified
                           </Badge>
-                        )}
+                        ))}
                       </div>
                     </SelectItem>
                   );
@@ -223,6 +241,18 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
               </SelectContent>
             </Select>
           </div>
+
+          {/* Conflict warning: driver already on another vehicle */}
+          {hasConflict && conflict && (
+            <Alert className="py-2 border-warning/40 bg-warning/5">
+              <ShieldAlert className="h-4 w-4 text-warning" />
+              <AlertDescription className="text-xs">
+                <strong>{selectedDriver?.first_name} {selectedDriver?.last_name}</strong> is currently
+                assigned to vehicle <span className="font-mono font-medium">{conflict.plate}</span>.
+                Confirming will move them to this vehicle.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Hard-block: warn when an unverified driver is selected */}
           {!isUnassigning && selectedDriver && !selectedIsVerified && (
@@ -237,7 +267,7 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
 
           {activeDrivers.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-2">
-              No active drivers available. Add drivers in the Drivers page.
+              {search ? "No drivers match your search." : "No active drivers available. Add drivers in the Drivers page."}
             </p>
           )}
         </div>
