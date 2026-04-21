@@ -86,10 +86,10 @@ export const vehicleFieldSchemas = {
     .or(z.literal(""))
     .refine((v) => !v || /^[A-HJ-NPR-Z0-9]{11,17}$/i.test(v), "VIN must be 11–17 characters (no I, O, Q)"),
   engine_number: trimmedOptional(50),
-  transmission_type: trimmedRequired("Transmission"),
-  drive_type: trimmedRequired("Drive type"),
+  transmission_type: trimmedOptional(30),
+  drive_type: trimmedOptional(20),
   engine_cc: numericString("Engine CC", { min: 0, max: 50000, integer: true }),
-  fuel_type: trimmedRequired("Energy type"),
+  fuel_type: trimmedOptional(30),
 
   // ----- Valuation -----
   purchasing_price: numericString("Purchasing price", { min: 0 }),
