@@ -1524,6 +1524,28 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </p>
             </div>
             <div>
+              <Label className="text-primary font-medium">Department / Division</Label>
+              <Select
+                value={form.department_id || "__none__"}
+                onValueChange={(v) => update("department_id", v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Select department (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— No department —</SelectItem>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.code ? `${d.code} · ${d.name}` : d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                The unit this trip is charged to / belongs to. Helps approval routing & reporting.
+              </p>
+            </div>
+            <div>
               <Label className="text-primary font-medium">Trip Description <span className="text-destructive">*</span></Label>
               <Textarea
                 value={form.purpose}
