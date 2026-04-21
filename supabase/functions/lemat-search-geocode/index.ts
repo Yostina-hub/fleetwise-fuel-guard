@@ -70,6 +70,39 @@ serve(async (req) => {
     }
 
     const url = new URL(req.url);
+    const isReverse = url.searchParams.get("reverse") === "1";
+
+    // ---- Reverse geocoding branch (lat/lon -> address) ----
+    if (isReverse) {
+      const lat = Number.parseFloat(url.searchParams.get("lat") || "");
+      const lon = Number.parseFloat(url.searchParams.get("lon") || "");
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        return secureJsonResponse({ error: "Valid lat/lon required for reverse geocoding" }, req, 400);
+      }
+
+      const reverseUrl = new URL("https://nominatim.openstreetmap.org/reverse");
+      reverseUrl.searchParams.set("format", "jsonv2");
+      reverseUrl.searchParams.set("lat", String(lat));
+      reverseUrl.searchParams.set("lon", String(lon));
+      reverseUrl.searchParams.set("addressdetails", "1");
+
+      const upstreamRes = await fetchWithHttp1Fallback(reverseUrl.toString(), {
+        "Accept-Language": req.headers.get("accept-language") || "en",
+        "User-Agent": "Lovable Cloud Geocoder/1.0",
+        Accept: "application/json",
+      });
+
+      if (!upstreamRes.ok) {
+        const body = await upstreamRes.text();
+        console.error("Reverse geocode upstream error:", upstreamRes.status, body);
+        return secureJsonResponse({ error: "Reverse geocode upstream unavailable", result: null }, req, 502);
+      }
+
+      const data = await upstreamRes.json();
+      return secureJsonResponse({ result: data }, req);
+    }
+
+    // ---- Forward search branch (q -> results) ----
     const query = url.searchParams.get("q")?.trim();
     const countrycodes = url.searchParams.get("countrycodes")?.trim() || "et";
     const limitParam = Number.parseInt(url.searchParams.get("limit") || "5", 10);
