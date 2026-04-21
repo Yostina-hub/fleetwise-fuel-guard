@@ -1460,9 +1460,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     )}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Suggestions filtered by {form.passengers} passenger(s) and {form.cargo_load} cargo.
-                </p>
                 {chosenProfile && (
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Capacity: {chosenProfile.capacity} · Cargo: {chosenProfile.cargo} · Tier: {COST_BAND_LABELS[chosenProfile.costBand]}
@@ -1473,8 +1470,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               {/* Justification — only shown when over-spec'd */}
               {isUpgrade && (
                 <div className="md:col-span-2 animate-fade-in">
-                  <Label className="text-amber-600 dark:text-amber-400 font-medium">
+                  <Label className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
                     Why is {chosenProfile?.label} needed instead of {recommendation?.label}? <span className="text-destructive">*</span>
+                    <FieldHint tone="warning">
+                      Visible to your approver. Be specific — generic reasons may be rejected.
+                    </FieldHint>
                   </Label>
                   <Textarea
                     value={form.vehicle_type_justification}
@@ -1483,9 +1483,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     rows={2}
                     maxLength={500}
                   />
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Visible to your approver. Be specific — generic reasons may be rejected.
-                  </p>
                 </div>
               )}
               <div>
@@ -1501,7 +1498,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Select>
               </div>
               <div className="md:col-span-2">
-                <Label className="text-primary font-medium">Assigned Pool</Label>
+                <Label className="text-primary font-medium flex items-center gap-1">
+                  Assigned Pool
+                  <FieldHint>Operational pool the trip will be served from.</FieldHint>
+                </Label>
                 <Select value={form.pool_name} onValueChange={v => {
                   // Derive a category bucket so downstream filters/reports keep working.
                   const found = ASSIGNED_POOLS.find(p => p.value === v);
@@ -1526,7 +1526,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <p className="text-[11px] text-muted-foreground mt-1">Operational pool the trip will be served from.</p>
               </div>
               <div className="md:col-span-2">
-                <Label className="text-primary font-medium">Contact Phone (during trip)</Label>
+                <Label className="text-primary font-medium flex items-center gap-1">
+                  Contact Phone (during trip)
+                  <FieldHint>Optional. Helps dispatch reach the requester quickly if plans change.</FieldHint>
+                </Label>
                 <Input
                   type="tel"
                   inputMode="tel"
