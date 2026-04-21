@@ -30,7 +30,7 @@ import { useFleetExport } from "@/components/fleet/FleetExportUtils";
 import { printRecords, exportRecordsToPdf, type PrintColumn } from "@/components/fleet/printUtils";
 import FleetQuickStats from "@/components/fleet/FleetQuickStats";
 import FleetOwnershipStats from "@/components/fleet/FleetOwnershipStats";
-import FleetOwnedVsRentalCard from "@/components/fleet/FleetOwnedVsRentalCard";
+
 import { useFleetOwnershipStats } from "@/hooks/useFleetOwnershipStats";
 import FleetQuickActions from "@/components/fleet/FleetQuickActions";
 import { FleetAutomationsMenu } from "@/components/fleet/FleetAutomationsMenu";
@@ -539,31 +539,6 @@ const Fleet = () => {
             }, 50);
           }}
         />
-
-        {/* Owned vs Rental composite card */}
-        <FleetOwnedVsRentalCard
-          buckets={ownershipStats.buckets}
-          activeFilter={ownershipFilter}
-          onFilterChange={(key) => {
-            setOwnershipFilter(key);
-            setTimeout(() => {
-              document.getElementById("fleet-vehicle-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }, 50);
-          }}
-        />
-
-        {/* Ownership Type Quick Stats */}
-        <FleetOwnershipStats
-          buckets={ownershipStats.buckets}
-          activeFilter={ownershipFilter}
-          onFilterChange={(key) => {
-            setOwnershipFilter(key);
-            setTimeout(() => {
-              document.getElementById("fleet-vehicle-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }, 50);
-          }}
-        />
-
 
         {/* Bulk Actions Toolbar */}
         {selectedIds.length > 0 && (
