@@ -1001,7 +1001,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
         {/* Single-page form — sections render one after another, scroll naturally */}
-        <div className="space-y-6">
+        <div className="space-y-10">
 
           {/* TYPE SECTION */}
           <section className="space-y-6 animate-fade-in">
