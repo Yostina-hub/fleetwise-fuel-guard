@@ -125,6 +125,11 @@ const TripManagement = () => {
   const [exportOpen, setExportOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  // Reject-reason prompt — approvers must explain why a request is rejected
+  // so the requester sees actionable feedback (no silent rejections).
+  const [rejectTarget, setRejectTarget] = useState<{ tripId: string; requestNumber?: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "trips");
 
   // Sync tab from URL changes (sidebar deep links)
@@ -186,14 +191,52 @@ const TripManagement = () => {
     }
   };
 
+  // Quick-reject now opens a small dialog so the approver MUST supply a
+  // reason. The actual mutation runs in `submitReject` below.
   const handleQuickReject = async (tripId: string) => {
-    const approval = pendingApprovals?.find((a: any) => a.trip_request_id === tripId);
-    if (approval) {
-      await rejectRequest.mutateAsync({
-        approvalId: approval.id,
-        requestId: tripId,
-        comment: "Rejected via quick action",
-      });
+    const req = (requests || []).find((r: any) => r.id === tripId);
+    setRejectReason("");
+    setRejectTarget({ tripId, requestNumber: req?.request_number });
+  };
+
+  const submitReject = async () => {
+    if (!rejectTarget) return;
+    const reason = rejectReason.trim();
+    if (!reason) {
+      toast.error("Rejection reason is required");
+      return;
+    }
+    setRejectSubmitting(true);
+    try {
+      const approval = pendingApprovals?.find(
+        (a: any) => a.trip_request_id === rejectTarget.tripId,
+      );
+      if (approval) {
+        await rejectRequest.mutateAsync({
+          approvalId: approval.id,
+          requestId: rejectTarget.tripId,
+          comment: reason,
+        });
+      } else {
+        // No legacy trip_approvals row — write rejection directly onto the
+        // unified vehicle_requests row so the requester sees the reason.
+        const { error } = await (supabase as any)
+          .from("vehicle_requests")
+          .update({
+            status: "rejected",
+            approval_status: "rejected",
+            rejection_reason: reason,
+          })
+          .eq("id", rejectTarget.tripId);
+        if (error) throw error;
+        toast.success("Request rejected");
+      }
+      setRejectTarget(null);
+      setRejectReason("");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to reject request");
+    } finally {
+      setRejectSubmitting(false);
     }
   };
 
