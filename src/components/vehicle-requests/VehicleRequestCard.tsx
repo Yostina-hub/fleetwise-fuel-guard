@@ -77,7 +77,7 @@ export const VehicleRequestCard = ({
       {/* Header */}
       <div className="flex items-start justify-between mb-2.5 gap-2">
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-          {/* Drag handle (visible) */}
+          {/* Drag handle (always visible) */}
           {dragHandleProps && (
             <button
               {...dragHandleProps}
@@ -135,12 +135,10 @@ export const VehicleRequestCard = ({
 
       {/* Body — clicking opens details */}
       <div onClick={() => onViewDetails?.(request)} className="cursor-pointer">
-        {/* Purpose */}
         <p className="text-sm font-medium text-foreground line-clamp-2 mb-3 leading-snug">
           {request.purpose || "(no purpose)"}
         </p>
 
-        {/* Route / pool */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2.5">
           <MapPin className="w-3 h-3 text-primary shrink-0" />
           <span className="truncate">
@@ -154,7 +152,6 @@ export const VehicleRequestCard = ({
           )}
         </div>
 
-        {/* Schedule */}
         {startAt && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
             <Clock className="w-3 h-3 shrink-0" />
@@ -165,7 +162,6 @@ export const VehicleRequestCard = ({
           </div>
         )}
 
-        {/* Assignment chip */}
         {(request.assigned_vehicle || request.assigned_driver) && (
           <div className="flex items-center gap-1.5 text-[11px] mb-2 px-2 py-1 rounded-md bg-primary/5 border border-primary/20">
             <Truck className="w-3 h-3 text-primary shrink-0" />
@@ -176,7 +172,6 @@ export const VehicleRequestCard = ({
           </div>
         )}
 
-        {/* Footer */}
         <div className="flex items-center justify-between pt-2.5 border-t border-border/50">
           <div className="flex items-center gap-2">
             {request.passengers ? (
@@ -235,193 +230,6 @@ export const VehicleRequestCard = ({
           >
             <Truck className="w-3.5 h-3.5" /> Assign Vehicle
           </Button>
-        </div>
-      )}
-    </motion.div>
-  );
-};
- *
- * Mirrors the visual language of TripCard but speaks the *current* request
- * vocabulary (request_type = daily/project/field, pool_name, needed_from,
- * assigned_vehicle, assigned_driver, etc.) so Trip Management's kanban shows
- * what users actually create through the new VehicleRequestForm.
- */
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  MapPin, Clock, Users, Send, CheckCircle, XCircle, Eye,
-  Truck, ChevronRight, Package, MoreHorizontal, Briefcase, CalendarRange, Building2,
-} from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
-import { motion } from "framer-motion";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-interface VehicleRequestCardProps {
-  request: any;
-  onViewDetails?: (req: any) => void;
-  onApprove?: (id: string) => void;
-  onReject?: (id: string) => void;
-  onAssign?: (req: any) => void;
-}
-
-const priorityConfig: Record<string, { color: string; label: string }> = {
-  urgent:  { color: "bg-destructive/15 text-destructive border-destructive/30", label: "Urgent" },
-  high:    { color: "bg-warning/15 text-warning border-warning/30",            label: "High" },
-  normal:  { color: "bg-secondary/15 text-secondary border-secondary/30",      label: "Normal" },
-  low:     { color: "bg-muted text-muted-foreground border-border",            label: "Low" },
-};
-
-const TYPE_META: Record<string, { label: string; icon: React.ReactNode }> = {
-  daily_operation:   { label: "Daily",   icon: <Clock className="w-3 h-3" /> },
-  project_operation: { label: "Project", icon: <Briefcase className="w-3 h-3" /> },
-  field_operation:   { label: "Field",   icon: <CalendarRange className="w-3 h-3" /> },
-};
-
-export const VehicleRequestCard = ({
-  request, onViewDetails, onApprove, onReject, onAssign,
-}: VehicleRequestCardProps) => {
-  const priority = request.priority || "normal";
-  const pConfig = priorityConfig[priority] || priorityConfig.normal;
-  const tMeta = TYPE_META[request.request_type] ?? { label: request.request_type ?? "Trip", icon: <Clock className="w-3 h-3" /> };
-
-  const startAt = request.needed_from ?? request.created_at;
-  const endAt   = request.needed_until;
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      whileHover={{ y: -2, boxShadow: "0 8px 25px -8px hsl(var(--primary) / 0.15)" }}
-      className="group relative bg-card border border-border rounded-xl p-3.5 cursor-pointer transition-colors hover:border-primary/40"
-      onClick={() => onViewDetails?.(request)}
-    >
-      {/* Priority stripe */}
-      <div className={`absolute top-0 left-3 right-3 h-0.5 rounded-b ${
-        priority === "urgent" ? "bg-destructive" :
-        priority === "high"   ? "bg-warning" : "bg-transparent"
-      }`} />
-
-      {/* Header */}
-      <div className="flex items-start justify-between mb-2.5">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono text-xs font-semibold text-primary">
-            {request.request_number ?? request.id?.slice(0, 8)}
-          </span>
-          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 ${pConfig.color}`}>
-            {pConfig.label}
-          </Badge>
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 gap-1 border-border/60">
-            {tMeta.icon} {tMeta.label}
-          </Badge>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-              <MoreHorizontal className="h-3.5 w-3.5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewDetails?.(request); }}>
-              <Eye className="w-3.5 h-3.5 mr-2" /> View Details
-            </DropdownMenuItem>
-            {request.status === "pending" && onApprove && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onApprove?.(request.id); }}>
-                <CheckCircle className="w-3.5 h-3.5 mr-2" /> Approve
-              </DropdownMenuItem>
-            )}
-            {request.status === "approved" && onAssign && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAssign?.(request); }}>
-                <Truck className="w-3.5 h-3.5 mr-2" /> Assign Vehicle
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Purpose */}
-      <p className="text-sm font-medium text-foreground line-clamp-2 mb-3 leading-snug">
-        {request.purpose || "(no purpose)"}
-      </p>
-
-      {/* Route / pool */}
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2.5">
-        <MapPin className="w-3 h-3 text-primary shrink-0" />
-        <span className="truncate">
-          {request.departure_place || request.pool_name || request.pool_location || "Pickup"}
-        </span>
-        {request.destination && (
-          <>
-            <ChevronRight className="w-3 h-3 shrink-0" />
-            <span className="truncate">{request.destination}</span>
-          </>
-        )}
-      </div>
-
-      {/* Schedule */}
-      {startAt && (
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-          <Clock className="w-3 h-3 shrink-0" />
-          <span>
-            {format(new Date(startAt), "MMM dd, HH:mm")}
-            {endAt && ` → ${format(new Date(endAt), "MMM dd HH:mm")}`}
-          </span>
-        </div>
-      )}
-
-      {/* Assignment chip */}
-      {(request.assigned_vehicle || request.assigned_driver) && (
-        <div className="flex items-center gap-1.5 text-[11px] mb-2 px-2 py-1 rounded-md bg-primary/5 border border-primary/20">
-          <Truck className="w-3 h-3 text-primary shrink-0" />
-          <span className="truncate text-foreground">
-            {request.assigned_vehicle?.plate_number}
-            {request.assigned_driver && ` · ${request.assigned_driver.first_name} ${request.assigned_driver.last_name}`}
-          </span>
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-2.5 border-t border-border/50">
-        <div className="flex items-center gap-2">
-          {request.passengers ? (
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Users className="w-3 h-3" /> {request.passengers}
-            </span>
-          ) : null}
-          {request.num_vehicles && request.num_vehicles > 1 ? (
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Package className="w-3 h-3" /> {request.num_vehicles}
-            </span>
-          ) : null}
-          {request.requester_name && (
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground truncate max-w-[100px]">
-              <Building2 className="w-3 h-3" /> {request.requester_name}
-            </span>
-          )}
-        </div>
-        <span className="text-[10px] text-muted-foreground">
-          {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-        </span>
-      </div>
-
-      {/* Quick actions for pending */}
-      {request.status === "pending" && onApprove && (
-        <div className="absolute inset-x-0 bottom-0 translate-y-full pt-1 opacity-0 group-hover:opacity-100 transition-all z-10">
-          <div className="flex gap-1.5 bg-card border border-border rounded-lg p-1.5 shadow-lg mx-1">
-            <Button size="sm" className="flex-1 h-7 text-xs gap-1"
-              onClick={(e) => { e.stopPropagation(); onApprove?.(request.id); }}>
-              <CheckCircle className="w-3 h-3" /> Approve
-            </Button>
-            {onReject && (
-              <Button size="sm" variant="destructive" className="flex-1 h-7 text-xs gap-1"
-                onClick={(e) => { e.stopPropagation(); onReject?.(request.id); }}>
-                <XCircle className="w-3 h-3" /> Reject
-              </Button>
-            )}
-          </div>
         </div>
       )}
     </motion.div>
