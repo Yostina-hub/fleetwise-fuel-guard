@@ -160,13 +160,10 @@ export const useVehicleTelemetry = () => {
         },
         (payload) => {
           if (!isMounted) return;
-          
+
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const newData = payload.new as VehicleTelemetry;
-            setTelemetry(prev => ({
-              ...prev,
-              [newData.vehicle_id]: newData
-            }));
+            if (newData?.vehicle_id) queueUpdate(newData.vehicle_id, newData);
           } else {
             clearTimeout(throttleTimer);
             throttleTimer = setTimeout(() => {
@@ -182,9 +179,15 @@ export const useVehicleTelemetry = () => {
     return () => {
       isMounted = false;
       clearTimeout(throttleTimer);
+      if (rafIdRef.current !== null) {
+        if (typeof cancelAnimationFrame !== "undefined") cancelAnimationFrame(rafIdRef.current);
+        else clearTimeout(rafIdRef.current as unknown as ReturnType<typeof setTimeout>);
+        rafIdRef.current = null;
+      }
+      pendingUpdatesRef.current = {};
       supabase.removeChannel(channel);
     };
-  }, [organizationId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [organizationId, queueUpdate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isVehicleOnline = (vehicleId: string): boolean => {
     const vehicleTelemetry = telemetry[vehicleId];
