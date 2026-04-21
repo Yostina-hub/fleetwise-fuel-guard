@@ -264,7 +264,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
       return [...userItems, ...driversOnly];
     },
-    enabled: !!organizationId && open && isSuperAdmin,
+    enabled: !!organizationId && open && canFileOnBehalf,
   });
 
   const { data: pools = [] } = useQuery({
@@ -301,13 +301,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       const actingUser = user ?? jwtUser;
       const actingProfile = profile ?? jwtProfile;
 
-      // Real super_admin can file on behalf of someone else (manual picker OR
+      // A manager/admin can file on behalf of someone else (manual picker OR
       // automatic impersonation override). Otherwise we file as the acting user.
-      const useOnBehalf = isRealSuperAdmin && !!onBehalfOf;
+      const useOnBehalf = canFileOnBehalf && !!onBehalfOf && onBehalfOf.id !== actingUser!.id;
       const requesterId = useOnBehalf ? onBehalfOf!.id : actingUser!.id;
       const requesterName = useOnBehalf
         ? onBehalfOf!.name
         : (actingProfile?.full_name || actingUser!.email || "Unknown");
+      // The actual signed-in user who clicked submit (always the real JWT
+      // identity — never the impersonated one). This is the audit trail.
+      const filerId = realUser?.id || jwtUser!.id;
       const filerName = realProfile?.full_name || realUser?.email || jwtProfile?.full_name || jwtUser?.email || "Admin";
       const filedOnBehalfNote = useOnBehalf
         ? ` (filed by ${filerName} on behalf of ${onBehalfOf!.name}${isImpersonating ? " — via impersonation" : ""})`
@@ -329,6 +332,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         request_number: `VR-${Date.now().toString(36).toUpperCase()}`,
         requester_id: requesterId,
         requester_name: requesterName,
+        // Audit: who actually submitted the form (vs. who it's for).
+        filed_by_user_id: filerId,
+        filed_by_name: filerName,
+        filed_on_behalf: useOnBehalf,
         request_type: form.request_type,
         purpose:
           form.purpose +
@@ -404,7 +411,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     },
     onSuccess: (data: any) => {
       toast.success(
-        isRealSuperAdmin && onBehalfOf
+        canFileOnBehalf && onBehalfOf && onBehalfOf.id !== user?.id
           ? `Vehicle request submitted on behalf of ${onBehalfOf.name}`
           : "Vehicle request submitted successfully"
       );
@@ -597,8 +604,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </div>
         )}
 
-        {/* Super-admin: file on behalf of any user */}
-        {isSuperAdmin && (
+        {/* Manager/admin: file on behalf of any user or driver */}
+        {canFileOnBehalf && (
           <div className="rounded-lg border border-dashed border-primary/30 bg-gradient-to-r from-primary/10 to-transparent p-3 flex items-center gap-2 flex-wrap">
             <UserCog className="w-4 h-4 text-primary shrink-0" />
             <span className="text-sm font-medium">Request on behalf of:</span>
