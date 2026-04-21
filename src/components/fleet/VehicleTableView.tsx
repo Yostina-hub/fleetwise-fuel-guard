@@ -82,6 +82,58 @@ interface VehicleItem {
 type SortField = "plate_number" | "make" | "status" | "fuel_level_percent" | "odometer_km" | "speed_kmh" | "created_at";
 type SortDirection = "asc" | "desc";
 
+/** Per-column accessor used for client-side sorting on non-backend fields. */
+const getSortValue = (vehicle: VehicleItem, col: VehicleColumnId): string | number | null => {
+  const raw = vehicle.raw ?? {};
+  switch (col) {
+    case "plate":
+      return vehicle.plate?.toLowerCase() ?? "";
+    case "vin":
+      return vehicle.vin?.toLowerCase() ?? "";
+    case "make_model":
+      return `${vehicle.make ?? ""} ${vehicle.model ?? ""}`.toLowerCase();
+    case "year":
+      return vehicle.year ?? null;
+    case "live_status":
+      return vehicle.status ?? "";
+    case "speed":
+      return vehicle.speed ?? 0;
+    case "fuel_level":
+      return vehicle.fuel ?? -1;
+    case "device_connected":
+      return vehicle.deviceConnected ? 1 : 0;
+    case "last_seen":
+      return vehicle.lastSeen ? new Date(vehicle.lastSeen).getTime() : 0;
+    case "driver":
+      return (vehicle.assignedDriver ?? "").toLowerCase();
+    case "odometer":
+      return Number(raw.odometer_km ?? vehicle.odometer ?? 0);
+    case "next_service":
+      return vehicle.nextService ?? "";
+    default: {
+      const v = raw[col as string];
+      if (v === null || v === undefined || v === "") return null;
+      if (typeof v === "boolean") return v ? 1 : 0;
+      if (typeof v === "number") return v;
+      // try to detect ISO date strings → numeric for proper ordering
+      if (typeof v === "string") {
+        const ts = Date.parse(v);
+        if (!Number.isNaN(ts) && /\d{4}-\d{2}-\d{2}/.test(v)) return ts;
+        return v.toLowerCase();
+      }
+      return String(v).toLowerCase();
+    }
+  }
+};
+
+const compareValues = (a: string | number | null, b: string | number | null) => {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1; // nulls last
+  if (b === null) return -1;
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
+};
+
 interface VehicleTableViewProps {
   vehicles: VehicleItem[];
   onVehicleClick: (vehicle: VehicleItem) => void;
