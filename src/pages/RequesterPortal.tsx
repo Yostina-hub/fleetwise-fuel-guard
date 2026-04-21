@@ -306,6 +306,8 @@ const RequesterPortal = () => {
               loading={isLoading}
               items={filtered}
               onOpen={(r) => setSelected(r)}
+              onEdit={(r) => setEditing(r)}
+              onDelete={(r) => setDeleting(r)}
               emptyTitle="No requests yet"
               emptyHint='Click "New Request" to submit your first vehicle request.'
             />
@@ -317,6 +319,8 @@ const RequesterPortal = () => {
               loading={isLoading}
               items={history}
               onOpen={(r) => setSelected(r)}
+              onEdit={(r) => setEditing(r)}
+              onDelete={(r) => setDeleting(r)}
               emptyTitle="No closed requests"
               emptyHint="Completed, rejected and cancelled requests appear here."
             />
