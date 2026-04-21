@@ -82,6 +82,58 @@ interface VehicleItem {
 type SortField = "plate_number" | "make" | "status" | "fuel_level_percent" | "odometer_km" | "speed_kmh" | "created_at";
 type SortDirection = "asc" | "desc";
 
+/** Per-column accessor used for client-side sorting on non-backend fields. */
+const getSortValue = (vehicle: VehicleItem, col: VehicleColumnId): string | number | null => {
+  const raw = vehicle.raw ?? {};
+  switch (col) {
+    case "plate":
+      return vehicle.plate?.toLowerCase() ?? "";
+    case "vin":
+      return vehicle.vin?.toLowerCase() ?? "";
+    case "make_model":
+      return `${vehicle.make ?? ""} ${vehicle.model ?? ""}`.toLowerCase();
+    case "year":
+      return vehicle.year ?? null;
+    case "live_status":
+      return vehicle.status ?? "";
+    case "speed":
+      return vehicle.speed ?? 0;
+    case "fuel_level":
+      return vehicle.fuel ?? -1;
+    case "device_connected":
+      return vehicle.deviceConnected ? 1 : 0;
+    case "last_seen":
+      return vehicle.lastSeen ? new Date(vehicle.lastSeen).getTime() : 0;
+    case "driver":
+      return (vehicle.assignedDriver ?? "").toLowerCase();
+    case "odometer":
+      return Number(raw.odometer_km ?? vehicle.odometer ?? 0);
+    case "next_service":
+      return vehicle.nextService ?? "";
+    default: {
+      const v = raw[col as string];
+      if (v === null || v === undefined || v === "") return null;
+      if (typeof v === "boolean") return v ? 1 : 0;
+      if (typeof v === "number") return v;
+      // try to detect ISO date strings → numeric for proper ordering
+      if (typeof v === "string") {
+        const ts = Date.parse(v);
+        if (!Number.isNaN(ts) && /\d{4}-\d{2}-\d{2}/.test(v)) return ts;
+        return v.toLowerCase();
+      }
+      return String(v).toLowerCase();
+    }
+  }
+};
+
+const compareValues = (a: string | number | null, b: string | number | null) => {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1; // nulls last
+  if (b === null) return -1;
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
+};
+
 interface VehicleTableViewProps {
   vehicles: VehicleItem[];
   onVehicleClick: (vehicle: VehicleItem) => void;
@@ -161,6 +213,9 @@ export const VehicleTableView = ({
 
   const [visibleColumns, setVisibleColumns] = useState<VehicleColumnId[]>(() => loadVisibleColumns());
 
+  /** Local client-side sort, used for any column that isn't a backend SortField. */
+  const [localSort, setLocalSort] = useState<{ col: VehicleColumnId; dir: SortDirection } | null>(null);
+
   const sortField = externalSortField;
   const sortDirection = externalSortDirection || "asc";
 
@@ -169,21 +224,47 @@ export const VehicleTableView = ({
     [visibleColumns],
   );
 
-  const handleSort = (field: SortField) => {
-    if (!onSortChange) return;
-    if (sortField === field) {
-      onSortChange(field, sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      onSortChange(field, "asc");
+  const handleSort = (col: VehicleColumnId) => {
+    if (col === "actions") return;
+    const backend = SORTABLE_COLUMNS[col];
+    if (backend && onSortChange) {
+      // Backend sorting (works across paginated data)
+      setLocalSort(null);
+      if (sortField === backend) {
+        onSortChange(backend, sortDirection === "asc" ? "desc" : "asc");
+      } else {
+        onSortChange(backend, "asc");
+      }
+      return;
     }
+    // Client-side sorting (current page)
+    setLocalSort((prev) => {
+      if (!prev || prev.col !== col) return { col, dir: "asc" };
+      if (prev.dir === "asc") return { col, dir: "desc" };
+      return null; // third click clears
+    });
   };
 
-  const sortIcon = (field: SortField) => {
-    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 ml-1 opacity-50" />;
-    return sortDirection === "asc"
+  const sortIcon = (col: VehicleColumnId) => {
+    const backend = SORTABLE_COLUMNS[col];
+    const isBackendActive = backend && sortField === backend;
+    const isLocalActive = localSort?.col === col;
+    if (!isBackendActive && !isLocalActive) {
+      return <ArrowUpDown className="w-3.5 h-3.5 ml-1 opacity-50" />;
+    }
+    const dir = isBackendActive ? sortDirection : (localSort?.dir ?? "asc");
+    return dir === "asc"
       ? <ArrowUp className="w-3.5 h-3.5 ml-1" />
       : <ArrowDown className="w-3.5 h-3.5 ml-1" />;
   };
+
+  /** Apply client-side sorting on top of the (already backend-sorted) page. */
+  const displayedVehicles = useMemo(() => {
+    if (!localSort) return vehicles;
+    const { col, dir } = localSort;
+    const sorted = [...vehicles].sort((a, b) => compareValues(getSortValue(a, col), getSortValue(b, col)));
+    return dir === "desc" ? sorted.reverse() : sorted;
+  }, [vehicles, localSort]);
 
   const allSelected = vehicles.length > 0 && selectedIds.length === vehicles.length;
   const someSelected = selectedIds.length > 0 && selectedIds.length < vehicles.length;
@@ -542,8 +623,11 @@ export const VehicleTableView = ({
                   </TableHead>
                 )}
                 {visibleColumnDefs.map((col) => {
-                  const sortable = SORTABLE_COLUMNS[col.id];
                   const isActions = col.id === "actions";
+                  const isSortable = !isActions;
+                  const backendField = SORTABLE_COLUMNS[col.id];
+                  const isActive =
+                    (backendField && sortField === backendField) || localSort?.col === col.id;
                   return (
                     <TableHead
                       key={col.id}
@@ -554,17 +638,19 @@ export const VehicleTableView = ({
                         isActions && "text-right",
                       )}
                     >
-                      {sortable && onSortChange ? (
+                      {isSortable ? (
                         <Button
                           variant="ghost"
                           size="sm"
                           className={cn(
                             "h-8 -ml-3 font-medium text-xs uppercase tracking-wide",
                             col.align === "right" && "ml-auto -mr-3",
+                            isActive && "text-foreground",
                           )}
-                          onClick={() => handleSort(sortable)}
+                          onClick={() => handleSort(col.id)}
+                          aria-label={`Sort by ${col.label}`}
                         >
-                          {col.label} {sortIcon(sortable)}
+                          {col.label} {sortIcon(col.id)}
                         </Button>
                       ) : (
                         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -577,7 +663,7 @@ export const VehicleTableView = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vehicles.map((vehicle) => (
+              {displayedVehicles.map((vehicle) => (
                 <TableRow
                   key={vehicle.id}
                   className={cn(
