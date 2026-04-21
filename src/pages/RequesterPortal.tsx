@@ -79,12 +79,42 @@ const RequesterPortal = () => {
   const { user } = useAuth();
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
+  const { toast } = useToast();
 
   const [openNew, setOpenNew] = useState(false);
   const [activeTab, setActiveTab] = useState<"requests" | "history">("requests");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selected, setSelected] = useState<RequestDetail | null>(null);
+  // Edit / delete are only available while a request is still `pending`
+  // (i.e. the approver has not acted on it yet). After approval the
+  // requester can only view / cancel via the detail drawer.
+  const [editing, setEditing] = useState<RequestDetail | null>(null);
+  const [deleting, setDeleting] = useState<RequestDetail | null>(null);
+
+  const deleteRequest = useMutation({
+    mutationFn: async (r: RequestDetail) => {
+      // Server-side gate via `.eq('status','pending')` — if status changed
+      // since render the row simply isn't matched, preventing accidental loss.
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .delete()
+        .eq("id", r.id)
+        .eq("status", "pending");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Request deleted" });
+      qc.invalidateQueries({ queryKey: ["my-vehicle-requests"] });
+      setDeleting(null);
+    },
+    onError: (e: any) =>
+      toast({
+        title: "Delete failed",
+        description: e.message,
+        variant: "destructive",
+      }),
+  });
 
   // Fetch this user's requests
   const { data: requests = [], isLoading, refetch } = useQuery({
