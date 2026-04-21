@@ -571,6 +571,28 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       if (target) setActiveTab(target);
       return;
     }
+
+    // Working-hours policy enforcement (Project / operational only).
+    // Daily and Field requests are short-form and exempt; Project requests
+    // run during business hours and are hard-blocked outside the org window.
+    if (isProject) {
+      const fromDate = form.start_date
+        ? combineDateAndTime(form.start_date, form.start_date_time)
+        : null;
+      const toDate = form.end_date
+        ? combineDateAndTime(form.end_date, form.end_date_time)
+        : null;
+      const violation = checkWorkingHours(
+        fromDate ? new Date(fromDate) : null,
+        toDate ? new Date(toDate) : null
+      );
+      if (violation) {
+        toast.error(violation);
+        setActiveTab("schedule");
+        return;
+      }
+    }
+
     createMutation.mutate();
   };
 
