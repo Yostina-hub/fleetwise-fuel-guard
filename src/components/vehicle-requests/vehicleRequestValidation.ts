@@ -114,9 +114,9 @@ export function validateVRField(
   switch (field) {
     case "request_type": {
       const v = sanitizeText(value);
-      if (!v) return "Please choose a request type (Daily, Project, or Field operation).";
-      if (!["daily_operation", "project_operation", "field_operation"].includes(v))
-        return "Invalid request type. Pick one of the three operation cards above.";
+      if (!v) return "Please choose a request type (Daily, Project, Field, or Group operation).";
+      if (!["daily_operation", "project_operation", "field_operation", "group_operation"].includes(v))
+        return "Invalid request type. Pick one of the four operation cards above.";
       return;
     }
 
@@ -345,7 +345,7 @@ export function sanitizeVehicleRequestForm(values: VRFormValues): VRFormValues {
 
 /** Optional zod schema (e.g. for server payload guard). */
 export const vehicleRequestZodSchema = z.object({
-  request_type: z.enum(["daily_operation", "project_operation", "field_operation"]),
+  request_type: z.enum(["daily_operation", "project_operation", "field_operation", "group_operation"]),
   purpose: z.string().trim().min(10).max(2000),
   project_number: z.string().trim().max(30).optional().or(z.literal("")),
   contact_phone: z.string().trim().max(20).optional().or(z.literal("")),

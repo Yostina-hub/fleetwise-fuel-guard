@@ -172,9 +172,13 @@ export function MapLocationPickerDialog({
     };
   }, [searchQuery]);
 
-  // Map init
+  // Map init — re-runs when geolocation resolves so the map opens centered
+  // on the requester's actual position (or the Addis fallback).
   useEffect(() => {
     if (!open) return;
+
+    const startLat = lat;
+    const startLng = lng;
 
     const timer = setTimeout(() => {
       const container = mapContainer.current;
@@ -188,8 +192,8 @@ export function MapLocationPickerDialog({
       const map = new maplibregl.Map({
         container,
         style,
-        center: [initialLng, initialLat],
-        zoom: 12,
+        center: [startLng, startLat],
+        zoom: 14,
         attributionControl: false,
       });
 
@@ -197,21 +201,27 @@ export function MapLocationPickerDialog({
       map.addControl(new maplibregl.NavigationControl(), "top-right");
 
       const marker = new maplibregl.Marker({ color: "#ef4444", draggable: true })
-        .setLngLat([initialLng, initialLat])
+        .setLngLat([startLng, startLat])
         .addTo(map);
 
-      marker.on("dragend", () => {
+      marker.on("dragend", async () => {
         const pos = marker.getLngLat();
-        setLat(parseFloat(pos.lat.toFixed(6)));
-        setLng(parseFloat(pos.lng.toFixed(6)));
+        const newLat = parseFloat(pos.lat.toFixed(6));
+        const newLng = parseFloat(pos.lng.toFixed(6));
+        setLat(newLat);
+        setLng(newLng);
+        const name = await reverseGeocode(newLat, newLng);
+        if (name) setLocationName(name);
       });
 
-      map.on("click", (e) => {
+      map.on("click", async (e) => {
         const newLat = parseFloat(e.lngLat.lat.toFixed(6));
         const newLng = parseFloat(e.lngLat.lng.toFixed(6));
         setLat(newLat);
         setLng(newLng);
         marker.setLngLat([newLng, newLat]);
+        const name = await reverseGeocode(newLat, newLng);
+        if (name) setLocationName(name);
       });
 
       mapRef.current = map;
@@ -225,7 +235,8 @@ export function MapLocationPickerDialog({
       mapRef.current = null;
       markerRef.current = null;
     };
-  }, [open, initialLat, initialLng]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, lat === initialLat && lng === initialLng ? false : `${lat},${lng}`]);
 
   // Sync marker when lat/lng change
   useEffect(() => {
