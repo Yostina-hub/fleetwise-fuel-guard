@@ -1226,7 +1226,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Button>
               </div>
               {form.stops.length === 0 && (
-                <p className="text-[11px] text-muted-foreground italic">No intermediate stops. Trip goes directly from Departure to Final Destination.</p>
+                <p className="text-xs text-muted-foreground italic">No intermediate stops. Trip goes directly from Departure to Final Destination.</p>
               )}
               {form.stops.map((stop, idx) => (
                 <div key={idx} className="grid grid-cols-[auto_1fr_auto_auto_auto] items-end gap-2 rounded-md border border-border bg-background/60 p-2">
@@ -1388,7 +1388,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
                 {!form.cargo_load && (
-                  <p className="text-[11px] text-destructive mt-1">
+                  <p className="text-xs text-destructive mt-1">
                     Pick the cargo size — choose "None" if you're only carrying passengers.
                   </p>
                 )}
@@ -1406,11 +1406,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <Badge variant="outline" className={`text-[10px] ${COST_BAND_TONE[recommendation.costBand]}`}>
                       {COST_BAND_LABELS[recommendation.costBand]}
                     </Badge>
-                    <span className="text-[11px] text-muted-foreground ml-auto">
+                    <span className="text-xs text-muted-foreground ml-auto">
                       Fits {recommendation.capacity} people · {form.cargo_load} cargo
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Picking a larger class than needed wastes fleet capacity and costs more. You can override below if there's a real reason — please justify it for the approver.
                   </p>
                 </div>
@@ -1458,7 +1458,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
                 {chosenProfile && (
-                  <p className="text-[11px] text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Capacity: {chosenProfile.capacity} · Cargo: {chosenProfile.cargo} · Tier: {COST_BAND_LABELS[chosenProfile.costBand]}
                   </p>
                 )}
@@ -1570,8 +1570,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                         <SelectLabel
                           className={
                             g.restricted
-                              ? "text-amber-600 dark:text-amber-400 text-[11px] uppercase tracking-wide"
-                              : "text-[11px] uppercase tracking-wide text-muted-foreground"
+                              ? "text-amber-600 dark:text-amber-400 text-xs uppercase tracking-wide"
+                              : "text-xs uppercase tracking-wide text-muted-foreground"
                           }
                         >
                           {g.label}
@@ -1595,7 +1595,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 );
                 if (selected?.group === "social") {
                   return (
-                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       Restricted use — requires additional approval and clear business justification in the description below.
                     </p>
