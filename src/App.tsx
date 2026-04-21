@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RealtimeQuerySync } from "@/components/realtime/RealtimeQuerySync";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -153,6 +154,9 @@ const App = () => {
   
   return (
     <QueryClientProvider client={queryClient}>
+      {/* Subscribes to Postgres changes for all major entities and auto-invalidates
+          matching TanStack queries so list views update live without manual refresh. */}
+      <RealtimeQuerySync />
       <ThemeProvider>
         <AuthProvider>
           <OrganizationProvider>
