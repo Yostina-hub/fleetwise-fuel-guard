@@ -24,6 +24,8 @@ import { VEHICLE_TYPES_OPTIONS, ASSIGNED_POOLS } from "@/components/fleet/formCo
 import { AlertCircle } from "lucide-react";
 import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm } from "./vehicleRequestValidation";
+import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
+import { usePendingRatings } from "@/hooks/usePendingRatings";
 
 interface VehicleRequestFormProps {
   open: boolean;
@@ -393,7 +395,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       setOnBehalfOf(null);
       onSubmitted?.({ id: data?.id });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => {
+      const msg: string = err?.message ?? "Submission failed";
+      // DB trigger returns "PENDING_RATINGS:N" when prior trips are unrated.
+      const m = msg.match(/PENDING_RATINGS:(\d+)/);
+      if (m) {
+        toast.error("Rate your previous trips first", {
+          description: `You have ${m[1]} completed trip${m[1] === "1" ? "" : "s"} that need a rating before you can submit a new request.`,
+        });
+        return;
+      }
+      toast.error(msg);
+    },
   });
 
   const isDaily = form.request_type === "daily_operation";
