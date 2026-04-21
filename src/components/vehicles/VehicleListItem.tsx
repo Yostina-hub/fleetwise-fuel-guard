@@ -51,6 +51,7 @@ interface VehicleListItemProps {
   onDoubleClick?: () => void;
   onRefresh?: () => void;
   onSettings?: () => void;
+  onProfile?: () => void;
 }
 
 // Get vehicle type icon based on make
@@ -80,6 +81,7 @@ export const VehicleListItem = ({
   onDoubleClick,
   onRefresh,
   onSettings,
+  onProfile,
 }: VehicleListItemProps) => {
   const { fuelStatusMap } = useVehicleFuelStatus();
   const fuelStatus = fuelStatusMap.get(vehicle.id);
