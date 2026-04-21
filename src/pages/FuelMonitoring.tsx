@@ -22,6 +22,7 @@ import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomatio
 import FuelTrendChart from "@/components/fuel/FuelTrendChart";
 import IdleTimeImpactCard from "@/components/fuel/IdleTimeImpactCard";
 import VehicleFuelRanking from "@/components/fuel/VehicleFuelRanking";
+import RouteFuelVarianceCard from "@/components/fuel/RouteFuelVarianceCard";
 import FuelCostBreakdown from "@/components/fuel/FuelCostBreakdown";
 import FuelBudgetTracker from "@/components/fuel/FuelBudgetTracker";
 import { FuelPageContext } from "@/contexts/FuelPageContext";
@@ -269,6 +270,9 @@ const FuelMonitoring = () => {
             <IdleTimeImpactCard idleStats={idleStats} />
             <FuelConsumptionAlertsCard getVehiclePlateFromContext={getVehiclePlate} />
           </div>
+
+          {/* Per-Route Fuel Variance */}
+          <RouteFuelVarianceCard />
 
           {/* Tabbed Content */}
           <div ref={tabsRef}>
