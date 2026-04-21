@@ -91,6 +91,25 @@ export const useVehiclesPaginated = (
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
+  /**
+   * Resolve depot IDs that match the requested scope (corporate/zonal/regional).
+   * Returns null when no scope filter is active. Returns [] when no depots match
+   * — caller should short-circuit to an empty result set.
+   */
+  const resolveScopeDepotIds = useCallback(async (): Promise<string[] | null> => {
+    if (scopeFilter === "all") return null;
+    let depotQuery = supabase.from("depots").select("id").eq("depot_type", scopeFilter);
+    if (!isViewingAllOrgs && organizationId) {
+      depotQuery = depotQuery.eq("organization_id", organizationId);
+    }
+    const { data, error } = await depotQuery;
+    if (error) {
+      console.error("Failed to resolve scope depots", error);
+      return [];
+    }
+    return (data ?? []).map((d: any) => d.id);
+  }, [scopeFilter, organizationId, isViewingAllOrgs]);
+
   const loadPage = useCallback(async (page: number) => {
     if (!organizationId && !isViewingAllOrgs) {
       setVehicles([]);
