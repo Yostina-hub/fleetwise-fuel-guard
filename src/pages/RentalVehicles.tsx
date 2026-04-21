@@ -18,6 +18,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
+import { VehiclesTabSwitcher } from "@/components/vehicles/VehiclesTabSwitcher";
 
 const emptyForm = { plate_number: "", make: "", model: "", provider_name: "", contract_number: "", contract_start: "", contract_end: "", monthly_cost: "", daily_rate: "", driver_name: "", driver_phone: "", driver_type: "own", notes: "" };
 
@@ -166,6 +167,9 @@ const RentalVehicles = () => {
   return (
     <Layout>
       <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
+        {/* Owned Fleet ↔ Rental Vehicles tab switcher */}
+        <VehiclesTabSwitcher active="rental" />
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/20">

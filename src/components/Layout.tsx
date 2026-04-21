@@ -104,7 +104,6 @@ const getNavItems = (t: (key: string) => string) => [
       { label: t("nav.devices"), path: "/devices" },
       { label: t("nav.hardwareSensorsShort"), path: "/iot-sensors" },
       { label: t("nav.rfidPairing"), path: "/rfid-pairing" },
-      { label: t("nav.rentalVehicles"), path: "/rental-vehicles" },
     ]
   },
 

@@ -34,6 +34,7 @@ import { VehicleMapInfoCard } from "@/components/vehicles/VehicleMapInfoCard";
 import { VehicleHoverCard } from "@/components/vehicles/VehicleHoverCard";
 import { VehicleListItem } from "@/components/vehicles/VehicleListItem";
 import { VehicleQuickInfoPopup } from "@/components/vehicles/VehicleQuickInfoPopup";
+import { VehiclesTabSwitcher } from "@/components/vehicles/VehiclesTabSwitcher";
 import { MobileVehiclesList } from "@/components/mobile/MobileVehiclesList";
 import FleetVitalsDashboard from "@/components/vehicles/FleetVitalsDashboard";
 import FleetBulkActions from "@/components/vehicles/FleetBulkActions";
@@ -491,6 +492,9 @@ const Vehicles = () => {
   if (isMobile) {
     return (
       <Layout>
+        <div className="px-4 pt-3 pb-2 border-b bg-background/80 backdrop-blur">
+          <VehiclesTabSwitcher active="owned" />
+        </div>
         <div className="h-[calc(100vh-8rem)] flex flex-col overflow-hidden">
           <MobileVehiclesList onVehicleSelect={handleMobileVehicleSelect} />
         </div>
@@ -501,6 +505,11 @@ const Vehicles = () => {
   return (
     <Layout>
       <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+        {/* Owned Fleet ↔ Rental Vehicles tab switcher */}
+        <div className="px-4 pt-3 pb-2 border-b bg-background/80 backdrop-blur">
+          <VehiclesTabSwitcher active="owned" />
+        </div>
+
         {/* Fleet Vitals Dashboard + Health Ring */}
         <div className="px-4 pt-3 pb-1 border-b bg-background/80 backdrop-blur flex items-center gap-4">
           <FleetHealthRing
