@@ -45,10 +45,17 @@ export function TimePicker({
 }: TimePickerProps) {
   const [open, setOpen] = React.useState(false);
 
+  // Parse partials too: "14:" (hour only) or ":30" (minute only) so users
+  // can see which half they still need to pick.
   const [hh, mm] = React.useMemo(() => {
-    if (!value || !/^\d{1,2}:\d{2}/.test(value)) return ["", ""] as const;
-    const [h, m] = value.split(":");
-    return [pad(parseInt(h, 10)), pad(parseInt(m, 10))] as const;
+    if (!value) return ["", ""] as const;
+    const [h = "", m = ""] = value.split(":");
+    const hNum = h ? parseInt(h, 10) : NaN;
+    const mNum = m ? parseInt(m, 10) : NaN;
+    return [
+      Number.isFinite(hNum) ? pad(hNum) : "",
+      Number.isFinite(mNum) ? pad(mNum) : "",
+    ] as const;
   }, [value]);
 
   const hours = React.useMemo(() => Array.from({ length: 24 }, (_, i) => pad(i)), []);
