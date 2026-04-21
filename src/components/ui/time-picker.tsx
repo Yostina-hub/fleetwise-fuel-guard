@@ -57,8 +57,12 @@ export function TimePicker({
     [minuteStep],
   );
 
-  const setHour = (h: string) => onChange(`${h}:${mm || "00"}`);
-  const setMinute = (m: string) => onChange(`${hh || "00"}:${m}`);
+  // Both hour and minute must be explicitly chosen — never silently default
+  // the missing component to "00", which would let users submit a half-picked
+  // time that looks complete (e.g. picking "14" → "14:00") and bypass the
+  // "End time required" validation.
+  const setHour = (h: string) => onChange(mm ? `${h}:${mm}` : `${h}:`);
+  const setMinute = (m: string) => onChange(hh ? `${hh}:${m}` : `:${m}`);
 
   const display = hh && mm ? `${hh}:${mm}` : "";
 
