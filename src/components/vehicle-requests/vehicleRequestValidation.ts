@@ -19,6 +19,13 @@
  *   - strips control chars from free-text fields
  */
 import { z } from "zod";
+import {
+  getVehicleClassProfile,
+  type CargoLoad,
+} from "@/lib/vehicle-requests/vehicleClassRecommendation";
+
+/** Cargo size ordering — keeps validation in sync with the recommender. */
+const CARGO_ORDER: Record<CargoLoad, number> = { none: 0, small: 1, medium: 2, large: 3 };
 
 /** Strip ASCII control chars (except \n, \t) and trim. Safe default for free-text. */
 export const sanitizeText = (v: unknown): string => {
@@ -83,6 +90,8 @@ export interface VRFormValues {
   project_number?: string;
   priority?: string;
   contact_phone?: string;
+  /** Drives passenger+cargo fitness check on vehicle_type. */
+  cargo_load?: CargoLoad;
 }
 
 /* --------------------------------------------------------------------------
@@ -232,9 +241,31 @@ export function validateVRField(
     }
 
     case "vehicle_type": {
-      // Optional — but if set must be non-empty after sanitize.
       const v = sanitizeText(value);
-      if (v && v.length > 50) return "Vehicle type is too long.";
+      if (!v) {
+        return "Pick a vehicle type that fits your passengers and cargo.";
+      }
+      if (v.length > 50) return "Vehicle type is too long.";
+
+      // Cross-field fitness check: ensure the chosen class can actually carry
+      // the requested passengers and cargo. Mirrors the recommender so the
+      // form can never submit an under-spec'd combination.
+      const profile = getVehicleClassProfile(v);
+      if (!profile) {
+        return "That vehicle type isn't in the catalogue. Pick one from the list.";
+      }
+      if (profile.costBand === "specialised") {
+        return `${profile.label} is dispatcher-assigned only. Pick a personnel-transport class or contact dispatch.`;
+      }
+      const passengers = Math.max(1, Number(ctx.passengers) || 1);
+      if (profile.capacity < passengers) {
+        return `${profile.label} seats ${profile.capacity} but you need ${passengers}. Pick a larger class or reduce passengers.`;
+      }
+      const cargo: CargoLoad = (ctx.cargo_load as CargoLoad) || "none";
+      const cargoNeeded = CARGO_ORDER[cargo] ?? 0;
+      if (CARGO_ORDER[profile.cargo] < cargoNeeded) {
+        return `${profile.label} can't carry ${cargo} cargo. Pick a class with at least ${cargo} cargo capacity.`;
+      }
       return;
     }
 
