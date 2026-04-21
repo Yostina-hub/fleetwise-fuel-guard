@@ -853,7 +853,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           Fleet Request
         </h2>
         <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-          A guided 5-step intake. Fields adapt as you go — progress auto-saves.
+          Fill in the sections below and submit — your progress auto-saves as you type.
         </p>
       </div>
       <Badge
@@ -861,7 +861,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 border-border bg-muted/40 text-muted-foreground font-normal"
       >
         <ShieldCheck className="w-3 h-3 text-primary" />
-        <span className="text-[11px]">Step {tabIndex + 1} / {TABS.length}</span>
+        <span className="text-[11px]">Auto-saved</span>
       </Badge>
     </div>
   );
@@ -877,7 +877,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <DialogHeader className="relative">
             <DialogTitle className="sr-only">Fleet Request</DialogTitle>
             <DialogDescription className="sr-only">
-              A guided 5-step intake. Fields adapt as you go — progress auto-saves.
+              Fleet vehicle request form — fill in the sections and submit.
             </DialogDescription>
             {HeaderInner}
           </DialogHeader>
