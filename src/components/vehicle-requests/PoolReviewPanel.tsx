@@ -674,6 +674,105 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         {/* Ungrouped individual requests */}
         {ungrouped.map(renderRequestRow)}
       </CardContent>
+
+      {/* === Contract decision dialog === */}
+      <Dialog open={!!contractTarget} onOpenChange={(v) => !v && closeContractDialog()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ScrollText className="w-5 h-5 text-primary" />
+              Pool Supervisor Contract
+            </DialogTitle>
+            <DialogDescription>
+              Record your decision on request{" "}
+              <span className="font-medium text-foreground">{contractTarget?.requestNumber}</span>.
+              The requester will be notified.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs">Decision</Label>
+              <Select value={contractDecision} onValueChange={(v) => setContractDecision(v as ContractDecision)}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="approved">✅ Approve with conditions</SelectItem>
+                  <SelectItem value="changes_requested">✏️ Request changes (resubmit)</SelectItem>
+                  <SelectItem value="rejected">❌ Reject</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {contractDecision === "approved" && (
+              <div>
+                <Label className="text-xs">Conditions / Contract Clauses</Label>
+                <Textarea
+                  value={contractConditions}
+                  onChange={(e) => setContractConditions(e.target.value)}
+                  placeholder="e.g. Vehicle to be returned by 18:00. Max 200km. Driver must log fuel receipts."
+                  rows={3}
+                  maxLength={1000}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  These terms become part of the trip contract and are visible to the requester & driver.
+                </p>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs">
+                {contractDecision === "rejected"
+                  ? "Reason for rejection"
+                  : contractDecision === "changes_requested"
+                  ? "What needs to change?"
+                  : "Additional notes (optional)"}
+                {contractDecision !== "approved" && <span className="text-destructive"> *</span>}
+              </Label>
+              <Textarea
+                value={contractNotes}
+                onChange={(e) => setContractNotes(e.target.value)}
+                placeholder={
+                  contractDecision === "rejected"
+                    ? "e.g. No vehicles in this pool can serve a project of this duration."
+                    : contractDecision === "changes_requested"
+                    ? "e.g. Please reduce passenger count to 4 or pick a smaller vehicle class."
+                    : "Optional notes for the requester."
+                }
+                rows={3}
+                maxLength={1000}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={closeContractDialog}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={
+                contractMutation.isPending ||
+                (contractDecision !== "approved" && !contractNotes.trim())
+              }
+              onClick={() =>
+                contractTarget &&
+                contractMutation.mutate({
+                  requestId: contractTarget.requestId,
+                  decision: contractDecision,
+                  conditions: contractConditions,
+                  notes: contractNotes,
+                })
+              }
+              className="gap-1.5"
+            >
+              <FileSignature className="w-4 h-4" />
+              {contractMutation.isPending ? "Saving..." : "Sign & Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
