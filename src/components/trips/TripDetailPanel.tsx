@@ -33,10 +33,12 @@ interface TripDetailPanelProps {
   onReject?: (approvalId: string, requestId: string, comment: string) => void;
   onAssign?: (trip: any) => void;
   onCancel?: (id: string) => void;
+  /** Manager-only: open a dialog to override the request status (re-approve, reject, send back). */
+  onChangeStatus?: (trip: any) => void;
 }
 
 export const TripDetailPanel = ({
-  trip, open, onOpenChange, onSubmit, onApprove, onReject, onAssign, onCancel
+  trip, open, onOpenChange, onSubmit, onApprove, onReject, onAssign, onCancel, onChangeStatus
 }: TripDetailPanelProps) => {
   const status = STATUS_STYLES[trip?.status] || STATUS_STYLES.draft;
 
