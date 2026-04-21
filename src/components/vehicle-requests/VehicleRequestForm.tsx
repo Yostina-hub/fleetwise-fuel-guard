@@ -26,6 +26,8 @@ import { VEHICLE_TYPES_OPTIONS, ASSIGNED_POOLS } from "@/components/fleet/formCo
 import { AlertCircle } from "lucide-react";
 import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm, vehicleRequestZodSchema } from "./vehicleRequestValidation";
+import { VRField } from "./VRField";
+import { deriveVisibility } from "./visibility";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
 import { MyVehicleRequestsSummary } from "./MyVehicleRequestsSummary";
