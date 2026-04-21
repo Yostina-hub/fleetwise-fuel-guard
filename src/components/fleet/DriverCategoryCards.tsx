@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import {
   Users, Link2, Unlink, Briefcase, Building2, Truck, Shield, UserCog, HelpCircle,
-  Sparkles, TrendingUp, Check,
+  Sparkles, TrendingUp, Check, Car,
 } from "lucide-react";
 
 type Filter = {
@@ -49,6 +49,12 @@ const driverTypeMeta: Record<string, Tone> = {
     ring: "ring-fuchsia-400/40", glow: "from-fuchsia-500/20 via-fuchsia-500/5 to-transparent",
     iconBg: "bg-fuchsia-500/10 border-fuchsia-500/30", iconText: "text-fuchsia-300",
     accent: "bg-fuchsia-400", text: "text-fuchsia-200",
+  },
+  rental: {
+    label: "Car Rental", icon: Car,
+    ring: "ring-orange-400/40", glow: "from-orange-500/20 via-orange-500/5 to-transparent",
+    iconBg: "bg-orange-500/10 border-orange-500/30", iconText: "text-orange-300",
+    accent: "bg-orange-400", text: "text-orange-200",
   },
   third_party: {
     label: "Third Party (3PL)", icon: Truck,
