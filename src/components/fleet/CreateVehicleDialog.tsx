@@ -602,10 +602,19 @@ function Field({
   const isError = status === "error" || !!error;
   const isSuccess = status === "success" && !error;
   return (
-    <div className="space-y-1.5">
-      <Label className={`text-sm ${isError ? "text-destructive" : ""}`}>{label}</Label>
+    <div className="flex flex-col gap-1.5">
+      {/* Fixed-height label row so all fields in a grid align to the same baseline */}
+      <Label
+        title={label}
+        className={`text-xs font-medium leading-none truncate ${
+          isError ? "text-destructive" : "text-foreground/80"
+        }`}
+      >
+        {label}
+      </Label>
+      {/* Control row — every input / select / datepicker normalises to h-10 */}
       <div
-        className={`relative ${
+        className={`relative [&_input]:h-10 [&_button[role=combobox]]:h-10 [&>button]:h-10 ${
           isError
             ? "[&_input]:border-destructive [&_button]:border-destructive [&_input]:focus-visible:ring-destructive/30"
             : isSuccess
@@ -621,12 +630,15 @@ function Field({
           />
         )}
       </div>
-      {error && (
-        <p role="alert" className="text-[11px] font-medium text-destructive flex items-center gap-1">
-          <AlertCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
-          {error}
-        </p>
-      )}
+      {/* Reserve a fixed message row so error appearance doesn't shift adjacent cards */}
+      <div className="min-h-[16px]">
+        {error && (
+          <p role="alert" className="text-[11px] font-medium text-destructive flex items-center gap-1 leading-tight">
+            <AlertCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
+            <span className="truncate">{error}</span>
+          </p>
+        )}
+      </div>
     </div>
   );
 }
