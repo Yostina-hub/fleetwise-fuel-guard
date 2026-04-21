@@ -45,6 +45,9 @@ import {
   X,
   FileText,
   Printer,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
 import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
