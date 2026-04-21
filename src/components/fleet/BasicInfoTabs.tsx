@@ -286,7 +286,7 @@ function IdentityPane(props: PaneProps) {
         </div>
       </Field>
 
-      <Field name="purpose_for" label="Purpose For" required error={err("purpose_for")} status={stat("purpose_for")}>
+      <Field name="purpose_for" label="Purpose For" error={err("purpose_for")} status={stat("purpose_for")}>
         <Select value={formData.purpose_for || ""} onValueChange={v => commitSelect("purpose_for", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
@@ -321,7 +321,7 @@ function IdentityPane(props: PaneProps) {
         />
       </Field>
 
-      <Field name="vehicle_type" label="Vehicle Type" required error={err("vehicle_type")} status={stat("vehicle_type")}>
+      <Field name="vehicle_type" label="Vehicle Type" error={err("vehicle_type")} status={stat("vehicle_type")}>
         <Select value={formData.vehicle_type} onValueChange={v => commitSelect("vehicle_type", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
@@ -329,7 +329,7 @@ function IdentityPane(props: PaneProps) {
           </SelectContent>
         </Select>
       </Field>
-      <Field name="vehicle_group" label="Group" required error={err("vehicle_group")} status={stat("vehicle_group")}>
+      <Field name="vehicle_group" label="Group" error={err("vehicle_group")} status={stat("vehicle_group")}>
         <Select value={formData.vehicle_group} onValueChange={v => commitSelect("vehicle_group", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
@@ -402,7 +402,7 @@ function SpecPane(props: PaneProps) {
         <Input value={formData.engine_number || ""} onChange={e => change("engine_number", sanitizeWhileTyping(e.target.value).slice(0, 50))} onBlur={blur("engine_number")} placeholder="e.g. 4JB1TI-XXXX" maxLength={50} />
       </Field>
 
-      <Field name="transmission_type" label="Transmission" required error={err("transmission_type")} status={stat("transmission_type")}>
+      <Field name="transmission_type" label="Transmission" error={err("transmission_type")} status={stat("transmission_type")}>
         <Select value={formData.transmission_type || ""} onValueChange={v => commitSelect("transmission_type", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
@@ -410,7 +410,7 @@ function SpecPane(props: PaneProps) {
           </SelectContent>
         </Select>
       </Field>
-      <Field name="drive_type" label="Drive Type" required error={err("drive_type")} status={stat("drive_type")}>
+      <Field name="drive_type" label="Drive Type" error={err("drive_type")} status={stat("drive_type")}>
         <Select value={formData.drive_type} onValueChange={v => commitSelect("drive_type", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
@@ -428,7 +428,7 @@ function SpecPane(props: PaneProps) {
         />
       </Field>
 
-      <Field name="fuel_type" label="Energy Type" required span={3} error={err("fuel_type")} status={stat("fuel_type")}>
+      <Field name="fuel_type" label="Energy Type" span={3} error={err("fuel_type")} status={stat("fuel_type")}>
         <Select value={formData.fuel_type} onValueChange={v => commitSelect("fuel_type", v)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
