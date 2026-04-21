@@ -26,6 +26,8 @@ import { VEHICLE_TYPES_OPTIONS, ASSIGNED_POOLS } from "@/components/fleet/formCo
 import { AlertCircle } from "lucide-react";
 import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm, vehicleRequestZodSchema } from "./vehicleRequestValidation";
+import { VRField } from "./VRField";
+import { deriveVisibility } from "./visibility";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
 import { MyVehicleRequestsSummary } from "./MyVehicleRequestsSummary";
@@ -629,15 +631,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     },
   });
 
-  const isNighttime = form.request_type === "nighttime_operation";
-  // Nighttime shares the Daily single-day layout (date + start/end time).
-  const isDaily = form.request_type === "daily_operation" || isNighttime;
-  const isProject = form.request_type === "project_operation";
-  const isField = form.request_type === "field_operation";
-
-  // Single-vehicle policy: only Project Operations can request multiple vehicles.
-  // Daily and Field operations are 1:1 (one driver, one vehicle).
-  const allowsMultipleVehicles = isProject;
+  // Centralised visibility derivation — single source of truth for which
+  // sections / fields render for the current request_type. Keeps JSX free
+  // of inline boolean spaghetti and makes the rules unit-testable.
+  const visibility = useMemo(() => deriveVisibility(form.request_type), [form.request_type]);
+  const { isNighttime, isDaily, isProject, isField, allowsMultipleVehicles } = visibility;
   useEffect(() => {
     if (!allowsMultipleVehicles && form.num_vehicles !== "1") {
       setForm((f) => ({ ...f, num_vehicles: "1" }));
@@ -1123,19 +1121,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => { update("end_date", d); handleBlur("end_date", d, form as any); }} required={isProject} minDate={form.start_date} hideTime />
                   <FieldError field="end_date" />
                 </div>
-                {isProject && (
-                  <div>
-                    <Label className="text-primary font-medium">Project Number <span className="text-destructive">*</span></Label>
+                {visibility.showProjectNumber && (
+                  <VRField
+                    id="vr-project-number"
+                    label="Project Number"
+                    required
+                    error={getError("project_number")}
+                    tooltip="Project code this trip is charged to (e.g. PRJ-2026-001). Letters, digits and dashes."
+                  >
                     <Input
                       value={form.project_number}
                       onChange={e => update("project_number", e.target.value)}
                       onBlur={e => handleBlur("project_number", e.target.value, form as any)}
                       placeholder="e.g. PRJ-2026-001"
                       className="h-10"
-                      aria-invalid={!!getError("project_number")}
                     />
-                    <FieldError field="project_number" />
-                  </div>
+                  </VRField>
                 )}
               </div>
             )}
@@ -1314,16 +1315,24 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <h3 className="text-sm font-semibold text-foreground">Vehicle & Pool</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-primary font-medium flex items-center gap-1">
-                  <Car className="w-3.5 h-3.5" /> No. Of Vehicle
-                  {!allowsMultipleVehicles && <Badge variant="outline" className="ml-1 text-[10px] py-0 px-1.5">Locked at 1</Badge>}
-                  <FieldHint>
-                    {allowsMultipleVehicles
-                      ? "Project Operations support a fleet — request as many vehicles as needed."
-                      : "Daily & Field operations are limited to one vehicle. Switch to Project Operation to request more."}
-                  </FieldHint>
-                </Label>
+              <VRField
+                id="vr-num-vehicles"
+                label={
+                  <span className="inline-flex items-center gap-1.5">
+                    No. Of Vehicles
+                    {!allowsMultipleVehicles && (
+                      <Badge variant="outline" className="text-[10px] py-0 px-1.5">Locked at 1</Badge>
+                    )}
+                  </span>
+                }
+                icon={Car}
+                error={getError("num_vehicles")}
+                tooltip={
+                  allowsMultipleVehicles
+                    ? "Project Operations support a fleet — request as many vehicles as needed."
+                    : "Daily & Field operations are limited to one vehicle. Switch to Project Operation to request more."
+                }
+              >
                 <Input
                   type="number"
                   min={1}
@@ -1333,17 +1342,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
                   disabled={!allowsMultipleVehicles}
                   className="h-10"
-                  aria-invalid={!!getError("num_vehicles")}
                 />
-                <FieldError field="num_vehicles" />
-              </div>
-              <div>
-                <Label className="text-primary font-medium flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5" /> No. Of Passenger
-                  <FieldHint>
-                    Enter passengers excluding the driver (i.e. seats needed minus 1).
-                  </FieldHint>
-                </Label>
+              </VRField>
+              <VRField
+                id="vr-passengers"
+                label="No. Of Passengers"
+                icon={Users}
+                error={getError("passengers")}
+                tooltip="Enter passengers excluding the driver (i.e. seats needed minus 1)."
+              >
                 <Input
                   type="number"
                   min={1}
@@ -1352,10 +1359,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   onChange={e => update("passengers", e.target.value)}
                   onBlur={e => handleBlur("passengers", e.target.value, form as any)}
                   className="h-10"
-                  aria-invalid={!!getError("passengers")}
                 />
-                <FieldError field="passengers" />
-              </div>
+              </VRField>
               <div>
                 <Label className="text-primary font-medium flex items-center gap-1">
                   Cargo / Equipment <span className="text-destructive">*</span>
@@ -1517,21 +1522,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Select>
               </div>
               <div className="md:col-span-2">
-                <Label className="text-primary font-medium flex items-center gap-1">
-                  Contact Phone (during trip)
-                  <FieldHint>Optional. Helps dispatch reach the requester quickly if plans change.</FieldHint>
-                </Label>
-                <Input
-                  type="tel"
-                  inputMode="tel"
-                  value={form.contact_phone}
-                  onChange={e => update("contact_phone", e.target.value)}
-                  onBlur={e => handleBlur("contact_phone", e.target.value, form as any)}
-                  placeholder="+251 9X XXX XXXX — reachable while the trip is active"
-                  className="h-10"
-                  aria-invalid={!!getError("contact_phone")}
-                />
-                <FieldError field="contact_phone" />
+                <VRField
+                  id="vr-contact-phone"
+                  label="Contact Phone (during trip)"
+                  error={getError("contact_phone")}
+                  tooltip="Optional. Helps dispatch reach the requester quickly if plans change."
+                >
+                  <Input
+                    type="tel"
+                    inputMode="tel"
+                    value={form.contact_phone}
+                    onChange={e => update("contact_phone", e.target.value)}
+                    onBlur={e => handleBlur("contact_phone", e.target.value, form as any)}
+                    placeholder="+251 9X XXX XXXX — reachable while the trip is active"
+                    className="h-10"
+                  />
+                </VRField>
               </div>
             </div>
           </section>
@@ -1622,8 +1628,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-primary font-medium">Trip Description <span className="text-destructive">*</span></Label>
+            <VRField
+              id="vr-purpose"
+              label="Trip Description"
+              icon={FileText}
+              required
+              error={getError("purpose")}
+              filled={(form.purpose?.length || 0) >= 10}
+              hint={
+                <span className={(form.purpose?.length || 0) >= 1000 ? "text-destructive font-medium" : undefined}>
+                  {form.purpose?.length || 0}/1000 characters
+                </span>
+              }
+            >
               <Textarea
                 value={form.purpose}
                 onChange={e => update("purpose", e.target.value.slice(0, 1000))}
@@ -1631,13 +1648,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 placeholder="Describe the purpose of this trip — what, where, and why (min 10 characters)…"
                 rows={4}
                 maxLength={1000}
-                aria-invalid={!!getError("purpose")}
               />
-              <FieldError field="purpose" />
-              <p className={`text-[11px] mt-1 ${(form.purpose?.length || 0) >= 1000 ? "text-destructive font-medium" : "text-muted-foreground"}`}>
-                {form.purpose?.length || 0}/1000 characters
-              </p>
-            </div>
+            </VRField>
             <div className="rounded-lg border border-border bg-gradient-to-br from-muted/50 to-muted/20 p-4 text-xs text-muted-foreground space-y-2">
               <p className="font-medium text-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Approval Routing</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1">
