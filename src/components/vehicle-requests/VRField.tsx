@@ -38,7 +38,7 @@ export interface VRFieldProps {
   /** Tooltip body for the (i) hover hint. */
   tooltip?: React.ReactNode;
   /** Tooltip tone — forwarded to FieldHint. */
-  tooltipTone?: "default" | "warning";
+  tooltipTone?: "muted" | "warning";
   className?: string;
   children: React.ReactElement<any>;
 }
