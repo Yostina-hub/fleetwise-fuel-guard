@@ -195,8 +195,30 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restoredAt]);
 
-  // Super-admin only: file the request on behalf of another user or driver
-  const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
+  // Super-admin / manager: file the request on behalf of another user or driver.
+  // The selection is persisted to localStorage alongside the form draft so a
+  // refresh, accidental close, or browser crash doesn't lose who the request
+  // is for. Cleared on successful submit and when "Discard draft" is clicked.
+  type OnBehalfOf = { id: string; name: string; email: string; type: "user" | "driver"; driverId?: string };
+  const onBehalfDraftKey = draftKey ? `${draftKey}:onBehalfOf` : null;
+  const [onBehalfOf, setOnBehalfOf] = useState<OnBehalfOf | null>(() => {
+    if (typeof window === "undefined" || !onBehalfDraftKey) return null;
+    try {
+      const raw = window.localStorage.getItem(onBehalfDraftKey);
+      return raw ? (JSON.parse(raw) as OnBehalfOf) : null;
+    } catch {
+      return null;
+    }
+  });
+  useEffect(() => {
+    if (typeof window === "undefined" || !onBehalfDraftKey) return;
+    try {
+      if (onBehalfOf) window.localStorage.setItem(onBehalfDraftKey, JSON.stringify(onBehalfOf));
+      else window.localStorage.removeItem(onBehalfDraftKey);
+    } catch {
+      /* quota / private mode — ignore */
+    }
+  }, [onBehalfOf, onBehalfDraftKey]);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
 
@@ -836,7 +858,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               variant="ghost"
               size="sm"
               className="h-6 px-2 text-xs"
-              onClick={() => { clearDraft(); setForm(initialWithPrefill); }}
+              onClick={() => { clearDraft(); setForm(initialWithPrefill); setOnBehalfOf(null); }}
             >
               Discard draft
             </Button>
