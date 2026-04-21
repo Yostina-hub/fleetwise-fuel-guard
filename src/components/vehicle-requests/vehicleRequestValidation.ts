@@ -402,7 +402,7 @@ export const vehicleRequestZodSchema = z.object({
     .string()
     .trim()
     .min(10, "Trip description must be at least 10 characters.")
-    .max(2000, "Trip description must be 2000 characters or fewer."),
+    .max(1000, "Trip description must be 1000 characters or fewer."),
   purpose_category: z
     .string()
     .trim()
