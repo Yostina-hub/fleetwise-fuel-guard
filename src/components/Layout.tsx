@@ -132,6 +132,7 @@ const getNavItems = (t: (key: string) => string) => [
       { label: "My Requests", path: "/my-requests" },
       { label: t("nav.tripHub"), path: "/trip-management" },
       { label: t("nav.vehicleRequests"), path: "/vehicle-requests" },
+      { label: "Pool Supervisors", path: "/pool-supervisors" },
       { label: t("nav.requestDashboard"), path: "/fleet-scheduling" },
       { label: t("nav.dispatchJobs"), path: "/dispatch" },
       { label: t("nav.pendingApprovals"), path: "/trip-management?tab=approvals" },
