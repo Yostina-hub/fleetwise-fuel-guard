@@ -47,6 +47,28 @@ const numericString = (label: string, opts?: { min?: number; max?: number; integ
       },
     );
 
+/**
+ * Compliance expiry date: optional, but if provided MUST be today or future.
+ * Blocks registering a vehicle whose insurance / registration / permit
+ * has already expired.
+ */
+const futureOrEmptyDate = (label: string) =>
+  z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (v) => {
+        if (!v) return true;
+        const d = new Date(v);
+        if (Number.isNaN(d.getTime())) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return d.getTime() >= today.getTime();
+      },
+      { message: `${label} is expired — renew it before registering this vehicle` },
+    );
+
 /** Per-field schemas — keyed by formData field name. */
 export const vehicleFieldSchemas = {
   // ----- Identity -----
