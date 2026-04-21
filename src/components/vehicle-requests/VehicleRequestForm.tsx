@@ -26,7 +26,7 @@ import { LocationPickerField } from "@/components/shared/LocationPickerField";
 import { VEHICLE_TYPES_OPTIONS, ASSIGNED_POOLS, ASSIGNED_LOCATIONS } from "@/components/fleet/formConstants";
 import { AlertCircle } from "lucide-react";
 import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
-import { sanitizeVehicleRequestForm, vehicleRequestZodSchema } from "./vehicleRequestValidation";
+import { sanitizeVehicleRequestForm, vehicleRequestZodSchema, validateVehicleRequestForm } from "./vehicleRequestValidation";
 import { VRField } from "./VRField";
 import { deriveVisibility } from "./visibility";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
