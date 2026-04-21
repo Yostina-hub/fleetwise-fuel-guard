@@ -342,6 +342,8 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                     formData={formData}
                     set={set}
                     plateNumber={plateNumber}
+                    activeSubTab={activeBasicTab}
+                    onSubTabChange={setActiveBasicTab}
                     onBlur={(field, value) => fieldValidation.handleBlur(field as VehicleFieldName, value)}
                     onChange={(field, value) => fieldValidation.handleChange(field as VehicleFieldName, value)}
                     getError={(field) => fieldValidation.getError(field as VehicleFieldName)}
