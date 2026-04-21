@@ -1228,10 +1228,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <div>
                   <Label className="text-primary font-medium flex items-center gap-1">
                     <Route className="w-3.5 h-3.5" /> Intermediate Stops
+                    <FieldHint>
+                      Add ordered waypoints between Departure and Final Destination. Driver will visit them in this order.
+                    </FieldHint>
                   </Label>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Add ordered waypoints between Departure and Final Destination. Driver will visit them in this order.
-                  </p>
                 </div>
                 <Button
                   type="button"
@@ -1629,9 +1629,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                The unit this trip is charged to / belongs to. Helps approval routing & reporting.
-              </p>
             </div>
             <div>
               <Label className="text-primary font-medium">Trip Description <span className="text-destructive">*</span></Label>
