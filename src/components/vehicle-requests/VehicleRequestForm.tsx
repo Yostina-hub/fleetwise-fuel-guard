@@ -849,17 +849,73 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     details: !!form.purpose && !!form.purpose_category,
   };
 
+  // Overall completion across the 5 tabs (drives the header progress bar).
+  const overallPct = useMemo(() => {
+    const vals = Object.values(tabComplete);
+    const filled = vals.filter(Boolean).length;
+    return vals.length ? Math.round((filled / vals.length) * 100) : 0;
+  }, [tabComplete]);
+
   const HeaderInner = (
-    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-      <div className="h-2 bg-primary" aria-hidden="true" />
-      <div className="p-5 sm:p-6">
-        <h2 className="text-2xl font-semibold text-foreground">
-          Vehicle Request
-        </h2>
-        <p className="mt-2 text-base text-muted-foreground">
-          Complete the questions below to submit your vehicle request.
-        </p>
+    <div className="relative rounded-2xl border bg-card/60 backdrop-blur-xl shadow-sm overflow-hidden">
+      {/* Title row + completion meter */}
+      <div className="flex items-center justify-between gap-3 px-4 md:px-5 py-3 border-b">
+        <div>
+          <h3 className="text-base font-semibold tracking-tight">Vehicle Request</h3>
+          <p className="text-xs text-muted-foreground">Complete the sections below to submit your trip</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Complete</span>
+          <span className="text-sm font-semibold tabular-nums w-10 text-right">{overallPct}%</span>
+          <div className="w-24 h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-primary to-secondary transition-all"
+              style={{ width: `${overallPct}%` }}
+            />
+          </div>
+        </div>
       </div>
+
+      {/* Segmented pill tabs (mirrors BasicInfoTabs in the registration form) */}
+      <LayoutGroup id="vehicle-request-tabs">
+        <div className="px-3 md:px-5 py-3">
+          <div role="tablist" className="relative inline-flex flex-wrap gap-1 p-1 rounded-full border bg-muted/50 backdrop-blur">
+            {TABS.map(t => {
+              const isActive = activeTab === t.id;
+              const Icon = t.icon;
+              const done = !!tabComplete[t.id];
+              return (
+                <button
+                  key={t.id}
+                  role="tab"
+                  type="button"
+                  aria-selected={isActive}
+                  onClick={() => setActiveTab(t.id as any)}
+                  className={`relative z-10 px-4 py-2 rounded-full text-xs md:text-sm font-medium inline-flex items-center gap-2 transition-colors ${
+                    isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="vr-tabs-pill"
+                      className="absolute inset-0 rounded-full bg-gradient-to-r from-primary to-secondary shadow-md shadow-primary/40"
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{t.label}</span>
+                    {done && <CheckCircle2 className="w-3 h-3" />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground pl-2">
+            {TABS.find(t => t.id === activeTab)?.hint}
+          </p>
+        </div>
+      </LayoutGroup>
     </div>
   );
 
