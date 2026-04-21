@@ -195,11 +195,11 @@ const FleetOwnedVsRentalCard = ({
             aria-label={`Owned ${ownedPct}%, Rental ${rentalPct}%`}
           >
             <div
-              className="h-full bg-emerald-500 transition-all duration-700"
+              className="h-full bg-success transition-all duration-700"
               style={{ width: `${ownedPct}%` }}
             />
             <div
-              className="h-full bg-rose-500 transition-all duration-700"
+              className="h-full bg-destructive transition-all duration-700"
               style={{ width: `${rentalPct}%` }}
             />
           </div>
