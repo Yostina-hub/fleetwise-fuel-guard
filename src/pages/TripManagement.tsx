@@ -14,6 +14,16 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { useApprovals } from "@/hooks/useApprovals";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -517,9 +527,71 @@ const TripManagement = () => {
       <ExportScheduleDialog open={exportOpen} onOpenChange={setExportOpen} />
       <UnifiedVehicleRequestDialog open={createOpen} onOpenChange={setCreateOpen} source="trip_management" />
       <CreateAssignmentDialog open={assignOpen} onOpenChange={setAssignOpen} />
+
+      {/* Reject-with-reason prompt — invoked by the kanban "X" quick action.
+          A reason is mandatory so the requester always gets actionable feedback. */}
+      <RejectReasonDialog
+        open={!!rejectTarget}
+        requestNumber={rejectTarget?.requestNumber}
+        reason={rejectReason}
+        onReasonChange={setRejectReason}
+        submitting={rejectSubmitting}
+        onCancel={() => { setRejectTarget(null); setRejectReason(""); }}
+        onConfirm={submitReject}
+      />
     </Layout>
   );
 };
+
+/* Small inline dialog component — kept here because it's only used by this page. */
+function RejectReasonDialog({
+  open, requestNumber, reason, onReasonChange, submitting, onCancel, onConfirm,
+}: {
+  open: boolean;
+  requestNumber?: string;
+  reason: string;
+  onReasonChange: (v: string) => void;
+  submitting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>Reject vehicle request</DialogTitle>
+          <DialogDescription>
+            {requestNumber
+              ? <>Provide a reason for rejecting <span className="font-mono">{requestNumber}</span>. The requester will be notified.</>
+              : "Provide a reason — the requester will be notified."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Label htmlFor="rej-reason">Rejection reason *</Label>
+          <Textarea
+            id="rej-reason"
+            value={reason}
+            onChange={(e) => onReasonChange(e.target.value)}
+            placeholder="e.g. Vehicle not available on requested date"
+            rows={4}
+            maxLength={500}
+            autoFocus
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} disabled={submitting}>Cancel</Button>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={submitting || !reason.trim()}
+          >
+            {submitting ? "Rejecting…" : "Confirm rejection"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const StatusPill = ({ status }: { status: string }) => {
   const styles: Record<string, string> = {
