@@ -172,6 +172,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     daily_operation: 0,
     project_operation: 7,
     field_operation: 30,
+    group_operation: 0,
   };
 
   // While impersonating, force the form to file the request as the impersonated
