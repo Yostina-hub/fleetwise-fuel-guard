@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Clock, Users, Car, Route, UserCog, X, MapPin, Layers, FileText, Sparkles, CalendarDays, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Moon } from "lucide-react";
+import { Clock, Users, Car, Route, UserCog, X, MapPin, Layers, FileText, Sparkles, CalendarDays, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Moon, Building2, Globe2 } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { FieldHint } from "@/components/ui/field-hint";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -23,7 +23,7 @@ import { useTranslation } from "react-i18next";
 import { DateTimePicker, combineDateAndTime } from "@/components/ui/date-time-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 import { LocationPickerField } from "@/components/shared/LocationPickerField";
-import { VEHICLE_TYPES_OPTIONS, ASSIGNED_POOLS } from "@/components/fleet/formConstants";
+import { VEHICLE_TYPES_OPTIONS, ASSIGNED_POOLS, ASSIGNED_LOCATIONS } from "@/components/fleet/formConstants";
 import { AlertCircle } from "lucide-react";
 import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm, vehicleRequestZodSchema } from "./vehicleRequestValidation";
@@ -62,6 +62,39 @@ const POOL_HIERARCHY: Record<string, string[]> = {
   zone: ["SWAAZ", "EAAZ"],
   region: ["NR", "SR"],
 };
+
+/**
+ * Pool Category metadata — mirrors the visual chip used in the Vehicle
+ * Registration form (BasicInfoTabs) so requesters see the same icon + tone
+ * for Corporate / Zone / Region across both flows.
+ *
+ * Keys map to the lower-case `pool_category` we persist on `vehicle_requests`.
+ */
+const POOL_CATEGORY_META: Record<
+  "corporate" | "zone" | "region",
+  { label: string; icon: typeof Building2; tone: string; desc: string; locationGroup: "Corporate" | "Zone" | "Region" }
+> = {
+  corporate: { label: "Corporate", icon: Building2, tone: "text-blue-500 bg-blue-500/10 ring-blue-500/20",     desc: "Head office assets",  locationGroup: "Corporate" },
+  zone:      { label: "Zone",      icon: Layers,    tone: "text-amber-500 bg-amber-500/10 ring-amber-500/20",   desc: "Zonal pool",          locationGroup: "Zone" },
+  region:    { label: "Region",    icon: Globe2,    tone: "text-emerald-500 bg-emerald-500/10 ring-emerald-500/20", desc: "Regional pool",   locationGroup: "Region" },
+};
+
+function PoolCategoryChip({ value, compact = false }: { value: string; compact?: boolean }) {
+  const meta = POOL_CATEGORY_META[value as keyof typeof POOL_CATEGORY_META];
+  if (!meta) return <span>{value}</span>;
+  const Icon = meta.icon;
+  return (
+    <span className="flex items-center gap-2 min-w-0">
+      <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md ring-1 ${meta.tone}`}>
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <span className="flex flex-col min-w-0 leading-tight">
+        <span className="text-sm font-medium truncate">{meta.label}</span>
+        {!compact && <span className="text-[10px] text-muted-foreground truncate">{meta.desc}</span>}
+      </span>
+    </span>
+  );
+}
 
 /**
  * Build a "HH:MM" string from a Date, rounded *up* to the next 5-minute mark.
@@ -1540,30 +1573,71 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </div>
-              <div className="">
+              {/* Pool Category — mirrors Vehicle Registration form (Corporate / Zone / Region) */}
+              <div>
                 <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
-                  Assigned Pool
-                  <FieldHint>Operational pool the trip will be served from.</FieldHint>
+                  Pool Category
+                  <FieldHint>Corporate / Zone / Region — determines which Assigned Locations you can pick.</FieldHint>
                 </Label>
-                <Select value={form.pool_name} onValueChange={v => {
-                  // Derive a category bucket so downstream filters/reports keep working.
-                  const found = ASSIGNED_POOLS.find(p => p.value === v);
-                  const cat = found?.group === "Corporate Pools" ? "corporate"
-                            : found?.group === "Regional Pools" ? "region"
-                            : "zone";
-                  update("pool_name", v);
-                  update("pool_category", cat);
-                }}>
-                  <SelectTrigger className="h-12 text-base"><SelectValue placeholder="Select Assigned Pool" /></SelectTrigger>
+                <Select
+                  value={form.pool_category}
+                  onValueChange={v => {
+                    update("pool_category", v);
+                    // Reset the dependent location whenever category changes
+                    const meta = POOL_CATEGORY_META[v as keyof typeof POOL_CATEGORY_META];
+                    const cur = ASSIGNED_LOCATIONS.find(l => l.value === form.pool_name);
+                    if (!cur || cur.group !== meta?.locationGroup) {
+                      update("pool_name", "");
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-12 text-base">
+                    <SelectValue placeholder="Select category...">
+                      {form.pool_category && <PoolCategoryChip value={form.pool_category} />}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
-                    {["Corporate Pools", "Regional Pools", "Other"].map(group => (
-                      <SelectGroup key={group}>
-                        <SelectLabel>{group}</SelectLabel>
-                        {ASSIGNED_POOLS.filter(p => p.group === group).map(p => (
-                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
+                    <SelectItem value="corporate"><PoolCategoryChip value="corporate" /></SelectItem>
+                    <SelectItem value="zone"><PoolCategoryChip value="zone" /></SelectItem>
+                    <SelectItem value="region"><PoolCategoryChip value="region" /></SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Assigned Location — filtered by Pool Category */}
+              <div>
+                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
+                  Assigned Location
+                  <FieldHint>Filtered by Pool Category. Pick the operational pool the trip will be served from.</FieldHint>
+                </Label>
+                <Select
+                  value={form.pool_name}
+                  onValueChange={v => update("pool_name", v)}
+                  disabled={!form.pool_category}
+                >
+                  <SelectTrigger className={`h-12 text-base ${!form.pool_category ? "opacity-50" : ""}`}>
+                    <SelectValue placeholder={form.pool_category ? "Select location..." : "Pick category first"}>
+                      {form.pool_name && (
+                        <span className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-primary" />
+                          <span className="truncate">
+                            {ASSIGNED_LOCATIONS.find(l => l.value === form.pool_name)?.label || form.pool_name}
+                          </span>
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {ASSIGNED_LOCATIONS
+                      .filter(l => l.group === POOL_CATEGORY_META[form.pool_category as keyof typeof POOL_CATEGORY_META]?.locationGroup)
+                      .map(l => (
+                        <SelectItem key={l.value} value={l.value}>
+                          <span className="flex items-center gap-2">
+                            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                            {l.label}
+                          </span>
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
