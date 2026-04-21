@@ -26,6 +26,14 @@ export function useVehicleRequestValidation() {
         else delete next[field];
         return next;
       });
+      // Auto-mark as touched once the user has supplied any value, so the
+      // error message becomes visible without requiring an explicit blur.
+      const hasValue =
+        value !== undefined && value !== null && value !== "" &&
+        !(Array.isArray(value) && value.length === 0);
+      if (hasValue) {
+        setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
+      }
       return msg;
     },
     [],
