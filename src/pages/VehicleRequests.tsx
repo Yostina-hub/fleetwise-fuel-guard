@@ -140,7 +140,6 @@ const VehicleRequests = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [poolFilter, setPoolFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Realtime subscription for vehicle_requests
   useEffect(() => {
@@ -945,6 +944,10 @@ const VehicleRequests = () => {
             onClose={() => setShowMultiAssign(null)}
           />
         )}
+        <BulkImportVehicleRequestsDialog
+          open={showImport}
+          onOpenChange={setShowImport}
+        />
       </div>
     </Layout>
   );
