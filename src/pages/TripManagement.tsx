@@ -374,6 +374,34 @@ const TripManagement = () => {
           </div>
         </div>
 
+        {createOpen ? (
+          <Card className="overflow-hidden border-border/60 shadow-sm">
+            <div className="flex items-center justify-between gap-3 px-5 sm:px-6 py-3 border-b border-border/60 bg-muted/30">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 h-8 -ml-2 text-muted-foreground hover:text-foreground"
+                onClick={() => setCreateOpen(false)}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to Trips
+              </Button>
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+                New Fleet Request
+              </span>
+            </div>
+            <div className="p-0">
+              <VehicleRequestForm
+                open
+                embedded
+                source="trip_management"
+                onOpenChange={(v) => !v && setCreateOpen(false)}
+                onSubmitted={() => setCreateOpen(false)}
+              />
+            </div>
+          </Card>
+        ) : (
+          <>
         {/* Quick Trip Request — only for users who can manage fleet */}
         {canManage && <QuickTripRequest />}
 
