@@ -1007,8 +1007,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* TYPE SECTION */}
           <section className="space-y-3 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">1</span>
-              <h3 className="text-sm font-semibold text-foreground">Operation Type</h3>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">1</span>
+              <h3 className="text-base font-semibold text-foreground">Operation Type</h3>
             </div>
             <Label className="text-foreground font-medium text-sm">Vehicle Request Type</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
@@ -1052,8 +1052,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* SCHEDULE SECTION */}
           <section className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">2</span>
-              <h3 className="text-sm font-semibold text-foreground">Schedule</h3>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">2</span>
+              <h3 className="text-base font-semibold text-foreground">Schedule</h3>
             </div>
             {/* Working-hours policy banner — Project / operational only */}
             {isProject && workingHoursPolicy && (() => {
@@ -1164,8 +1164,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* ROUTE SECTION */}
           <section className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">3</span>
-              <h3 className="text-sm font-semibold text-foreground">Route</h3>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">3</span>
+              <h3 className="text-base font-semibold text-foreground">Route</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <LocationPickerField
@@ -1311,7 +1311,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* RESOURCES SECTION */}
           <section className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">4</span>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">4</span>
               <h3 className="text-sm font-semibold text-foreground">Vehicle & Pool</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1545,7 +1545,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* DETAILS SECTION */}
           <section className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">5</span>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">5</span>
               <h3 className="text-sm font-semibold text-foreground">Purpose & Submit</h3>
             </div>
             <div>
