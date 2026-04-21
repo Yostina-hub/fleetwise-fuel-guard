@@ -23278,6 +23278,9 @@ export type Database = {
           driver_checkout_odometer: number | null
           driver_rating: number | null
           end_time: string | null
+          filed_by_name: string | null
+          filed_by_user_id: string | null
+          filed_on_behalf: boolean
           id: string
           kpi_target_minutes: number | null
           needed_from: string
@@ -23358,6 +23361,9 @@ export type Database = {
           driver_checkout_odometer?: number | null
           driver_rating?: number | null
           end_time?: string | null
+          filed_by_name?: string | null
+          filed_by_user_id?: string | null
+          filed_on_behalf?: boolean
           id?: string
           kpi_target_minutes?: number | null
           needed_from: string
@@ -23438,6 +23444,9 @@ export type Database = {
           driver_checkout_odometer?: number | null
           driver_rating?: number | null
           end_time?: string | null
+          filed_by_name?: string | null
+          filed_by_user_id?: string | null
+          filed_on_behalf?: boolean
           id?: string
           kpi_target_minutes?: number | null
           needed_from?: string

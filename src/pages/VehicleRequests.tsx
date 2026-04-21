@@ -857,7 +857,19 @@ const VehicleRequests = () => {
                               {REQUEST_TYPE_LABELS[r.request_type] || r.request_type || "—"}
                             </Badge>
                           </td>
-                          <td className="py-3 px-3 text-foreground">{r.requester_name}</td>
+                          <td className="py-3 px-3 text-foreground">
+                            <div className="flex flex-col gap-0.5">
+                              <span>{r.requester_name}</span>
+                              {r.filed_on_behalf && r.filed_by_name && (
+                                <span
+                                  className="text-[10px] text-muted-foreground italic"
+                                  title={`Filed on behalf of ${r.requester_name} by ${r.filed_by_name}`}
+                                >
+                                  filed by {r.filed_by_name}
+                                </span>
+                              )}
+                            </div>
+                          </td>
                           <td className="py-3 px-3 text-muted-foreground text-xs max-w-[180px] truncate">
                             {r.departure_place && r.destination
                               ? `${r.departure_place} → ${r.destination}`
