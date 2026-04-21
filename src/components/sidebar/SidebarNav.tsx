@@ -145,10 +145,10 @@ export function SidebarNav({ navItems, adminItems, developerItems = [], isSuperA
                   isCollapsed && "justify-center px-2",
                   location.pathname === item.path
                     ? isDark
-                      ? "bg-primary/20 text-white shadow-sm"
+                      ? "bg-primary/20 text-surface-foreground shadow-sm"
                       : "bg-primary/10 text-foreground shadow-sm"
                     : isDark
-                      ? "text-surface-foreground/70 hover:bg-surface-overlay hover:text-white"
+                      ? "text-surface-foreground/70 hover:bg-surface-overlay hover:text-surface-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 )}
               >

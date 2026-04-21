@@ -46,7 +46,7 @@ export function MobileNav({
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full text-surface-muted-foreground hover:text-white hover:bg-surface-overlay/60 active:scale-95 transition-transform touch-manipulation"
+              className="h-9 w-9 rounded-full text-surface-muted-foreground hover:text-surface-foreground hover:bg-surface-overlay/60 active:scale-95 transition-transform touch-manipulation"
               onClick={() => onOpenChange(false)}
             >
               <X className="h-5 w-5" />
@@ -77,7 +77,7 @@ export function MobileNav({
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium text-white truncate block">
+                <span className="text-sm font-medium text-surface-foreground truncate block">
                   {userEmail}
                 </span>
                 <span className="text-xs text-surface-muted-foreground">Tap to sign out</span>

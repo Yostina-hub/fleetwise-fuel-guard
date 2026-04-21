@@ -62,7 +62,7 @@ export function MobileHeader() {
               className="h-7 w-auto object-contain"
             />
             <div className="h-4 w-px bg-surface-overlay" />
-            <h1 className="text-sm font-semibold text-white truncate max-w-[140px]">
+            <h1 className="text-sm font-semibold text-surface-foreground truncate max-w-[140px]">
               {getTitle()}
             </h1>
           </div>

@@ -437,7 +437,7 @@ const LayoutInner = ({ children }: LayoutProps) => {
                 size="sm"
                 onClick={toggleSidebar}
                 className={cn(
-                  "w-full text-surface-muted-foreground hover:text-white hover:bg-surface-overlay",
+                  "w-full text-surface-muted-foreground hover:text-surface-foreground hover:bg-surface-overlay",
                   isCollapsed ? "justify-center px-2" : "justify-start"
                 )}
               >
@@ -494,7 +494,7 @@ const LayoutInner = ({ children }: LayoutProps) => {
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="h-8 w-8 text-surface-muted-foreground hover:text-white hover:bg-surface-overlay"
+            className="h-8 w-8 text-surface-muted-foreground hover:text-surface-foreground hover:bg-surface-overlay"
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
@@ -528,14 +528,14 @@ const LayoutInner = ({ children }: LayoutProps) => {
                     {user?.email?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
-                <span className="text-xs font-medium max-w-[120px] truncate text-white">
+                <span className="text-xs font-medium max-w-[120px] truncate text-surface-foreground">
                   {user?.email}
                 </span>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 shrink-0 text-surface-muted-foreground hover:text-white hover:bg-destructive/10"
+                className="h-8 w-8 shrink-0 text-surface-muted-foreground hover:text-surface-foreground hover:bg-destructive/10"
                 onClick={handleSignOut}
                 title="Sign out"
               >
