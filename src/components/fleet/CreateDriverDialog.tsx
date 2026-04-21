@@ -462,8 +462,15 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
               <Field label="Email" error={validation.getError("email")} success={!validation.getError("email") && !!formData.email && validation.touched.email} fieldRef={registerRef("email")} hint="Required for portal access">
                 <Input type="email" value={formData.email} onChange={e => set("email", e.target.value)} onBlur={() => onBlur("email")} placeholder="driver@example.com" maxLength={255} className={errClass("email")} aria-invalid={!!validation.getError("email")} />
               </Field>
-              <Field label="Date of Birth" error={validation.getError("date_of_birth")} fieldRef={registerRef("date_of_birth")}>
-                <Input type="date" value={formData.date_of_birth} onChange={e => set("date_of_birth", e.target.value)} onBlur={() => onBlur("date_of_birth")} max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]} className={errClass("date_of_birth")} aria-invalid={!!validation.getError("date_of_birth")} />
+              <Field label="Date of Birth" error={validation.getError("date_of_birth")} fieldRef={registerRef("date_of_birth")} hint="Driver must be at least 18 years old">
+                <DatePickerField
+                  value={formData.date_of_birth}
+                  onChange={(v) => set("date_of_birth", v)}
+                  onBlur={() => onBlur("date_of_birth")}
+                  max={MAX_DOB}
+                  placeholder="Select date of birth"
+                  ariaInvalid={!!validation.getError("date_of_birth")}
+                />
               </Field>
               <Field label="Employee ID" error={validation.getError("employee_id")}>
                 <Input value={formData.employee_id} onChange={e => set("employee_id", e.target.value)} onBlur={() => onBlur("employee_id")} placeholder="EMP-001" maxLength={50} className={errClass("employee_id")} />
@@ -522,10 +529,24 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                 </Select>
               </Field>
               <Field label="License Issue Date" error={validation.getError("license_issue_date")}>
-                <Input type="date" value={formData.license_issue_date} onChange={e => set("license_issue_date", e.target.value)} onBlur={() => onBlur("license_issue_date")} className={errClass("license_issue_date")} />
+                <DatePickerField
+                  value={formData.license_issue_date}
+                  onChange={(v) => set("license_issue_date", v)}
+                  onBlur={() => onBlur("license_issue_date")}
+                  max={today()}
+                  placeholder="Select issue date"
+                  ariaInvalid={!!validation.getError("license_issue_date")}
+                />
               </Field>
               <Field label="License Expiry Date" error={validation.getError("license_expiry")} fieldRef={registerRef("license_expiry")}>
-                <Input type="date" value={formData.license_expiry} onChange={e => { set("license_expiry", e.target.value); validation.validateField("license_expiry", e.target.value); }} onBlur={() => onBlur("license_expiry")} className={errClass("license_expiry")} />
+                <DatePickerField
+                  value={formData.license_expiry}
+                  onChange={(v) => { set("license_expiry", v); validation.validateField("license_expiry", v); }}
+                  onBlur={() => onBlur("license_expiry")}
+                  min={formData.license_issue_date || today()}
+                  placeholder="Select expiry date"
+                  ariaInvalid={!!validation.getError("license_expiry")}
+                />
               </Field>
             </div>
           </Section>
@@ -562,7 +583,13 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                 </Select>
               </Field>
               <Field label="Effective Date" error={validation.getError("joining_date")} fieldRef={registerRef("joining_date")}>
-                <Input type="date" value={formData.joining_date} onChange={e => { set("joining_date", e.target.value); validation.validateField("joining_date", e.target.value); }} onBlur={() => onBlur("joining_date")} className={errClass("joining_date")} />
+                <DatePickerField
+                  value={formData.joining_date}
+                  onChange={(v) => { set("joining_date", v); validation.validateField("joining_date", v); }}
+                  onBlur={() => onBlur("joining_date")}
+                  placeholder="Select effective date"
+                  ariaInvalid={!!validation.getError("joining_date")}
+                />
               </Field>
               <Field label="Assigned Pool" required error={validation.getError("department")} hint="Corporate, Zone or Regional pool" fieldRef={registerRef("department")}>
                 <Select value={formData.department} onValueChange={v => { set("department", v); set("assigned_pool", v); validation.validateField("department", v); }}>
@@ -718,11 +745,24 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <User className="w-5 h-5 text-primary" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <DialogTitle className="text-xl">Register New Driver</DialogTitle>
               <DialogDescription className="mt-0.5">
                 Complete each step. Fields validate as you go — descriptive errors guide you to fix issues quickly.
               </DialogDescription>
+              {(draftSavedAt || draftRestoredAt) && (
+                <div className="mt-2.5 max-w-md">
+                  <DraftStatus
+                    restoredAt={draftRestoredAt}
+                    savedAt={draftSavedAt}
+                    onClear={() => {
+                      clearDraft();
+                      setFormData({ ...initialForm, ...(prefill ?? {}) });
+                      validation.reset();
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </DialogHeader>
