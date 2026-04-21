@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getFleetLiveStatus } from "@/lib/fleetLiveStatus";
 import Layout from "@/components/Layout";
+import { Can } from "@/components/auth/Can";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
