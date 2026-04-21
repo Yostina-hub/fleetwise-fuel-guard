@@ -41,9 +41,10 @@ const priorityConfig: Record<string, { color: string; label: string }> = {
 };
 
 const TYPE_META: Record<string, { label: string; icon: React.ReactNode }> = {
-  daily_operation:   { label: "Daily",   icon: <Clock className="w-3 h-3" /> },
-  project_operation: { label: "Project", icon: <Briefcase className="w-3 h-3" /> },
-  field_operation:   { label: "Field",   icon: <CalendarRange className="w-3 h-3" /> },
+  daily_operation:     { label: "Daily",     icon: <Clock className="w-3 h-3" /> },
+  nighttime_operation: { label: "Nighttime", icon: <Moon className="w-3 h-3" /> },
+  project_operation:   { label: "Project",   icon: <Briefcase className="w-3 h-3" /> },
+  field_operation:     { label: "Field",     icon: <CalendarRange className="w-3 h-3" /> },
 };
 
 export const VehicleRequestCard = ({
