@@ -141,6 +141,7 @@ const Fleet = () => {
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState("all");
   const [fuelTypeFilter, setFuelTypeFilter] = useState("all");
   const [ownershipFilter, setOwnershipFilter] = useState("all");
+  const [scopeFilter, setScopeFilter] = useState("all"); // all | corporate | zonal | regional
   const [driverFilter, setDriverFilter] = useState("all");
   // Client-side filter on the *computed* live status (matches the StatusBadge in the table).
   // Values: "all" | "moving" | "idle_engine_on" | "idle_engine_off" | "offline"
@@ -180,6 +181,7 @@ const Fleet = () => {
     vehicleTypeFilter,
     fuelTypeFilter,
     ownershipFilter,
+    scopeFilter,
     sortField,
     sortDirection,
     vehicleIdFilter: focusedVehicleId, // Filter to specific vehicle when coming from "Manage"
@@ -367,6 +369,7 @@ const Fleet = () => {
     setVehicleTypeFilter("all");
     setFuelTypeFilter("all");
     setOwnershipFilter("all");
+    setScopeFilter("all");
     setDriverFilter("all");
     setLiveStatusFilter("all");
   };
@@ -376,6 +379,7 @@ const Fleet = () => {
     vehicleTypeFilter !== "all",
     fuelTypeFilter !== "all",
     ownershipFilter !== "all",
+    scopeFilter !== "all",
     driverFilter !== "all",
     liveStatusFilter !== "all",
   ].filter(Boolean).length;
@@ -427,7 +431,7 @@ const Fleet = () => {
   // Clear selection when filters change
   useEffect(() => {
     setSelectedIds([]);
-  }, [statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, driverFilter, debouncedSearch]);
+  }, [statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, scopeFilter, driverFilter, debouncedSearch]);
 
   // Auto-open modal when coming from "Manage" action and vehicle is loaded
   useEffect(() => {
@@ -686,6 +690,26 @@ const Fleet = () => {
 
                         <div>
                           <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                            Organizational Scope
+                          </label>
+                          <Select value={scopeFilter} onValueChange={setScopeFilter}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select scope" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Scopes</SelectItem>
+                              <SelectItem value="corporate">Corporate</SelectItem>
+                              <SelectItem value="zonal">Zone</SelectItem>
+                              <SelectItem value="regional">Region</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-[11px] text-muted-foreground mt-1">
+                            Based on the depot the vehicle is assigned to.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground mb-2 block">
                             Driver Assignment
                           </label>
                           <Select value={driverFilter} onValueChange={setDriverFilter}>
@@ -764,6 +788,14 @@ const Fleet = () => {
                     <Badge variant="secondary" className="gap-1">
                       Ownership: {OWNERSHIP_TYPES.find(t => t.value === ownershipFilter)?.label}
                       <button type="button" onClick={() => setOwnershipFilter("all")} aria-label="Remove ownership filter">
+                        <X className="w-3 h-3 cursor-pointer" aria-hidden="true" />
+                      </button>
+                    </Badge>
+                  )}
+                  {scopeFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 capitalize">
+                      Scope: {scopeFilter === "zonal" ? "Zone" : scopeFilter === "regional" ? "Region" : scopeFilter}
+                      <button type="button" onClick={() => setScopeFilter("all")} aria-label="Remove scope filter">
                         <X className="w-3 h-3 cursor-pointer" aria-hidden="true" />
                       </button>
                     </Badge>
