@@ -182,7 +182,19 @@ export default function BasicInfoTabs({ formData, set, plateNumber, onBlur, onCh
   );
 }
 
-/* ---------- Field primitive (matches InviteUserDialog UX) ---------- */
+/* ---------- Field primitive (matches InviteUserDialog UX) ----------
+ *
+ * Alignment guarantees:
+ *  • `self-start` so a tall field (e.g. Plate Number with the live preview, or
+ *    Assigned Location with the inline "Specific Location override") never
+ *    stretches its row-mates vertically.
+ *  • Label slot has a fixed `min-h-4` line — fields with and without hints
+ *    line up their inputs perfectly across columns.
+ *  • Hint/error slot reserves `min-h-4` so the input row never jumps when an
+ *    error appears or a neighbouring field has a hint and this one doesn't.
+ *  • Inputs/SelectTriggers inside are normalised to `h-10` via descendant
+ *    selectors so heights match across the grid.
+ */
 function Field({
   label, required, hint, error, status = "neutral", children, span = 1, name,
 }: {
@@ -200,13 +212,13 @@ function Field({
   const isSuccess = status === "success" && !error;
 
   return (
-    <div className={`space-y-1.5 ${spanCls}`} data-field={name}>
-      <Label className={`text-xs font-medium flex items-center gap-1 ${isError ? "text-destructive" : "text-foreground/80"}`}>
-        {label}
+    <div className={`space-y-1.5 self-start ${spanCls}`} data-field={name}>
+      <Label className={`text-xs font-medium flex items-center gap-1 min-h-4 leading-4 ${isError ? "text-destructive" : "text-foreground/80"}`}>
+        <span className="truncate">{label}</span>
         {required && <span className="text-primary">*</span>}
       </Label>
       <div
-        className={`relative ${
+        className={`relative [&_input]:h-10 [&>button]:h-10 ${
           isError
             ? "[&_input]:border-destructive [&_button]:border-destructive [&_input]:focus-visible:ring-destructive/30"
             : isSuccess
@@ -222,14 +234,17 @@ function Field({
           />
         )}
       </div>
-      {error ? (
-        <p role="alert" className="flex items-center gap-1.5 text-[11px] font-medium text-destructive">
-          <AlertCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
-          {error}
-        </p>
-      ) : hint ? (
-        <p className="text-[10px] text-muted-foreground">{hint}</p>
-      ) : null}
+      {/* Reserve a constant-height row for hint/error so neighbouring fields don't shift */}
+      <div className="min-h-4">
+        {error ? (
+          <p role="alert" className="flex items-center gap-1.5 text-[11px] font-medium text-destructive">
+            <AlertCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <span className="truncate">{error}</span>
+          </p>
+        ) : hint ? (
+          <p className="text-[10px] text-muted-foreground truncate">{hint}</p>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -351,7 +366,7 @@ function IdentityPane(props: PaneProps) {
   const { err, stat, blur, change, commitSelect } = usePaneHandlers(props);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-5 items-start">
       <Field name="plate_number_part" label="Plate Number" required span={3} error={err("plate_number_part")} status={stat("plate_number_part")}>
         <div className="grid grid-cols-3 gap-2">
           <Select value={formData.plate_code} onValueChange={v => set("plate_code", v)}>
@@ -399,9 +414,9 @@ function IdentityPane(props: PaneProps) {
             }
           }}
         >
-          <SelectTrigger className="h-10">
+          <SelectTrigger>
             <SelectValue placeholder="Select category...">
-              {formData.specific_pool && <PoolCategoryChip value={formData.specific_pool} />}
+              {formData.specific_pool && <PoolCategoryChip value={formData.specific_pool} compact />}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -428,7 +443,7 @@ function IdentityPane(props: PaneProps) {
           }}
           disabled={!formData.specific_pool}
         >
-          <SelectTrigger className={`h-10 ${!formData.specific_pool ? "opacity-50" : ""}`}>
+          <SelectTrigger className={!formData.specific_pool ? "opacity-50" : ""}>
             <SelectValue placeholder={formData.specific_pool ? "Select location..." : "Pick category first"}>
               {formData.assigned_location && (
                 <span className="flex items-center gap-2">
@@ -489,7 +504,7 @@ function SpecPane(props: PaneProps) {
   const { err, stat, blur, change, commitSelect } = usePaneHandlers(props);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-5 items-start">
       <Field name="make" label="Make" required error={err("make")} status={stat("make")}>
         <Input value={formData.make} onChange={e => change("make", sanitizeWhileTyping(e.target.value).slice(0, 100))} onBlur={blur("make")} placeholder="e.g. Toyota" maxLength={100} />
       </Field>
@@ -603,7 +618,7 @@ function ValuePane(props: PaneProps) {
   return (
     <div className="space-y-5">
       {/* Capacity row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-5 items-start">
         <Field name="seating_capacity" label="Seating Capacity" error={err("seating_capacity")} status={stat("seating_capacity")}>
           <Input inputMode="numeric" value={formData.seating_capacity || ""} onChange={e => change("seating_capacity", sanitizeNumeric(e.target.value, { integer: true }))} onBlur={blur("seating_capacity")} placeholder="e.g. 4" />
         </Field>
@@ -616,7 +631,7 @@ function ValuePane(props: PaneProps) {
       </div>
 
       {/* Pricing row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-5 items-start">
         <Field name="year_of_ownership" label="Year of Ownership" error={err("year_of_ownership")} status={stat("year_of_ownership")}>
           <Input inputMode="numeric" value={formData.year_of_ownership || ""} onChange={e => change("year_of_ownership", sanitizeNumeric(e.target.value, { integer: true }))} onBlur={blur("year_of_ownership")} placeholder="YYYY" />
         </Field>
