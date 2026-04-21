@@ -213,6 +213,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // Policy: Daily=intra-day (30 min slot), Field=1 day, Project=7 days.
   const DEFAULT_DURATION_DAYS: Record<string, number> = {
     daily_operation: 0,
+    nighttime_operation: 0,
     project_operation: 7,
     field_operation: 1,
     group_operation: 0,
@@ -388,7 +389,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       let neededFrom: string;
       let neededUntil: string | null = null;
 
-      if (form.request_type === "daily_operation") {
+      const isDailyLike = form.request_type === "daily_operation" || form.request_type === "nighttime_operation";
+      if (isDailyLike) {
         neededFrom = combineDateAndTime(form.date, form.start_time) || new Date().toISOString();
         neededUntil = combineDateAndTime(form.end_date || form.date, form.end_time) || null;
       } else {
@@ -514,7 +516,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     },
   });
 
-  const isDaily = form.request_type === "daily_operation";
+  const isNighttime = form.request_type === "nighttime_operation";
+  // Nighttime shares the Daily single-day layout (date + start/end time).
+  const isDaily = form.request_type === "daily_operation" || isNighttime;
   const isProject = form.request_type === "project_operation";
   const isField = form.request_type === "field_operation";
 
@@ -870,9 +874,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* TYPE TAB */}
           <TabsContent value="type" className="mt-5 space-y-3 animate-fade-in">
             <Label className="text-foreground font-medium text-sm">Vehicle Request Type</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
               {[
                 { v: "daily_operation", title: "Daily Operation", desc: "Single-day trip with start & end time", icon: Clock },
+                { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip (02:00 – 12:00 window)", icon: Moon },
                 { v: "project_operation", title: "Project Operation", desc: "Multi-day, project-coded assignment", icon: Layers },
                 { v: "field_operation", title: "Field Operation", desc: "Extended off-base or field deployment", icon: Route },
                 { v: "group_operation", title: "Group Operation", desc: "Shared trip for a group of passengers", icon: Users },
