@@ -57,7 +57,10 @@ export function MapLocationPickerDialog({
   const reverseGeocode = async (rLat: number, rLng: number): Promise<string | null> => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return null;
+      if (!session) {
+        console.warn("[MapPicker] reverseGeocode: no session");
+        return null;
+      }
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-search-geocode?lat=${rLat}&lon=${rLng}&reverse=1`;
       const res = await fetch(url, {
         headers: {
@@ -66,14 +69,27 @@ export function MapLocationPickerDialog({
           "Accept-Language": "en",
         },
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        console.warn("[MapPicker] reverseGeocode HTTP error", res.status);
+        return null;
+      }
       const json = await res.json();
-      // Prefer the map's full place name so the picker reflects exactly what
-      // the map shows (e.g. "Bole Road, Addis Ababa, Ethiopia") rather than
-      // an aggressively trimmed street label.
-      const display = json?.display_name || json?.results?.[0]?.display_name || json?.address?.road;
-      return display ? String(display) : null;
-    } catch {
+      // Prefer the map's full place name; fall back to building one from
+      // address parts (e.g. "Bole, Addis Ababa, Ethiopia").
+      const display =
+        json?.display_name ||
+        json?.results?.[0]?.display_name ||
+        json?.name ||
+        [
+          json?.address?.suburb || json?.address?.neighbourhood || json?.address?.road,
+          json?.address?.city || json?.address?.town || json?.address?.village,
+          json?.address?.country,
+        ]
+          .filter(Boolean)
+          .join(", ");
+      return display && String(display).trim() ? String(display).trim() : null;
+    } catch (err) {
+      console.warn("[MapPicker] reverseGeocode failed", err);
       return null;
     }
   };
