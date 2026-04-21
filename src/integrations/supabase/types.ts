@@ -7568,6 +7568,71 @@ export type Database = {
           },
         ]
       }
+      erp_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          event_type: string
+          id: string
+          last_error: string | null
+          next_attempt_at: string
+          organization_id: string
+          payload: Json
+          pushed_at: string | null
+          response_body: string | null
+          response_code: number | null
+          status: string
+          target_system: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          event_type: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          organization_id: string
+          payload?: Json
+          pushed_at?: string | null
+          response_body?: string | null
+          response_code?: number | null
+          status?: string
+          target_system?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          organization_id?: string
+          payload?: Json
+          pushed_at?: string | null
+          response_body?: string | null
+          response_code?: number | null
+          status?: string
+          target_system?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_outbox_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_sync_log: {
         Row: {
           attempt_number: number | null
