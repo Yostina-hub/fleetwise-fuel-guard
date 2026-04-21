@@ -699,7 +699,7 @@ const VehicleRequests = () => {
           }}
         />
 
-        {organizationId && <PoolReviewPanel requests={requests} organizationId={organizationId} />}
+        {/* Pool Supervisor Review now lives at /pool-supervisors */}
 
         {/* ============== MAIN PANEL ============== */}
         <Card id="vehicle-requests-table" className="overflow-hidden border-border/60 shadow-sm scroll-mt-20">
