@@ -208,6 +208,16 @@ export const useVehiclesPaginated = (
         }
       }
 
+      const scopeDepotIds = await resolveScopeDepotIds();
+      if (scopeDepotIds !== null) {
+        if (scopeDepotIds.length === 0) {
+          setHasMore(false);
+          setLoading(false);
+          return;
+        }
+        query = query.in("depot_id", scopeDepotIds);
+      }
+
       if (searchQuery) {
         query = query.or(
           `plate_number.ilike.%${searchQuery}%,make.ilike.%${searchQuery}%,model.ilike.%${searchQuery}%,vin.ilike.%${searchQuery}%`
@@ -227,7 +237,7 @@ export const useVehiclesPaginated = (
     } finally {
       setLoading(false);
     }
-  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, totalCount, vehicleIdFilter, isViewingAllOrgs]);
+  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, totalCount, vehicleIdFilter, isViewingAllOrgs, resolveScopeDepotIds]);
 
   const refetch = useCallback(async () => {
     await loadPage(1);
@@ -237,7 +247,7 @@ export const useVehiclesPaginated = (
   useEffect(() => {
     loadPage(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, sortField, sortDirection, vehicleIdFilter, isViewingAllOrgs]);
+  }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, scopeFilter, sortField, sortDirection, vehicleIdFilter, isViewingAllOrgs]);
 
   // Subscribe to realtime changes with throttling
   useEffect(() => {
