@@ -1001,16 +1001,13 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
         {/* Single-page form — sections render one after another, scroll naturally */}
-        <div className="space-y-6">
+        <div className="space-y-10">
 
           {/* TYPE SECTION */}
-          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
-            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">1</span>
-              <div className="flex-1">
-                <h3 className="text-base font-semibold text-foreground leading-tight">Operation Type</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Pick the kind of trip you're requesting.</p>
-              </div>
+          <section className="space-y-6 animate-fade-in">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
+              <Layers className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Operation Type</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
               {[
@@ -1051,13 +1048,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE SECTION */}
-          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
-            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">2</span>
-              <div className="flex-1">
-                <h3 className="text-base font-semibold text-foreground leading-tight">Schedule</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">When does the trip start and end?</p>
-              </div>
+          <section className="space-y-5 animate-fade-in">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
+              <CalendarDays className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Schedule</h3>
             </div>
             {/* Working-hours policy banner — Project / operational only */}
             {isProject && workingHoursPolicy && (() => {
@@ -1166,13 +1160,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* ROUTE SECTION */}
-          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
-            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">3</span>
-              <div className="flex-1">
-                <h3 className="text-base font-semibold text-foreground leading-tight">Route</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Where does the trip start, stop, and end?</p>
-              </div>
+          <section className="space-y-5 animate-fade-in">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
+              <Route className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Route</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
               <LocationPickerField
@@ -1316,15 +1307,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* RESOURCES SECTION */}
-          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
-            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">4</span>
-              <div className="flex-1">
-                <h3 className="text-base font-semibold text-foreground leading-tight">Vehicle &amp; Pool</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">How many seats, what kind of vehicle, and which pool serves it.</p>
-              </div>
+          <section className="space-y-5 animate-fade-in">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
+              <Car className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Vehicle &amp; Pool</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <VRField
                 id="vr-num-vehicles"
                 label={
@@ -1406,7 +1394,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               {/* Resource-aware recommendation banner — pure derivation from passengers + cargo */}
               {recommendation && (
-                <div className="md:col-span-2 rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2 animate-fade-in">
+                <div className="md:col-span-2 lg:col-span-3 rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2 animate-fade-in">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Sparkles className="w-4 h-4 text-primary shrink-0" />
                     <span className="text-sm font-medium text-foreground">Recommended for you:</span>
@@ -1426,7 +1414,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               )}
 
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 lg:col-span-3">
                 <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-2">
                   Vehicle Type
                   {recommendation && form.vehicle_type === recommendation.value && (
@@ -1476,7 +1464,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               {/* Justification — only shown when over-spec'd */}
               {isUpgrade && (
-                <div className="md:col-span-2 animate-fade-in">
+                <div className="md:col-span-2 lg:col-span-3 animate-fade-in">
                   <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1.5 flex items-center gap-1.5">
                     Why is {chosenProfile?.label} needed instead of {recommendation?.label}? <span className="text-destructive">*</span>
                     <FieldHint tone="warning">
@@ -1504,7 +1492,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </div>
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 lg:col-span-3">
                 <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                   Assigned Pool
                   <FieldHint>Operational pool the trip will be served from.</FieldHint>
@@ -1531,7 +1519,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </div>
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 lg:col-span-3">
                 <VRField
                   id="vr-contact-phone"
                   label="Contact Phone (during trip)"
@@ -1553,13 +1541,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* DETAILS SECTION */}
-          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
-            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">5</span>
-              <div className="flex-1">
-                <h3 className="text-base font-semibold text-foreground leading-tight">Purpose &amp; Submit</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Tell us why this trip is needed, then submit for approval.</p>
-              </div>
+          <section className="space-y-5 animate-fade-in">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
+              <FileText className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Purpose &amp; Submit</h3>
             </div>
             <div>
               <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
