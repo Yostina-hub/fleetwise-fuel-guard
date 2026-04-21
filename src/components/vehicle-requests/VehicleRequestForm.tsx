@@ -629,15 +629,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     },
   });
 
-  const isNighttime = form.request_type === "nighttime_operation";
-  // Nighttime shares the Daily single-day layout (date + start/end time).
-  const isDaily = form.request_type === "daily_operation" || isNighttime;
-  const isProject = form.request_type === "project_operation";
-  const isField = form.request_type === "field_operation";
-
-  // Single-vehicle policy: only Project Operations can request multiple vehicles.
-  // Daily and Field operations are 1:1 (one driver, one vehicle).
-  const allowsMultipleVehicles = isProject;
+  // Centralised visibility derivation — single source of truth for which
+  // sections / fields render for the current request_type. Keeps JSX free
+  // of inline boolean spaghetti and makes the rules unit-testable.
+  const visibility = useMemo(() => deriveVisibility(form.request_type), [form.request_type]);
+  const { isNighttime, isDaily, isProject, isField, allowsMultipleVehicles } = visibility;
   useEffect(() => {
     if (!allowsMultipleVehicles && form.num_vehicles !== "1") {
       setForm((f) => ({ ...f, num_vehicles: "1" }));
