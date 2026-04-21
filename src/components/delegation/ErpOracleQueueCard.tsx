@@ -22,6 +22,8 @@ import {
   Inbox,
   RotateCcw,
   Repeat,
+  Download,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -75,6 +77,8 @@ export const ErpOracleQueueCard = () => {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selected, setSelected] = useState<OutboxRow | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [bulkRetrying, setBulkRetrying] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!organizationId) return;
@@ -205,6 +209,148 @@ export const ErpOracleQueueCard = () => {
       toast.error(e instanceof Error ? e.message : "Replay failed");
     } finally {
       setBusyId(null);
+    }
+  };
+
+  /**
+   * Bulk-resets every failed + awaiting_credentials event in this org back to
+   * pending and immediately invokes the push function. Useful after fixing
+   * Oracle credentials or a transient network outage.
+   */
+  const bulkRetryFailed = async () => {
+    if (!organizationId) return;
+    const total = counts.failed + counts.awaiting_credentials;
+    if (total === 0) {
+      toast.info("Nothing to retry");
+      return;
+    }
+    if (
+      !confirm(
+        `Reset ${total} event(s) (failed + awaiting credentials) back to pending and run the sync now?`,
+      )
+    ) {
+      return;
+    }
+    setBulkRetrying(true);
+    try {
+      const { error, count } = await supabase
+        .from("erp_outbox")
+        .update(
+          {
+            status: "pending",
+            attempts: 0,
+            last_error: null,
+            next_attempt_at: new Date().toISOString(),
+          },
+          { count: "exact" },
+        )
+        .eq("organization_id", organizationId)
+        .in("status", ["failed", "awaiting_credentials"]);
+      if (error) throw error;
+      toast.success(`Reset ${count ?? total} event(s) — running sync…`);
+      await runNow();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Bulk retry failed");
+    } finally {
+      setBulkRetrying(false);
+    }
+  };
+
+  /**
+   * Exports the full ERP outbox to CSV (audit trail). Streams in pages of 1000
+   * to bypass PostgREST's default row cap and trigger a browser download.
+   */
+  const exportCsv = async () => {
+    if (!organizationId) return;
+    setExporting(true);
+    try {
+      const PAGE = 1000;
+      let from = 0;
+      const all: OutboxRow[] = [];
+      // Cap at 50k rows for browser safety
+      while (all.length < 50_000) {
+        const { data, error } = await supabase
+          .from("erp_outbox")
+          .select(
+            "id, entity_type, entity_id, event_type, status, attempts, last_error, response_code, response_body, payload, created_at, pushed_at, next_attempt_at",
+          )
+          .eq("organization_id", organizationId)
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const batch = (data ?? []) as OutboxRow[];
+        all.push(...batch);
+        if (batch.length < PAGE) break;
+        from += PAGE;
+      }
+
+      if (all.length === 0) {
+        toast.info("No events to export");
+        return;
+      }
+
+      const escape = (v: unknown) => {
+        if (v === null || v === undefined) return "";
+        const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+        // RFC4180: wrap if it contains comma, quote, newline; double-quote internal quotes
+        return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+
+      const headers = [
+        "id",
+        "created_at",
+        "pushed_at",
+        "status",
+        "entity_type",
+        "entity_id",
+        "event_type",
+        "attempts",
+        "response_code",
+        "next_attempt_at",
+        "last_error",
+        "response_body",
+        "payload",
+      ];
+      const lines = [headers.join(",")];
+      for (const r of all) {
+        lines.push(
+          [
+            r.id,
+            r.created_at,
+            r.pushed_at,
+            r.status,
+            r.entity_type,
+            r.entity_id,
+            r.event_type,
+            r.attempts,
+            r.response_code,
+            r.next_attempt_at,
+            r.last_error,
+            r.response_body,
+            r.payload,
+          ]
+            .map(escape)
+            .join(","),
+        );
+      }
+
+      const blob = new Blob(["\uFEFF" + lines.join("\n")], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      link.href = url;
+      link.download = `erp-outbox-${stamp}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${all.length} event(s) to CSV`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "CSV export failed");
+    } finally {
+      setExporting(false);
     }
   };
 
