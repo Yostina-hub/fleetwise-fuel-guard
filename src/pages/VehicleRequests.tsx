@@ -388,19 +388,31 @@ const VehicleRequests = () => {
             <div className="flex flex-wrap items-center gap-2">
               {canExportImport && (
                 <>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={exportCsv}>
-                    <Download className="w-3.5 h-3.5" /> Export
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={onImportClick}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <Download className="w-3.5 h-3.5" /> Export
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Export {filtered.length} requests</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={exportCsv}>
+                        <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={exportXlsx}>
+                        <FileText className="w-4 h-4 mr-2" /> Excel (.xlsx)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setShowImport(true)}
+                  >
                     <Upload className="w-3.5 h-3.5" /> Import
                   </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv,.xlsx"
-                    className="hidden"
-                    onChange={onImportFile}
-                  />
                 </>
               )}
               <Button
