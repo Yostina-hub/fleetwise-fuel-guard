@@ -30,7 +30,7 @@ import { VRField } from "./VRField";
 import { deriveVisibility } from "./visibility";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
-import { MyVehicleRequestsSummary } from "./MyVehicleRequestsSummary";
+
 import { useDepartments } from "@/hooks/useDepartments";
 import {
   recommendVehicleClass,
@@ -998,8 +998,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         {/* Mandatory rating gate */}
         {hasPendingRatings && <PendingRatingsBlocker className="mb-1" />}
 
-        {/* Personal request summary — helps requesters see status of prior submissions before filing a new one */}
-        <MyVehicleRequestsSummary variant="compact" />
+
 
         {/* Single-page form — sections render one after another, scroll naturally */}
         <div className="space-y-6">
