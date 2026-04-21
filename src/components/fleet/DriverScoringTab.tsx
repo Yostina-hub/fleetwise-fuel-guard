@@ -365,8 +365,16 @@ export const DriverScoringTab = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-warning">
-              {driverScores?.filter(s => s.safety_rating === 'poor' || s.safety_rating === 'critical').length || 0}
+              {(() => {
+                const safetyRisk = driverScores?.filter(s => s.safety_rating === 'poor' || s.safety_rating === 'critical') || [];
+                const ids = new Set(safetyRisk.map(s => s.driver_id));
+                Object.entries(passengerFeedback).forEach(([id, fb]) => {
+                  if (fb.totalRated >= 3 && (fb.avgDriver30d ?? fb.avgDriver ?? 5) < 3.5) ids.add(id);
+                });
+                return ids.size;
+              })()}
             </div>
+            <p className="text-[10px] text-muted-foreground mt-1">Safety + customer feedback risks</p>
           </CardContent>
         </Card>
 
