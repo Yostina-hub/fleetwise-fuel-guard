@@ -210,7 +210,6 @@ const getNavItems = (t: (key: string) => string) => [
       { label: "Price Catalog", path: "/outsource-management?tab=catalog" },
       { label: "Vehicle Attendance", path: "/outsource-management?tab=attendance" },
       { label: "Payment Requests", path: "/outsource-management?tab=payments" },
-      { label: "Rental Vehicles", path: "/rental-vehicles" },
     ]
   },
   { icon: FileText, label: "Third-Party Claims", path: "/third-party-claims" },
