@@ -1052,10 +1052,13 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE SECTION */}
-          <section className="space-y-4 animate-fade-in">
-            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">2</span>
-              <h3 className="text-base font-semibold text-foreground">Schedule</h3>
+          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
+            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">2</span>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-foreground leading-tight">Schedule</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">When does the trip start and end?</p>
+              </div>
             </div>
             {/* Working-hours policy banner — Project / operational only */}
             {isProject && workingHoursPolicy && (() => {
