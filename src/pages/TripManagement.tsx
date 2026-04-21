@@ -685,15 +685,20 @@ function ChangeStatusDialog({
     }
   }, [open, currentStatus]);
 
-  const OPTIONS = [
+  const ALL_OPTIONS = [
     { value: "pending",   label: "Pending (send back for revision)" },
     { value: "approved",  label: "Approved" },
     { value: "rejected",  label: "Rejected (final)" },
     { value: "cancelled", label: "Cancelled" },
   ];
+  // Block illegal transitions out of terminal states. Completed trips
+  // can't be re-opened from this dialog — that requires a fresh request.
+  const TERMINAL = new Set(["completed", "closed"]);
+  const isTerminal = currentStatus ? TERMINAL.has(currentStatus) : false;
+  const OPTIONS = isTerminal ? [] : ALL_OPTIONS;
   // Reason required when moving to a negative state.
   const requiresNote = target === "rejected" || target === "pending" || target === "cancelled";
-  const canSubmit = !!target && target !== currentStatus && (!requiresNote || note.trim().length > 0);
+  const canSubmit = !isTerminal && !!target && target !== currentStatus && (!requiresNote || note.trim().length > 0);
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
