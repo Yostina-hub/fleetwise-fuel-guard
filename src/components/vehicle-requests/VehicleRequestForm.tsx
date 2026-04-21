@@ -643,8 +643,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           ? `Vehicle request submitted on behalf of ${onBehalfOf.name}`
           : "Vehicle request submitted successfully"
       );
+      // Force an immediate refetch (not just mark stale) so the new row appears
+      // right away in the requests table — invalidate covers all matching keys
+      // (organization-scoped, role-scoped, paginated variants), and refetch
+      // ensures it actually re-runs even if the list is currently mounted.
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
+      queryClient.invalidateQueries({ queryKey: ["my-vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["trip-mgmt-vehicle-requests"] });
+      queryClient.refetchQueries({ queryKey: ["vehicle-requests"], type: "active" });
+      queryClient.refetchQueries({ queryKey: ["vehicle-requests-panel"], type: "active" });
+      queryClient.refetchQueries({ queryKey: ["my-vehicle-requests"], type: "active" });
+      queryClient.refetchQueries({ queryKey: ["trip-mgmt-vehicle-requests"], type: "active" });
       onOpenChange(false);
       setForm(initialWithPrefill);
       clearDraft();
