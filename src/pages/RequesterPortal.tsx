@@ -343,6 +343,35 @@ const RequesterPortal = () => {
         onOpenChange={(o) => !o && setSelected(null)}
         canCancel
       />
+      <EditRequestDialog
+        request={editing}
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+      />
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Request <span className="font-mono">{deleting?.request_number}</span> will
+              be permanently removed. This can only be done while the request is still pending.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteRequest.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleting) deleteRequest.mutate(deleting);
+              }}
+              disabled={deleteRequest.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteRequest.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
@@ -464,12 +493,16 @@ function RequestList({
   loading,
   items,
   onOpen,
+  onEdit,
+  onDelete,
   emptyTitle,
   emptyHint,
 }: {
   loading: boolean;
   items: RequestDetail[];
   onOpen: (r: RequestDetail) => void;
+  onEdit: (r: RequestDetail) => void;
+  onDelete: (r: RequestDetail) => void;
   emptyTitle: string;
   emptyHint: string;
 }) {
