@@ -295,8 +295,8 @@ export function validateVRField(
       if (!v) return "Trip description is required so approvers understand the purpose.";
       if (v.length < 10)
         return `Trip description is too brief (${v.length}/10 chars). Add more detail — what, where, and why.`;
-      if (v.length > 2000)
-        return `Trip description is too long (${v.length}/2000 chars). Please summarize.`;
+      if (v.length > 1000)
+        return `Trip description is too long (${v.length}/1000 chars). Please summarize.`;
       return;
     }
 
