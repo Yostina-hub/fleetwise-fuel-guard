@@ -7,7 +7,7 @@ import {
 import { Label } from "@/components/ui/label";
 import {
   MapPin, Clock, Users, Send, CheckCircle, XCircle, Truck, Package,
-  MessageSquare, History, Shield, Ban
+  MessageSquare, History, Shield, Ban, RefreshCw
 } from "lucide-react";
 import { format } from "date-fns";
 import { ApprovalFlowViewer } from "@/components/scheduling/ApprovalFlowViewer";
