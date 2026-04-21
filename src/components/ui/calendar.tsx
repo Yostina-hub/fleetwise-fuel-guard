@@ -19,9 +19,10 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         caption_label: "text-sm font-semibold hidden",
         caption_dropdowns: "flex items-center justify-center gap-2 w-full",
         dropdown: cn(
-          "h-8 rounded-md border border-input bg-background pl-2.5 pr-7 text-sm font-medium",
+          "h-8 rounded-md border border-input bg-background pl-2.5 pr-7 text-sm font-medium text-foreground",
           "hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring",
           "appearance-none cursor-pointer",
+          "[&>option]:bg-popover [&>option]:text-popover-foreground",
           "bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-no-repeat bg-[right_0.5rem_center]",
         ),
         dropdown_month: "relative",
