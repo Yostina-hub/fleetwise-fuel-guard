@@ -132,20 +132,83 @@ export const COST_BAND_TONE: Record<CostBand, string> = {
 };
 
 /**
- * Business-only purpose taxonomy. Personal / family / relative use is
- * intentionally absent — the form blocks free-text "personal" purposes.
+ * Business-only purpose taxonomy, organised into 5 functional groups.
+ * Personal / family / relative use is intentionally absent — the form
+ * blocks free-text "personal" purposes.
+ *
+ * Groups:
+ *   1. Operational & Business Activities
+ *   2. Transportation & Logistics
+ *   3. Administrative & Support
+ *   4. Emergency Use
+ *   5. Social & Organizational Affairs (Restricted Use)
+ *
+ * Legacy values (client_visit, site_inspection, training, logistics,
+ * personnel_shuttle, executive_travel, emergency_response, official_errand,
+ * social_affairs) are kept as hidden aliases so historical rows still resolve.
  */
-export const BUSINESS_PURPOSE_CATEGORIES: { value: string; label: string; description: string }[] = [
-  { value: "client_visit",     label: "Client Visit",      description: "Meeting customers, partners, or vendors on-site." },
-  { value: "site_inspection",  label: "Site Inspection",   description: "Field inspection of infrastructure, sites, or installations." },
-  { value: "training",         label: "Training",          description: "Travel to or from a training, workshop, or conference." },
-  { value: "logistics",        label: "Logistics / Cargo", description: "Moving equipment, parts, documents, or supplies." },
-  { value: "personnel_shuttle",label: "Personnel Shuttle", description: "Shared staff transport between offices or sites." },
-  { value: "executive_travel", label: "Executive Travel",  description: "Senior leadership business travel." },
-  { value: "emergency_response",label: "Emergency Response",description: "Outage, incident, or urgent operational response." },
-  { value: "official_errand",  label: "Official Errand",   description: "Bank, government office, procurement, or other admin." },
-  { value: "social_affairs",   label: "Social Affairs / Events", description: "Company-sanctioned social events, ceremonies, staff welfare, funerals, or representational duties." },
-  { value: "other_business",   label: "Other Business",    description: "Other work-related purpose (describe in detail)." },
+export type BusinessPurposeGroup =
+  | "operational"
+  | "transport"
+  | "admin"
+  | "emergency"
+  | "social";
+
+export const BUSINESS_PURPOSE_GROUPS: { id: BusinessPurposeGroup; label: string; restricted?: boolean }[] = [
+  { id: "operational", label: "Operational & Business Activities" },
+  { id: "transport",   label: "Transportation & Logistics" },
+  { id: "admin",       label: "Administrative & Support" },
+  { id: "emergency",   label: "Emergency Use" },
+  { id: "social",      label: "Social & Organizational Affairs (Restricted Use)", restricted: true },
+];
+
+export const BUSINESS_PURPOSE_CATEGORIES: {
+  value: string;
+  label: string;
+  description: string;
+  group: BusinessPurposeGroup;
+  hidden?: boolean;
+}[] = [
+  // 1. Operational & Business Activities
+  { value: "official_meeting",   label: "Official meetings & site visits", description: "Travel to meetings, project sites, or partner locations.", group: "operational" },
+  { value: "field_operation",    label: "Field operations",                description: "Inspections, supervision, or on-site technical work.",     group: "operational" },
+  { value: "project_travel",     label: "Project-related travel",          description: "Activities directly tied to ongoing projects.",            group: "operational" },
+  { value: "events_conferences", label: "Events & conferences",            description: "Transporting staff or materials to official events.",      group: "operational" },
+  { value: "training_workshops", label: "Training & workshops",            description: "Attending or facilitating external sessions.",             group: "operational" },
+
+  // 2. Transportation & Logistics
+  { value: "staff_transport",    label: "Transporting staff",              description: "Movement between offices, sites, or work locations.",      group: "transport" },
+  { value: "client_visitor",     label: "Client or visitor transport",     description: "Pick-up/drop-off of guests, partners, or VIPs.",           group: "transport" },
+  { value: "airport_transfer",   label: "Airport transfers",               description: "Official business travel pick-up and drop-off.",           group: "transport" },
+  { value: "delivery_logistics", label: "Delivery & logistics",            description: "Transporting goods, documents, or equipment.",             group: "transport" },
+
+  // 3. Administrative & Support
+  { value: "admin_errand",       label: "Administrative errands",          description: "Banking, government offices, official paperwork.",         group: "admin" },
+  { value: "maintenance_trip",   label: "Maintenance trips",               description: "Vehicle servicing, repair, or inspection.",                group: "admin" },
+
+  // 4. Emergency Use
+  { value: "emergency",          label: "Emergency situations",            description: "Urgent travel for breakdowns, incidents, or critical tasks.", group: "emergency" },
+
+  // 5. Social & Organizational Affairs (Restricted Use)
+  { value: "company_event",      label: "Official company events",         description: "Team-building, annual gatherings, celebrations.",          group: "social" },
+  { value: "employee_welfare",   label: "Employee welfare activities",     description: "Hospital visits, bereavement support, staff assistance.",  group: "social" },
+  { value: "csr",                label: "Corporate social responsibility", description: "Community outreach, charity, volunteering.",               group: "social" },
+  { value: "hosting_guests",     label: "Hosting official guests",         description: "Transport for social or networking events tied to work.",  group: "social" },
+  { value: "cultural_event",     label: "Cultural or national events",     description: "Participation in recognized public or organizational events.", group: "social" },
+
+  // Catch-all
+  { value: "other_business",     label: "Other business",                  description: "Other work-related purpose (describe in detail).",         group: "operational" },
+
+  // Legacy aliases — hidden from the picker but accepted for old records.
+  { value: "client_visit",       label: "Client visit (legacy)",           description: "Legacy alias for official meetings.",                      group: "operational", hidden: true },
+  { value: "site_inspection",    label: "Site inspection (legacy)",        description: "Legacy alias for field operations.",                       group: "operational", hidden: true },
+  { value: "training",           label: "Training (legacy)",               description: "Legacy alias for training & workshops.",                   group: "operational", hidden: true },
+  { value: "logistics",          label: "Logistics (legacy)",              description: "Legacy alias for delivery & logistics.",                   group: "transport",   hidden: true },
+  { value: "personnel_shuttle",  label: "Personnel shuttle (legacy)",      description: "Legacy alias for transporting staff.",                     group: "transport",   hidden: true },
+  { value: "executive_travel",   label: "Executive travel (legacy)",       description: "Legacy alias for official meetings.",                      group: "operational", hidden: true },
+  { value: "emergency_response", label: "Emergency response (legacy)",     description: "Legacy alias for emergency situations.",                   group: "emergency",   hidden: true },
+  { value: "official_errand",    label: "Official errand (legacy)",        description: "Legacy alias for administrative errands.",                 group: "admin",       hidden: true },
+  { value: "social_affairs",     label: "Social affairs (legacy)",         description: "Legacy alias for company events.",                         group: "social",      hidden: true },
 ];
 
 /** Cargo-load options surfaced in the form. */
