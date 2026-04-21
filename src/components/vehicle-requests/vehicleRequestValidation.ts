@@ -90,6 +90,8 @@ export interface VRFormValues {
   project_number?: string;
   priority?: string;
   contact_phone?: string;
+  /** Drives passenger+cargo fitness check on vehicle_type. */
+  cargo_load?: CargoLoad;
 }
 
 /* --------------------------------------------------------------------------
