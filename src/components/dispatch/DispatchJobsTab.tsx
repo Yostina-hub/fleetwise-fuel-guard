@@ -243,7 +243,17 @@ const DispatchJobsTab = () => {
           </Card>
         ) : (
           paginatedJobs.map(job => (
-            <Card key={job.id} className={job.priority === 'urgent' ? 'border-destructive/50' : ''}>
+            <Card
+              key={job.id}
+              className={cn(
+                "cursor-pointer transition-colors hover:border-primary/50",
+                job.priority === 'urgent' && "border-destructive/50",
+              )}
+              onClick={() => setDetailJob(job)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter") setDetailJob(job); }}
+            >
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                   <div className="space-y-3 flex-1">
