@@ -722,7 +722,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const eligibleVehicleTypes = useMemo(() => {
     const passengers = Math.max(1, parseInt(form.passengers) || 1);
     const cargoOrder = { none: 0, small: 1, medium: 2, large: 3 } as const;
-    const cargoNeeded = cargoOrder[form.cargo_load] ?? 0;
+    const cargoNeeded = cargoOrder[(form.cargo_load || "none") as CargoLoad] ?? 0;
     return VEHICLE_TYPES_OPTIONS
       .map((vt) => ({ vt, profile: getVehicleClassProfile(vt.value) }))
       .filter(({ profile }) => {
