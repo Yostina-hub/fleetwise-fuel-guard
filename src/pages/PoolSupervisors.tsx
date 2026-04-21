@@ -10,7 +10,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Layout } from "@/components/Layout";
+import Layout from "@/components/Layout";
 import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserCheck, Loader2, ClipboardList } from "lucide-react";
