@@ -135,8 +135,9 @@ const TripManagement = () => {
   const [exportOpen, setExportOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
-  // Reject-reason prompt — approvers must explain why a request is rejected
-  // so the requester sees actionable feedback (no silent rejections).
+  // Reject prompt — approvers must explain the decision. Two outcomes:
+  //   • "revision" → bounce back to `pending` so the requester can edit & resubmit
+  //   • "final"    → permanent `rejected` (view-only thereafter)
   const [rejectTarget, setRejectTarget] = useState<{ tripId: string; requestNumber?: string } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
@@ -209,37 +210,53 @@ const TripManagement = () => {
     setRejectTarget({ tripId, requestNumber: req?.request_number });
   };
 
-  const submitReject = async () => {
+  const submitReject = async (mode: "revision" | "final") => {
     if (!rejectTarget) return;
     const reason = rejectReason.trim();
     if (!reason) {
-      toast.error("Rejection reason is required");
+      toast.error("Reason is required");
       return;
     }
     setRejectSubmitting(true);
     try {
-      const approval = pendingApprovals?.find(
-        (a: any) => a.trip_request_id === rejectTarget.tripId,
-      );
-      if (approval) {
-        await rejectRequest.mutateAsync({
-          approvalId: approval.id,
-          requestId: rejectTarget.tripId,
-          comment: reason,
-        });
+      if (mode === "final") {
+        // Permanent reject — also flip any open trip_approvals row so the
+        // legacy queue stays consistent.
+        const approval = pendingApprovals?.find(
+          (a: any) => a.trip_request_id === rejectTarget.tripId,
+        );
+        if (approval) {
+          await rejectRequest.mutateAsync({
+            approvalId: approval.id,
+            requestId: rejectTarget.tripId,
+            comment: reason,
+          });
+        } else {
+          const { error } = await (supabase as any)
+            .from("vehicle_requests")
+            .update({
+              status: "rejected",
+              approval_status: "rejected",
+              rejection_reason: reason,
+            })
+            .eq("id", rejectTarget.tripId);
+          if (error) throw error;
+          toast.success("Request rejected");
+        }
       } else {
-        // No legacy trip_approvals row — write rejection directly onto the
-        // unified vehicle_requests row so the requester sees the reason.
+        // Send back for revision — keep `status='pending'` so the requester's
+        // Edit/Delete actions remain enabled. Stash the reviewer note on
+        // rejection_reason so the requester sees what to fix.
         const { error } = await (supabase as any)
           .from("vehicle_requests")
           .update({
-            status: "rejected",
-            approval_status: "rejected",
+            status: "pending",
+            approval_status: "pending",
             rejection_reason: reason,
           })
           .eq("id", rejectTarget.tripId);
         if (error) throw error;
-        toast.success("Request rejected");
+        toast.success("Sent back to requester for revision");
       }
       setRejectTarget(null);
       setRejectReason("");
