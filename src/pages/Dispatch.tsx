@@ -6,6 +6,7 @@ import DispatchJobsTab from "@/components/dispatch/DispatchJobsTab";
 import DispatchQuickStats from "@/components/dispatch/DispatchQuickStats";
 import DispatchQuickActions from "@/components/dispatch/DispatchQuickActions";
 import DispatchInsightsCard from "@/components/dispatch/DispatchInsightsCard";
+import { DispatchRerouteSuggestions } from "@/components/dispatch/DispatchRerouteSuggestions";
 import { useDispatchJobs } from "@/hooks/useDispatchJobs";
 import { useNavigate } from "react-router-dom";
 import { startOfDay, isAfter, parseISO } from "date-fns";
@@ -102,6 +103,9 @@ const Dispatch = () => {
             tabsRef.current?.scrollIntoView({ behavior: 'smooth' });
           }}
         />
+
+        {/* Re-route suggestions from idle coaching */}
+        <DispatchRerouteSuggestions />
 
         {/* Insights Card */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
