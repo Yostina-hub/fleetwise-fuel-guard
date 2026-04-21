@@ -517,28 +517,26 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const body = (
     <>
       {!embedded && (
-        <div className="relative -m-6 mb-0 px-6 pt-6 pb-5 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-b border-border/50 overflow-hidden">
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative -m-6 mb-0 px-6 pt-6 pb-5 border-b border-border/60 bg-card">
           <DialogHeader className="relative">
-            <div className="flex items-start gap-4">
-              <div className="relative shrink-0">
-                <div className="absolute inset-0 bg-primary/30 rounded-2xl blur-md" />
-                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/30">
-                  <Car className="w-6 h-6 text-primary-foreground" />
-                </div>
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center">
+                <Car className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <DialogTitle className="text-xl font-semibold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-                  Fleet Request Form
+                <DialogTitle className="text-lg sm:text-xl font-semibold tracking-tight text-foreground">
+                  Fleet Request
                 </DialogTitle>
-                <DialogDescription className="mt-1 text-sm">
-                  A guided 5-step intake — fields adapt as you go. Progress auto-saves.
+                <DialogDescription className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
+                  A guided 5-step intake. Fields adapt as you go — progress auto-saves.
                 </DialogDescription>
               </div>
-              <Badge variant="outline" className="hidden md:inline-flex items-center gap-1 border-primary/30 bg-background/60 backdrop-blur">
+              <Badge
+                variant="outline"
+                className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 border-border bg-muted/40 text-muted-foreground font-normal"
+              >
                 <ShieldCheck className="w-3 h-3 text-primary" />
-                <span className="text-[11px]">Step {tabIndex + 1} of {TABS.length}</span>
+                <span className="text-[11px]">Step {tabIndex + 1} / {TABS.length}</span>
               </Badge>
             </div>
           </DialogHeader>
