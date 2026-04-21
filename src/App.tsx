@@ -154,6 +154,9 @@ const App = () => {
   
   return (
     <QueryClientProvider client={queryClient}>
+      {/* Subscribes to Postgres changes for all major entities and auto-invalidates
+          matching TanStack queries so list views update live without manual refresh. */}
+      <RealtimeQuerySync />
       <ThemeProvider>
         <AuthProvider>
           <OrganizationProvider>
