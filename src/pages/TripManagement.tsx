@@ -272,6 +272,35 @@ const TripManagement = () => {
     }
   };
 
+  // Manager status-override — applies the requested transition and writes
+  // an optional reviewer note to `rejection_reason` (kept as the generic
+  // reviewer-feedback field across the workflow).
+  const applyStatusChange = async (newStatus: string, note: string) => {
+    if (!statusTarget) return;
+    setStatusSubmitting(true);
+    try {
+      const isRejected = newStatus === "rejected";
+      const isPending = newStatus === "pending" || newStatus === "submitted";
+      const update: Record<string, any> = {
+        status: newStatus,
+        approval_status: isRejected ? "rejected" : isPending ? "pending" : "approved",
+      };
+      if (note.trim()) update.rejection_reason = note.trim();
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update(update)
+        .eq("id", statusTarget.tripId);
+      if (error) throw error;
+      toast.success(`Status changed to ${newStatus.replace("_", " ")}`);
+      setStatusTarget(null);
+      setDetailOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to change status");
+    } finally {
+      setStatusSubmitting(false);
+    }
+  };
+
   // Real pending count from the unified vehicle_requests pipeline
   // (the legacy trip_approvals queue is rarely populated).
   const pendingApprovalCount = useMemo(
