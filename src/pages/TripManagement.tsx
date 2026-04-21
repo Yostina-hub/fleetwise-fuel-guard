@@ -141,6 +141,11 @@ const TripManagement = () => {
   const [rejectTarget, setRejectTarget] = useState<{ tripId: string; requestNumber?: string } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
+  // Manager status-override dialog. Lets approvers re-approve a rejected
+  // request, send an approved one back for revision, or change to any
+  // non-terminal status without leaving the page.
+  const [statusTarget, setStatusTarget] = useState<{ tripId: string; requestNumber?: string; current: string } | null>(null);
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "trips");
 
   // Sync tab from URL changes (sidebar deep links)
