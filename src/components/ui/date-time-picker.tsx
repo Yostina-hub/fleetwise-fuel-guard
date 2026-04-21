@@ -27,6 +27,19 @@ interface DateTimePickerProps {
 }
 
 /**
+ * Coerce unknown values (Date, ISO string, timestamp) into a valid Date or undefined.
+ * Prevents `d.getTime is not a function` when callers accidentally pass a string.
+ */
+function toDateSafe(value: unknown): Date | undefined {
+  if (value instanceof Date) return isNaN(value.getTime()) ? undefined : value;
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? undefined : d;
+  }
+  return undefined;
+}
+
+/**
  * Friendly relative-day label: "Today", "Tomorrow", "In 3 days · Wed Apr 23".
  * Shown inside the trigger to make picked dates instantly readable.
  */
