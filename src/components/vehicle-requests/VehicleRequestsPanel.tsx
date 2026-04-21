@@ -217,7 +217,49 @@ export const VehicleRequestsPanel = () => {
     setPoolFilter("all");
   };
 
-  // Sortable column-header button — visually communicates current sort state
+  // Soft cancel: keep the row, mark status='cancelled'. Allowed pre-completion.
+  const handleCancel = async () => {
+    if (!confirmCancel) return;
+    setActionPending(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update({ status: "cancelled" })
+        .eq("id", confirmCancel.id);
+      if (error) throw error;
+      toast.success(`Request ${confirmCancel.request_number} cancelled`);
+      setConfirmCancel(null);
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel", organizationId] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to cancel request");
+    } finally {
+      setActionPending(false);
+    }
+  };
+
+  // Hard delete: only allowed for pending/cancelled/rejected to avoid losing
+  // operational history on assigned/completed requests.
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setActionPending(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .delete()
+        .eq("id", confirmDelete.id);
+      if (error) throw error;
+      toast.success(`Request ${confirmDelete.request_number} deleted`);
+      setConfirmDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel", organizationId] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete request");
+    } finally {
+      setActionPending(false);
+    }
+  };
+
+  const canCancel = (r: any) => ["pending", "approved", "assigned"].includes(r.status);
+  const canDelete = (r: any) => ["pending", "cancelled", "rejected"].includes(r.status);
   // (asc/desc/none) and toggles direction on subsequent clicks.
   const SortHeader = ({
     label,
