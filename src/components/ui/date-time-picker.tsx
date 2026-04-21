@@ -64,6 +64,8 @@ export function DateTimePicker({
   hideTime,
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
+  // Defensive: callers occasionally pass an ISO string instead of a Date.
+  const safeDate = React.useMemo(() => toDateSafe(date), [date]);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = addDays(today, 1);
