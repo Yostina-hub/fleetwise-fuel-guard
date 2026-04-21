@@ -141,6 +141,38 @@ export const CreatePerformanceReviewDialog = ({ driverId, driverName, onCreated 
             </div>
           </div>
 
+
+          {feedback && feedback.totalRated > 0 && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-primary" />
+                  <p className="text-[11px] font-medium">Passenger Feedback Reference (90d)</p>
+                </div>
+                <Badge variant="outline" className="text-[9px]">
+                  {feedback.totalRated} ratings · {feedback.responseRate}% response
+                </Badge>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded bg-card border p-1.5">
+                  <p className="text-[9px] text-muted-foreground">Driver</p>
+                  <p className="text-sm font-bold tabular-nums">{feedback.avgDriver90d?.toFixed(1) ?? "—"}<span className="text-[9px] text-muted-foreground">/5</span></p>
+                </div>
+                <div className="rounded bg-card border p-1.5">
+                  <p className="text-[9px] text-muted-foreground">Vehicle</p>
+                  <p className="text-sm font-bold tabular-nums">{feedback.avgVehicle90d?.toFixed(1) ?? "—"}<span className="text-[9px] text-muted-foreground">/5</span></p>
+                </div>
+                <div className="rounded bg-card border p-1.5">
+                  <p className="text-[9px] text-muted-foreground">Punctuality</p>
+                  <p className="text-sm font-bold tabular-nums">{feedback.avgPunctuality90d?.toFixed(1) ?? "—"}<span className="text-[9px] text-muted-foreground">/5</span></p>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground italic">
+                Customer & Safety scores were prefilled from passenger ratings — adjust as needed.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
             <p className="text-xs font-medium">Scoring (Overall: <span className="text-primary font-bold">{overall.toFixed(1)}/10</span>)</p>
             <ScoreSlider label="Safety" value={form.safety_score} onChange={v => setForm(f => ({ ...f, safety_score: v }))} />
