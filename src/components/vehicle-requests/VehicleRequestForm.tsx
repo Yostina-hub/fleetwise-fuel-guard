@@ -27,6 +27,16 @@ import { sanitizeVehicleRequestForm } from "./vehicleRequestValidation";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
 import { MyVehicleRequestsSummary } from "./MyVehicleRequestsSummary";
+import {
+  recommendVehicleClass,
+  isUpgradeOverRecommendation,
+  getVehicleClassProfile,
+  COST_BAND_LABELS,
+  COST_BAND_TONE,
+  BUSINESS_PURPOSE_CATEGORIES,
+  CARGO_LOAD_OPTIONS,
+  type CargoLoad,
+} from "@/lib/vehicle-requests/vehicleClassRecommendation";
 
 interface VehicleRequestFormProps {
   open: boolean;
@@ -93,6 +103,10 @@ const buildInitialForm = () => ({
   // New: priority + contact phone — surfaced for dispatch/approver context.
   priority: "normal",
   contact_phone: "",
+  // Resource-aware request fields (demand-shaping pattern).
+  purpose_category: "" as string,                  // business taxonomy — required
+  cargo_load: "none" as CargoLoad,                 // drives the recommendation engine
+  vehicle_type_justification: "" as string,        // required when user upgrades over recommendation
 });
 
 const initialForm = buildInitialForm();
