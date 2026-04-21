@@ -23257,6 +23257,7 @@ export type Database = {
           auto_closed_at: string | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cargo_load: string | null
           check_in_at: string | null
           check_in_by: string | null
           completed_at: string | null
@@ -23308,8 +23309,10 @@ export type Database = {
           project_number: string | null
           punctuality_rating: number | null
           purpose: string
+          purpose_category: string | null
           rated_at: string | null
           rating_comment: string | null
+          recommended_vehicle_type: string | null
           rejection_reason: string | null
           request_number: string
           request_type: string | null
@@ -23326,6 +23329,7 @@ export type Database = {
           updated_at: string
           vehicle_rating: number | null
           vehicle_type: string | null
+          vehicle_type_justification: string | null
           workflow_instance_id: string | null
         }
         Insert: {
@@ -23340,6 +23344,7 @@ export type Database = {
           auto_closed_at?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          cargo_load?: string | null
           check_in_at?: string | null
           check_in_by?: string | null
           completed_at?: string | null
@@ -23391,8 +23396,10 @@ export type Database = {
           project_number?: string | null
           punctuality_rating?: number | null
           purpose: string
+          purpose_category?: string | null
           rated_at?: string | null
           rating_comment?: string | null
+          recommended_vehicle_type?: string | null
           rejection_reason?: string | null
           request_number: string
           request_type?: string | null
@@ -23409,6 +23416,7 @@ export type Database = {
           updated_at?: string
           vehicle_rating?: number | null
           vehicle_type?: string | null
+          vehicle_type_justification?: string | null
           workflow_instance_id?: string | null
         }
         Update: {
@@ -23423,6 +23431,7 @@ export type Database = {
           auto_closed_at?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          cargo_load?: string | null
           check_in_at?: string | null
           check_in_by?: string | null
           completed_at?: string | null
@@ -23474,8 +23483,10 @@ export type Database = {
           project_number?: string | null
           punctuality_rating?: number | null
           purpose?: string
+          purpose_category?: string | null
           rated_at?: string | null
           rating_comment?: string | null
+          recommended_vehicle_type?: string | null
           rejection_reason?: string | null
           request_number?: string
           request_type?: string | null
@@ -23492,6 +23503,7 @@ export type Database = {
           updated_at?: string
           vehicle_rating?: number | null
           vehicle_type?: string | null
+          vehicle_type_justification?: string | null
           workflow_instance_id?: string | null
         }
         Relationships: [
