@@ -878,8 +878,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {HeaderInner}
         </div>
       ) : (
-        <div className="relative -m-6 mb-0 px-6 pt-6 pb-5 border-b border-border/60 bg-card">
-          <DialogHeader className="relative">
+        <div className="px-6 sm:px-8 pt-6 pb-5 border-b border-border/60 bg-card sticky top-0 z-10">
+          <DialogHeader>
             <DialogTitle className="sr-only">Vehicle Request</DialogTitle>
             <DialogDescription className="sr-only">
               Vehicle request form — fill in the sections and submit.
@@ -889,7 +889,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         </div>
       )}
 
-      <div className="px-1 pt-4 space-y-4">
+      <div className={`${embedded ? "px-1" : "px-6 sm:px-8"} pt-6 pb-2 space-y-5`}>
         {/* Draft restored notice */}
         {restoredAt && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs animate-fade-in">
