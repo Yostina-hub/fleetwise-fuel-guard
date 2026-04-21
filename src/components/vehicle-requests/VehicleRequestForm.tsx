@@ -671,6 +671,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         {/* Mandatory rating gate */}
         {hasPendingRatings && <PendingRatingsBlocker className="mb-1" />}
 
+        {/* Personal request summary — helps requesters see status of prior submissions before filing a new one */}
+        <MyVehicleRequestsSummary variant="compact" />
+
         {/* Modern Tabs — responsive: icon-only on mobile, full label on >=sm */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
           <TabsList className="w-full h-auto p-1 bg-muted/40 grid grid-cols-5 gap-1 rounded-xl border border-border/60">
