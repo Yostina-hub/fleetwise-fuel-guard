@@ -43,6 +43,17 @@ const DriverHR = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [employeeSearch, setEmployeeSearch] = useState("");
 
+  // Drilldown listener: widgets dispatch `hr.navigate` to jump into a tab and optionally select an employee.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string; employeeId?: string }>).detail || {};
+      if (detail.tab) setActiveTab(detail.tab);
+      if (detail.employeeId !== undefined) setSelectedEmployeeId(detail.employeeId || "");
+    };
+    window.addEventListener("hr.navigate", handler);
+    return () => window.removeEventListener("hr.navigate", handler);
+  }, []);
+
   const selectedEmployee = employees.find(e => e.id === selectedEmployeeId);
   const employeeName = selectedEmployee ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}` : "";
   const driverId = selectedEmployee?.driver_id || "";
