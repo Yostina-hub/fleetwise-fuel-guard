@@ -708,9 +708,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // so the audit field `recommended_vehicle_type` always reflects what the
   // user saw at the moment they submitted.
   const recommendation = useMemo(() => {
+    if (!form.cargo_load) return null;
     return recommendVehicleClass({
       passengers: parseInt(form.passengers) || 1,
-      cargo: form.cargo_load,
+      cargo: form.cargo_load as CargoLoad,
     });
   }, [form.passengers, form.cargo_load]);
 
