@@ -585,6 +585,8 @@ const TripManagement = () => {
             </TabsContent>
           )}
         </Tabs>
+          </>
+        )}
       </div>
 
       {/* Detail Panel */}
