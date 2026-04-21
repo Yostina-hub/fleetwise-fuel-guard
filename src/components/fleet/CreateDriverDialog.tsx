@@ -80,6 +80,7 @@ const initialForm = {
   govt_id_type: "", license_number: "", national_id: "",
   license_type: "", license_issue_date: "", license_expiry: "",
   employment_type: "regular", status: "active",
+  contract_end_date: "", // #6 — required when employment_type === "contract"
   joining_date: "", department: "", experience_years: "",
   assigned_pool: "", // #5 — replaces route_type
   telebirr_account: "", // #8 — replaces bank fields
@@ -286,6 +287,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
       license_issue_date: formData.license_issue_date || null,
       license_expiry: formData.license_expiry || null,
       employment_type: formData.employment_type || null,
+      contract_end_date: formData.employment_type === "contract" ? (formData.contract_end_date || null) : null,
       status: formData.status,
       joining_date: formData.joining_date || null,
       department: formData.department || null,
