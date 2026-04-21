@@ -21,8 +21,8 @@ import {
   MapPin, Gauge, BarChart3, Lock, Eye, EyeOff,
   Zap, Globe, Wifi, Server
 } from "lucide-react";
-import ethioTelecomBg from "@/assets/ethio-telecom-bg.png";
-import ethioTelecomCyberBg from "@/assets/ethio-telecom-cyber-bg.png";
+import ethioTelecomBg from "@/assets/ethio-telecom-bg.webp";
+import ethioTelecomCyberBg from "@/assets/ethio-telecom-cyber-bg.webp";
 import { KeyRound } from "lucide-react";
 import { getPostLoginPath } from "@/lib/auth/postLoginRedirect";
 
