@@ -7,13 +7,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShieldAlert, AlertTriangle, Clock, Zap, UserCircle, Search,
+  ShieldAlert, AlertTriangle, Clock, Zap, UserCircle, Search, Navigation,
 } from "lucide-react";
 
 import { DriverPredictiveRiskScoring } from "@/components/drivers/DriverPredictiveRiskScoring";
 import { DriverIncidentReporting } from "@/components/drivers/DriverIncidentReporting";
 import { DriverFatiguePanel } from "@/components/drivers/DriverFatiguePanel";
 import { DriverAutoCoaching } from "@/components/drivers/DriverAutoCoaching";
+import { IdleCoachingQueue } from "@/components/drivers/IdleCoachingQueue";
 
 import { useTranslation } from 'react-i18next';
 const tabs = [
@@ -21,6 +22,7 @@ const tabs = [
   { key: "incidents", label: "Incidents", icon: AlertTriangle },
   { key: "fatigue", label: "Fatigue", icon: Clock, needsDriver: true },
   { key: "coaching", label: "Coaching", icon: Zap },
+  { key: "idle-coaching", label: "Idle Coaching", icon: Navigation },
 ];
 
 const DriverSafety = () => {
@@ -62,6 +64,7 @@ const DriverSafety = () => {
       incidents: <DriverIncidentReporting />,
       fatigue: <DriverFatiguePanel driverId={selectedDriverId} />,
       coaching: <DriverAutoCoaching />,
+      "idle-coaching": <IdleCoachingQueue />,
     };
     return map[activeTab] || null;
   };
