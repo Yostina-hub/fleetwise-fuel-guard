@@ -76,7 +76,7 @@ export default function PoolSupervisors() {
           <div className="flex items-center gap-2">
             <Card className="px-4 py-2">
               <div className="flex items-center gap-2 text-sm">
-                <ClipboardList className="w-4 h-4 text-amber-500" />
+                <ClipboardList className="w-4 h-4 text-warning" />
                 <span className="font-semibold">{approvedAwaiting}</span>
                 <span className="text-muted-foreground">awaiting allocation</span>
               </div>
