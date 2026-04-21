@@ -28,6 +28,7 @@ import { sanitizeVehicleRequestForm, vehicleRequestZodSchema } from "./vehicleRe
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
 import { MyVehicleRequestsSummary } from "./MyVehicleRequestsSummary";
+import { useDepartments } from "@/hooks/useDepartments";
 import {
   recommendVehicleClass,
   isUpgradeOverRecommendation,
@@ -102,6 +103,7 @@ const buildInitialForm = () => ({
   pool_category: "",
   pool_name: "",
   purpose: "",
+  department_id: "" as string,
   project_number: "",
   // New: priority + contact phone — surfaced for dispatch/approver context.
   priority: "normal",
