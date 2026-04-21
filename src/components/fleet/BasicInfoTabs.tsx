@@ -366,7 +366,7 @@ function IdentityPane(props: PaneProps) {
   const { err, stat, blur, change, commitSelect } = usePaneHandlers(props);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-5 items-start">
       <Field name="plate_number_part" label="Plate Number" required span={3} error={err("plate_number_part")} status={stat("plate_number_part")}>
         <div className="grid grid-cols-3 gap-2">
           <Select value={formData.plate_code} onValueChange={v => set("plate_code", v)}>
@@ -504,7 +504,7 @@ function SpecPane(props: PaneProps) {
   const { err, stat, blur, change, commitSelect } = usePaneHandlers(props);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-5 items-start">
       <Field name="make" label="Make" required error={err("make")} status={stat("make")}>
         <Input value={formData.make} onChange={e => change("make", sanitizeWhileTyping(e.target.value).slice(0, 100))} onBlur={blur("make")} placeholder="e.g. Toyota" maxLength={100} />
       </Field>
@@ -618,7 +618,7 @@ function ValuePane(props: PaneProps) {
   return (
     <div className="space-y-5">
       {/* Capacity row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-5 items-start">
         <Field name="seating_capacity" label="Seating Capacity" error={err("seating_capacity")} status={stat("seating_capacity")}>
           <Input inputMode="numeric" value={formData.seating_capacity || ""} onChange={e => change("seating_capacity", sanitizeNumeric(e.target.value, { integer: true }))} onBlur={blur("seating_capacity")} placeholder="e.g. 4" />
         </Field>
@@ -631,7 +631,7 @@ function ValuePane(props: PaneProps) {
       </div>
 
       {/* Pricing row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-5 items-start">
         <Field name="year_of_ownership" label="Year of Ownership" error={err("year_of_ownership")} status={stat("year_of_ownership")}>
           <Input inputMode="numeric" value={formData.year_of_ownership || ""} onChange={e => change("year_of_ownership", sanitizeNumeric(e.target.value, { integer: true }))} onBlur={blur("year_of_ownership")} placeholder="YYYY" />
         </Field>
