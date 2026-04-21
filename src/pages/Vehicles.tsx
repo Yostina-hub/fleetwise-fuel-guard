@@ -733,6 +733,7 @@ const Vehicles = () => {
                           isSelected={selectedVehicleId === vehicle.id}
                           onClick={() => handleVehicleRowClick(vehicle)}
                           onDoubleClick={() => handleVehicleClick(vehicle)}
+                          onProfile={() => navigate(`/vehicle-profile?id=${vehicle.id}`)}
                         />
                       ))
                     )}
