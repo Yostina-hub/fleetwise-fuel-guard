@@ -383,6 +383,36 @@ function FiltersRow({
   );
 }
 
+/* ---------- Table-based request list (mirrors dispatcher VehicleRequestsPanel) ---------- */
+
+const requestTypeLabels: Record<string, string> = {
+  daily_operation: "Daily",
+  nighttime_operation: "Nighttime",
+  project_operation: "Project",
+  field_operation: "Field",
+  group_operation: "Group",
+};
+
+const statusBadgeVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  pending: "secondary",
+  approved: "default",
+  assigned: "default",
+  in_progress: "default",
+  completed: "outline",
+  rejected: "destructive",
+  cancelled: "secondary",
+  closed: "outline",
+};
+
+type SortKey =
+  | "request_number"
+  | "request_type"
+  | "purpose"
+  | "route"
+  | "needed_from"
+  | "vehicle"
+  | "status";
+
 function RequestList({
   loading,
   items,
@@ -396,6 +426,41 @@ function RequestList({
   emptyTitle: string;
   emptyHint: string;
 }) {
+  // Sort defaults to most-recent trip first; clicking same column toggles direction.
+  const [sortKey, setSortKey] = useState<SortKey>("needed_from");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const toggleSort = (k: SortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(k);
+      setSortDir(k === "needed_from" ? "desc" : "asc");
+    }
+  };
+
+  const sorted = useMemo(() => {
+    const arr = [...items];
+    const dir = sortDir === "asc" ? 1 : -1;
+    const getVal = (r: RequestDetail): string | number => {
+      switch (sortKey) {
+        case "request_number": return (r.request_number || "").toLowerCase();
+        case "request_type":   return ((r as any).request_type || "").toLowerCase();
+        case "purpose":        return (r.purpose || "").toLowerCase();
+        case "route":          return (((r as any).departure_place || "") + " " + (r.destination || "")).toLowerCase();
+        case "needed_from":    return r.needed_from ? new Date(r.needed_from).getTime() : 0;
+        case "vehicle":        return (r.assigned_vehicle?.plate_number || "").toLowerCase();
+        case "status":         return (r.status || "").toLowerCase();
+        default: return 0;
+      }
+    };
+    arr.sort((a, b) => {
+      const av = getVal(a), bv = getVal(b);
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+    return arr;
+  }, [items, sortKey, sortDir]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground">
@@ -417,75 +482,99 @@ function RequestList({
       </Card>
     );
   }
-  return (
-    <div className="grid grid-cols-1 gap-2.5">
-      {items.map((r) => (
-        <RequestRow key={r.id} request={r} onOpen={onOpen} />
-      ))}
-    </div>
-  );
-}
 
-function RequestRow({
-  request,
-  onOpen,
-}: {
-  request: RequestDetail;
-  onOpen: (r: RequestDetail) => void;
-}) {
-  const submitted = new Date(request.created_at);
-  const needed = new Date(request.needed_from);
+  // Sortable column header. Mirrors VehicleRequestsPanel.SortHeader to keep
+  // visual parity between the dispatcher and requester views.
+  const SortHeader = ({
+    label,
+    field,
+    align = "left",
+  }: { label: string; field: SortKey; align?: "left" | "center" }) => {
+    const active = sortKey === field;
+    const Icon = active ? (sortDir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
+    return (
+      <th className={cn(`text-${align} py-2 px-3`)}>
+        <button
+          type="button"
+          onClick={() => toggleSort(field)}
+          className={cn(
+            "inline-flex items-center gap-1 hover:text-foreground transition-colors",
+            active ? "text-foreground font-semibold" : "text-muted-foreground",
+          )}
+          aria-label={`Sort by ${label}`}
+        >
+          {label}
+          <Icon className={cn("w-3 h-3", active ? "opacity-100" : "opacity-50")} />
+        </button>
+      </th>
+    );
+  };
+
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(request)}
-      className={cn(
-        "group text-left rounded-lg border border-border bg-card hover:bg-muted/40 transition-colors",
-        "p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-      )}
-      aria-label={`Open request ${request.request_number}`}
-    >
-      <div className="flex items-start gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-xs text-muted-foreground">
-              {request.request_number}
-            </span>
-            <RequestStatusBadge status={request.status} />
-            {request.priority && request.priority !== "normal" && (
-              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-border text-muted-foreground">
-                {request.priority}
-              </span>
-            )}
-          </div>
-          <div className="text-sm font-medium text-foreground mt-1 line-clamp-1">
-            {request.purpose}
-          </div>
-          <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-            {request.destination ?? "No destination"}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[11px] text-muted-foreground">
-            <span>
-              Needed: <span className="text-foreground">{format(needed, "MMM d, HH:mm")}</span>
-            </span>
-            <span>·</span>
-            <span>Submitted {formatDistanceToNow(submitted, { addSuffix: true })}</span>
-            {request.assigned_vehicle?.plate_number && (
-              <>
-                <span>·</span>
-                <span className="inline-flex items-center gap-1 text-foreground">
-                  <Car className="h-3 w-3" aria-hidden="true" />
-                  {request.assigned_vehicle.plate_number}
-                </span>
-              </>
-            )}
-          </div>
+    <Card>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-xs">
+                <SortHeader label="Request #"   field="request_number" />
+                <SortHeader label="Type"        field="request_type" />
+                <SortHeader label="Purpose"     field="purpose" />
+                <SortHeader label="Route"       field="route" />
+                <SortHeader label="Needed From" field="needed_from" />
+                <SortHeader label="Vehicle"     field="vehicle" />
+                <SortHeader label="Status"      field="status" align="center" />
+                <th className="text-center py-2 px-3 text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((r) => {
+                const dep = (r as any).departure_place;
+                const route = dep && r.destination
+                  ? `${dep} → ${r.destination}`
+                  : (r.destination || dep || "—");
+                return (
+                  <tr key={r.id} className="border-b hover:bg-muted/30">
+                    <td className="py-2 px-3 font-medium font-mono text-xs">{r.request_number}</td>
+                    <td className="py-2 px-3">
+                      <Badge variant="outline" className="text-[10px]">
+                        {requestTypeLabels[(r as any).request_type] || (r as any).request_type || "—"}
+                      </Badge>
+                    </td>
+                    <td className="py-2 px-3 max-w-[200px] truncate" title={r.purpose}>{r.purpose}</td>
+                    <td className="py-2 px-3 text-muted-foreground text-xs max-w-[180px] truncate" title={route}>
+                      {route}
+                    </td>
+                    <td className="py-2 px-3 text-muted-foreground text-xs">
+                      {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
+                    </td>
+                    <td className="py-2 px-3 text-muted-foreground text-xs">
+                      {r.assigned_vehicle?.plate_number || "—"}
+                    </td>
+                    <td className="py-2 px-3 text-center">
+                      <Badge variant={statusBadgeVariant[r.status] || "secondary"} className="text-[10px]">
+                        {r.status?.replace("_", " ")}
+                      </Badge>
+                    </td>
+                    <td className="py-2 px-3 text-center">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        title="View"
+                        onClick={() => onOpen(r)}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-        <div className="text-xs text-muted-foreground group-hover:text-foreground transition-colors shrink-0">
-          View →
-        </div>
-      </div>
-    </button>
+      </CardContent>
+    </Card>
   );
 }
 
