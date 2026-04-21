@@ -165,6 +165,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const validation = useDriverValidation();
+  const resetValidation = validation.reset;
   const fieldRefs = useRef<Partial<Record<DriverFieldName, HTMLElement | null>>>({});
 
   const [loading, setLoading] = useState(false);
@@ -179,7 +180,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
   useEffect(() => {
     if (!open) {
       setActiveStep(EDIT_STEPS[0].id);
-      validation.reset();
+      resetValidation();
       return;
     }
 
@@ -253,13 +254,13 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
           national_id_url: (data as any).national_id_url || "",
           avatar_url: data.avatar_url || "",
         });
-        validation.reset();
+        resetValidation();
       });
 
     return () => {
       cancelled = true;
     };
-  }, [driver, open, toast, validation]);
+  }, [driver, open, toast, resetValidation]);
 
   const set = (field: keyof typeof initialForm, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
