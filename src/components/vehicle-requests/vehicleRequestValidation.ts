@@ -384,12 +384,70 @@ export function sanitizeVehicleRequestForm(values: VRFormValues): VRFormValues {
   };
 }
 
-/** Optional zod schema (e.g. for server payload guard). */
+/**
+ * Hardened Zod schema — final server-bound guard. Run this on the sanitized
+ * form right before the network insert. Any failure short-circuits the
+ * mutation with a descriptive error, so we can never POST a payload that
+ * skipped the per-field UI validators (e.g. via programmatic form mutation).
+ */
 export const vehicleRequestZodSchema = z.object({
-  request_type: z.enum(["daily_operation", "nighttime_operation", "project_operation", "field_operation", "group_operation"]),
-  purpose: z.string().trim().min(10).max(2000),
-  project_number: z.string().trim().max(30).optional().or(z.literal("")),
-  contact_phone: z.string().trim().max(20).optional().or(z.literal("")),
+  request_type: z.enum([
+    "daily_operation",
+    "nighttime_operation",
+    "project_operation",
+    "field_operation",
+    "group_operation",
+  ]),
+  purpose: z
+    .string()
+    .trim()
+    .min(10, "Trip description must be at least 10 characters.")
+    .max(2000, "Trip description must be 2000 characters or fewer."),
+  purpose_category: z
+    .string()
+    .trim()
+    .min(1, "Business purpose category is required."),
+  project_number: z
+    .string()
+    .trim()
+    .max(30, "Project number must be 30 characters or fewer.")
+    .optional()
+    .or(z.literal("")),
+  contact_phone: z
+    .string()
+    .trim()
+    .max(20, "Phone number must be 20 characters or fewer.")
+    .optional()
+    .or(z.literal("")),
+  departure_place: z.string().trim().max(200).optional().or(z.literal("")),
+  destination: z.string().trim().max(200).optional().or(z.literal("")),
   num_vehicles: z.coerce.number().int().min(1).max(50),
   passengers: z.coerce.number().int().min(1).max(100),
+  vehicle_type: z
+    .string()
+    .trim()
+    .max(50)
+    .optional()
+    .or(z.literal("")),
+  trip_type: z
+    .enum(["one_way", "round_trip"])
+    .optional()
+    .or(z.literal("")),
+  pool_category: z
+    .enum(["corporate", "zone", "region"])
+    .optional()
+    .or(z.literal("")),
+  priority: z
+    .enum(["low", "normal", "high", "urgent"])
+    .optional()
+    .or(z.literal("")),
+  cargo_load: z.enum(["none", "small", "medium", "large"]).optional(),
+  vehicle_type_justification: z
+    .string()
+    .trim()
+    .max(500)
+    .optional()
+    .or(z.literal("")),
 });
+
+export type VehicleRequestPayload = z.infer<typeof vehicleRequestZodSchema>;

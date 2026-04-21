@@ -24,7 +24,7 @@ import { LocationPickerField } from "@/components/shared/LocationPickerField";
 import { VEHICLE_TYPES_OPTIONS, ASSIGNED_POOLS } from "@/components/fleet/formConstants";
 import { AlertCircle } from "lucide-react";
 import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
-import { sanitizeVehicleRequestForm } from "./vehicleRequestValidation";
+import { sanitizeVehicleRequestForm, vehicleRequestZodSchema } from "./vehicleRequestValidation";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
 import { MyVehicleRequestsSummary } from "./MyVehicleRequestsSummary";
@@ -361,6 +361,38 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      // ── Final hardened validation + sanitization ─────────────────────────
+      // We re-sanitize and Zod-parse the form right before the network call.
+      // This prevents any payload that bypassed the per-field UI validators
+      // (e.g. through programmatic state mutation, devtools tampering, or a
+      // race with `handleSubmit`) from reaching the database. Failures throw
+      // a descriptive error which surfaces in the toast onError handler.
+      const sanitizedForm = sanitizeVehicleRequestForm(form as any);
+      const parsed = vehicleRequestZodSchema.safeParse({
+        request_type: sanitizedForm.request_type,
+        purpose: sanitizedForm.purpose,
+        purpose_category: (form as any).purpose_category,
+        project_number: sanitizedForm.project_number,
+        contact_phone: sanitizedForm.contact_phone,
+        departure_place: sanitizedForm.departure_place,
+        destination: sanitizedForm.destination,
+        num_vehicles: form.num_vehicles,
+        passengers: form.passengers,
+        vehicle_type: sanitizedForm.vehicle_type,
+        trip_type: sanitizedForm.trip_type,
+        pool_category: sanitizedForm.pool_category,
+        priority: sanitizedForm.priority,
+        cargo_load: (form as any).cargo_load,
+        vehicle_type_justification: (form as any).vehicle_type_justification,
+      });
+      if (!parsed.success) {
+        const first = parsed.error.errors[0];
+        throw new Error(
+          `Validation failed (${first.path.join(".") || "form"}): ${first.message}`,
+        );
+      }
+      const safe = parsed.data;
+
       // The JWT identity (always the real signed-in user — super_admin while
       // impersonating). Used only as a fallback when there's no impersonation
       // override in play.
@@ -389,7 +421,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       let neededFrom: string;
       let neededUntil: string | null = null;
 
-      const isDailyLike = form.request_type === "daily_operation" || form.request_type === "nighttime_operation";
+      const isDailyLike = safe.request_type === "daily_operation" || safe.request_type === "nighttime_operation";
       if (isDailyLike) {
         neededFrom = combineDateAndTime(form.date, form.start_time) || new Date().toISOString();
         neededUntil = combineDateAndTime(form.end_date || form.date, form.end_time) || null;
@@ -407,36 +439,39 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         filed_by_user_id: filerId,
         filed_by_name: filerName,
         filed_on_behalf: useOnBehalf,
-        request_type: form.request_type,
+        // Below — every user-controlled field flows through `safe` (the
+        // sanitized + Zod-validated payload). Lat/lng + dates remain raw
+        // because they're not free-text user input.
+        request_type: safe.request_type,
         purpose:
-          form.purpose +
+          safe.purpose +
           filedOnBehalfNote +
-          (form.contact_phone ? `\n\nContact phone: ${form.contact_phone}` : ""),
+          (safe.contact_phone ? `\n\nContact phone: ${safe.contact_phone}` : ""),
         needed_from: neededFrom,
         needed_until: neededUntil,
-        departure_place: form.departure_place || null,
-        destination: form.destination || null,
+        departure_place: safe.departure_place || null,
+        destination: safe.destination || null,
         departure_lat: form.departure_lat,
         departure_lng: form.departure_lng,
         destination_lat: form.destination_lat,
         destination_lng: form.destination_lng,
-        num_vehicles: allowsMultipleVehicles ? (parseInt(form.num_vehicles) || 1) : 1,
-        passengers: parseInt(form.passengers) || 1,
-        vehicle_type: form.vehicle_type || null,
-        trip_type: form.trip_type || null,
-        pool_category: form.pool_category || null,
-        pool_name: form.pool_name || null,
+        num_vehicles: allowsMultipleVehicles ? safe.num_vehicles : 1,
+        passengers: safe.passengers,
+        vehicle_type: safe.vehicle_type || null,
+        trip_type: safe.trip_type || null,
+        pool_category: safe.pool_category || null,
+        pool_name: sanitizedForm.pool_name || null,
         start_time: form.start_time || null,
         end_time: form.end_time || null,
-        project_number: form.request_type === "project_operation" ? (form.project_number || null) : null,
-        priority: form.priority || "normal",
+        project_number: safe.request_type === "project_operation" ? (safe.project_number || null) : null,
+        priority: safe.priority || "normal",
         // Resource-aware request audit fields.
-        purpose_category: form.purpose_category || null,
-        cargo_load: form.cargo_load || null,
+        purpose_category: safe.purpose_category || null,
+        cargo_load: safe.cargo_load || null,
         recommended_vehicle_type: recommendation?.value || null,
         vehicle_type_justification:
-          isUpgrade && form.vehicle_type_justification?.trim()
-            ? form.vehicle_type_justification.trim()
+          isUpgrade && safe.vehicle_type_justification?.trim()
+            ? safe.vehicle_type_justification.trim()
             : null,
         status: "pending",
       };
