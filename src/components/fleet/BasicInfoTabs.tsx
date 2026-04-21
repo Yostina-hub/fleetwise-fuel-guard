@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { IdCard, Cog, Gauge, CheckCircle2, AlertCircle } from "lucide-react";
+import { IdCard, Cog, Gauge, CheckCircle2, AlertCircle, Building2, MapPin, Globe2, Layers } from "lucide-react";
 import {
   PLATE_CODES, PLATE_REGIONS, VEHICLE_TYPES_OPTIONS, VEHICLE_GROUPS, DRIVE_TYPES,
   ENERGY_TYPES, ENERGY_SOURCES,
