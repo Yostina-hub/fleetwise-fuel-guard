@@ -510,6 +510,51 @@ export const VehicleRequestsPanel = () => {
       {showCrossPool && (
         <CrossPoolAssignmentDialog request={showCrossPool} open={!!showCrossPool} onClose={() => setShowCrossPool(null)} />
       )}
+
+      {/* Cancel confirmation — soft action, status flipped to 'cancelled'. */}
+      <AlertDialog open={!!confirmCancel} onOpenChange={(o) => !o && setConfirmCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel request {confirmCancel?.request_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The request will be marked as cancelled. This is reversible by the dispatcher
+              but will release any pending vehicle/driver assignments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionPending}>Keep request</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={actionPending}
+              onClick={(e) => { e.preventDefault(); handleCancel(); }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              {actionPending ? "Cancelling…" : "Cancel request"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete confirmation — hard, irreversible. Restricted by `canDelete`. */}
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete request {confirmDelete?.request_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the request and its history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionPending}>Keep request</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={actionPending}
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {actionPending ? "Deleting…" : "Delete permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
