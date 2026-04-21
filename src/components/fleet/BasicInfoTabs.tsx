@@ -9,10 +9,10 @@ import { IdCard, Cog, Gauge, CheckCircle2, AlertCircle } from "lucide-react";
 import {
   PLATE_CODES, PLATE_REGIONS, VEHICLE_TYPES_OPTIONS, VEHICLE_GROUPS, DRIVE_TYPES,
   ENERGY_TYPES, ENERGY_SOURCES,
-  PURPOSE_FOR_OPTIONS, SPECIFIC_POOL_OPTIONS, TRANSMISSION_TYPES,
+  PURPOSE_FOR_OPTIONS, TRANSMISSION_TYPES,
   CURRENT_CONDITION_OPTIONS, SAFETY_COMFORT_CATEGORIES,
+  ASSIGNED_LOCATIONS,
 } from "./formConstants";
-import { AssignedLocationPicker } from "./AssignedLocationPicker";
 import { DatePickerField } from "./DatePickerField";
 import {
   sanitizeWhileTyping, sanitizeVin, sanitizePlateDigits, sanitizeNumeric,
@@ -295,30 +295,64 @@ function IdentityPane(props: PaneProps) {
         </Select>
       </Field>
 
-      <Field name="specific_pool" label="Specific Pool" error={err("specific_pool")} status={stat("specific_pool")}>
-        <Select value={formData.specific_pool || ""} onValueChange={v => commitSelect("specific_pool", v)}>
-          <SelectTrigger><SelectValue placeholder="e.g. NAAZ, SR..." /></SelectTrigger>
+      <Field name="specific_pool" label="Pool Category" hint="Corporate / Zone / Region" error={err("specific_pool")} status={stat("specific_pool")}>
+        <Select
+          value={formData.specific_pool || ""}
+          onValueChange={v => {
+            commitSelect("specific_pool", v);
+            // Reset dependents when category changes
+            const cur = ASSIGNED_LOCATIONS.find(l => l.value === formData.assigned_location);
+            if (!cur || cur.group !== v) {
+              commitSelect("assigned_location", "");
+              commitSelect("specific_location", "");
+            }
+          }}
+        >
+          <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
           <SelectContent>
-            {SPECIFIC_POOL_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+            <SelectItem value="Corporate">Corporate</SelectItem>
+            <SelectItem value="Zone">Zone</SelectItem>
+            <SelectItem value="Region">Region</SelectItem>
           </SelectContent>
         </Select>
       </Field>
 
-      <Field name="specific_location" label="Specific Location" error={err("specific_location")} status={stat("specific_location")}>
-        <Input
-          value={formData.specific_location || ""}
-          onChange={e => change("specific_location", sanitizeWhileTyping(e.target.value).slice(0, 200))}
-          onBlur={blur("specific_location")}
-          placeholder="Branch / site name"
-          maxLength={200}
-        />
+      <Field name="assigned_location" label="Assigned Location" hint="Filtered by Pool Category" error={err("assigned_location")} status={stat("assigned_location")}>
+        <Select
+          value={formData.assigned_location || ""}
+          onValueChange={v => {
+            commitSelect("assigned_location", v);
+            // Auto-fill Specific Location to mirror the pick
+            commitSelect("specific_location", v);
+          }}
+          disabled={!formData.specific_pool}
+        >
+          <SelectTrigger className={!formData.specific_pool ? "opacity-50" : ""}>
+            <SelectValue placeholder={formData.specific_pool ? "Select location..." : "Pick category first"} />
+          </SelectTrigger>
+          <SelectContent>
+            {ASSIGNED_LOCATIONS
+              .filter(l => l.group === formData.specific_pool)
+              .map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </Field>
 
-      <Field name="assigned_location" label="Assigned Location" hint="Corporate / Zone / Region group" error={err("assigned_location")} status={stat("assigned_location")}>
-        <AssignedLocationPicker
-          value={formData.assigned_location || ""}
-          onChange={(v) => commitSelect("assigned_location", v)}
-        />
+      <Field name="specific_location" label="Specific Location" hint="Auto-fills from Assigned Location — override if needed" error={err("specific_location")} status={stat("specific_location")}>
+        <Select
+          value={formData.specific_location || ""}
+          onValueChange={v => commitSelect("specific_location", v)}
+          disabled={!formData.specific_pool}
+        >
+          <SelectTrigger className={!formData.specific_pool ? "opacity-50" : ""}>
+            <SelectValue placeholder={formData.specific_pool ? "Select location..." : "Pick category first"} />
+          </SelectTrigger>
+          <SelectContent>
+            {ASSIGNED_LOCATIONS
+              .filter(l => l.group === formData.specific_pool)
+              .map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </Field>
 
       <Field name="vehicle_type" label="Vehicle Type" error={err("vehicle_type")} status={stat("vehicle_type")}>
