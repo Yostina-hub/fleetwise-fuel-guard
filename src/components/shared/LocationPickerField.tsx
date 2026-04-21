@@ -48,7 +48,12 @@ export function LocationPickerField({
     staleTime: 60_000,
   });
 
-  const isGeofenceMatch = geofences?.some((g) => g.name === value);
+  // Detect when the stored value is actually a raw "lat, lng" string — this
+  // can happen on legacy drafts where the picker silently saved coords as the
+  // name. We treat those as "needs re-pick" rather than rendering them.
+  const isRawCoords = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test((value || "").trim());
+  const cleanValue = isRawCoords ? "" : value;
+  const isGeofenceMatch = geofences?.some((g) => g.name === cleanValue);
 
   /**
    * Persist a freshly picked map point as a reusable "custom" geofence so it
