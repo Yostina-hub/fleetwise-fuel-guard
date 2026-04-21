@@ -32,6 +32,7 @@ import { ExportScheduleDialog } from "@/components/scheduling/ExportScheduleDial
 import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 import { VehicleRequestsPanel } from "@/components/vehicle-requests/VehicleRequestsPanel";
 import DispatchJobsTab from "@/components/dispatch/DispatchJobsTab";
+import { PendingApprovalsPanel } from "@/components/trips/PendingApprovalsPanel";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useTranslation } from 'react-i18next';
