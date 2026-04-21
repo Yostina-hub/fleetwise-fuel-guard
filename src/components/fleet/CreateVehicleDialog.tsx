@@ -354,7 +354,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
 
               <TabsContent value="compliance" className="mt-0">
                 <Section icon={<Shield className="w-5 h-5 text-primary" />} title="Legal & Compliance">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3 items-start">
                     <Field label="Registration Certificate No" error={fieldValidation.getError("registration_cert_no")} status={fieldValidation.getStatus("registration_cert_no", formData.registration_cert_no)}>
                       <Input value={formData.registration_cert_no} onChange={e => { const v = sanitizeWhileTyping(e.target.value).slice(0,100); set("registration_cert_no", v); fieldValidation.handleChange("registration_cert_no", v); }} onBlur={() => fieldValidation.handleBlur("registration_cert_no", formData.registration_cert_no)} maxLength={100} />
                     </Field>
@@ -385,7 +385,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
 
               <TabsContent value="operations" className="mt-0">
                 <Section icon={<Settings className="w-5 h-5 text-primary" />} title="Operational Details">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3 items-start">
                     <Field label="Vehicle Category">
                       <Select value={formData.vehicle_category} onValueChange={v => set("vehicle_category", v)}>
                         <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
@@ -448,7 +448,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
 
               <TabsContent value="attachments" className="mt-0">
                 <Section icon={<Paperclip className="w-5 h-5 text-primary" />} title="Vehicle Attachments">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 items-start">
                     <FileUploadField label="Owner Certificate" accept="image/*,.pdf" selectedFile={ownerCertFile} onFileSelect={setOwnerCertFile} />
                     <FileUploadField label="Renewed 3rd Party Insurance Certificate" accept="image/*,.pdf" selectedFile={insuranceCertFile} onFileSelect={setInsuranceCertFile} />
                     <FileUploadField label="Tax Clearance" accept="image/*,.pdf" selectedFile={taxClearanceFile} onFileSelect={setTaxClearanceFile} />
@@ -463,7 +463,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
 
               <TabsContent value="driver" className="mt-0">
                 <Section icon={<User className="w-5 h-5 text-primary" />} title="Driver Assignment">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 items-start">
                     <Field label="Assigned Driver">
                       <Select value={formData.assigned_driver_id || "none"} onValueChange={v => set("assigned_driver_id", v === "none" ? "" : v)}>
                         <SelectTrigger><SelectValue placeholder="Select driver..." /></SelectTrigger>
@@ -481,7 +481,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
 
               <TabsContent value="owner" className="mt-0">
                 <Section icon={<MapPin className="w-5 h-5 text-primary" />} title="Vehicle Owner Information">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3 items-start">
                     <Field label="Owner Type *">
                       <Select value={formData.owner_type} onValueChange={v => set("owner_type", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -602,10 +602,19 @@ function Field({
   const isError = status === "error" || !!error;
   const isSuccess = status === "success" && !error;
   return (
-    <div className="space-y-1.5">
-      <Label className={`text-sm ${isError ? "text-destructive" : ""}`}>{label}</Label>
+    <div className="flex flex-col gap-1.5">
+      {/* Fixed-height label row so all fields in a grid align to the same baseline */}
+      <Label
+        title={label}
+        className={`text-xs font-medium leading-none truncate ${
+          isError ? "text-destructive" : "text-foreground/80"
+        }`}
+      >
+        {label}
+      </Label>
+      {/* Control row — every input / select / datepicker normalises to h-10 */}
       <div
-        className={`relative ${
+        className={`relative [&_input]:h-10 [&_button[role=combobox]]:h-10 [&>button]:h-10 ${
           isError
             ? "[&_input]:border-destructive [&_button]:border-destructive [&_input]:focus-visible:ring-destructive/30"
             : isSuccess
@@ -621,12 +630,15 @@ function Field({
           />
         )}
       </div>
-      {error && (
-        <p role="alert" className="text-[11px] font-medium text-destructive flex items-center gap-1">
-          <AlertCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
-          {error}
-        </p>
-      )}
+      {/* Reserve a fixed message row so error appearance doesn't shift adjacent cards */}
+      <div className="min-h-[16px]">
+        {error && (
+          <p role="alert" className="text-[11px] font-medium text-destructive flex items-center gap-1 leading-tight">
+            <AlertCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
+            <span className="truncate">{error}</span>
+          </p>
+        )}
+      </div>
     </div>
   );
 }
