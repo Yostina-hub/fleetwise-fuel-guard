@@ -234,6 +234,73 @@ function Field({
   );
 }
 
+/* ---------- Specific Location override (collapsed by default) ---------- */
+function SpecificLocationOverride({
+  poolCategory,
+  assignedValue,
+  specificValue,
+  onChange,
+}: {
+  poolCategory: string;
+  assignedValue: string;
+  specificValue: string;
+  onChange: (v: string) => void;
+}) {
+  const isOverridden = specificValue && specificValue !== assignedValue;
+  const [open, setOpen] = useState(isOverridden);
+  const options = useMemo(
+    () => ASSIGNED_LOCATIONS.filter(l => l.group === poolCategory),
+    [poolCategory],
+  );
+  const currentLabel =
+    ASSIGNED_LOCATIONS.find(l => l.value === specificValue)?.label || specificValue;
+
+  if (!open) {
+    return (
+      <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px]">
+        <span className="text-muted-foreground">
+          Specific Location: <span className="text-foreground font-medium">{currentLabel}</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-primary hover:underline underline-offset-2"
+        >
+          Override
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 space-y-1">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-muted-foreground">Specific Location override</span>
+        <button
+          type="button"
+          onClick={() => {
+            onChange(assignedValue);
+            setOpen(false);
+          }}
+          className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+        >
+          Reset to Assigned
+        </button>
+      </div>
+      <Select value={specificValue} onValueChange={onChange}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder="Pick a different location" />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(o => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 /* ---------- Pane prop helpers ---------- */
 type PaneProps = Omit<Props, "plateNumber"> & { plateNumber?: string };
 
