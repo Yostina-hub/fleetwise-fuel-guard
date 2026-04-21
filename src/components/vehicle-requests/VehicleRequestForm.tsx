@@ -1592,7 +1592,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       </div>
 
       {(() => {
-        const isLast = tabIndex === TABS.length - 1;
         const FooterInner = (
           <div className="flex w-full flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
             <Button
@@ -1607,27 +1606,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                 {t('common.cancel', 'Cancel')}
               </Button>
-              {tabIndex > 0 && (
-                <Button variant="outline" size="sm" onClick={goPrev} className="gap-1">
-                  <ChevronLeft className="w-4 h-4" /> Back
-                </Button>
-              )}
-              {!isLast ? (
-                <Button size="sm" onClick={goNext} className="gap-1">
-                  Next <ChevronRight className="w-4 h-4" />
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={handleSubmit}
-                  disabled={!canSubmit || createMutation.isPending || hasPendingRatings}
-                  title={hasPendingRatings ? "Rate your previous trips before submitting" : undefined}
-                  className="gap-1.5"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  {createMutation.isPending ? "Submitting..." : "Submit Request"}
-                </Button>
-              )}
+              <Button
+                size="sm"
+                onClick={handleSubmit}
+                disabled={!canSubmit || createMutation.isPending || hasPendingRatings}
+                title={hasPendingRatings ? "Rate your previous trips before submitting" : undefined}
+                className="gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                {createMutation.isPending ? "Submitting..." : "Submit Request"}
+              </Button>
             </div>
           </div>
         );
