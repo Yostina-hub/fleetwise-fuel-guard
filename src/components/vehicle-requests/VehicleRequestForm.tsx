@@ -118,6 +118,32 @@ const buildInitialForm = () => ({
 
 const initialForm = buildInitialForm();
 
+/** Compact info tooltip used next to field labels to keep the form clean. */
+const FieldHint = ({ children, tone = "muted" }: { children: React.ReactNode; tone?: "muted" | "warning" }) => (
+  <TooltipProvider delayDuration={150}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="More info"
+          className={
+            "inline-flex items-center justify-center rounded-full transition-colors " +
+            (tone === "warning"
+              ? "text-amber-600 hover:text-amber-700 dark:text-amber-400"
+              : "text-muted-foreground hover:text-foreground")
+          }
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+        {children}
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
+
 export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
   const { organizationId, isSuperAdmin } = useOrganization();
