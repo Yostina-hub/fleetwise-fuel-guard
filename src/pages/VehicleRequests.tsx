@@ -891,6 +891,9 @@ const VehicleRequests = () => {
                           <td className="py-3 px-3 text-muted-foreground text-xs">
                             {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
                           </td>
+                          <td className="py-3 px-3 text-muted-foreground text-xs">
+                            {r.needed_until ? format(new Date(r.needed_until), "MMM dd, HH:mm") : "—"}
+                          </td>
                           <td className="py-3 px-3 text-xs">
                             {r.assigned_vehicle?.plate_number ? (
                               <button
