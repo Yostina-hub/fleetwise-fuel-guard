@@ -846,6 +846,25 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
           {/* SCHEDULE TAB */}
           <TabsContent value="schedule" className="mt-5 space-y-4 animate-fade-in">
+            {/* Working-hours policy banner — Project / operational only */}
+            {isProject && workingHoursPolicy && (() => {
+              const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+              const days = workingHoursPolicy.days.map((d) => dayNames[d]).join(", ");
+              return (
+                <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
+                  <span className="text-muted-foreground">
+                    <span className="font-medium text-foreground">Working-hours policy:</span>{" "}
+                    Operational requests must run between{" "}
+                    <span className="font-medium text-foreground">
+                      {workingHoursPolicy.start.slice(0, 5)}–{workingHoursPolicy.end.slice(0, 5)}
+                    </span>{" "}
+                    on <span className="font-medium text-foreground">{days}</span>.
+                    Outside these hours? Use Daily or Field operations instead.
+                  </span>
+                </div>
+              );
+            })()}
             {isDaily ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-1">
