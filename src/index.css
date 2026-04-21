@@ -413,6 +413,25 @@ All colors MUST be HSL.
     overscroll-behavior-x: contain;
   }
 
+  /* Theme-aware "cyber" gradient surface used by dashboard/report cards.
+     Adapts across cyber/dark/light themes via surface tokens. */
+  .bg-cyber-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--surface-deep)) 0%,
+      hsl(var(--surface-card)) 50%,
+      hsl(var(--surface-deep)) 100%
+    );
+  }
+  .light .bg-cyber-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--surface-card)) 0%,
+      hsl(var(--surface-elevated)) 50%,
+      hsl(var(--surface-card)) 100%
+    );
+  }
+
   /* ========================================
      NATIVE APP MOBILE ENHANCEMENTS
      ======================================== */
