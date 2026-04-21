@@ -28,7 +28,12 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
   const [tab, setTab] = useState("active");
-  
+  // Check-in/out dialog target (replaces window.prompt flow)
+  const [checkTarget, setCheckTarget] = useState<
+    | { mode: "in"; jobId: string }
+    | { mode: "out"; jobId: string; odometerStart: number | null }
+    | null
+  >(null);
 
   // Active vehicle request assignment + dispatch jobs
   const { data: assignments, isLoading: aLoading } = useQuery({
