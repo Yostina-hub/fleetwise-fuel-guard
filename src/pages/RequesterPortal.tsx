@@ -43,6 +43,8 @@ import {
   Loader2,
   RefreshCw,
   Eye,
+  Pencil,
+  Trash2,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -58,6 +60,18 @@ import {
   RequestDetailDrawer,
   type RequestDetail,
 } from "@/components/requester-portal/RequestDetailDrawer";
+import { EditRequestDialog } from "@/components/requester-portal/EditRequestDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 type StatusFilter = "all" | (typeof REQUEST_STATUSES)[number];
 
