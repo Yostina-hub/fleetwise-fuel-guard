@@ -517,8 +517,17 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
               <Field label={idLabel} required error={validation.getError("license_number")} success={!validation.getError("license_number") && !!formData.license_number && validation.touched.license_number} fieldRef={registerRef("license_number")}>
                 <Input value={formData.license_number} onChange={e => set("license_number", e.target.value)} onBlur={() => onBlur("license_number")} placeholder={`Enter ${idLabel.toLowerCase()}...`} maxLength={50} className={errClass("license_number")} aria-invalid={!!validation.getError("license_number")} />
               </Field>
-              <Field label="National ID (FAN)" error={validation.getError("national_id")}>
-                <Input value={formData.national_id} onChange={e => set("national_id", e.target.value)} onBlur={() => onBlur("national_id")} placeholder="Please Enter FAN" maxLength={30} className={errClass("national_id")} />
+              <Field label="National ID (FAN)" error={validation.getError("national_id")} hint="Exactly 12 digits">
+                <Input
+                  value={formData.national_id}
+                  onChange={e => set("national_id", e.target.value.replace(/\D/g, "").slice(0, 12))}
+                  onBlur={() => onBlur("national_id")}
+                  placeholder="123456789012"
+                  maxLength={12}
+                  inputMode="numeric"
+                  className={errClass("national_id")}
+                  aria-invalid={!!validation.getError("national_id")}
+                />
               </Field>
               <Field label="License Type / Class">
                 <Select value={formData.license_type} onValueChange={v => set("license_type", v)}>
