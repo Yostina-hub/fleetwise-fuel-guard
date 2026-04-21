@@ -3989,6 +3989,104 @@ export type Database = {
           },
         ]
       }
+      driver_coaching_queue: {
+        Row: {
+          coached_at: string | null
+          coached_by: string | null
+          coaching_notes: string | null
+          created_at: string
+          dismissed_at: string | null
+          dismissed_by: string | null
+          driver_id: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          recommendation: string | null
+          reroute_suggestion: string | null
+          severity: string
+          source_alert_id: string | null
+          source_type: string
+          status: string
+          suggested_assignment_id: string | null
+          title: string
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          coached_at?: string | null
+          coached_by?: string | null
+          coaching_notes?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          driver_id?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          recommendation?: string | null
+          reroute_suggestion?: string | null
+          severity?: string
+          source_alert_id?: string | null
+          source_type?: string
+          status?: string
+          suggested_assignment_id?: string | null
+          title: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          coached_at?: string | null
+          coached_by?: string | null
+          coaching_notes?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          driver_id?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          recommendation?: string | null
+          reroute_suggestion?: string | null
+          severity?: string
+          source_alert_id?: string | null
+          source_type?: string
+          status?: string
+          suggested_assignment_id?: string | null
+          title?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_coaching_queue_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_queue_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_queue_source_alert_id_fkey"
+            columns: ["source_alert_id"]
+            isOneToOne: true
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_queue_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_coaching_workflows: {
         Row: {
           action_items: Json | null
