@@ -51,7 +51,35 @@ const Maintenance = () => {
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("schedules");
+  const [runningScheduler, setRunningScheduler] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Fire the maintenance auto-scheduler edge function. The same job runs
+   * automatically every hour via pg_cron, but admins occasionally want to
+   * trigger it on-demand (e.g. after bulk-importing schedules).
+   */
+  const handleRunScheduler = async () => {
+    setRunningScheduler(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "maintenance-auto-scheduler",
+        { body: { source: "manual" } },
+      );
+      if (error) throw error;
+      const created = (data as any)?.created ?? 0;
+      const examined = (data as any)?.examined ?? 0;
+      toast.success(
+        created > 0
+          ? `Auto-scheduler created ${created} work order${created === 1 ? "" : "s"} (scanned ${examined} schedules)`
+          : `Auto-scheduler scanned ${examined} schedules — none due right now`,
+      );
+    } catch (e: any) {
+      toast.error(`Scheduler failed: ${e.message ?? "unknown error"}`);
+    } finally {
+      setRunningScheduler(false);
+    }
+  };
 
   const loading = vehiclesLoading || metricsLoading;
 
@@ -103,6 +131,23 @@ const Maintenance = () => {
               />
             </div>
             <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+            <Can resource="maintenance" action="create">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRunScheduler}
+                disabled={runningScheduler}
+                className="gap-2"
+                title="Scan schedules and auto-create overdue work orders"
+              >
+                {runningScheduler ? (
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Sparkles className="w-4 h-4" aria-hidden="true" />
+                )}
+                Run Scheduler
+              </Button>
+            </Can>
           </div>
         </div>
 
