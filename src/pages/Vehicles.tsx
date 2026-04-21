@@ -1077,7 +1077,10 @@ const Vehicles = () => {
                             </ContextMenuTrigger>
                             <ContextMenuContent className="w-52">
                               <ContextMenuItem onClick={() => handleVehicleClick(vehicle)}>
-                                <Eye className="w-4 h-4 mr-2" /> View Details
+                                <Eye className="w-4 h-4 mr-2" /> Quick Details
+                              </ContextMenuItem>
+                              <ContextMenuItem onClick={() => navigate(`/vehicle-profile?id=${vehicle.id}`)}>
+                                <IdCard className="w-4 h-4 mr-2" /> Open Vehicle Profile
                               </ContextMenuItem>
                               <ContextMenuItem onClick={() => navigate(`/map?vehicle=${vehicle.id}&track=true`)}>
                                 <LocateFixed className="w-4 h-4 mr-2" /> Track on Map
