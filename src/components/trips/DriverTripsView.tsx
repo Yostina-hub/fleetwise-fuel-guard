@@ -346,6 +346,21 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
         </TabsContent>
       </Tabs>
 
+      {/* Check-In / Check-Out dialog */}
+      <CheckInOutDialog
+        open={!!checkTarget}
+        mode={checkTarget?.mode === "out" ? "out" : "in"}
+        odometerStart={checkTarget?.mode === "out" ? checkTarget.odometerStart : null}
+        onOpenChange={(v) => { if (!v) setCheckTarget(null); }}
+        onSubmit={async (payload) => {
+          if (!checkTarget) return;
+          if (checkTarget.mode === "in") {
+            await submitCheckIn(checkTarget.jobId, payload);
+          } else {
+            await submitCheckOut(checkTarget.jobId, checkTarget.odometerStart, payload);
+          }
+        }}
+      />
     </div>
   );
 };
