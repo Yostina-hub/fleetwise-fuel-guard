@@ -15,7 +15,8 @@ import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, CreditCard, FileText, AlertCircle, MapPin, Briefcase, Building2, Key, Copy, RefreshCw, Droplets, Paperclip, CheckCircle2, ChevronLeft, ChevronRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Loader2, User, CreditCard, FileText, AlertCircle, MapPin, Briefcase, Building2, Key, Copy, RefreshCw, Droplets, Paperclip, CheckCircle2, ChevronLeft, ChevronRight, Eye, EyeOff, ShieldCheck, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -818,6 +819,7 @@ function Field({
   required,
   error,
   hint,
+  tooltip,
   success,
   fieldRef,
   children,
@@ -826,6 +828,9 @@ function Field({
   required?: boolean;
   error?: string;
   hint?: string;
+  /** Optional explanatory text shown on hover via an info (i) icon next to the label.
+   *  Use this for short, contextual guidance (#33). Keep <120 chars. */
+  tooltip?: string;
   success?: boolean;
   fieldRef?: (el: HTMLElement | null) => void;
   children: React.ReactNode;
@@ -835,6 +840,25 @@ function Field({
       <Label className={cn("text-sm flex items-center gap-1", error && "text-destructive", success && "text-foreground")}>
         {label}
         {required && <span className="text-destructive" aria-hidden="true">*</span>}
+        {tooltip && (
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={`Info: ${label}`}
+                  className="inline-flex items-center justify-center h-4 w-4 rounded-full text-muted-foreground/70 hover:text-primary focus-visible:text-primary focus-visible:outline-none"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[240px] text-xs leading-snug">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         {success && !error && <CheckCircle2 className="w-3 h-3 text-primary ml-auto" aria-label="Valid" />}
       </Label>
       {children}
