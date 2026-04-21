@@ -141,6 +141,11 @@ const TripManagement = () => {
   const [rejectTarget, setRejectTarget] = useState<{ tripId: string; requestNumber?: string } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
+  // Manager status-override dialog. Lets approvers re-approve a rejected
+  // request, send an approved one back for revision, or change to any
+  // non-terminal status without leaving the page.
+  const [statusTarget, setStatusTarget] = useState<{ tripId: string; requestNumber?: string; current: string } | null>(null);
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "trips");
 
   // Sync tab from URL changes (sidebar deep links)
@@ -264,6 +269,35 @@ const TripManagement = () => {
       toast.error(e?.message || "Failed to reject request");
     } finally {
       setRejectSubmitting(false);
+    }
+  };
+
+  // Manager status-override — applies the requested transition and writes
+  // an optional reviewer note to `rejection_reason` (kept as the generic
+  // reviewer-feedback field across the workflow).
+  const applyStatusChange = async (newStatus: string, note: string) => {
+    if (!statusTarget) return;
+    setStatusSubmitting(true);
+    try {
+      const isRejected = newStatus === "rejected";
+      const isPending = newStatus === "pending" || newStatus === "submitted";
+      const update: Record<string, any> = {
+        status: newStatus,
+        approval_status: isRejected ? "rejected" : isPending ? "pending" : "approved",
+      };
+      if (note.trim()) update.rejection_reason = note.trim();
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update(update)
+        .eq("id", statusTarget.tripId);
+      if (error) throw error;
+      toast.success(`Status changed to ${newStatus.replace("_", " ")}`);
+      setStatusTarget(null);
+      setDetailOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to change status");
+    } finally {
+      setStatusSubmitting(false);
     }
   };
 
@@ -539,6 +573,13 @@ const TripManagement = () => {
           cancelRequest.mutate(id);
           setDetailOpen(false);
         }}
+        onChangeStatus={canApprove ? (trip) => {
+          setStatusTarget({
+            tripId: trip.id,
+            requestNumber: trip.request_number,
+            current: trip.status,
+          });
+        } : undefined}
       />
 
       <ExportScheduleDialog open={exportOpen} onOpenChange={setExportOpen} />
@@ -556,9 +597,115 @@ const TripManagement = () => {
         onCancel={() => { setRejectTarget(null); setRejectReason(""); }}
         onConfirm={submitReject}
       />
+
+      {/* Manager status-override dialog — change a request to any non-terminal
+          status (re-approve, send back, reject) with an optional reviewer note. */}
+      <ChangeStatusDialog
+        open={!!statusTarget}
+        requestNumber={statusTarget?.requestNumber}
+        currentStatus={statusTarget?.current}
+        submitting={statusSubmitting}
+        onCancel={() => setStatusTarget(null)}
+        onConfirm={applyStatusChange}
+      />
     </Layout>
   );
 };
+
+/* Manager-only status override. Lets approvers move a request to any
+   workflow status (e.g. re-approve a rejected one, send an approved one
+   back for revision) with an optional reviewer note. */
+function ChangeStatusDialog({
+  open, requestNumber, currentStatus, submitting, onCancel, onConfirm,
+}: {
+  open: boolean;
+  requestNumber?: string;
+  currentStatus?: string;
+  submitting: boolean;
+  onCancel: () => void;
+  onConfirm: (status: string, note: string) => void;
+}) {
+  const [target, setTarget] = useState<string>("approved");
+  const [note, setNote] = useState("");
+  useEffect(() => {
+    if (open) {
+      // Default to a sensible next step depending on current status.
+      setTarget(
+        currentStatus === "approved" ? "pending"
+        : currentStatus === "rejected" ? "approved"
+        : "approved"
+      );
+      setNote("");
+    }
+  }, [open, currentStatus]);
+
+  const OPTIONS = [
+    { value: "pending",   label: "Pending (send back for revision)" },
+    { value: "approved",  label: "Approved" },
+    { value: "rejected",  label: "Rejected (final)" },
+    { value: "cancelled", label: "Cancelled" },
+  ];
+  // Reason required when moving to a negative state.
+  const requiresNote = target === "rejected" || target === "pending" || target === "cancelled";
+  const canSubmit = !!target && target !== currentStatus && (!requiresNote || note.trim().length > 0);
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>Change request status</DialogTitle>
+          <DialogDescription>
+            {requestNumber
+              ? <>Override the workflow status for <span className="font-mono">{requestNumber}</span>.</>
+              : "Override the workflow status for this request."}
+            {currentStatus && (
+              <> Current status: <span className="font-medium text-foreground">{currentStatus}</span>.</>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="cs-target">New status</Label>
+            <select
+              id="cs-target"
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+            >
+              {OPTIONS.map((o) => (
+                <option key={o.value} value={o.value} disabled={o.value === currentStatus}>
+                  {o.label}{o.value === currentStatus ? " (current)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cs-note">
+              Reviewer note {requiresNote ? "*" : "(optional)"}
+            </Label>
+            <Textarea
+              id="cs-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Explain the change so the requester has context"
+              rows={3}
+              maxLength={500}
+            />
+          </div>
+        </div>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="outline" onClick={onCancel} disabled={submitting}>Cancel</Button>
+          <Button
+            onClick={() => onConfirm(target, note)}
+            disabled={submitting || !canSubmit}
+          >
+            {submitting ? "Saving…" : "Apply change"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /* Two-mode reject dialog. The approver picks one of:
    • "Send back for revision" — keeps the request pending and lets the

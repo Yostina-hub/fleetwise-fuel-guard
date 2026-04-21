@@ -7,7 +7,7 @@ import {
 import { Label } from "@/components/ui/label";
 import {
   MapPin, Clock, Users, Send, CheckCircle, XCircle, Truck, Package,
-  MessageSquare, History, Shield, Ban
+  MessageSquare, History, Shield, Ban, RefreshCw
 } from "lucide-react";
 import { format } from "date-fns";
 import { ApprovalFlowViewer } from "@/components/scheduling/ApprovalFlowViewer";
@@ -33,10 +33,12 @@ interface TripDetailPanelProps {
   onReject?: (approvalId: string, requestId: string, comment: string) => void;
   onAssign?: (trip: any) => void;
   onCancel?: (id: string) => void;
+  /** Manager-only: open a dialog to override the request status (re-approve, reject, send back). */
+  onChangeStatus?: (trip: any) => void;
 }
 
 export const TripDetailPanel = ({
-  trip, open, onOpenChange, onSubmit, onApprove, onReject, onAssign, onCancel
+  trip, open, onOpenChange, onSubmit, onApprove, onReject, onAssign, onCancel, onChangeStatus
 }: TripDetailPanelProps) => {
   const status = STATUS_STYLES[trip?.status] || STATUS_STYLES.draft;
 
@@ -154,6 +156,11 @@ export const TripDetailPanel = ({
             {canCancel && onCancel && (
               <Button variant="destructive" onClick={() => onCancel(trip.id)} className="gap-1.5">
                 <Ban className="w-4 h-4" /> Cancel Request
+              </Button>
+            )}
+            {onChangeStatus && (
+              <Button variant="outline" onClick={() => onChangeStatus(trip)} className="gap-1.5">
+                <RefreshCw className="w-4 h-4" /> Change Status
               </Button>
             )}
             <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
