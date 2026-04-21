@@ -87,6 +87,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({ ...initialForm });
   const [activeSection, setActiveSection] = useState<(typeof sectionTabs)[number]["value"]>("basic");
+  const [activeBasicTab, setActiveBasicTab] = useState<BasicSubTabId>("identity");
   const [draftRestored, setDraftRestored] = useState(false);
 
   // Restore draft when dialog opens (once per open cycle)
