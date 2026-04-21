@@ -144,6 +144,7 @@ export const BUSINESS_PURPOSE_CATEGORIES: { value: string; label: string; descri
   { value: "executive_travel", label: "Executive Travel",  description: "Senior leadership business travel." },
   { value: "emergency_response",label: "Emergency Response",description: "Outage, incident, or urgent operational response." },
   { value: "official_errand",  label: "Official Errand",   description: "Bank, government office, procurement, or other admin." },
+  { value: "social_affairs",   label: "Social Affairs / Events", description: "Company-sanctioned social events, ceremonies, staff welfare, funerals, or representational duties." },
   { value: "other_business",   label: "Other Business",    description: "Other work-related purpose (describe in detail)." },
 ];
 
