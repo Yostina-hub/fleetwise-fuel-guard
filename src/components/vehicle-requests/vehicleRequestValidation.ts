@@ -137,6 +137,9 @@ export function validateVRField(
       const v = sanitizeText(value);
       if (!v) return "Start time is required.";
       if (!HHMM_RE.test(v)) return "Start time must use 24-hour HH:MM format (e.g. 08:30).";
+      if (isNighttime && (v < NIGHT_WINDOW.start || v >= NIGHT_WINDOW.end)) {
+        return `Nighttime operations must start between ${NIGHT_WINDOW.start} and ${NIGHT_WINDOW.end}.`;
+      }
       // If the trip date is today, reject times already in the past on the
       // requester's machine clock — we cannot schedule a trip for a moment
       // that has already passed.
@@ -161,6 +164,9 @@ export function validateVRField(
       const v = sanitizeText(value);
       if (!v) return "End time is required.";
       if (!HHMM_RE.test(v)) return "End time must use 24-hour HH:MM format (e.g. 17:00).";
+      if (isNighttime && (v <= NIGHT_WINDOW.start || v > NIGHT_WINDOW.end)) {
+        return `Nighttime operations must end by ${NIGHT_WINDOW.end} (and after ${NIGHT_WINDOW.start}).`;
+      }
       const start = sanitizeText(ctx.start_time);
       if (start && HHMM_RE.test(start) && v <= start)
         return `End time (${v}) must be later than start time (${start}). A trip needs at least 1 minute.`;
