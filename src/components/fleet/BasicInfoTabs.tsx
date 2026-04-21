@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { IdCard, Cog, Gauge, CheckCircle2, AlertCircle } from "lucide-react";
+import { IdCard, Cog, Gauge, CheckCircle2, AlertCircle, Building2, MapPin, Globe2, Layers } from "lucide-react";
 import {
   PLATE_CODES, PLATE_REGIONS, VEHICLE_TYPES_OPTIONS, VEHICLE_GROUPS, DRIVE_TYPES,
   ENERGY_TYPES, ENERGY_SOURCES,
@@ -234,6 +234,30 @@ function Field({
   );
 }
 
+/* ---------- Pool Category visual chip ---------- */
+const POOL_META: Record<string, { icon: typeof Building2; tone: string; desc: string }> = {
+  Corporate: { icon: Building2, tone: "text-blue-500 bg-blue-500/10 ring-blue-500/20",   desc: "Head office assets" },
+  Zone:      { icon: Layers,    tone: "text-amber-500 bg-amber-500/10 ring-amber-500/20", desc: "Zonal pool" },
+  Region:    { icon: Globe2,    tone: "text-emerald-500 bg-emerald-500/10 ring-emerald-500/20", desc: "Regional pool" },
+};
+
+function PoolCategoryChip({ value, compact = false }: { value: string; compact?: boolean }) {
+  const meta = POOL_META[value];
+  if (!meta) return <span>{value}</span>;
+  const Icon = meta.icon;
+  return (
+    <span className="flex items-center gap-2 min-w-0">
+      <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md ring-1 ${meta.tone}`}>
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <span className="flex flex-col min-w-0 leading-tight">
+        <span className="text-sm font-medium truncate">{value}</span>
+        {!compact && <span className="text-[10px] text-muted-foreground truncate">{meta.desc}</span>}
+      </span>
+    </span>
+  );
+}
+
 /* ---------- Specific Location override (collapsed by default) ---------- */
 function SpecificLocationOverride({
   poolCategory,
@@ -375,11 +399,21 @@ function IdentityPane(props: PaneProps) {
             }
           }}
         >
-          <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
+          <SelectTrigger className="h-10">
+            <SelectValue placeholder="Select category...">
+              {formData.specific_pool && <PoolCategoryChip value={formData.specific_pool} />}
+            </SelectValue>
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Corporate">Corporate</SelectItem>
-            <SelectItem value="Zone">Zone</SelectItem>
-            <SelectItem value="Region">Region</SelectItem>
+            <SelectItem value="Corporate">
+              <PoolCategoryChip value="Corporate" />
+            </SelectItem>
+            <SelectItem value="Zone">
+              <PoolCategoryChip value="Zone" />
+            </SelectItem>
+            <SelectItem value="Region">
+              <PoolCategoryChip value="Region" />
+            </SelectItem>
           </SelectContent>
         </Select>
       </Field>
@@ -394,13 +428,29 @@ function IdentityPane(props: PaneProps) {
           }}
           disabled={!formData.specific_pool}
         >
-          <SelectTrigger className={!formData.specific_pool ? "opacity-50" : ""}>
-            <SelectValue placeholder={formData.specific_pool ? "Select location..." : "Pick category first"} />
+          <SelectTrigger className={`h-10 ${!formData.specific_pool ? "opacity-50" : ""}`}>
+            <SelectValue placeholder={formData.specific_pool ? "Select location..." : "Pick category first"}>
+              {formData.assigned_location && (
+                <span className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  <span className="truncate">
+                    {ASSIGNED_LOCATIONS.find(l => l.value === formData.assigned_location)?.label || formData.assigned_location}
+                  </span>
+                </span>
+              )}
+            </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-72">
             {ASSIGNED_LOCATIONS
               .filter(l => l.group === formData.specific_pool)
-              .map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+              .map(l => (
+                <SelectItem key={l.value} value={l.value}>
+                  <span className="flex items-center gap-2">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                    {l.label}
+                  </span>
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
         {formData.assigned_location && (
