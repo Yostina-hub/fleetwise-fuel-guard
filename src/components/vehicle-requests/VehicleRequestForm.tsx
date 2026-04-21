@@ -1380,11 +1380,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
               <div>
                 <Label className="text-primary font-medium flex items-center gap-1">
-                  Cargo / Equipment
-                  <FieldHint>Helps recommend the smallest sufficient vehicle.</FieldHint>
+                  Cargo / Equipment <span className="text-destructive">*</span>
+                  <FieldHint>Required — helps recommend the smallest sufficient vehicle and reserve cargo capacity.</FieldHint>
                 </Label>
-                <Select value={form.cargo_load} onValueChange={(v) => update("cargo_load", v as CargoLoad)}>
-                  <SelectTrigger className="h-10"><SelectValue placeholder="Select cargo size" /></SelectTrigger>
+                <Select
+                  value={form.cargo_load}
+                  onValueChange={(v) => update("cargo_load", v as CargoLoad)}
+                >
+                  <SelectTrigger
+                    className="h-10"
+                    aria-invalid={!form.cargo_load}
+                  >
+                    <SelectValue placeholder="Select cargo size (required)" />
+                  </SelectTrigger>
                   <SelectContent>
                     {CARGO_LOAD_OPTIONS.map(c => (
                       <SelectItem key={c.value} value={c.value}>
@@ -1396,6 +1404,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     ))}
                   </SelectContent>
                 </Select>
+                {!form.cargo_load && (
+                  <p className="text-[11px] text-destructive mt-1">
+                    Pick the cargo size — choose "None" if you're only carrying passengers.
+                  </p>
+                )}
               </div>
 
               {/* Resource-aware recommendation banner — pure derivation from passengers + cargo */}
