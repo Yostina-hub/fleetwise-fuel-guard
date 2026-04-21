@@ -32,6 +32,9 @@ interface Props {
   onChange?: ChangeFn;
   getError?: ErrFn;
   getStatus?: StatusFn;
+  /** Optional controlled sub-tab (identity | spec | value). */
+  activeSubTab?: BasicSubTabId;
+  onSubTabChange?: (id: BasicSubTabId) => void;
 }
 
 const tabs = [
@@ -40,15 +43,29 @@ const tabs = [
   { id: "value",    label: "Valuation",      icon: Gauge,  hint: "Pricing, capacity & class" },
 ] as const;
 
+export type BasicSubTabId = typeof tabs[number]["id"];
+
 // Single source of truth — drives both tab rendering AND completion math.
-const TAB_FIELDS: Record<typeof tabs[number]["id"], string[]> = {
+export const TAB_FIELDS: Record<BasicSubTabId, string[]> = {
   identity: ["plate_number_part", "purpose_for", "specific_pool", "specific_location", "assigned_location", "vehicle_type", "vehicle_group"],
   spec:     ["make", "model", "model_code", "year", "mfg_date", "color", "vin", "engine_number", "transmission_type", "drive_type", "engine_cc", "fuel_type"],
   value:    ["purchasing_price", "current_market_price", "current_condition", "fuel_standard_km_per_liter", "seating_capacity", "loading_capacity_quintal", "year_of_ownership", "safety_comfort_category"],
 };
 
-export default function BasicInfoTabs({ formData, set, plateNumber, onBlur, onChange, getError, getStatus }: Props) {
-  const [active, setActive] = useState<typeof tabs[number]["id"]>("identity");
+/** Reverse map: field → sub-tab. Useful for jumping to an errored field. */
+export const BASIC_FIELD_TO_SUBTAB: Record<string, BasicSubTabId> = Object.entries(TAB_FIELDS)
+  .reduce((acc, [tabId, fields]) => {
+    fields.forEach((f) => { acc[f] = tabId as BasicSubTabId; });
+    return acc;
+  }, {} as Record<string, BasicSubTabId>);
+
+export default function BasicInfoTabs({ formData, set, plateNumber, onBlur, onChange, getError, getStatus, activeSubTab, onSubTabChange }: Props) {
+  const [internalActive, setInternalActive] = useState<BasicSubTabId>("identity");
+  const active = activeSubTab ?? internalActive;
+  const setActive = (id: BasicSubTabId) => {
+    setInternalActive(id);
+    onSubTabChange?.(id);
+  };
 
   const completion = useMemo(() => {
     const out: Record<string, number> = {};
@@ -167,7 +184,7 @@ export default function BasicInfoTabs({ formData, set, plateNumber, onBlur, onCh
 
 /* ---------- Field primitive (matches InviteUserDialog UX) ---------- */
 function Field({
-  label, required, hint, error, status = "neutral", children, span = 1,
+  label, required, hint, error, status = "neutral", children, span = 1, name,
 }: {
   label: string;
   required?: boolean;
@@ -176,13 +193,14 @@ function Field({
   status?: "neutral" | "success" | "error";
   children: React.ReactNode;
   span?: 1 | 2 | 3;
+  name?: string;
 }) {
   const spanCls = span === 3 ? "md:col-span-3" : span === 2 ? "md:col-span-2" : "";
   const isError = status === "error" || !!error;
   const isSuccess = status === "success" && !error;
 
   return (
-    <div className={`space-y-1.5 ${spanCls}`}>
+    <div className={`space-y-1.5 ${spanCls}`} data-field={name}>
       <Label className={`text-xs font-medium flex items-center gap-1 ${isError ? "text-destructive" : "text-foreground/80"}`}>
         {label}
         {required && <span className="text-primary">*</span>}
@@ -243,7 +261,7 @@ function IdentityPane(props: PaneProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Field label="Plate Number" required span={3} error={err("plate_number_part")} status={stat("plate_number_part")}>
+      <Field name="plate_number_part" label="Plate Number" required span={3} error={err("plate_number_part")} status={stat("plate_number_part")}>
         <div className="grid grid-cols-3 gap-2">
           <Select value={formData.plate_code} onValueChange={v => set("plate_code", v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -268,7 +286,7 @@ function IdentityPane(props: PaneProps) {
         </div>
       </Field>
 
-      <Field label="Purpose For" required error={err("purpose_for")} status={stat("purpose_for")}>
+      <Field name="purpose_for" label="Purpose For" required error={err("purpose_for")} status={stat("purpose_for")}>
         <Select value={formData.purpose_for || ""} onValueChange={v => commitSelect("purpose_for", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
@@ -277,7 +295,7 @@ function IdentityPane(props: PaneProps) {
         </Select>
       </Field>
 
-      <Field label="Specific Pool" error={err("specific_pool")} status={stat("specific_pool")}>
+      <Field name="specific_pool" label="Specific Pool" error={err("specific_pool")} status={stat("specific_pool")}>
         <Select value={formData.specific_pool || ""} onValueChange={v => commitSelect("specific_pool", v)}>
           <SelectTrigger><SelectValue placeholder="e.g. NAAZ, SR..." /></SelectTrigger>
           <SelectContent>
@@ -286,7 +304,7 @@ function IdentityPane(props: PaneProps) {
         </Select>
       </Field>
 
-      <Field label="Specific Location" error={err("specific_location")} status={stat("specific_location")}>
+      <Field name="specific_location" label="Specific Location" error={err("specific_location")} status={stat("specific_location")}>
         <Input
           value={formData.specific_location || ""}
           onChange={e => change("specific_location", sanitizeWhileTyping(e.target.value).slice(0, 200))}
@@ -296,14 +314,14 @@ function IdentityPane(props: PaneProps) {
         />
       </Field>
 
-      <Field label="Assigned Location" hint="Corporate / Zone / Region group" error={err("assigned_location")} status={stat("assigned_location")}>
+      <Field name="assigned_location" label="Assigned Location" hint="Corporate / Zone / Region group" error={err("assigned_location")} status={stat("assigned_location")}>
         <AssignedLocationPicker
           value={formData.assigned_location || ""}
           onChange={(v) => commitSelect("assigned_location", v)}
         />
       </Field>
 
-      <Field label="Vehicle Type" required error={err("vehicle_type")} status={stat("vehicle_type")}>
+      <Field name="vehicle_type" label="Vehicle Type" required error={err("vehicle_type")} status={stat("vehicle_type")}>
         <Select value={formData.vehicle_type} onValueChange={v => commitSelect("vehicle_type", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
@@ -311,7 +329,7 @@ function IdentityPane(props: PaneProps) {
           </SelectContent>
         </Select>
       </Field>
-      <Field label="Group" required error={err("vehicle_group")} status={stat("vehicle_group")}>
+      <Field name="vehicle_group" label="Group" required error={err("vehicle_group")} status={stat("vehicle_group")}>
         <Select value={formData.vehicle_group} onValueChange={v => commitSelect("vehicle_group", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
@@ -330,17 +348,17 @@ function SpecPane(props: PaneProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Field label="Make" required error={err("make")} status={stat("make")}>
+      <Field name="make" label="Make" required error={err("make")} status={stat("make")}>
         <Input value={formData.make} onChange={e => change("make", sanitizeWhileTyping(e.target.value).slice(0, 100))} onBlur={blur("make")} placeholder="e.g. Toyota" maxLength={100} />
       </Field>
-      <Field label="Model" required error={err("model")} status={stat("model")}>
+      <Field name="model" label="Model" required error={err("model")} status={stat("model")}>
         <Input value={formData.model} onChange={e => change("model", sanitizeWhileTyping(e.target.value).slice(0, 100))} onBlur={blur("model")} placeholder="e.g. Hilux" maxLength={100} />
       </Field>
-      <Field label="Model Code" error={err("model_code")} status={stat("model_code")}>
+      <Field name="model_code" label="Model Code" error={err("model_code")} status={stat("model_code")}>
         <Input value={formData.model_code || ""} onChange={e => change("model_code", sanitizeWhileTyping(e.target.value).slice(0, 50))} onBlur={blur("model_code")} placeholder="e.g. DD1022T" maxLength={50} />
       </Field>
 
-      <Field label="Manufactured Year" required error={err("year")} status={stat("year")}>
+      <Field name="year" label="Manufactured Year" required error={err("year")} status={stat("year")}>
         <Input
           type="number"
           inputMode="numeric"
@@ -350,7 +368,7 @@ function SpecPane(props: PaneProps) {
           placeholder="YYYY"
         />
       </Field>
-      <Field label="MFG Year" hint="Factory year (optional)" error={err("mfg_date")} status={stat("mfg_date")}>
+      <Field name="mfg_date" label="MFG Year" hint="Factory year (optional)" error={err("mfg_date")} status={stat("mfg_date")}>
         <Input
           type="number"
           inputMode="numeric"
@@ -367,11 +385,11 @@ function SpecPane(props: PaneProps) {
           onBlur={blur("mfg_date")}
         />
       </Field>
-      <Field label="Color" error={err("color")} status={stat("color")}>
+      <Field name="color" label="Color" error={err("color")} status={stat("color")}>
         <Input value={formData.color} onChange={e => change("color", sanitizeWhileTyping(e.target.value).slice(0, 40))} onBlur={blur("color")} placeholder="e.g. White" maxLength={40} />
       </Field>
 
-      <Field label="Chassis Number (VIN)" span={2} error={err("vin")} status={stat("vin")}>
+      <Field name="vin" label="Chassis Number (VIN)" span={2} error={err("vin")} status={stat("vin")}>
         <Input
           value={formData.vin}
           onChange={e => change("vin", sanitizeVin(e.target.value))}
@@ -380,11 +398,11 @@ function SpecPane(props: PaneProps) {
           placeholder="17-character VIN (no I, O, Q)"
         />
       </Field>
-      <Field label="Engine Number" error={err("engine_number")} status={stat("engine_number")}>
+      <Field name="engine_number" label="Engine Number" error={err("engine_number")} status={stat("engine_number")}>
         <Input value={formData.engine_number || ""} onChange={e => change("engine_number", sanitizeWhileTyping(e.target.value).slice(0, 50))} onBlur={blur("engine_number")} placeholder="e.g. 4JB1TI-XXXX" maxLength={50} />
       </Field>
 
-      <Field label="Transmission" required error={err("transmission_type")} status={stat("transmission_type")}>
+      <Field name="transmission_type" label="Transmission" required error={err("transmission_type")} status={stat("transmission_type")}>
         <Select value={formData.transmission_type || ""} onValueChange={v => commitSelect("transmission_type", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
@@ -392,7 +410,7 @@ function SpecPane(props: PaneProps) {
           </SelectContent>
         </Select>
       </Field>
-      <Field label="Drive Type" required error={err("drive_type")} status={stat("drive_type")}>
+      <Field name="drive_type" label="Drive Type" required error={err("drive_type")} status={stat("drive_type")}>
         <Select value={formData.drive_type} onValueChange={v => commitSelect("drive_type", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>
@@ -400,7 +418,7 @@ function SpecPane(props: PaneProps) {
           </SelectContent>
         </Select>
       </Field>
-      <Field label="Engine CC" error={err("engine_cc")} status={stat("engine_cc")}>
+      <Field name="engine_cc" label="Engine CC" error={err("engine_cc")} status={stat("engine_cc")}>
         <Input
           inputMode="numeric"
           value={formData.engine_cc || ""}
@@ -410,7 +428,7 @@ function SpecPane(props: PaneProps) {
         />
       </Field>
 
-      <Field label="Energy Type" required span={3} error={err("fuel_type")} status={stat("fuel_type")}>
+      <Field name="fuel_type" label="Energy Type" required span={3} error={err("fuel_type")} status={stat("fuel_type")}>
         <Select value={formData.fuel_type} onValueChange={v => commitSelect("fuel_type", v)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -444,26 +462,26 @@ function ValuePane(props: PaneProps) {
     <div className="space-y-5">
       {/* Capacity row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Field label="Seating Capacity" error={err("seating_capacity")} status={stat("seating_capacity")}>
+        <Field name="seating_capacity" label="Seating Capacity" error={err("seating_capacity")} status={stat("seating_capacity")}>
           <Input inputMode="numeric" value={formData.seating_capacity || ""} onChange={e => change("seating_capacity", sanitizeNumeric(e.target.value, { integer: true }))} onBlur={blur("seating_capacity")} placeholder="e.g. 4" />
         </Field>
-        <Field label="Loading Capacity (Quintal)" error={err("loading_capacity_quintal")} status={stat("loading_capacity_quintal")}>
+        <Field name="loading_capacity_quintal" label="Loading Capacity (Quintal)" error={err("loading_capacity_quintal")} status={stat("loading_capacity_quintal")}>
           <Input inputMode="decimal" value={formData.loading_capacity_quintal || ""} onChange={e => change("loading_capacity_quintal", sanitizeNumeric(e.target.value))} onBlur={blur("loading_capacity_quintal")} placeholder="e.g. 7" />
         </Field>
-        <Field label="Fuel Standard (km/L)" error={err("fuel_standard_km_per_liter")} status={stat("fuel_standard_km_per_liter")}>
+        <Field name="fuel_standard_km_per_liter" label="Fuel Standard (km/L)" error={err("fuel_standard_km_per_liter")} status={stat("fuel_standard_km_per_liter")}>
           <Input inputMode="decimal" value={formData.fuel_standard_km_per_liter || ""} onChange={e => change("fuel_standard_km_per_liter", sanitizeNumeric(e.target.value))} onBlur={blur("fuel_standard_km_per_liter")} placeholder="e.g. 12.5" />
         </Field>
       </div>
 
       {/* Pricing row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Field label="Year of Ownership" error={err("year_of_ownership")} status={stat("year_of_ownership")}>
+        <Field name="year_of_ownership" label="Year of Ownership" error={err("year_of_ownership")} status={stat("year_of_ownership")}>
           <Input inputMode="numeric" value={formData.year_of_ownership || ""} onChange={e => change("year_of_ownership", sanitizeNumeric(e.target.value, { integer: true }))} onBlur={blur("year_of_ownership")} placeholder="YYYY" />
         </Field>
-        <Field label="Purchasing Price (ETB)" error={err("purchasing_price")} status={stat("purchasing_price")}>
+        <Field name="purchasing_price" label="Purchasing Price (ETB)" error={err("purchasing_price")} status={stat("purchasing_price")}>
           <Input inputMode="decimal" value={formData.purchasing_price || ""} onChange={e => change("purchasing_price", sanitizeNumeric(e.target.value))} onBlur={blur("purchasing_price")} placeholder="0" />
         </Field>
-        <Field label="Current Market Price (ETB)" error={err("current_market_price")} status={stat("current_market_price")}>
+        <Field name="current_market_price" label="Current Market Price (ETB)" error={err("current_market_price")} status={stat("current_market_price")}>
           <Input inputMode="decimal" value={formData.current_market_price || ""} onChange={e => change("current_market_price", sanitizeNumeric(e.target.value))} onBlur={blur("current_market_price")} placeholder="0" />
         </Field>
       </div>
@@ -475,7 +493,7 @@ function ValuePane(props: PaneProps) {
       </div>
 
       {/* Condition */}
-      <Field label="Current Condition" error={err("current_condition")} status={stat("current_condition")}>
+      <Field name="current_condition" label="Current Condition" error={err("current_condition")} status={stat("current_condition")}>
         <Select value={formData.current_condition || ""} onValueChange={v => commitSelect("current_condition", v)}>
           <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
           <SelectContent>

@@ -27,7 +27,7 @@ import { AssignedLocationPicker } from "./AssignedLocationPicker";
 import { DatePickerField } from "./DatePickerField";
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
-import BasicInfoTabs from "./BasicInfoTabs";
+import BasicInfoTabs, { BASIC_FIELD_TO_SUBTAB, type BasicSubTabId } from "./BasicInfoTabs";
 import { useVehicleValidation } from "./useVehicleValidation";
 import { FIELD_TO_SECTION, type VehicleFieldName } from "./vehicleValidation";
 import { useFormDraft, loadDraft, clearDraft } from "./useFormDraft";
@@ -87,6 +87,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({ ...initialForm });
   const [activeSection, setActiveSection] = useState<(typeof sectionTabs)[number]["value"]>("basic");
+  const [activeBasicTab, setActiveBasicTab] = useState<BasicSubTabId>("identity");
   const [draftRestored, setDraftRestored] = useState(false);
 
   // Restore draft when dialog opens (once per open cycle)
@@ -199,6 +200,19 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       if (result.firstError) {
         const targetTab = FIELD_TO_SECTION[result.firstError.field];
         if (targetTab) setActiveSection(targetTab as typeof activeSection);
+        // If error is in Basic Info, also switch to the right sub-tab.
+        const subTab = BASIC_FIELD_TO_SUBTAB[result.firstError.field];
+        if (subTab) setActiveBasicTab(subTab);
+        // Scroll the errored field into view + try to focus its first input.
+        const fieldName = result.firstError.field;
+        setTimeout(() => {
+          const el = document.querySelector<HTMLElement>(`[data-field="${fieldName}"]`);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            const focusable = el.querySelector<HTMLElement>("input, button, [role='combobox'], textarea");
+            focusable?.focus();
+          }
+        }, 80);
       }
       toast({
         title: "Please fix the highlighted fields",
@@ -328,6 +342,8 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                     formData={formData}
                     set={set}
                     plateNumber={plateNumber}
+                    activeSubTab={activeBasicTab}
+                    onSubTabChange={setActiveBasicTab}
                     onBlur={(field, value) => fieldValidation.handleBlur(field as VehicleFieldName, value)}
                     onChange={(field, value) => fieldValidation.handleChange(field as VehicleFieldName, value)}
                     getError={(field) => fieldValidation.getError(field as VehicleFieldName)}
