@@ -1042,10 +1042,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 );
               })}
             </div>
-          </TabsContent>
+          </section>
 
-          {/* SCHEDULE TAB */}
-          <TabsContent value="schedule" className="mt-5 space-y-4 animate-fade-in">
+          {/* SCHEDULE SECTION */}
+          <section className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">2</span>
+              <h3 className="text-sm font-semibold text-foreground">Schedule</h3>
+            </div>
             {/* Working-hours policy banner — Project / operational only */}
             {isProject && workingHoursPolicy && (() => {
               const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -1147,10 +1151,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <p className="mt-0.5">Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled for the duration of the trip.</p>
               </div>
             )}
-          </TabsContent>
+          </section>
 
-          {/* ROUTE TAB */}
-          <TabsContent value="route" className="mt-5 space-y-4 animate-fade-in">
+          {/* ROUTE SECTION */}
+          <section className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">3</span>
+              <h3 className="text-sm font-semibold text-foreground">Route</h3>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <LocationPickerField
                 label="Departure Place"
@@ -1290,10 +1298,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </SelectContent>
               </Select>
             </div>
-          </TabsContent>
+          </section>
 
-          {/* RESOURCES TAB */}
-          <TabsContent value="resources" className="mt-5 space-y-4 animate-fade-in">
+          {/* RESOURCES SECTION */}
+          <section className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">4</span>
+              <h3 className="text-sm font-semibold text-foreground">Vehicle & Pool</h3>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-primary font-medium flex items-center gap-1">
@@ -1497,10 +1509,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <p className="text-[11px] text-muted-foreground mt-1">Optional. Helps dispatch reach the requester quickly if plans change.</p>
               </div>
             </div>
-          </TabsContent>
+          </section>
 
-          {/* DETAILS TAB */}
-          <TabsContent value="details" className="mt-5 space-y-4 animate-fade-in">
+          {/* DETAILS SECTION */}
+          <section className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">5</span>
+              <h3 className="text-sm font-semibold text-foreground">Purpose & Submit</h3>
+            </div>
             <div>
               <Label className="text-primary font-medium">
                 Business Purpose Category <span className="text-destructive">*</span>
@@ -1571,8 +1587,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <div className="rounded-md bg-background/60 border border-border/50 p-2"><span className="font-medium text-foreground">Managers+</span> → Auto-approved</div>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </section>
+        </div>
       </div>
 
       {(() => {
