@@ -12,7 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import StatusBadge from "@/components/StatusBadge";
+import VehicleLiveStatusBadge from "@/components/fleet/VehicleLiveStatusBadge";
+import { getVehicleTypeIcon } from "@/lib/vehicleTypeIcon";
+import type { FleetLiveStatus } from "@/lib/fleetLiveStatus";
 import { useVehicleFuelStatus } from "@/hooks/useVehicleFuelStatus";
 import {
   Eye,
@@ -62,7 +64,10 @@ interface VehicleItem {
   make: string;
   model: string;
   year: number;
+  /** Collapsed status used by legacy callers (kept for back-compat). */
   status: "moving" | "idle" | "offline";
+  /** Full live status — preferred. Mirrors `getFleetLiveStatus()` output. */
+  liveStatus?: FleetLiveStatus;
   fuel: number | null;
   odometer: number;
   nextService: string | null;
@@ -291,10 +296,26 @@ export const VehicleTableView = ({
     const raw = vehicle.raw ?? {};
 
     switch (col) {
-      case "plate":
+      case "plate": {
+        const TypeIcon = getVehicleTypeIcon(vehicle.vehicleType);
         return (
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      className="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary border border-primary/20"
+                      aria-hidden="true"
+                    >
+                      <TypeIcon className="w-3.5 h-3.5" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs capitalize">
+                    {vehicle.vehicleType ? vehicle.vehicleType.replace(/_/g, " ") : "Vehicle"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <span className="font-bold text-foreground">{vehicle.plate}</span>
               {vehicle.deviceConnected ? (
                 <Wifi className="w-3 h-3 text-success" />
@@ -318,6 +339,7 @@ export const VehicleTableView = ({
             )}
           </div>
         );
+      }
       case "vin":
         return (
           <span className="text-xs font-mono text-muted-foreground">
@@ -365,7 +387,7 @@ export const VehicleTableView = ({
         return <span className="capitalize text-sm">{fmtText(raw[col])}</span>;
 
       case "live_status":
-        return <StatusBadge status={vehicle.status} />;
+        return <VehicleLiveStatusBadge status={vehicle.liveStatus ?? vehicle.status} />;
 
       case "speed":
         return (
