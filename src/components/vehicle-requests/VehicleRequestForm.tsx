@@ -1264,22 +1264,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 iconColor="text-red-500"
               />
             </div>
-            {(form.departure_lat != null || form.destination_lat != null) && (
-              <div className="grid grid-cols-1 gap-4">
-                {form.departure_lat != null && form.departure_lng != null ? (
-                  <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-                    <div className="font-medium text-foreground text-sm flex items-center gap-1"><MapPin className="w-3 h-3 text-green-500" /> {form.departure_place || "Departure"}</div>
-                    <div>Lat: {form.departure_lat.toFixed(6)} &nbsp;|&nbsp; Lng: {form.departure_lng.toFixed(6)}</div>
-                  </div>
-                ) : <div />}
-                {form.destination_lat != null && form.destination_lng != null ? (
-                  <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-                    <div className="font-medium text-foreground text-sm flex items-center gap-1"><MapPin className="w-3 h-3 text-red-500" /> {form.destination || "Destination"}</div>
-                    <div>Lat: {form.destination_lat.toFixed(6)} &nbsp;|&nbsp; Lng: {form.destination_lng.toFixed(6)}</div>
-                  </div>
-                ) : <div />}
-              </div>
-            )}
+            {/* Coordinate previews intentionally removed — the map picker
+                already auto-fills a human-readable place name, and showing
+                raw lat/lng under the route fields looked unprofessional. */}
 
             {/* ── Ordered waypoints (intermediate stops between Departure and Final Destination) ── */}
             <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-3">
