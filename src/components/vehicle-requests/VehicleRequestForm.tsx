@@ -1315,16 +1315,24 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <h3 className="text-sm font-semibold text-foreground">Vehicle & Pool</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-primary font-medium flex items-center gap-1">
-                  <Car className="w-3.5 h-3.5" /> No. Of Vehicle
-                  {!allowsMultipleVehicles && <Badge variant="outline" className="ml-1 text-[10px] py-0 px-1.5">Locked at 1</Badge>}
-                  <FieldHint>
-                    {allowsMultipleVehicles
-                      ? "Project Operations support a fleet — request as many vehicles as needed."
-                      : "Daily & Field operations are limited to one vehicle. Switch to Project Operation to request more."}
-                  </FieldHint>
-                </Label>
+              <VRField
+                id="vr-num-vehicles"
+                label={
+                  <span className="inline-flex items-center gap-1.5">
+                    No. Of Vehicles
+                    {!allowsMultipleVehicles && (
+                      <Badge variant="outline" className="text-[10px] py-0 px-1.5">Locked at 1</Badge>
+                    )}
+                  </span>
+                }
+                icon={Car}
+                error={getError("num_vehicles")}
+                tooltip={
+                  allowsMultipleVehicles
+                    ? "Project Operations support a fleet — request as many vehicles as needed."
+                    : "Daily & Field operations are limited to one vehicle. Switch to Project Operation to request more."
+                }
+              >
                 <Input
                   type="number"
                   min={1}
@@ -1334,17 +1342,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
                   disabled={!allowsMultipleVehicles}
                   className="h-10"
-                  aria-invalid={!!getError("num_vehicles")}
                 />
-                <FieldError field="num_vehicles" />
-              </div>
-              <div>
-                <Label className="text-primary font-medium flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5" /> No. Of Passenger
-                  <FieldHint>
-                    Enter passengers excluding the driver (i.e. seats needed minus 1).
-                  </FieldHint>
-                </Label>
+              </VRField>
+              <VRField
+                id="vr-passengers"
+                label="No. Of Passengers"
+                icon={Users}
+                error={getError("passengers")}
+                tooltip="Enter passengers excluding the driver (i.e. seats needed minus 1)."
+              >
                 <Input
                   type="number"
                   min={1}
@@ -1353,10 +1359,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   onChange={e => update("passengers", e.target.value)}
                   onBlur={e => handleBlur("passengers", e.target.value, form as any)}
                   className="h-10"
-                  aria-invalid={!!getError("passengers")}
                 />
-                <FieldError field="passengers" />
-              </div>
+              </VRField>
               <div>
                 <Label className="text-primary font-medium flex items-center gap-1">
                   Cargo / Equipment <span className="text-destructive">*</span>
