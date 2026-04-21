@@ -1707,7 +1707,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         return embedded ? (
           <div className="pt-4 border-t border-border/60 mt-4">{FooterInner}</div>
         ) : (
-          <DialogFooter className="-mx-6 -mb-6 px-6 py-3.5 mt-6 bg-muted/30 border-t border-border/60 sm:justify-between">
+          <DialogFooter className="px-6 sm:px-8 py-4 mt-6 bg-muted/30 border-t border-border/60 sm:justify-between sticky bottom-0 z-10">
             {FooterInner}
           </DialogFooter>
         );
