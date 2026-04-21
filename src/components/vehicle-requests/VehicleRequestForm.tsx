@@ -1339,6 +1339,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Label className="text-primary font-medium flex items-center gap-1">
                   <Car className="w-3.5 h-3.5" /> No. Of Vehicle
                   {!allowsMultipleVehicles && <Badge variant="outline" className="ml-1 text-[10px] py-0 px-1.5">Locked at 1</Badge>}
+                  <FieldHint>
+                    {allowsMultipleVehicles
+                      ? "Project Operations support a fleet — request as many vehicles as needed."
+                      : "Daily & Field operations are limited to one vehicle. Switch to Project Operation to request more."}
+                  </FieldHint>
                 </Label>
                 <Input
                   type="number"
@@ -1352,14 +1357,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   aria-invalid={!!getError("num_vehicles")}
                 />
                 <FieldError field="num_vehicles" />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  {allowsMultipleVehicles
-                    ? "Project Operations support a fleet — request as many vehicles as needed."
-                    : "Daily & Field operations are limited to one vehicle. Switch to Project Operation to request more."}
-                </p>
               </div>
               <div>
-                <Label className="text-primary font-medium flex items-center gap-1"><Users className="w-3.5 h-3.5" /> No. Of Passenger</Label>
+                <Label className="text-primary font-medium flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5" /> No. Of Passenger
+                  <FieldHint>
+                    Enter passengers excluding the driver (i.e. seats needed minus 1).
+                  </FieldHint>
+                </Label>
                 <Input
                   type="number"
                   min={1}
@@ -1370,13 +1375,13 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   className="h-10"
                   aria-invalid={!!getError("passengers")}
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Enter passengers <span className="font-medium">excluding the driver</span> (i.e. seats needed minus 1).
-                </p>
                 <FieldError field="passengers" />
               </div>
               <div>
-                <Label className="text-primary font-medium">Cargo / Equipment</Label>
+                <Label className="text-primary font-medium flex items-center gap-1">
+                  Cargo / Equipment
+                  <FieldHint>Helps recommend the smallest sufficient vehicle.</FieldHint>
+                </Label>
                 <Select value={form.cargo_load} onValueChange={(v) => update("cargo_load", v as CargoLoad)}>
                   <SelectTrigger className="h-10"><SelectValue placeholder="Select cargo size" /></SelectTrigger>
                   <SelectContent>
