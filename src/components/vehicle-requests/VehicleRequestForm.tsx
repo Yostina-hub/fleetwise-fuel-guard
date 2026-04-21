@@ -68,13 +68,14 @@ const buildInitialForm = () => ({
   request_type: "daily_operation",
   date: undefined as Date | undefined,
   // Default to the requester's current machine time (rounded up to next 5 min).
-  // End defaults to start + 60 min so the slot is always valid out of the box.
+  // Daily operations are short trips by policy → end defaults to start + 30 min
+  // (was 60). Users can extend within the org's working-hours window.
   start_time: roundedNowHHMM(),
-  end_time: roundedNowHHMM(60),
+  end_time: roundedNowHHMM(30),
   start_date: undefined as Date | undefined,
   start_date_time: roundedNowHHMM(),
   end_date: undefined as Date | undefined,
-  end_date_time: roundedNowHHMM(60),
+  end_date_time: roundedNowHHMM(30),
   departure_place: "",
   destination: "",
   departure_lat: null as number | null,
@@ -191,10 +192,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // dynamically from start_date so requesters don't have to compute it manually.
   // Users can still override the picker; we only fill when end_date is empty
   // OR when it's still equal to the previously-derived default.
+  // Default duration (in days) per request type — used to auto-derive end_date
+  // dynamically from start_date so requesters don't have to compute it manually.
+  // Users can still override the picker; we only fill when end_date is empty
+  // OR when it's still equal to the previously-derived default.
+  // Policy: Daily=intra-day (30 min slot), Field=1 day, Project=7 days.
   const DEFAULT_DURATION_DAYS: Record<string, number> = {
     daily_operation: 0,
     project_operation: 7,
-    field_operation: 30,
+    field_operation: 1,
     group_operation: 0,
   };
 
