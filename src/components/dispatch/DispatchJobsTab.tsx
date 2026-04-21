@@ -24,12 +24,26 @@ import { DispatchJobDetailDialog } from "./DispatchJobDetailDialog";
 
 const ITEMS_PER_PAGE = 10;
 
+const PREFS_KEY = "dispatch.jobs.prefs.v1";
+
 const DispatchJobsTab = () => {
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  // Persisted filters (status + search)
+  const persisted = (() => {
+    try { return JSON.parse(localStorage.getItem(PREFS_KEY) || "{}"); } catch { return {}; }
+  })();
+
+  const [statusFilter, setStatusFilter] = useState<string>(persisted.statusFilter ?? "all");
+  const [searchQuery, setSearchQuery] = useState(persisted.searchQuery ?? "");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
+  const [detailJob, setDetailJob] = useState<any | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify({ statusFilter, searchQuery }));
+    } catch { /* ignore */ }
+  }, [statusFilter, searchQuery]);
 
   const { jobs, loading, createJob, updateJobStatus, assignJob } = useDispatchJobs({
     status: statusFilter !== 'all' ? statusFilter : undefined,
