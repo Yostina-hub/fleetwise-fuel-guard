@@ -1219,6 +1219,13 @@ const VehicleRequests = () => {
             }
           />
         )}
+        {showEdit && (
+          <EditRequestDialog
+            request={showEdit}
+            open={!!showEdit}
+            onClose={() => setShowEdit(null)}
+          />
+        )}
         {showMultiAssign && (
           <MultiVehicleAssignDialog
             request={showMultiAssign}
