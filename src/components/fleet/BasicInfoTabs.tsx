@@ -184,7 +184,7 @@ export default function BasicInfoTabs({ formData, set, plateNumber, onBlur, onCh
 
 /* ---------- Field primitive (matches InviteUserDialog UX) ---------- */
 function Field({
-  label, required, hint, error, status = "neutral", children, span = 1,
+  label, required, hint, error, status = "neutral", children, span = 1, name,
 }: {
   label: string;
   required?: boolean;
@@ -193,13 +193,14 @@ function Field({
   status?: "neutral" | "success" | "error";
   children: React.ReactNode;
   span?: 1 | 2 | 3;
+  name?: string;
 }) {
   const spanCls = span === 3 ? "md:col-span-3" : span === 2 ? "md:col-span-2" : "";
   const isError = status === "error" || !!error;
   const isSuccess = status === "success" && !error;
 
   return (
-    <div className={`space-y-1.5 ${spanCls}`}>
+    <div className={`space-y-1.5 ${spanCls}`} data-field={name}>
       <Label className={`text-xs font-medium flex items-center gap-1 ${isError ? "text-destructive" : "text-foreground/80"}`}>
         {label}
         {required && <span className="text-primary">*</span>}
