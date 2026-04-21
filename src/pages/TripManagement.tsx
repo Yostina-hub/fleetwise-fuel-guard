@@ -517,19 +517,27 @@ const TripManagement = () => {
 
 const StatusPill = ({ status }: { status: string }) => {
   const styles: Record<string, string> = {
-    draft: "bg-muted text-muted-foreground",
-    submitted: "bg-warning/15 text-warning",
-    approved: "bg-success/15 text-success",
-    scheduled: "bg-secondary/15 text-secondary",
-    dispatched: "bg-purple-500/15 text-purple-600",
-    in_service: "bg-primary/15 text-primary",
-    completed: "bg-success/15 text-success",
-    rejected: "bg-destructive/15 text-destructive",
+    pending:     "bg-warning/15 text-warning",
+    submitted:   "bg-warning/15 text-warning",
+    draft:       "bg-muted text-muted-foreground",
+    approved:    "bg-success/15 text-success",
+    assigned:    "bg-secondary/15 text-secondary",
+    scheduled:   "bg-secondary/15 text-secondary",
+    dispatched:  "bg-purple-500/15 text-purple-600",
+    in_progress: "bg-primary/15 text-primary",
+    in_service:  "bg-primary/15 text-primary",
+    completed:   "bg-success/15 text-success",
+    closed:      "bg-success/15 text-success",
+    rejected:    "bg-destructive/15 text-destructive",
+    cancelled:   "bg-muted text-muted-foreground",
+    canceled:    "bg-muted text-muted-foreground",
   };
   const labels: Record<string, string> = {
-    draft: "Draft", submitted: "Pending", approved: "Approved",
-    scheduled: "Scheduled", dispatched: "Dispatched", in_service: "Active",
-    completed: "Done", rejected: "Rejected",
+    pending: "Pending", submitted: "Pending", draft: "Draft",
+    approved: "Approved", assigned: "Assigned", scheduled: "Scheduled",
+    dispatched: "Dispatched", in_progress: "Active", in_service: "Active",
+    completed: "Done", closed: "Closed", rejected: "Rejected",
+    cancelled: "Cancelled", canceled: "Cancelled",
   };
   return (
     <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${styles[status] || styles.draft}`}>
