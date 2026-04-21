@@ -860,8 +860,17 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     createMutation.mutate();
   };
 
-  const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) =>
-    setForm(f => ({ ...f, [key]: val }));
+  const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) => {
+    setForm(f => {
+      const next = { ...f, [key]: val };
+      // Re-validate this field live whenever it changes so any existing
+      // error message clears (or appears) immediately — without waiting
+      // for another blur. The full validation/touched flow still runs on
+      // blur and on submit.
+      try { validation.validateField(key as any, val, next as any); } catch { /* noop */ }
+      return next;
+    });
+  };
 
   /** Small inline error renderer (only shows when field has been touched). */
   const FieldError = ({ field }: { field: Parameters<typeof getError>[0] }) => {
