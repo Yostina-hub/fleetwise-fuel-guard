@@ -48,19 +48,28 @@ interface LeaveRequest {
   created_at: string;
 }
 
+const ATT_PREFS_KEY = "driver.attendance.prefs.v1";
+
 export const DriverAttendanceManagement = ({ driverId, driverName, employeeId, employees = [] }: DriverAttendanceManagementProps) => {
   const { organizationId } = useOrganization();
   const { toast } = useToast();
+  const initialPrefs = (() => {
+    try { return JSON.parse(localStorage.getItem(ATT_PREFS_KEY) || "{}"); } catch { return {}; }
+  })();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showClockDialog, setShowClockDialog] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState<string>(initialPrefs.search ?? "");
+  const [statusFilter, setStatusFilter] = useState<string>(initialPrefs.statusFilter ?? "all");
   const [clockForm, setClockForm] = useState({ date: format(new Date(), "yyyy-MM-dd"), check_in: "08:00", check_out: "17:00", shift_type: "morning", notes: "" });
   const [leaveForm, setLeaveForm] = useState({ leave_type: "annual", start_date: "", end_date: "", reason: "" });
+
+  useEffect(() => {
+    try { localStorage.setItem(ATT_PREFS_KEY, JSON.stringify({ search, statusFilter })); } catch { /* ignore */ }
+  }, [search, statusFilter]);
 
   const isAllMode = !employeeId && !driverId;
 
