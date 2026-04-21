@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { 
-  FileEdit, Send, CheckCircle, Truck, Zap, Flag, XCircle, TrendingUp 
+import {
+  Send, CheckCircle, Truck, Zap, Flag, XCircle, Ban, TrendingUp,
 } from "lucide-react";
 
 interface TripStatsBarProps {
@@ -10,21 +10,29 @@ interface TripStatsBarProps {
   onFilterChange: (status: string | null) => void;
 }
 
-const STAT_ITEMS = [
-  { key: "all", label: "All", icon: TrendingUp, color: "text-foreground", bg: "bg-muted hover:bg-muted/80" },
-  { key: "draft", label: "Drafts", icon: FileEdit, color: "text-muted-foreground", bg: "bg-muted/50 hover:bg-muted" },
-  { key: "submitted", label: "Pending", icon: Send, color: "text-warning", bg: "bg-warning/10 hover:bg-warning/20" },
-  { key: "approved", label: "Approved", icon: CheckCircle, color: "text-success", bg: "bg-success/10 hover:bg-success/20" },
-  { key: "scheduled", label: "Scheduled", icon: Truck, color: "text-secondary", bg: "bg-secondary/10 hover:bg-secondary/20" },
-  { key: "in_service", label: "Active", icon: Zap, color: "text-primary", bg: "bg-primary/10 hover:bg-primary/20" },
-  { key: "completed", label: "Done", icon: Flag, color: "text-success", bg: "bg-success/10 hover:bg-success/20" },
-  { key: "rejected", label: "Rejected", icon: XCircle, color: "text-destructive", bg: "bg-destructive/10 hover:bg-destructive/20" },
+/**
+ * Stat tiles aligned with vehicle_requests statuses produced by
+ * VehicleRequestForm + assignment + check-in flow.
+ *  pending → approved → assigned → in_progress → completed
+ */
+const STAT_ITEMS: { key: string; label: string; icon: any; color: string; bg: string; match: string[] }[] = [
+  { key: "all",         label: "All",         icon: TrendingUp,  color: "text-foreground",       bg: "bg-muted hover:bg-muted/80",                     match: [] },
+  { key: "pending",     label: "Pending",     icon: Send,        color: "text-warning",          bg: "bg-warning/10 hover:bg-warning/20",              match: ["pending", "submitted", "draft"] },
+  { key: "approved",    label: "Approved",    icon: CheckCircle, color: "text-success",          bg: "bg-success/10 hover:bg-success/20",              match: ["approved"] },
+  { key: "assigned",    label: "Assigned",    icon: Truck,       color: "text-secondary",        bg: "bg-secondary/10 hover:bg-secondary/20",          match: ["assigned", "scheduled", "dispatched"] },
+  { key: "in_progress", label: "Active",      icon: Zap,         color: "text-primary",          bg: "bg-primary/10 hover:bg-primary/20",              match: ["in_progress", "in_service"] },
+  { key: "completed",   label: "Done",        icon: Flag,        color: "text-success",          bg: "bg-success/10 hover:bg-success/20",              match: ["completed", "closed"] },
+  { key: "rejected",    label: "Rejected",    icon: XCircle,     color: "text-destructive",      bg: "bg-destructive/10 hover:bg-destructive/20",      match: ["rejected"] },
+  { key: "cancelled",   label: "Cancelled",   icon: Ban,         color: "text-muted-foreground", bg: "bg-muted/50 hover:bg-muted",                     match: ["cancelled", "canceled"] },
 ];
 
 export const TripStatsBar = ({ trips, activeFilter, onFilterChange }: TripStatsBarProps) => {
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: trips?.length || 0 };
-    trips?.forEach(t => { c[t.status] = (c[t.status] || 0) + 1; });
+    STAT_ITEMS.forEach((it) => {
+      if (it.key === "all") return;
+      c[it.key] = (trips ?? []).filter((t) => it.match.includes(t.status)).length;
+    });
     return c;
   }, [trips]);
 
