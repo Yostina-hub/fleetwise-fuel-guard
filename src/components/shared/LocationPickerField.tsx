@@ -84,25 +84,34 @@ export function LocationPickerField({
     );
   }
 
+  const isCustom = !isGeofenceMatch;
+
   return (
     <div>
       <Label className="flex items-center gap-1">
         <MapPin className={`h-3.5 w-3.5 ${iconColor}`} />
         {label} {required && "*"}
       </Label>
-      <div className="space-y-2">
-        <div className="flex gap-2">
+      <div className="flex gap-2">
+        {isCustom ? (
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="flex-1"
+          />
+        ) : (
           <Select
-            value={isGeofenceMatch ? value : "__custom__"}
+            value={value}
             onValueChange={(v) => {
-              if (v !== "__custom__") {
+              if (v === "__custom__") {
+                onChange("");
+              } else {
                 onChange(v);
                 const geo = geofences?.find((g) => g.name === v);
                 if (geo?.center_lat != null && geo?.center_lng != null) {
                   onCoordsChange?.(geo.center_lat, geo.center_lng);
                 }
-              } else {
-                onChange("");
               }
             }}
           >
@@ -123,16 +132,18 @@ export function LocationPickerField({
               </SelectItem>
             </SelectContent>
           </Select>
-          {mapButton}
-        </div>
-        {!isGeofenceMatch && (
-          <Input
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-          />
         )}
+        {mapButton}
       </div>
+      {isCustom && geofences && geofences.length > 0 && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="text-[11px] text-muted-foreground hover:text-foreground mt-1 underline-offset-2 hover:underline"
+        >
+          ← Use a saved location instead
+        </button>
+      )}
       <MapLocationPickerDialog
         open={showMap}
         onClose={() => setShowMap(false)}
