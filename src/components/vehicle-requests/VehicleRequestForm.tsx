@@ -166,6 +166,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
 
+  // Mandatory rating gate — block new requests until prior completed trips are rated.
+  // The DB also enforces this with a trigger; the UI gives immediate feedback.
+  const { data: pendingRatings = [] } = usePendingRatings(open);
+  const hasPendingRatings = pendingRatings.length > 0;
+
   // Default duration (in days) per request type — used to auto-derive end_date
   // dynamically from start_date so requesters don't have to compute it manually.
   // Users can still override the picker; we only fill when end_date is empty
@@ -662,6 +667,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </div>
         )}
 
+        {/* Mandatory rating gate */}
+        {hasPendingRatings && <PendingRatingsBlocker className="mb-1" />}
+
         {/* Modern Tabs — responsive: icon-only on mobile, full label on >=sm */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
           <TabsList className="w-full h-auto p-1 bg-muted/40 grid grid-cols-5 gap-1 rounded-xl border border-border/60">
@@ -1027,7 +1035,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Button
                   size="sm"
                   onClick={handleSubmit}
-                  disabled={!canSubmit || createMutation.isPending}
+                  disabled={!canSubmit || createMutation.isPending || hasPendingRatings}
+                  title={hasPendingRatings ? "Rate your previous trips before submitting" : undefined}
                   className="gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
