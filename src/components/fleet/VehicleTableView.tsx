@@ -12,7 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import StatusBadge from "@/components/StatusBadge";
+import VehicleLiveStatusBadge from "@/components/fleet/VehicleLiveStatusBadge";
+import { getVehicleTypeIcon } from "@/lib/vehicleTypeIcon";
+import type { FleetLiveStatus } from "@/lib/fleetLiveStatus";
 import { useVehicleFuelStatus } from "@/hooks/useVehicleFuelStatus";
 import {
   Eye,
@@ -62,7 +64,10 @@ interface VehicleItem {
   make: string;
   model: string;
   year: number;
+  /** Collapsed status used by legacy callers (kept for back-compat). */
   status: "moving" | "idle" | "offline";
+  /** Full live status — preferred. Mirrors `getFleetLiveStatus()` output. */
+  liveStatus?: FleetLiveStatus;
   fuel: number | null;
   odometer: number;
   nextService: string | null;
