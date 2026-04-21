@@ -258,8 +258,18 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
       for (let i = 0; i < valid.length; i++) {
         const r = valid[i];
         try {
-          // Generate request number on server side via DB default? Fall back to client-side
-          const reqNum = `VR-${Date.now()}-${String(i + 1).padStart(3, "0")}`;
+          // Descriptive request # via DB helper. Fallback preserves bulk import
+          // throughput if the RPC fails for a single row (errors don't cascade).
+          let reqNum = `VR-${Date.now()}-${String(i + 1).padStart(3, "0")}`;
+          try {
+            const { data: rpcNum, error: rpcErr } = await (supabase as any).rpc(
+              "generate_vehicle_request_number",
+              { p_org_id: organizationId, p_request_type: r.request_type }
+            );
+            if (!rpcErr && typeof rpcNum === "string" && rpcNum.length > 0) {
+              reqNum = rpcNum;
+            }
+          } catch { /* keep fallback */ }
           const { error } = await (supabase as any).from("vehicle_requests").insert({
             organization_id: organizationId,
             requester_id: user.id,
