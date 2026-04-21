@@ -134,6 +134,14 @@ export const VehicleRequestsPanel = () => {
 
   const filteredRequests = useMemo(() => {
     let filtered = requests as any[];
+    // Date range filter — inclusive on `needed_from`. Skip rows without a date.
+    const startMs = startOfDay(dateRange.start).getTime();
+    const endMs = endOfDay(dateRange.end).getTime();
+    filtered = filtered.filter((r: any) => {
+      if (!r.needed_from) return false;
+      const t = new Date(r.needed_from).getTime();
+      return t >= startMs && t <= endMs;
+    });
     if (statusFilter !== "all") {
       filtered = filtered.filter((r: any) => r.status === statusFilter);
     }
@@ -157,7 +165,7 @@ export const VehicleRequestsPanel = () => {
       );
     }
     return filtered;
-  }, [requests, search, statusFilter, typeFilter, poolFilter]);
+  }, [requests, search, statusFilter, typeFilter, poolFilter, dateRange]);
 
   // Apply sorting on top of filtering. Comparator is column-aware — strings are
   // compared with locale, dates by epoch, numbers numerically.
