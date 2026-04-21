@@ -988,26 +988,34 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       {(() => {
         const isLast = tabIndex === TABS.length - 1;
         const FooterInner = (
-          <div className="flex w-full items-center justify-between gap-3">
-            <Button variant="ghost" size="sm" onClick={() => { setForm(buildInitialForm()); validation.reset(); }} className="text-muted-foreground">
+          <div className="flex w-full flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setForm(buildInitialForm()); validation.reset(); }}
+              className="text-muted-foreground self-start sm:self-auto h-8 px-2"
+            >
               Clear
             </Button>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel', 'Cancel')}</Button>
+            <div className="flex items-center justify-end gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                {t('common.cancel', 'Cancel')}
+              </Button>
               {tabIndex > 0 && (
-                <Button variant="outline" onClick={goPrev} className="gap-1">
+                <Button variant="outline" size="sm" onClick={goPrev} className="gap-1">
                   <ChevronLeft className="w-4 h-4" /> Back
                 </Button>
               )}
               {!isLast ? (
-                <Button onClick={goNext} className="gap-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                <Button size="sm" onClick={goNext} className="gap-1">
                   Next <ChevronRight className="w-4 h-4" />
                 </Button>
               ) : (
                 <Button
+                  size="sm"
                   onClick={handleSubmit}
                   disabled={!canSubmit || createMutation.isPending}
-                  className="gap-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg shadow-emerald-500/30"
+                  className="gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   {createMutation.isPending ? "Submitting..." : "Submit Request"}
@@ -1017,9 +1025,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </div>
         );
         return embedded ? (
-          <div className="pt-4 border-t mt-4">{FooterInner}</div>
+          <div className="pt-4 border-t border-border/60 mt-4">{FooterInner}</div>
         ) : (
-          <DialogFooter className="-mx-6 -mb-6 px-6 py-4 mt-6 bg-gradient-to-r from-muted/40 to-transparent border-t border-border/50 sm:justify-between">
+          <DialogFooter className="-mx-6 -mb-6 px-6 py-3.5 mt-6 bg-muted/30 border-t border-border/60 sm:justify-between">
             {FooterInner}
           </DialogFooter>
         );
