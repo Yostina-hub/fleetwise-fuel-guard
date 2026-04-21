@@ -85,6 +85,28 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     },
   });
 
+  // Issue #41 — pull the requester's full profile so the detail view can show
+  // department, job title (used as section), employee code and contact info.
+  const { data: requesterProfile } = useQuery({
+    queryKey: ["request-requester-profile", request.requester_id],
+    enabled: !!request.requester_id,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("department, job_title, employee_code, phone, email")
+        .eq("id", request.requester_id)
+        .maybeSingle();
+      return data as {
+        department: string | null;
+        job_title: string | null;
+        employee_code: string | null;
+        phone: string | null;
+        email: string | null;
+      } | null;
+    },
+  });
+
   const requestApprovals = approvals.filter((a: any) => a.request_id === request.id);
 
   const approveMutation = useMutation({
@@ -404,17 +426,28 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         </div>
       </Section>
 
-      {/* Issue #41 — Requester organisational context */}
+      {/* Issue #41 — Requester organisational context.
+          Pull job title + employee code straight off the requester's profile
+          so approvers see the full org placement (Division/Dept/Section
+          mapped to: Business Unit / Department / Job Title) at a glance. */}
       <Section title="Requester">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3">
           <Field label="Name" value={request.requester_name || "—"} />
           {request.filed_on_behalf && request.filed_by_name && (
             <Field label="Filed By" value={`${request.filed_by_name} (on behalf)`} />
           )}
-          <Field label="Department" value={request.department_name || "—"} />
-          <Field label="Business Unit" value={request.business_unit_name || "—"} />
-          {request.contact_phone && (
-            <Field label="Contact Phone" value={request.contact_phone} />
+          <Field label="Employee ID" value={requesterProfile?.employee_code || "—"} />
+          <Field label="Job Title / Section" value={requesterProfile?.job_title || "—"} />
+          <Field
+            label="Department"
+            value={request.department_name || requesterProfile?.department || "—"}
+          />
+          <Field label="Business Unit / Division" value={request.business_unit_name || "—"} />
+          {(request.contact_phone || requesterProfile?.phone) && (
+            <Field label="Contact Phone" value={request.contact_phone || requesterProfile?.phone} />
+          )}
+          {requesterProfile?.email && (
+            <Field label="Email" value={requesterProfile.email} />
           )}
         </div>
       </Section>
