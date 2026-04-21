@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
+import { CheckInOutDialog, type CheckInOutPayload } from "@/components/trips/CheckInOutDialog";
 
 
 interface DriverTripsViewProps {
