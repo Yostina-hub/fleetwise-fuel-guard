@@ -78,7 +78,7 @@ import {
   Radio,
   LocateFixed,
   ShieldAlert,
-  
+  IdCard,
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
