@@ -88,11 +88,11 @@ const inviteUserSchema = z.object({
     .max(255, "Email must be 255 characters or fewer"),
   fullName: z
     .string()
+    .min(1, "Full name cannot be empty")
+    .min(2, "Full name must be at least 2 characters")
     .max(100, "Full name must be 100 characters or fewer")
-    .optional()
-    .or(z.literal(""))
     .refine(
-      (v) => !v || NAME_REGEX.test(v),
+      (v) => NAME_REGEX.test(v),
       "Full name may only contain letters, spaces, hyphens, apostrophes, and periods",
     ),
   password: z
