@@ -1,5 +1,6 @@
-import { ReactNode, useEffect, useRef, useState, useMemo } from "react";
+import { ReactNode, useContext, useEffect, useRef, useState, useMemo } from "react";
 import { useLocation } from "react-router-dom";
+import { LayoutNestedContext } from "@/contexts/LayoutNestedContext";
 import { useTranslation } from "react-i18next";
 import { 
   LayoutDashboard, 
@@ -302,7 +303,7 @@ const getDeveloperItems = () => [
   { label: "Licensing", path: "/licensing-compliance", icon: Scale },
 ];
 
-const Layout = ({ children }: LayoutProps) => {
+const LayoutInner = ({ children }: LayoutProps) => {
   const location = useLocation();
   const { signOut, user, hasRole: authHasRole } = useAuth();
   const { isSuperAdmin: permIsSuperAdmin, hasRole: permHasRole, roles: userRoles } = usePermissions();
@@ -570,6 +571,17 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
     </div>
   );
+};
+
+/**
+ * Public Layout wrapper. If we're already inside a persistent <LayoutShell>,
+ * render children directly so we don't double-wrap the chrome (sidebar +
+ * header) and unmount the sidebar on every route navigation.
+ */
+const Layout = ({ children }: LayoutProps) => {
+  const alreadyInsideShell = useContext(LayoutNestedContext);
+  if (alreadyInsideShell) return <>{children}</>;
+  return <LayoutInner>{children}</LayoutInner>;
 };
 
 export default Layout;
