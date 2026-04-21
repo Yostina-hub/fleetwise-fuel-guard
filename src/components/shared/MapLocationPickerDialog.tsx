@@ -350,41 +350,61 @@ export function MapLocationPickerDialog({
           <DialogDescription>Search for a place, click on the map, or drag the pin.</DialogDescription>
         </DialogHeader>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search location name (e.g. Bole, Meskel Square, Hawassa)"
-            className="pl-9 pr-9 h-9"
-          />
-          {isSearching && (
-            <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
-          )}
+        {/* Search Bar + "Use my location" — the explicit button reliably
+            triggers the browser permission prompt as a user gesture. */}
+        <div className="flex gap-2 items-start">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search location name (e.g. Bole, Meskel Square, Hawassa)"
+              className="pl-9 pr-9 h-9"
+            />
+            {isSearching && (
+              <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+            )}
 
-          {/* Search Results Dropdown */}
-          {searchResults.length > 0 && (
-            <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
-              {searchResults.map((r, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-start gap-2"
-                  onClick={() => flyToLocation(r)}
-                >
-                  <MapPin className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
-                  <span className="line-clamp-2">{r.display_name}</span>
-                </button>
-              ))}
-            </div>
-          )}
+            {/* Search Results Dropdown */}
+            {searchResults.length > 0 && (
+              <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                {searchResults.map((r, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-start gap-2"
+                    onClick={() => flyToLocation(r)}
+                  >
+                    <MapPin className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
+                    <span className="line-clamp-2">{r.display_name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
-          {!isSearching && searchError && searchResults.length === 0 && (
-            <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-lg">
-              {searchError}
-            </div>
-          )}
+            {!isSearching && searchError && searchResults.length === 0 && (
+              <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-lg">
+                {searchError}
+              </div>
+            )}
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={useMyLocation}
+            disabled={isLocating}
+            className="h-9 gap-1.5 shrink-0"
+            title="Center map on your current location"
+          >
+            {isLocating ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Navigation className="w-3.5 h-3.5" />
+            )}
+            My location
+          </Button>
         </div>
 
         {/* Map */}
