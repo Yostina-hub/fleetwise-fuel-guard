@@ -67,12 +67,23 @@ const MaintenanceTicketsTab = () => {
   const [filterPriority, setFilterPriority] = useState<string>(initial.filterPriority ?? "all");
   const [createOpen, setCreateOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">(initial.viewMode ?? "kanban");
+  const [sortMode, setSortMode] = useState<SortMode>(initial.sortMode ?? "manual");
+
+  // Manual ordering: per-column array of ticket IDs. Cards not present fall to the end.
+  const [manualOrder, setManualOrder] = useState<Record<string, string[]>>(() => {
+    try { return JSON.parse(localStorage.getItem(MT_ORDER_KEY) || "{}"); } catch { return {}; }
+  });
+  const [draggingId, setDraggingId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
-      localStorage.setItem(MT_PREFS_KEY, JSON.stringify({ searchQuery, filterStatus, filterPriority, viewMode }));
+      localStorage.setItem(MT_PREFS_KEY, JSON.stringify({ searchQuery, filterStatus, filterPriority, viewMode, sortMode }));
     } catch { /* ignore */ }
-  }, [searchQuery, filterStatus, filterPriority, viewMode]);
+  }, [searchQuery, filterStatus, filterPriority, viewMode, sortMode]);
+
+  useEffect(() => {
+    try { localStorage.setItem(MT_ORDER_KEY, JSON.stringify(manualOrder)); } catch { /* ignore */ }
+  }, [manualOrder]);
 
   const [form, setForm] = useState({
     title: "", description: "", priority: "P3", category: "general", reported_by: "",
