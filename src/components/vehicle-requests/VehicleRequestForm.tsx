@@ -1718,10 +1718,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       <DialogHeader>
         <DialogTitle className="flex items-center justify-center gap-2">
           <Car className="w-5 h-5 text-primary" />
-          Fleet Requests Are Not Available
+          Vehicle Requests Are Not Available
         </DialogTitle>
         <DialogDescription className="pt-2">
-          Drivers cannot initiate fleet requests. Vehicle requests are filed by
+          Drivers cannot initiate vehicle requests. Vehicle requests are filed by
           end-users, supervisors, dispatchers, and managers — who then assign
           you to the trip after approval.
         </DialogDescription>
