@@ -429,8 +429,69 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         <div className="text-xs text-muted-foreground">Project: {r.project_number}</div>
       )}
 
+      {/* Contract decision summary — visible once supervisor has signed off */}
+      {r.pool_review_decision && (
+        <div className={`rounded-md border px-2.5 py-2 text-xs space-y-1 ${
+          r.pool_review_decision === "approved"
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : r.pool_review_decision === "rejected"
+            ? "border-rose-500/30 bg-rose-500/5"
+            : "border-amber-500/30 bg-amber-500/5"
+        }`}>
+          <div className="flex items-center gap-1.5 font-medium">
+            <FileSignature className="w-3 h-3" />
+            Pool contract: <span className="capitalize">{r.pool_review_decision.replace("_", " ")}</span>
+            {r.pool_reviewed_at && (
+              <span className="text-muted-foreground font-normal">· {format(new Date(r.pool_reviewed_at), "MMM dd, HH:mm")}</span>
+            )}
+          </div>
+          {r.pool_review_conditions && (
+            <div><span className="text-muted-foreground">Conditions:</span> {r.pool_review_conditions}</div>
+          )}
+          {r.pool_review_notes && (
+            <div><span className="text-muted-foreground">Notes:</span> {r.pool_review_notes}</div>
+          )}
+        </div>
+      )}
+
       {expandedId === r.id && (
         <div className="border-t pt-3 space-y-3">
+          {/* === Contract decision (gate before vehicle assignment) === */}
+          <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <FileSignature className="w-3.5 h-3.5 text-primary" />
+              Pool Supervisor Contract Decision
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Approve with conditions, reject, or send back for changes. Decision is recorded with your name & timestamp.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                className="text-xs gap-1"
+                onClick={() => openContractDialog(r, "approved")}
+              >
+                <CheckCircle className="w-3 h-3" /> Approve with Conditions
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs gap-1"
+                onClick={() => openContractDialog(r, "changes_requested")}
+              >
+                <RotateCcw className="w-3 h-3" /> Request Changes
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs gap-1 text-destructive hover:text-destructive"
+                onClick={() => openContractDialog(r, "rejected")}
+              >
+                <XCircle className="w-3 h-3" /> Reject
+              </Button>
+            </div>
+          </div>
+
           <div>
             <Label className="text-xs flex items-center gap-1 mb-1">
               <Truck className="w-3 h-3" /> Available Vehicles ({available.length})
@@ -467,7 +528,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
             </Select>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-xs"
