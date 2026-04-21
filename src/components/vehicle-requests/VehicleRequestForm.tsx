@@ -129,6 +129,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     realRoles,
   } = useAuth();
   const queryClient = useQueryClient();
+  const { departments } = useDepartments();
 
   // When a super_admin is impersonating, the override puts the impersonated
   // user into `useAuth().user` — but `supabase.auth.getUser()` still returns
@@ -498,6 +499,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         end_time: form.end_time || null,
         project_number: safe.request_type === "project_operation" ? (safe.project_number || null) : null,
         priority: safe.priority || "normal",
+        // Department selection (optional, snapshot name for history readability).
+        department_id: form.department_id || null,
+        department_name:
+          (departments.find((d) => d.id === form.department_id)?.name) || null,
         // Resource-aware request audit fields.
         purpose_category: safe.purpose_category || null,
         cargo_load: safe.cargo_load || null,
