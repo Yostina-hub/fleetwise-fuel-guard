@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import Layout from "@/components/Layout";
+import { Can } from "@/components/auth/Can";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -629,44 +630,50 @@ const VehicleRequests = () => {
           <div className="flex flex-wrap items-center gap-2">
             {canExportImport && (
               <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1.5 h-9">
-                      <Download className="w-3.5 h-3.5" /> Export
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Export {filtered.length} requests</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={exportCsv}>
-                      <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={exportXlsx}>
-                      <FileText className="w-4 h-4 mr-2" /> Excel (.xlsx)
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={exportPrint}>
-                      <Printer className="w-4 h-4 mr-2" /> Print / PDF
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 h-9"
-                  onClick={() => setShowImport(true)}
-                >
-                  <Upload className="w-3.5 h-3.5" /> Import
-                </Button>
+                <Can resource="vehicle_requests" action="export">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1.5 h-9">
+                        <Download className="w-3.5 h-3.5" /> Export
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Export {filtered.length} requests</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={exportCsv}>
+                        <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={exportXlsx}>
+                        <FileText className="w-4 h-4 mr-2" /> Excel (.xlsx)
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={exportPrint}>
+                        <Printer className="w-4 h-4 mr-2" /> Print / PDF
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </Can>
+                <Can resource="vehicle_requests" action="create">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 h-9"
+                    onClick={() => setShowImport(true)}
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Import
+                  </Button>
+                </Can>
               </>
             )}
-            <Button
-              size="sm"
-              className="gap-1.5 h-9"
-              onClick={() => setShowCreate(true)}
-            >
-              <Plus className="w-3.5 h-3.5" /> New Request
-            </Button>
+            <Can resource="vehicle_requests" action="create">
+              <Button
+                size="sm"
+                className="gap-1.5 h-9"
+                onClick={() => setShowCreate(true)}
+              >
+                <Plus className="w-3.5 h-3.5" /> New Request
+              </Button>
+            </Can>
           </div>
         </div>
 

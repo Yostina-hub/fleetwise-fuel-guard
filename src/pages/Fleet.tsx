@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getFleetLiveStatus } from "@/lib/fleetLiveStatus";
 import Layout from "@/components/Layout";
+import { Can } from "@/components/auth/Can";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -500,41 +501,47 @@ const Fleet = () => {
           </div>
           <div className="flex items-center gap-2">
             <FleetAutomationsMenu />
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
-              <Upload className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline">{t('common.import')}</span>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2" disabled={exporting}>
-                  <Download className="w-4 h-4" aria-hidden="true" />
-                  <span className="hidden sm:inline">{exporting ? `${t('common.export')}...` : t('common.export')}</span>
-                  <ChevronDown className="w-3 h-3 opacity-60" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleExportFormat("xlsx")}>
-                  <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel (.xlsx){selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExportFormat("csv")}>
-                  <FileText className="w-4 h-4 mr-2" /> CSV (.csv){selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportPdf}>
-                  <FileDown className="w-4 h-4 mr-2" /> PDF (.pdf){selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handlePrint}>
-                  <Printer className="w-4 h-4 mr-2" /> Print
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              size="sm"
-              className="gap-2"
-              onClick={() => setCreateDialogOpen(true)}
-            >
-              <Plus className="w-4 h-4" aria-hidden="true" />
-              {t('fleet.addVehicle')}
-            </Button>
+            <Can resource="fleet" action="import">
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
+                <Upload className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline">{t('common.import')}</span>
+              </Button>
+            </Can>
+            <Can resource="fleet" action="export">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2" disabled={exporting}>
+                    <Download className="w-4 h-4" aria-hidden="true" />
+                    <span className="hidden sm:inline">{exporting ? `${t('common.export')}...` : t('common.export')}</span>
+                    <ChevronDown className="w-3 h-3 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleExportFormat("xlsx")}>
+                    <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel (.xlsx){selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportFormat("csv")}>
+                    <FileText className="w-4 h-4 mr-2" /> CSV (.csv){selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportPdf}>
+                    <FileDown className="w-4 h-4 mr-2" /> PDF (.pdf){selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handlePrint}>
+                    <Printer className="w-4 h-4 mr-2" /> Print
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </Can>
+            <Can resource="fleet" action="create">
+              <Button
+                size="sm"
+                className="gap-2"
+                onClick={() => setCreateDialogOpen(true)}
+              >
+                <Plus className="w-4 h-4" aria-hidden="true" />
+                {t('fleet.addVehicle')}
+              </Button>
+            </Can>
           </div>
         </div>
 
