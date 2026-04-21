@@ -58,7 +58,7 @@ import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/Vehicl
 import { RequesterFeedbackDialog } from "@/components/vehicle-requests/RequesterFeedbackDialog";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
 import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
-import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
+// PoolReviewPanel moved to its own page at /pool-supervisors
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
 import { MyVehicleRequestsSummary } from "@/components/vehicle-requests/MyVehicleRequestsSummary";
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
