@@ -18,10 +18,10 @@ import { useTripRequests } from "@/hooks/useTripRequests";
 import { useApprovals } from "@/hooks/useApprovals";
 import { usePermissions } from "@/hooks/usePermissions";
 import { QuickTripRequest } from "@/components/trips/QuickTripRequest";
-import { TripPipelineBoard } from "@/components/trips/TripPipelineBoard";
 import { TripStatsBar } from "@/components/trips/TripStatsBar";
 import { TripDetailPanel } from "@/components/trips/TripDetailPanel";
-import { TripCard } from "@/components/trips/TripCard";
+import { VehicleRequestPipelineBoard } from "@/components/vehicle-requests/VehicleRequestPipelineBoard";
+import { VehicleRequestCard } from "@/components/vehicle-requests/VehicleRequestCard";
 import { ActiveAssignments } from "@/components/scheduling/ActiveAssignments";
 import { CreateAssignmentDialog } from "@/components/scheduling/CreateAssignmentDialog";
 import { ApprovalHistory } from "@/components/scheduling/ApprovalHistory";
@@ -41,9 +41,51 @@ const TripManagement = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { organizationId } = useOrganization();
-  const { requests, loading, submitRequest, cancelRequest } = useTripRequests();
+  const { requests: legacyRequests, loading: loadingLegacy, submitRequest, cancelRequest } = useTripRequests();
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
   const { isSuperAdmin, hasRole, hasPermission, loading: permsLoading } = usePermissions();
+
+  // ── Current system data source ─────────────────────────────────────
+  // The Trips tab now mirrors the unified `vehicle_requests` flow that
+  // VehicleRequestForm + assignment + driver-checkin produce. Legacy
+  // `trip_requests` are kept available for the Approvals tab below.
+  const { data: vehicleRequests = [], isLoading: loadingVR } = useQuery({
+    queryKey: ["trip-mgmt-vehicle-requests", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(`
+          *,
+          assigned_vehicle:assigned_vehicle_id(plate_number, make, model),
+          assigned_driver:assigned_driver_id(first_name, last_name)
+        `)
+        .eq("organization_id", organizationId)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!organizationId,
+  });
+
+  // Realtime: refresh kanban when vehicle_requests change.
+  useEffect(() => {
+    if (!organizationId) return;
+    const ch = supabase
+      .channel("trip-mgmt-vr-realtime")
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "vehicle_requests" },
+        () => { /* react-query refetch via invalidate */
+          // Lightweight: trigger a refetch by invalidating.
+          (window as any).__qc?.invalidateQueries?.({ queryKey: ["trip-mgmt-vehicle-requests"] });
+        }
+      ).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [organizationId]);
+
+  const requests = vehicleRequests;
+  const loading = loadingVR;
 
   // Resolve driver record for current user (only used when isDriverOnly)
   const { data: driverSelf, isLoading: driverLoading } = useQuery({
@@ -98,10 +140,22 @@ const TripManagement = () => {
     setSearchParams({ tab }, { replace: true });
   };
 
+  // Map StatsBar filter keys → underlying vehicle_requests.status values.
+  const STATUS_FILTER_MAP: Record<string, string[]> = {
+    pending:     ["pending", "submitted", "draft"],
+    approved:    ["approved"],
+    assigned:    ["assigned", "scheduled", "dispatched"],
+    in_progress: ["in_progress", "in_service"],
+    completed:   ["completed", "closed"],
+    rejected:    ["rejected"],
+    cancelled:   ["cancelled", "canceled"],
+  };
+
   const filteredTrips = useMemo(() => {
     let trips = requests || [];
     if (statusFilter) {
-      trips = trips.filter((t: any) => t.status === statusFilter);
+      const allowed = STATUS_FILTER_MAP[statusFilter] ?? [statusFilter];
+      trips = trips.filter((t: any) => allowed.includes(t.status));
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -291,76 +345,64 @@ const TripManagement = () => {
                 </div>
               </div>
             ) : viewMode === "pipeline" ? (
-              <TripPipelineBoard
-                trips={filteredTrips}
-                onSubmit={(id) => submitRequest.mutate(id)}
+              <VehicleRequestPipelineBoard
+                requests={filteredTrips}
                 onApprove={canApprove ? handleQuickApprove : undefined}
                 onReject={canApprove ? handleQuickReject : undefined}
                 onViewDetails={handleViewDetails}
-                isSubmitting={submitRequest.isPending}
+                onAssign={(req) => { setSelectedTrip(req); setAssignOpen(true); }}
                 visibleColumns={statusFilter ? [statusFilter] : undefined}
               />
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 <AnimatePresence mode="popLayout">
-                  {filteredTrips.map((trip: any) => (
-                    <TripCard
-                      key={trip.id}
-                      trip={trip}
-                      onSubmit={(id) => submitRequest.mutate(id)}
+                  {filteredTrips.map((req: any) => (
+                    <VehicleRequestCard
+                      key={req.id}
+                      request={req}
                       onApprove={canApprove ? handleQuickApprove : undefined}
                       onReject={canApprove ? handleQuickReject : undefined}
                       onViewDetails={handleViewDetails}
-                      isSubmitting={submitRequest.isPending}
+                      onAssign={(r) => { setSelectedTrip(r); setAssignOpen(true); }}
                     />
                   ))}
                 </AnimatePresence>
                 {filteredTrips.length === 0 && (
                   <div className="col-span-full text-center py-16 text-muted-foreground">
-                    No trips found. Create your first trip request above.
+                    No requests found. Create one with “Full Request” above.
                   </div>
                 )}
               </div>
             ) : (
               <div className="space-y-1.5">
                 <AnimatePresence mode="popLayout">
-                  {filteredTrips.map((trip: any) => (
+                  {filteredTrips.map((req: any) => (
                     <motion.div
-                      key={trip.id}
+                      key={req.id}
                       layout
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      onClick={() => handleViewDetails(trip)}
+                      onClick={() => handleViewDetails(req)}
                       className="flex items-center gap-4 px-4 py-2.5 rounded-lg border border-border bg-card hover:border-primary/30 hover:bg-primary/5 cursor-pointer transition-colors"
                     >
                       <span className="font-mono text-xs font-semibold text-primary w-24 shrink-0">
-                        {trip.request_number}
+                        {req.request_number ?? req.id.slice(0, 8)}
                       </span>
-                      <span className="text-sm truncate flex-1">{trip.purpose}</span>
-                      <span className="text-xs text-muted-foreground w-28 shrink-0 hidden md:block">
-                        {trip.pickup_geofence?.name || "—"}
+                      <span className="text-sm truncate flex-1">{req.purpose || "(no purpose)"}</span>
+                      <span className="text-xs text-muted-foreground w-32 shrink-0 hidden md:block">
+                        {req.pool_name || req.pool_location || "—"}
                       </span>
                       <span className="text-xs text-muted-foreground w-32 shrink-0 hidden lg:block">
-                        {new Date(trip.pickup_at).toLocaleDateString()}
+                        {req.needed_from ? new Date(req.needed_from).toLocaleDateString() : "—"}
                       </span>
-                      <StatusPill status={trip.status} />
-                      {trip.status === "draft" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 text-[10px] gap-1"
-                          onClick={(e) => { e.stopPropagation(); submitRequest.mutate(trip.id); }}
-                        >
-                          Submit
-                        </Button>
-                      )}
+                      <StatusPill status={req.status} />
                     </motion.div>
                   ))}
                 </AnimatePresence>
                 {filteredTrips.length === 0 && (
                   <div className="text-center py-16 text-muted-foreground">
-                    No trips found.
+                    No requests found.
                   </div>
                 )}
               </div>
@@ -487,19 +529,27 @@ const TripManagement = () => {
 
 const StatusPill = ({ status }: { status: string }) => {
   const styles: Record<string, string> = {
-    draft: "bg-muted text-muted-foreground",
-    submitted: "bg-warning/15 text-warning",
-    approved: "bg-success/15 text-success",
-    scheduled: "bg-secondary/15 text-secondary",
-    dispatched: "bg-purple-500/15 text-purple-600",
-    in_service: "bg-primary/15 text-primary",
-    completed: "bg-success/15 text-success",
-    rejected: "bg-destructive/15 text-destructive",
+    pending:     "bg-warning/15 text-warning",
+    submitted:   "bg-warning/15 text-warning",
+    draft:       "bg-muted text-muted-foreground",
+    approved:    "bg-success/15 text-success",
+    assigned:    "bg-secondary/15 text-secondary",
+    scheduled:   "bg-secondary/15 text-secondary",
+    dispatched:  "bg-purple-500/15 text-purple-600",
+    in_progress: "bg-primary/15 text-primary",
+    in_service:  "bg-primary/15 text-primary",
+    completed:   "bg-success/15 text-success",
+    closed:      "bg-success/15 text-success",
+    rejected:    "bg-destructive/15 text-destructive",
+    cancelled:   "bg-muted text-muted-foreground",
+    canceled:    "bg-muted text-muted-foreground",
   };
   const labels: Record<string, string> = {
-    draft: "Draft", submitted: "Pending", approved: "Approved",
-    scheduled: "Scheduled", dispatched: "Dispatched", in_service: "Active",
-    completed: "Done", rejected: "Rejected",
+    pending: "Pending", submitted: "Pending", draft: "Draft",
+    approved: "Approved", assigned: "Assigned", scheduled: "Scheduled",
+    dispatched: "Dispatched", in_progress: "Active", in_service: "Active",
+    completed: "Done", closed: "Closed", rejected: "Rejected",
+    cancelled: "Cancelled", canceled: "Cancelled",
   };
   return (
     <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${styles[status] || styles.draft}`}>
