@@ -5,7 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, XCircle, Truck, Users, Send, UserCheck, Layers, User } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  CheckCircle,
+  XCircle,
+  Truck,
+  Users,
+  Send,
+  UserCheck,
+  Layers,
+  User,
+  FileSignature,
+  RotateCcw,
+  ScrollText,
+} from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
