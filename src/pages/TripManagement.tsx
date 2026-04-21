@@ -128,9 +128,24 @@ const TripManagement = () => {
   const canViewAnalytics = isSuperAdmin || hasRole("operations_manager") || hasRole("fleet_owner")
     || hasRole("fleet_manager") || hasRole("org_admin") || hasRole("auditor");
 
-  const [viewMode, setViewMode] = useState<"pipeline" | "grid" | "list">("pipeline");
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  // Persist view + filter prefs across sessions (parity with Vehicles & Dispatch).
+  const TRIP_PREFS_KEY = "trips.management.prefs.v1";
+  const loadPrefs = () => {
+    try {
+      const raw = localStorage.getItem(TRIP_PREFS_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  };
+  const initialPrefs = loadPrefs();
+  const [viewMode, setViewMode] = useState<"pipeline" | "grid" | "list">(initialPrefs?.viewMode ?? "pipeline");
+  const [statusFilter, setStatusFilter] = useState<string | null>(initialPrefs?.statusFilter ?? null);
+  const [searchQuery, setSearchQuery] = useState(initialPrefs?.searchQuery ?? "");
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(TRIP_PREFS_KEY, JSON.stringify({ viewMode, statusFilter, searchQuery }));
+    } catch {}
+  }, [viewMode, statusFilter, searchQuery]);
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
