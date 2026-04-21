@@ -464,9 +464,23 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         neededUntil = combineDateAndTime(form.end_date, form.end_date_time) || null;
       }
 
+      // Generate descriptive request # via DB helper (VR-{TYPE}-{YYMMDD}-{NNNN}).
+      // Falls back to the legacy timestamp format if the RPC fails for any reason
+      // (e.g. transient connectivity), so submissions never block on numbering.
+      let generatedNumber = `VR-${Date.now().toString(36).toUpperCase()}`;
+      try {
+        const { data: rpcNum, error: rpcErr } = await (supabase as any).rpc(
+          "generate_vehicle_request_number",
+          { p_org_id: organizationId, p_request_type: safe.request_type }
+        );
+        if (!rpcErr && typeof rpcNum === "string" && rpcNum.length > 0) {
+          generatedNumber = rpcNum;
+        }
+      } catch { /* keep fallback */ }
+
       const payload = {
         organization_id: organizationId!,
-        request_number: `VR-${Date.now().toString(36).toUpperCase()}`,
+        request_number: generatedNumber,
         requester_id: requesterId,
         requester_name: requesterName,
         // Audit: who actually submitted the form (vs. who it's for).
