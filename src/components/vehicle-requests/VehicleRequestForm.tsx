@@ -933,6 +933,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               );
             })()}
+            {isNighttime && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs flex items-start gap-2">
+                <Moon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <span className="text-muted-foreground">
+                  <span className="font-medium text-foreground">Nighttime window:</span>{" "}
+                  Start and end times must be between{" "}
+                  <span className="font-medium text-foreground">02:00 and 12:00</span>.
+                </span>
+              </div>
+            )}
             {isDaily ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-1">
