@@ -180,6 +180,8 @@ export const driverFieldSchemas = {
       "License type must be a valid Ethiopian category (1–5 or Public-1/2/3)",
     ),
   license_issue_date: optionalDate("License issue date", { past: true }),
+  // #10 — Reject any license that is already expired. Drivers cannot be
+  // registered with an out-of-date document.
   license_expiry: z
     .string()
     .optional()
@@ -187,12 +189,29 @@ export const driverFieldSchemas = {
     .refine(
       (v) => !v || !Number.isNaN(Date.parse(v)),
       "License expiry is not a valid date",
+    )
+    .refine(
+      (v) => {
+        if (!v) return true;
+        const d = new Date(v);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return d.getTime() >= today.getTime();
+      },
+      "License is expired — please renew it before registering this driver",
     ),
 
   // ----- Employment -----
   employment_type: trimmedOptional("Employment type", 50),
   status: trimmedRequired("Driver status", 1, 50),
   joining_date: optionalDate("Joining date", { past: true }),
+  // #6 — Contract end date. Optional unless employment_type === "contract"
+  // (cross-field rule below); when provided must be in the future.
+  contract_end_date: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || !Number.isNaN(Date.parse(v)), "Contract end date is not a valid date"),
   department: trimmedRequired("Assigned location"),
   experience_years: numericOptional("Years of experience", { min: 0, max: 60, integer: true }),
   // assigned_pool replaces legacy route_type per #5 (optional but validated)
@@ -273,6 +292,21 @@ const crossFieldRules: CrossFieldRule[] = [
   (f) => {
     if (f.password && !f.email) {
       return { email: "Email is required when setting a portal password" };
+    }
+    return {};
+  },
+  // #6 — Contract employment must declare an end date (and it must be > today).
+  (f) => {
+    if (f.employment_type === "contract") {
+      if (!f.contract_end_date) {
+        return { contract_end_date: "Contract end date is required for contract employees" };
+      }
+      const end = new Date(f.contract_end_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (end.getTime() <= today.getTime()) {
+        return { contract_end_date: "Contract end date must be in the future" };
+      }
     }
     return {};
   },
@@ -357,6 +391,7 @@ export const DRIVER_FIELD_TO_SECTION: Record<DriverFieldName, string> = {
   govt_id_type: "legal", license_number: "legal", national_id: "legal",
   license_type: "legal", license_issue_date: "legal", license_expiry: "legal",
   employment_type: "employment", status: "employment", joining_date: "employment",
+  contract_end_date: "employment",
   department: "employment", experience_years: "employment",
   assigned_pool: "employment", route_type: "employment",
   telebirr_account: "payment",

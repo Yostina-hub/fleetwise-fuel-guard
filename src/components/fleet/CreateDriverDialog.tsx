@@ -15,7 +15,8 @@ import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, CreditCard, FileText, AlertCircle, MapPin, Briefcase, Building2, Key, Copy, RefreshCw, Droplets, Paperclip, CheckCircle2, ChevronLeft, ChevronRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Loader2, User, CreditCard, FileText, AlertCircle, MapPin, Briefcase, Building2, Key, Copy, RefreshCw, Droplets, Paperclip, CheckCircle2, ChevronLeft, ChevronRight, Eye, EyeOff, ShieldCheck, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -80,6 +81,7 @@ const initialForm = {
   govt_id_type: "", license_number: "", national_id: "",
   license_type: "", license_issue_date: "", license_expiry: "",
   employment_type: "regular", status: "active",
+  contract_end_date: "", // #6 — required when employment_type === "contract"
   joining_date: "", department: "", experience_years: "",
   assigned_pool: "", // #5 — replaces route_type
   telebirr_account: "", // #8 — replaces bank fields
@@ -122,7 +124,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
     { id: "personal",    label: "Personal",    icon: User,         fields: ["driver_type", "first_name", "middle_name", "last_name", "phone", "email", "date_of_birth"] },
     { id: "address",     label: "Address",     icon: MapPin,       fields: ["address_specific"] },
     { id: "legal",       label: "Legal & ID",  icon: CreditCard,   fields: ["govt_id_type", "license_number", "national_id", "license_issue_date", "license_expiry"] },
-    { id: "employment",  label: "Employment",  icon: Building2,    fields: ["status", "department", "joining_date", "experience_years"] },
+    { id: "employment",  label: "Employment",  icon: Building2,    fields: ["status", "department", "joining_date", "experience_years", "contract_end_date"] },
     { id: "emergency",   label: "Emergency",   icon: AlertCircle,  fields: ["emergency_contact_name", "emergency_contact_phone"] },
     { id: "credentials", label: "Account",     icon: Key,          fields: ["password"] },
   ];
@@ -286,6 +288,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
       license_issue_date: formData.license_issue_date || null,
       license_expiry: formData.license_expiry || null,
       employment_type: formData.employment_type || null,
+      contract_end_date: formData.employment_type === "contract" ? (formData.contract_end_date || null) : null,
       status: formData.status,
       joining_date: formData.joining_date || null,
       department: formData.department || null,
@@ -415,7 +418,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
         <TabsContent value="personal" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<Briefcase className="w-5 h-5 text-primary" />} title="Employment Type">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Driver Type" required error={validation.getError("driver_type")} fieldRef={registerRef("driver_type")}>
+              <Field label="Driver Type" required error={validation.getError("driver_type")} fieldRef={registerRef("driver_type")} tooltip="Determines which fleet rules and pools the driver belongs to. There is no default — please pick the type that best matches the role.">
                 <Select value={formData.driver_type} onValueChange={v => { set("driver_type", v); validation.validateField("driver_type", v); }}>
                   <SelectTrigger className={errClass("driver_type")} onBlur={() => onBlur("driver_type")}><SelectValue placeholder="Select driver type..." /></SelectTrigger>
                   <SelectContent>
@@ -547,7 +550,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                   ariaInvalid={!!validation.getError("license_issue_date")}
                 />
               </Field>
-              <Field label="License Expiry Date" error={validation.getError("license_expiry")} fieldRef={registerRef("license_expiry")}>
+              <Field label="License Expiry Date" error={validation.getError("license_expiry")} fieldRef={registerRef("license_expiry")} tooltip="The license must still be valid (today or later). Expired licenses cannot be registered.">
                 <DatePickerField
                   value={formData.license_expiry}
                   onChange={(v) => { set("license_expiry", v); validation.validateField("license_expiry", v); }}
@@ -575,14 +578,32 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
         <TabsContent value="employment" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<Building2 className="w-5 h-5 text-primary" />} title="Employment Details">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field label="Employment Status">
-                <Select value={formData.employment_type} onValueChange={v => set("employment_type", v)}>
+              <Field label="Employment Status" tooltip="Select the contract type. Contract drivers must have an end date.">
+                <Select value={formData.employment_type} onValueChange={v => { set("employment_type", v); if (v !== "contract") set("contract_end_date", ""); validation.validateField("contract_end_date" as DriverFieldName, formData.contract_end_date); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {EMPLOYMENT_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
+              {formData.employment_type === "contract" && (
+                <Field
+                  label="Contract End Date"
+                  required
+                  error={validation.getError("contract_end_date" as DriverFieldName)}
+                  fieldRef={registerRef("contract_end_date" as DriverFieldName)}
+                  tooltip="Date this contract expires. Must be in the future."
+                >
+                  <DatePickerField
+                    value={formData.contract_end_date}
+                    onChange={(v) => { set("contract_end_date", v); validation.validateField("contract_end_date" as DriverFieldName, v); }}
+                    onBlur={() => onBlur("contract_end_date" as DriverFieldName)}
+                    min={today()}
+                    placeholder="Select end date"
+                    ariaInvalid={!!validation.getError("contract_end_date" as DriverFieldName)}
+                  />
+                </Field>
+              )}
               <Field label="Driver Status" required error={validation.getError("status")}>
                 <Select value={formData.status} onValueChange={v => { set("status", v); validation.validateField("status", v); }}>
                   <SelectTrigger className={errClass("status")}><SelectValue /></SelectTrigger>
@@ -625,7 +646,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
 
           <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Telebirr Account (Optional)">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Telebirr Account" error={validation.getError("telebirr_account")} hint="Optional — used for payroll/payouts">
+              <Field label="Telebirr Account" error={validation.getError("telebirr_account")} hint="Optional — used for payroll/payouts" tooltip="Telebirr mobile money account used for payroll and trip allowances. Use 09XXXXXXXX or the 9-digit Telebirr ID.">
                 <Input value={formData.telebirr_account} onChange={e => set("telebirr_account", e.target.value.replace(/[^\d+]/g, "").slice(0, 13))} onBlur={() => onBlur("telebirr_account")} placeholder="09XXXXXXXX" maxLength={13} inputMode="tel" className={errClass("telebirr_account")} />
               </Field>
             </div>
@@ -798,6 +819,7 @@ function Field({
   required,
   error,
   hint,
+  tooltip,
   success,
   fieldRef,
   children,
@@ -806,6 +828,9 @@ function Field({
   required?: boolean;
   error?: string;
   hint?: string;
+  /** Optional explanatory text shown on hover via an info (i) icon next to the label.
+   *  Use this for short, contextual guidance (#33). Keep <120 chars. */
+  tooltip?: string;
   success?: boolean;
   fieldRef?: (el: HTMLElement | null) => void;
   children: React.ReactNode;
@@ -815,6 +840,25 @@ function Field({
       <Label className={cn("text-sm flex items-center gap-1", error && "text-destructive", success && "text-foreground")}>
         {label}
         {required && <span className="text-destructive" aria-hidden="true">*</span>}
+        {tooltip && (
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={`Info: ${label}`}
+                  className="inline-flex items-center justify-center h-4 w-4 rounded-full text-muted-foreground/70 hover:text-primary focus-visible:text-primary focus-visible:outline-none"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[240px] text-xs leading-snug">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         {success && !error && <CheckCircle2 className="w-3 h-3 text-primary ml-auto" aria-label="Valid" />}
       </Label>
       {children}

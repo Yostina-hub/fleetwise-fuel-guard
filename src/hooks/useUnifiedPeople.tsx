@@ -236,6 +236,10 @@ export const useUnifiedPeople = () => {
         });
       });
 
+      // #3 — Newest registrations first so freshly-created users surface at the top
+      // of the People & Access directory instead of being buried at the bottom.
+      merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
       setPeople(merged);
       setError(null);
     } catch (err: any) {
