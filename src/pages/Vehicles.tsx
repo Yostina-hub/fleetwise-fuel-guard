@@ -1038,13 +1038,25 @@ const Vehicles = () => {
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6"
-                                    title="View Details"
+                                    title="Quick Details"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleVehicleClick(vehicle);
                                     }}
                                   >
                                     <Eye className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    title="Open Vehicle Profile"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/vehicle-profile?id=${vehicle.id}`);
+                                    }}
+                                  >
+                                    <IdCard className="w-3.5 h-3.5" />
                                   </Button>
                                   <Button
                                     variant="ghost"
