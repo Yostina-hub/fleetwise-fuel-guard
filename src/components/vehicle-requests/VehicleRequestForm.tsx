@@ -1541,13 +1541,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* DETAILS SECTION */}
-          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
-            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">5</span>
-              <div className="flex-1">
-                <h3 className="text-base font-semibold text-foreground leading-tight">Purpose &amp; Submit</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Tell us why this trip is needed, then submit for approval.</p>
-              </div>
+          <section className="space-y-5 animate-fade-in">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
+              <FileText className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Purpose &amp; Submit</h3>
             </div>
             <div>
               <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
