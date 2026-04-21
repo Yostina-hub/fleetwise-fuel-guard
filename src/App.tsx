@@ -62,6 +62,7 @@ const Organizations = lazyWithRetry(() => import("./pages/Organizations"), "Orga
 const EVManagement = lazyWithRetry(() => import("./pages/EVManagement"), "EVManagement");
 const VehicleRequests = lazyWithRetry(() => import("./pages/VehicleRequests"), "VehicleRequests");
 const RequesterPortal = lazyWithRetry(() => import("./pages/RequesterPortal"), "RequesterPortal");
+const PoolSupervisors = lazyWithRetry(() => import("./pages/PoolSupervisors"), "PoolSupervisors");
 const TireManagement = lazyWithRetry(() => import("./pages/TireManagement"), "TireManagement");
 const HandoverCatalogAdmin = lazyWithRetry(() => import("./pages/HandoverCatalogAdmin"), "HandoverCatalogAdmin");
 
