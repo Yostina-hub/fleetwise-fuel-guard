@@ -825,16 +825,16 @@ const VehicleRequests = () => {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40">
                       <tr className="border-b text-[11px] uppercase tracking-wide text-muted-foreground">
-                        <th className="text-left py-3 px-4 font-semibold">Request #</th>
-                        <th className="text-left py-3 px-3 font-semibold">Type</th>
-                        <th className="text-left py-3 px-3 font-semibold">Requester</th>
-                        <th className="text-left py-3 px-3 font-semibold">Route</th>
-                        <th className="text-left py-3 px-3 font-semibold">Pool</th>
-                        <th className="text-left py-3 px-3 font-semibold">Needed From</th>
-                        <th className="text-left py-3 px-3 font-semibold">Vehicle</th>
-                        <th className="text-center py-3 px-3 font-semibold">Trip</th>
+                        <SortableTh sortKey="request_number" currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-4">Request #</SortableTh>
+                        <SortableTh sortKey="request_type"   currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Type</SortableTh>
+                        <SortableTh sortKey="requester_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Requester</SortableTh>
+                        <SortableTh sortKey="route"          currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Route</SortableTh>
+                        <SortableTh sortKey="pool_name"      currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Pool</SortableTh>
+                        <SortableTh sortKey="needed_from"    currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Needed From</SortableTh>
+                        <SortableTh sortKey="vehicle"        currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Vehicle</SortableTh>
+                        <SortableTh sortKey="trip_type"      currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3" align="center">Trip</SortableTh>
                         <th className="text-center py-3 px-3 font-semibold">Check-in</th>
-                        <th className="text-center py-3 px-3 font-semibold">Status</th>
+                        <SortableTh sortKey="status"         currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3" align="center">Status</SortableTh>
                         <th className="text-center py-3 px-4 font-semibold">Actions</th>
                       </tr>
                     </thead>
