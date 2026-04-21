@@ -260,7 +260,7 @@ const Drivers = () => {
     printRecords(list, driverPrintColumns, {
       title: selectedDrivers.length > 0
         ? `Drivers (${selectedDrivers.length} selected)`
-        : "Driver Directory",
+        : "Driver List",
       subtitle: `Page ${currentPage} of ${totalPages} · ${list.length} shown · ${totalCount} total`,
       filename: "drivers",
       organizationName: "Driver Management",
@@ -272,7 +272,7 @@ const Drivers = () => {
     exportRecordsToPdf(list, driverPrintColumns, {
       title: selectedDrivers.length > 0
         ? `Drivers (${selectedDrivers.length} selected)`
-        : "Driver Directory",
+        : "Driver List",
       subtitle: "Workforce report",
       filename: "drivers",
       organizationName: "Driver Management",

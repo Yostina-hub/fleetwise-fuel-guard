@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Clock, Star, Target } from "lucide-react";
+import { TrendingUp, Clock, Star, Target, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface KPIProps {
@@ -8,6 +8,7 @@ interface KPIProps {
 
 export const VehicleRequestKPI = ({ requests }: KPIProps) => {
   const { t } = useTranslation();
+  const totalRequests = requests.length;
 
   const completedWithTimes = requests.filter(
     (r: any) => r.status === "completed" && r.assigned_at && r.created_at
@@ -62,7 +63,16 @@ export const VehicleRequestKPI = ({ requests }: KPIProps) => {
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <Card>
+        <CardContent className="p-3 flex items-center gap-3">
+          <FileText className="w-5 h-5 text-violet-500" />
+          <div>
+            <p className="text-xs text-muted-foreground">{t('kpi.totalRequests', 'Total Requests')}</p>
+            <p className="text-lg font-bold">{totalRequests}</p>
+          </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardContent className="p-3 flex items-center gap-3">
           <Clock className="w-5 h-5 text-primary" />

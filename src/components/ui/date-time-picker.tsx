@@ -56,6 +56,15 @@ export function DateTimePicker({
   const tomorrow = addDays(today, 1);
   const inAWeek = addDays(today, 7);
 
+  // Normalize minDate to start-of-day so "today" is selectable even when
+  // callers pass `new Date()` (which carries the current time-of-day).
+  const normalizedMinDate = React.useMemo(() => {
+    if (!minDate) return undefined;
+    const m = new Date(minDate);
+    m.setHours(0, 0, 0, 0);
+    return m;
+  }, [minDate]);
+
   const quickPicks = [
     { label: "Today", value: today, hint: format(today, "EEE") },
     { label: "Tomorrow", value: tomorrow, hint: format(tomorrow, "EEE") },
@@ -92,7 +101,7 @@ export function DateTimePicker({
             <div className="border-b border-border bg-muted/30 p-2 flex items-center gap-1.5 flex-wrap">
               {quickPicks.map((q) => {
                 const isSel = date && isSameDay(date, q.value);
-                const blocked = minDate && q.value < minDate;
+                const blocked = normalizedMinDate && q.value < normalizedMinDate;
                 return (
                   <Button
                     key={q.label}
@@ -124,7 +133,7 @@ export function DateTimePicker({
               mode="single"
               selected={date}
               onSelect={(d) => { onDateChange(d); if (d) setOpen(false); }}
-              disabled={minDate ? (d) => d < minDate : undefined}
+              disabled={normalizedMinDate ? (d) => d < normalizedMinDate : undefined}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
             />
