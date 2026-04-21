@@ -364,6 +364,39 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         <div className="text-sm"><span className="text-muted-foreground">Purpose:</span> {request.purpose}</div>
       )}
 
+      {/* Resource-aware downgrade suggestion — appears when the requester
+          chose a more expensive class than the system recommended. */}
+      {request.recommended_vehicle_type &&
+        request.vehicle_type &&
+        request.recommended_vehicle_type !== request.vehicle_type && (() => {
+          const { getVehicleClassProfile, isUpgradeOverRecommendation, COST_BAND_LABELS } =
+            require("@/lib/vehicle-requests/vehicleClassRecommendation");
+          const isUp = isUpgradeOverRecommendation(request.vehicle_type, request.recommended_vehicle_type);
+          if (!isUp) return null;
+          const rec = getVehicleClassProfile(request.recommended_vehicle_type);
+          const chosen = getVehicleClassProfile(request.vehicle_type);
+          return (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 space-y-2 text-sm">
+              <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-400">
+                💡 Cost-saving suggestion
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Requester picked <span className="font-medium text-foreground">{chosen?.label || request.vehicle_type}</span>{" "}
+                ({chosen ? COST_BAND_LABELS[chosen.costBand] : "—"}) but{" "}
+                <span className="font-medium text-foreground">{rec?.label || request.recommended_vehicle_type}</span>{" "}
+                ({rec ? COST_BAND_LABELS[rec.costBand] : "—"}) would meet their stated need
+                ({request.passengers || 1} passengers, {request.cargo_load || "no"} cargo).
+              </p>
+              {request.vehicle_type_justification && (
+                <div className="text-xs bg-background/60 border border-border/50 rounded-md p-2">
+                  <span className="text-muted-foreground">Requester's justification:</span>{" "}
+                  <span className="text-foreground">{request.vehicle_type_justification}</span>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
       {/* Multi-vehicle: per-vehicle assignment list with own check-in/out */}
       <AssignedFleetList
         request={request}
