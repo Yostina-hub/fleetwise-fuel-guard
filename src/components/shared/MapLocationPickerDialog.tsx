@@ -61,7 +61,7 @@ export function MapLocationPickerDialog({
         console.warn("[MapPicker] reverseGeocode: no session");
         return null;
       }
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-search-geocode?lat=${rLat}&lon=${rLng}&reverse=1`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-reverse-geocode?lat=${rLat.toFixed(6)}&lon=${rLng.toFixed(6)}`;
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
