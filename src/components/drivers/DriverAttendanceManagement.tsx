@@ -48,19 +48,28 @@ interface LeaveRequest {
   created_at: string;
 }
 
+const ATT_PREFS_KEY = "driver.attendance.prefs.v1";
+
 export const DriverAttendanceManagement = ({ driverId, driverName, employeeId, employees = [] }: DriverAttendanceManagementProps) => {
   const { organizationId } = useOrganization();
   const { toast } = useToast();
+  const initialPrefs = (() => {
+    try { return JSON.parse(localStorage.getItem(ATT_PREFS_KEY) || "{}"); } catch { return {}; }
+  })();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showClockDialog, setShowClockDialog] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState<string>(initialPrefs.search ?? "");
+  const [statusFilter, setStatusFilter] = useState<string>(initialPrefs.statusFilter ?? "all");
   const [clockForm, setClockForm] = useState({ date: format(new Date(), "yyyy-MM-dd"), check_in: "08:00", check_out: "17:00", shift_type: "morning", notes: "" });
   const [leaveForm, setLeaveForm] = useState({ leave_type: "annual", start_date: "", end_date: "", reason: "" });
+
+  useEffect(() => {
+    try { localStorage.setItem(ATT_PREFS_KEY, JSON.stringify({ search, statusFilter })); } catch { /* ignore */ }
+  }, [search, statusFilter]);
 
   const isAllMode = !employeeId && !driverId;
 
@@ -302,7 +311,68 @@ export const DriverAttendanceManagement = ({ driverId, driverName, employeeId, e
             </div>
           </CardContent>
         </Card>
-      ) : (
+      ) : null}
+
+      {/* Per-driver Daily Timeline (single-employee drilldown) */}
+      {!isAllMode && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" />
+              Daily Timeline — {driverName || "Selected employee"}
+              <Badge variant="outline" className="text-[10px] ml-auto capitalize">
+                {statusFilter === "all" ? "All statuses" : statusFilter}
+              </Badge>
+            </CardTitle>
+            <div className="flex flex-wrap items-center gap-1 pt-2">
+              {["all", "present", "late", "absent", "leave", "half_day"].map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium capitalize transition-colors ${
+                    statusFilter === s
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/70"
+                  }`}
+                >
+                  {s.replace("_", " ")}
+                </button>
+              ))}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const rows = attendance
+                .filter(a => statusFilter === "all" || a.status === statusFilter)
+                .sort((a, b) => b.date.localeCompare(a.date));
+              if (rows.length === 0) {
+                return <p className="text-xs text-muted-foreground text-center py-6">No attendance records for this filter</p>;
+              }
+              return (
+                <div className="space-y-1 max-h-[360px] overflow-y-auto">
+                  <div className="grid grid-cols-[100px_70px_70px_60px_60px_1fr_90px] gap-2 text-[10px] font-medium text-muted-foreground px-2 pb-1 border-b">
+                    <span>Date</span><span>In</span><span>Out</span><span>Hours</span><span>OT</span><span>Notes</span><span className="text-right">Status</span>
+                  </div>
+                  {rows.map(a => (
+                    <div key={a.id} className="grid grid-cols-[100px_70px_70px_60px_60px_1fr_90px] gap-2 items-center text-xs px-2 py-1.5 rounded hover:bg-muted/40">
+                      <span className="font-medium">{format(new Date(a.date), "EEE, MMM d")}</span>
+                      <span className="text-muted-foreground">{a.check_in_time ? format(new Date(a.check_in_time), "HH:mm") : "—"}</span>
+                      <span className="text-muted-foreground">{a.check_out_time ? format(new Date(a.check_out_time), "HH:mm") : "—"}</span>
+                      <span>{a.total_hours?.toFixed(1) || "0"}h</span>
+                      <span className={a.overtime_hours > 0 ? "text-warning" : "text-muted-foreground"}>{a.overtime_hours?.toFixed(1) || "0"}h</span>
+                      <span className="text-[11px] text-muted-foreground truncate">
+                        {a.notes || (a.source === "auto_trip" ? "Auto-logged from trip" : "—")}
+                      </span>
+                      <Badge variant="outline" className={`justify-self-end text-[9px] capitalize ${statusColor(a.status)}`}>{a.status.replace("_", " ")}</Badge>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
+      {isAllMode && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -11,8 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Search, Clock, AlertTriangle, CheckCircle, Timer, ArrowUpRight } from "lucide-react";
+import { Plus, Search, Timer, GripVertical, ArrowUpDown } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+
+type SortMode = "manual" | "priority" | "sla" | "created" | "title";
+const SORT_LABELS: Record<SortMode, string> = {
+  manual:   "Manual order",
+  priority: "Priority (P1→P4)",
+  sla:      "SLA deadline",
+  created:  "Newest first",
+  title:    "Title (A→Z)",
+};
+const PRIORITY_RANK: Record<string, number> = { P1: 1, P2: 2, P3: 3, P4: 4 };
+const MT_ORDER_KEY = "maintenance.tickets.order.v1";
 
 const STATUSES = ["open", "triaged", "assigned", "in_progress", "pending_parts", "resolved", "closed"];
 const PRIORITIES = ["P1", "P2", "P3", "P4"];
@@ -56,12 +67,23 @@ const MaintenanceTicketsTab = () => {
   const [filterPriority, setFilterPriority] = useState<string>(initial.filterPriority ?? "all");
   const [createOpen, setCreateOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">(initial.viewMode ?? "kanban");
+  const [sortMode, setSortMode] = useState<SortMode>(initial.sortMode ?? "manual");
+
+  // Manual ordering: per-column array of ticket IDs. Cards not present fall to the end.
+  const [manualOrder, setManualOrder] = useState<Record<string, string[]>>(() => {
+    try { return JSON.parse(localStorage.getItem(MT_ORDER_KEY) || "{}"); } catch { return {}; }
+  });
+  const [draggingId, setDraggingId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
-      localStorage.setItem(MT_PREFS_KEY, JSON.stringify({ searchQuery, filterStatus, filterPriority, viewMode }));
+      localStorage.setItem(MT_PREFS_KEY, JSON.stringify({ searchQuery, filterStatus, filterPriority, viewMode, sortMode }));
     } catch { /* ignore */ }
-  }, [searchQuery, filterStatus, filterPriority, viewMode]);
+  }, [searchQuery, filterStatus, filterPriority, viewMode, sortMode]);
+
+  useEffect(() => {
+    try { localStorage.setItem(MT_ORDER_KEY, JSON.stringify(manualOrder)); } catch { /* ignore */ }
+  }, [manualOrder]);
 
   const [form, setForm] = useState({
     title: "", description: "", priority: "P3", category: "general", reported_by: "",
@@ -140,30 +162,134 @@ const MaintenanceTicketsTab = () => {
   const breachedCount = tickets.filter((t: any) => t.sla_resolution_breached).length;
   const avgResolution = tickets.filter((t: any) => t.resolution_time_minutes).reduce((sum: number, t: any) => sum + t.resolution_time_minutes, 0) / (tickets.filter((t: any) => t.resolution_time_minutes).length || 1);
 
+  // Sort tickets within a column based on current sort mode (manual uses persisted order).
+  const sortColumn = (status: string, items: any[]): any[] => {
+    if (sortMode === "manual") {
+      const order = manualOrder[status] || [];
+      const indexOf = (id: string) => {
+        const i = order.indexOf(id);
+        return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+      };
+      return [...items].sort((a, b) => indexOf(a.id) - indexOf(b.id));
+    }
+    if (sortMode === "priority") {
+      return [...items].sort((a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9));
+    }
+    if (sortMode === "sla") {
+      return [...items].sort((a, b) => {
+        const ad = a.sla_resolution_deadline ? new Date(a.sla_resolution_deadline).getTime() : Number.MAX_SAFE_INTEGER;
+        const bd = b.sla_resolution_deadline ? new Date(b.sla_resolution_deadline).getTime() : Number.MAX_SAFE_INTEGER;
+        return ad - bd;
+      });
+    }
+    if (sortMode === "title") {
+      return [...items].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+    }
+    return [...items].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  };
+
+  const handleDragStart = (e: React.DragEvent, ticketId: string) => {
+    setDraggingId(ticketId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", ticketId);
+  };
+  const handleDragEnd = () => setDraggingId(null);
+
+  const reorderInColumn = (status: string, sourceId: string, targetId: string | null, columnIds: string[]) => {
+    setSortMode("manual");
+    setManualOrder(prev => {
+      const base = (prev[status] && prev[status].length ? prev[status] : columnIds).filter(id => id !== sourceId);
+      const insertAt = targetId ? base.indexOf(targetId) : base.length;
+      const next = [...base];
+      next.splice(insertAt === -1 ? next.length : insertAt, 0, sourceId);
+      columnIds.forEach(id => { if (!next.includes(id)) next.push(id); });
+      return { ...prev, [status]: next };
+    });
+  };
+
+  const moveAcrossColumns = (sourceId: string, fromStatus: string, toStatus: string, targetId: string | null, toColumnIds: string[]) => {
+    if (fromStatus === toStatus) return;
+    updateStatusMutation.mutate({ id: sourceId, status: toStatus });
+    setSortMode("manual");
+    setManualOrder(prev => {
+      const fromList = (prev[fromStatus] || []).filter(id => id !== sourceId);
+      const baseTo = (prev[toStatus] && prev[toStatus].length ? prev[toStatus] : toColumnIds).filter(id => id !== sourceId);
+      const insertAt = targetId ? baseTo.indexOf(targetId) : baseTo.length;
+      const toList = [...baseTo];
+      toList.splice(insertAt === -1 ? toList.length : insertAt, 0, sourceId);
+      toColumnIds.forEach(id => { if (id !== sourceId && !toList.includes(id)) toList.push(id); });
+      return { ...prev, [fromStatus]: fromList, [toStatus]: toList };
+    });
+  };
+
   const renderKanban = () => (
     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 overflow-x-auto">
       {STATUSES.map(status => {
-        const cols = filtered.filter((t: any) => t.status === status);
+        const rawCols = filtered.filter((t: any) => t.status === status);
+        const cols = sortColumn(status, rawCols);
+        const columnIds = cols.map((t: any) => t.id);
         return (
-          <div key={status} className="min-w-[200px]">
+          <div
+            key={status}
+            className="min-w-[200px]"
+            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+            onDrop={(e) => {
+              e.preventDefault();
+              const sourceId = e.dataTransfer.getData("text/plain");
+              if (!sourceId) return;
+              const sourceTicket = tickets.find((t: any) => t.id === sourceId);
+              if (!sourceTicket) { setDraggingId(null); return; }
+              if (sourceTicket.status === status) {
+                reorderInColumn(status, sourceId, null, columnIds);
+              } else {
+                moveAcrossColumns(sourceId, sourceTicket.status, status, null, columnIds);
+              }
+              setDraggingId(null);
+            }}
+          >
             <div className="flex items-center gap-2 mb-3">
               <Badge variant="outline" className={statusColors[status]}>{status.replace("_", " ")}</Badge>
               <span className="text-xs text-muted-foreground">({cols.length})</span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 min-h-[60px]">
               {cols.map((ticket: any) => {
                 const overdue =
                   ticket.sla_resolution_deadline &&
                   new Date(ticket.sla_resolution_deadline) < new Date() &&
                   !["resolved", "closed"].includes(ticket.status);
+                const isDragging = draggingId === ticket.id;
                 return (
-                <Card key={ticket.id} className={`glass-strong cursor-pointer hover:border-primary/30 transition-colors ${
-                  overdue ? "border-destructive/40 bg-destructive/5" : ""
-                }`}>
+                <Card
+                  key={ticket.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, ticket.id)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const sourceId = e.dataTransfer.getData("text/plain");
+                    if (!sourceId || sourceId === ticket.id) { setDraggingId(null); return; }
+                    const sourceTicket = tickets.find((t: any) => t.id === sourceId);
+                    if (!sourceTicket) return;
+                    if (sourceTicket.status === status) {
+                      reorderInColumn(status, sourceId, ticket.id, columnIds);
+                    } else {
+                      moveAcrossColumns(sourceId, sourceTicket.status, status, ticket.id, columnIds);
+                    }
+                    setDraggingId(null);
+                  }}
+                  className={`glass-strong cursor-grab active:cursor-grabbing hover:border-primary/30 transition-all ${
+                    overdue ? "border-destructive/40 bg-destructive/5" : ""
+                  } ${isDragging ? "opacity-40 scale-[0.98]" : ""}`}
+                >
                   <CardContent className="p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono text-muted-foreground">{ticket.ticket_number}</span>
-                      <Badge variant="outline" className={`text-[10px] ${priorityColors[ticket.priority]}`}>{ticket.priority}</Badge>
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <GripVertical className="w-3 h-3 text-muted-foreground/60 shrink-0" aria-hidden="true" />
+                        <span className="text-xs font-mono text-muted-foreground truncate">{ticket.ticket_number}</span>
+                      </div>
+                      <Badge variant="outline" className={`text-[10px] shrink-0 ${priorityColors[ticket.priority]}`}>{ticket.priority}</Badge>
                     </div>
                     <p className="text-sm font-medium line-clamp-2">{ticket.title}</p>
                     {ticket.sla_resolution_deadline && (
@@ -175,7 +301,6 @@ const MaintenanceTicketsTab = () => {
                         </span>
                       </div>
                     )}
-                    {/* Status transition */}
                     {status !== "closed" && (
                       <Select onValueChange={(val) => updateStatusMutation.mutate({ id: ticket.id, status: val })}>
                         <SelectTrigger className="h-7 text-[10px]"><SelectValue placeholder="Move →" /></SelectTrigger>
@@ -239,6 +364,30 @@ const MaintenanceTicketsTab = () => {
             {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
           </SelectContent>
         </Select>
+        {viewMode === "kanban" && (
+          <>
+            <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+              <SelectTrigger className="w-[170px]">
+                <ArrowUpDown className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(SORT_LABELS) as SortMode[]).map(s => (
+                  <SelectItem key={s} value={s}>{SORT_LABELS[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {sortMode === "manual" && Object.keys(manualOrder).length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setManualOrder({}); toast.success("Manual order cleared"); }}
+              >
+                Reset order
+              </Button>
+            )}
+          </>
+        )}
         <Button variant={viewMode === "kanban" ? "default" : "outline"} size="sm" onClick={() => setViewMode("kanban")}>Kanban</Button>
         <Button variant={viewMode === "list" ? "default" : "outline"} size="sm" onClick={() => setViewMode("list")}>List</Button>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>

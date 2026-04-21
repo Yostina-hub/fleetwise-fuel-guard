@@ -255,37 +255,89 @@ export const HRFinanceDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Attendance This Month */}
-        <Card>
+        <Card
+          role="button"
+          tabIndex={0}
+          onClick={() => window.dispatchEvent(new CustomEvent("hr.navigate", { detail: { tab: "attendance" } }))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              window.dispatchEvent(new CustomEvent("hr.navigate", { detail: { tab: "attendance" } }));
+            }
+          }}
+          className="cursor-pointer hover:border-primary/40 hover:bg-muted/20 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
+          aria-label="Open attendance details"
+        >
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-primary" />
               Attendance — {format(new Date(), "MMMM yyyy")}
+              <Badge variant="outline" className="text-[9px] ml-auto">Click to drill down →</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
-                <p className="text-2xl font-bold text-emerald-400">{totalPresent}</p>
+                <p className="text-2xl font-bold text-success">{totalPresent}</p>
                 <p className="text-[10px] text-muted-foreground">Present Days</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-amber-400">{totalLate}</p>
+                <p className="text-2xl font-bold text-warning">{totalLate}</p>
                 <p className="text-[10px] text-muted-foreground">Late</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-red-400">{totalAbsent}</p>
+                <p className="text-2xl font-bold text-destructive">{totalAbsent}</p>
                 <p className="text-[10px] text-muted-foreground">Absent</p>
               </div>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
               <span>Total Hours: <strong className="text-foreground">{totalHours.toFixed(0)}h</strong></span>
               <span>Overtime: <strong className="text-foreground">{totalOvertime.toFixed(0)}h</strong></span>
-              <span>Attendance Rate: <strong className="text-foreground">
+              <span>Rate: <strong className="text-foreground">
                 {(totalPresent + totalLate + totalAbsent) > 0
                   ? `${((totalPresent / (totalPresent + totalLate + totalAbsent)) * 100).toFixed(0)}%`
                   : "—"}
               </strong></span>
             </div>
+            {/* Top attended employees - per-driver drilldown */}
+            {(() => {
+              const byEmp: Record<string, { present: number; late: number; absent: number; hours: number }> = {};
+              attendance.forEach(a => {
+                const id = a.employee_id || a.driver_id;
+                if (!byEmp[id]) byEmp[id] = { present: 0, late: 0, absent: 0, hours: 0 };
+                if (a.status === "present") byEmp[id].present++;
+                else if (a.status === "late") byEmp[id].late++;
+                else if (a.status === "absent") byEmp[id].absent++;
+                byEmp[id].hours += a.total_hours || 0;
+              });
+              const top = Object.entries(byEmp)
+                .sort((a, b) => (b[1].present + b[1].late) - (a[1].present + a[1].late))
+                .slice(0, 5);
+              if (top.length === 0) return null;
+              return (
+                <div className="border-t pt-2 space-y-1">
+                  <p className="text-[10px] font-medium text-muted-foreground">Top by attended days — click for daily timeline</p>
+                  {top.map(([empId, s]) => (
+                    <button
+                      key={empId}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.dispatchEvent(new CustomEvent("hr.navigate", {
+                          detail: { tab: "attendance", employeeId: empId },
+                        }));
+                      }}
+                      className="w-full flex items-center justify-between gap-2 px-2 py-1 rounded text-xs hover:bg-muted/50 transition-colors text-left"
+                    >
+                      <span className="font-medium truncate flex-1">{getEmployeeName(empId)}</span>
+                      <span className="text-success text-[10px]">{s.present}P</span>
+                      <span className="text-warning text-[10px]">{s.late}L</span>
+                      <span className="text-destructive text-[10px]">{s.absent}A</span>
+                      <span className="text-muted-foreground text-[10px] w-12 text-right">{s.hours.toFixed(0)}h</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
 
