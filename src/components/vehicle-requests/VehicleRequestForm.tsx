@@ -1121,19 +1121,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => { update("end_date", d); handleBlur("end_date", d, form as any); }} required={isProject} minDate={form.start_date} hideTime />
                   <FieldError field="end_date" />
                 </div>
-                {isProject && (
-                  <div>
-                    <Label className="text-primary font-medium">Project Number <span className="text-destructive">*</span></Label>
+                {visibility.showProjectNumber && (
+                  <VRField
+                    id="vr-project-number"
+                    label="Project Number"
+                    required
+                    error={getError("project_number")}
+                    tooltip="Project code this trip is charged to (e.g. PRJ-2026-001). Letters, digits and dashes."
+                  >
                     <Input
                       value={form.project_number}
                       onChange={e => update("project_number", e.target.value)}
                       onBlur={e => handleBlur("project_number", e.target.value, form as any)}
                       placeholder="e.g. PRJ-2026-001"
                       className="h-10"
-                      aria-invalid={!!getError("project_number")}
                     />
-                    <FieldError field="project_number" />
-                  </div>
+                  </VRField>
                 )}
               </div>
             )}
