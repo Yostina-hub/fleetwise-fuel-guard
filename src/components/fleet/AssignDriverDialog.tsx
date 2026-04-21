@@ -157,22 +157,45 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
                 <SelectItem value="none">
                   <span className="text-muted-foreground">No driver assigned</span>
                 </SelectItem>
-                {activeDrivers.map((driver) => (
-                  <SelectItem key={driver.id} value={driver.id}>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="w-6 h-6">
-                        <AvatarFallback className="text-xs">
-                          {driver.first_name[0]}{driver.last_name[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>{driver.first_name} {driver.last_name}</span>
-                      <span className="text-muted-foreground text-xs">- {driver.license_number}</span>
-                    </div>
-                  </SelectItem>
-                ))}
+                {activeDrivers.map((driver) => {
+                  const isVerified = (driver as any).verification_status === 'verified';
+                  return (
+                    <SelectItem key={driver.id} value={driver.id}>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="w-6 h-6">
+                          <AvatarFallback className="text-xs">
+                            {driver.first_name[0]}{driver.last_name[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{driver.first_name} {driver.last_name}</span>
+                        <span className="text-muted-foreground text-xs">- {driver.license_number}</span>
+                        {isVerified ? (
+                          <Badge variant="outline" className="ml-auto gap-1 border-emerald-500/40 text-emerald-600 text-[10px] py-0">
+                            <ShieldCheck className="w-3 h-3" /> Verified
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="ml-auto gap-1 border-amber-500/40 text-amber-600 text-[10px] py-0">
+                            <ShieldAlert className="w-3 h-3" /> Unverified
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
+
+          {/* Hard-block: warn when an unverified driver is selected */}
+          {!isUnassigning && selectedDriver && !selectedIsVerified && (
+            <Alert variant="destructive" className="py-2">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                <strong>{selectedDriver.first_name} {selectedDriver.last_name}</strong> has not been verified.
+                Verify identity and license in the driver profile before assigning to a vehicle.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {activeDrivers.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-2">
@@ -185,12 +208,12 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={assignMutation.isPending}
+          <Button
+            onClick={handleSubmit}
+            disabled={assignMutation.isPending || (!isUnassigning && !!selectedDriver && !selectedIsVerified)}
           >
             {assignMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Assign Driver
+            {isUnassigning ? "Unassign Driver" : "Assign Driver"}
           </Button>
         </DialogFooter>
       </DialogContent>
