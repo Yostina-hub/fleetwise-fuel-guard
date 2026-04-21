@@ -573,4 +573,15 @@ const LayoutInner = ({ children }: LayoutProps) => {
   );
 };
 
+/**
+ * Public Layout wrapper. If we're already inside a persistent <LayoutShell>,
+ * render children directly so we don't double-wrap the chrome (sidebar +
+ * header) and unmount the sidebar on every route navigation.
+ */
+const Layout = ({ children }: LayoutProps) => {
+  const alreadyInsideShell = useContext(LayoutNestedContext);
+  if (alreadyInsideShell) return <>{children}</>;
+  return <LayoutInner>{children}</LayoutInner>;
+};
+
 export default Layout;
