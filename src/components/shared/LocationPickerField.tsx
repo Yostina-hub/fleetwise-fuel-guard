@@ -144,22 +144,22 @@ export function LocationPickerField({
   const isCustom = !isGeofenceMatch;
 
   return (
-    <div>
-      <Label className="flex items-center gap-1">
+    <div className="space-y-1.5">
+      <Label className="flex items-center gap-1 text-xs">
         <MapPin className={`h-3.5 w-3.5 ${iconColor}`} />
         {label} {required && "*"}
       </Label>
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         {isCustom ? (
           <Input
-            value={value}
+            value={cleanValue}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="flex-1"
+            className="flex-1 h-10"
           />
         ) : (
           <Select
-            value={value}
+            value={cleanValue}
             onValueChange={(v) => {
               if (v === "__custom__") {
                 onChange("");
@@ -172,8 +172,10 @@ export function LocationPickerField({
               }
             }}
           >
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Select a saved location" />
+            <SelectTrigger className="flex-1 h-10 min-w-0">
+              <SelectValue placeholder="Select a saved location">
+                <span className="block truncate text-left">{cleanValue}</span>
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {geofences.map((g) => (
@@ -192,11 +194,16 @@ export function LocationPickerField({
         )}
         {mapButton}
       </div>
-      {isCustom && geofences && geofences.length > 0 && (
+      {isRawCoords && (
+        <p className="text-[11px] text-amber-600 dark:text-amber-500">
+          ⚠️ Old coordinates detected — please re-pick a place name from the map.
+        </p>
+      )}
+      {isCustom && geofences && geofences.length > 0 && !isRawCoords && (
         <button
           type="button"
           onClick={() => onChange("")}
-          className="text-[11px] text-muted-foreground hover:text-foreground mt-1 underline-offset-2 hover:underline"
+          className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
         >
           ← Use a saved location instead
         </button>
