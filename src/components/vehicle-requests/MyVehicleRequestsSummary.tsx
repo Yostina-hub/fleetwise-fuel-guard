@@ -30,11 +30,17 @@ import { cn } from "@/lib/utils";
 
 type Variant = "full" | "compact";
 
+export type SummaryStatusKey = "all" | "pending" | "approved" | "assigned" | "completed" | "rejected";
+
 interface Props {
   variant?: Variant;
   /** Limit how many recent rows to display in the list. Defaults: full=5, compact=3 */
   limit?: number;
   className?: string;
+  /** When provided, summary tiles become clickable filters (full variant only). */
+  onTileClick?: (status: SummaryStatusKey) => void;
+  /** Currently active status filter — used to highlight the matching tile. */
+  activeStatus?: SummaryStatusKey;
 }
 
 const STATUS_META: Record<
@@ -55,6 +61,8 @@ export const MyVehicleRequestsSummary = ({
   variant = "full",
   limit,
   className,
+  onTileClick,
+  activeStatus,
 }: Props) => {
   const { user } = useAuthContext();
   const { organizationId } = useOrganization();
@@ -198,13 +206,14 @@ export const MyVehicleRequestsSummary = ({
           </div>
         ) : (
           <>
-            {/* Stat tiles */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              <SummaryTile label="Total"      value={stats.total}     tone="from-slate-500/15 to-transparent text-slate-700 dark:text-slate-300" icon={ClipboardList} />
-              <SummaryTile label="Pending"    value={stats.pending}   tone="from-amber-500/15 to-transparent text-amber-700 dark:text-amber-400"   icon={Clock} />
-              <SummaryTile label="Approved"   value={stats.approved}  tone="from-emerald-500/15 to-transparent text-emerald-700 dark:text-emerald-400" icon={CheckCircle2} />
-              <SummaryTile label="Assigned"   value={stats.assigned}  tone="from-blue-500/15 to-transparent text-blue-700 dark:text-blue-400"      icon={Truck} />
-              <SummaryTile label="Completed"  value={stats.completed} tone="from-violet-500/15 to-transparent text-violet-700 dark:text-violet-400" icon={CheckCircle2} />
+            {/* Stat tiles — clickable filters when onTileClick is provided */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              <SummaryTile statusKey="all"       label="Total"      value={stats.total}     tone="from-slate-500/15 to-transparent text-slate-700 dark:text-slate-300"        icon={ClipboardList} onClick={onTileClick} active={activeStatus === "all"} />
+              <SummaryTile statusKey="pending"   label="Pending"    value={stats.pending}   tone="from-amber-500/15 to-transparent text-amber-700 dark:text-amber-400"        icon={Clock}         onClick={onTileClick} active={activeStatus === "pending"} />
+              <SummaryTile statusKey="approved"  label="Approved"   value={stats.approved}  tone="from-emerald-500/15 to-transparent text-emerald-700 dark:text-emerald-400"  icon={CheckCircle2}  onClick={onTileClick} active={activeStatus === "approved"} />
+              <SummaryTile statusKey="assigned"  label="Assigned"   value={stats.assigned}  tone="from-blue-500/15 to-transparent text-blue-700 dark:text-blue-400"           icon={Truck}         onClick={onTileClick} active={activeStatus === "assigned"} />
+              <SummaryTile statusKey="completed" label="Completed"  value={stats.completed} tone="from-violet-500/15 to-transparent text-violet-700 dark:text-violet-400"     icon={CheckCircle2}  onClick={onTileClick} active={activeStatus === "completed"} />
+              <SummaryTile statusKey="rejected"  label="Rejected"   value={stats.rejected}  tone="from-rose-500/15 to-transparent text-rose-700 dark:text-rose-400"           icon={XCircle}       onClick={onTileClick} active={activeStatus === "rejected"} />
             </div>
 
             {/* Recent list */}
@@ -269,15 +278,40 @@ export const MyVehicleRequestsSummary = ({
 };
 
 const SummaryTile = ({
-  label, value, tone, icon: Icon,
-}: { label: string; value: number; tone: string; icon: any }) => (
-  <div className={cn("relative overflow-hidden rounded-lg border border-border/50 bg-gradient-to-br p-2.5", tone)}>
-    <div className="flex items-center justify-between">
-      <Icon className="h-3.5 w-3.5 opacity-70" />
-      <span className="text-lg font-black leading-none">{value}</span>
-    </div>
-    <div className="text-[10px] font-semibold uppercase tracking-wider opacity-80 mt-1">{label}</div>
-  </div>
-);
+  statusKey, label, value, tone, icon: Icon, onClick, active,
+}: {
+  statusKey: SummaryStatusKey;
+  label: string;
+  value: number;
+  tone: string;
+  icon: any;
+  onClick?: (status: SummaryStatusKey) => void;
+  active?: boolean;
+}) => {
+  const interactive = typeof onClick === "function";
+  const Comp: any = interactive ? "button" : "div";
+  return (
+    <Comp
+      type={interactive ? "button" : undefined}
+      onClick={interactive ? () => onClick!(statusKey) : undefined}
+      aria-pressed={interactive ? !!active : undefined}
+      className={cn(
+        "group relative overflow-hidden rounded-lg border bg-gradient-to-br p-2.5 text-left transition-all",
+        tone,
+        interactive && "cursor-pointer hover:shadow-md hover:-translate-y-0.5 hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        active ? "border-foreground/50 ring-2 ring-foreground/20 shadow-sm" : "border-border/50",
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <Icon className="h-3.5 w-3.5 opacity-70" />
+        <span className="text-lg font-black leading-none">{value}</span>
+      </div>
+      <div className="text-[10px] font-semibold uppercase tracking-wider opacity-80 mt-1">{label}</div>
+      {active && (
+        <span className="absolute inset-x-0 bottom-0 h-0.5 bg-foreground/60" />
+      )}
+    </Comp>
+  );
+};
 
 export default MyVehicleRequestsSummary;
