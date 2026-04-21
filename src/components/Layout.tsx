@@ -304,6 +304,14 @@ const getDeveloperItems = () => [
 ];
 
 const Layout = ({ children }: LayoutProps) => {
+  // If we're already inside a persistent <LayoutShell>, render children
+  // directly so we don't double-wrap the chrome and unmount the sidebar
+  // on every navigation.
+  const alreadyInsideShell = useContext(LayoutNestedContext);
+  if (alreadyInsideShell) {
+    return <>{children}</>;
+  }
+
   const location = useLocation();
   const { signOut, user, hasRole: authHasRole } = useAuth();
   const { isSuperAdmin: permIsSuperAdmin, hasRole: permHasRole, roles: userRoles } = usePermissions();
