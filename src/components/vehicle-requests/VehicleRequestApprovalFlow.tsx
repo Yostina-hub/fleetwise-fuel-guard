@@ -334,6 +334,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
 
   const requestTypeLabel = {
     daily_operation: "Daily Operation",
+    nighttime_operation: "Nighttime Operation",
     project_operation: "Project Operation",
     field_operation: "Field Operation",
   }[request.request_type] || request.request_type || "General";
