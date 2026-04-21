@@ -1246,7 +1246,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Route className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Route</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <LocationPickerField
                 label="Departure Place"
                 value={form.departure_place}
