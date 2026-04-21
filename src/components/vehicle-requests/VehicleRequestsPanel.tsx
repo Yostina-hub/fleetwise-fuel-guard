@@ -440,9 +440,39 @@ export const VehicleRequestsPanel = () => {
                         </Badge>
                       </td>
                       <td className="py-2 px-3 text-center">
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowDetail(r)}>
-                          <Eye className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex items-center justify-center gap-0.5">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            title="View"
+                            onClick={() => setShowDetail(r)}
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                          {canCancel(r) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-amber-600 hover:text-amber-700"
+                              title="Cancel request"
+                              onClick={() => setConfirmCancel(r)}
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          {canDelete(r) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              title="Delete request"
+                              onClick={() => setConfirmDelete(r)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
