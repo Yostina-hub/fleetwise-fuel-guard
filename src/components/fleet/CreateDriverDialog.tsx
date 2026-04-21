@@ -418,7 +418,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
         <TabsContent value="personal" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<Briefcase className="w-5 h-5 text-primary" />} title="Employment Type">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Driver Type" required error={validation.getError("driver_type")} fieldRef={registerRef("driver_type")}>
+              <Field label="Driver Type" required error={validation.getError("driver_type")} fieldRef={registerRef("driver_type")} tooltip="Determines which fleet rules and pools the driver belongs to. There is no default — please pick the type that best matches the role.">
                 <Select value={formData.driver_type} onValueChange={v => { set("driver_type", v); validation.validateField("driver_type", v); }}>
                   <SelectTrigger className={errClass("driver_type")} onBlur={() => onBlur("driver_type")}><SelectValue placeholder="Select driver type..." /></SelectTrigger>
                   <SelectContent>
@@ -550,7 +550,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                   ariaInvalid={!!validation.getError("license_issue_date")}
                 />
               </Field>
-              <Field label="License Expiry Date" error={validation.getError("license_expiry")} fieldRef={registerRef("license_expiry")}>
+              <Field label="License Expiry Date" error={validation.getError("license_expiry")} fieldRef={registerRef("license_expiry")} tooltip="The license must still be valid (today or later). Expired licenses cannot be registered.">
                 <DatePickerField
                   value={formData.license_expiry}
                   onChange={(v) => { set("license_expiry", v); validation.validateField("license_expiry", v); }}
@@ -646,7 +646,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
 
           <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Telebirr Account (Optional)">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Telebirr Account" error={validation.getError("telebirr_account")} hint="Optional — used for payroll/payouts">
+              <Field label="Telebirr Account" error={validation.getError("telebirr_account")} hint="Optional — used for payroll/payouts" tooltip="Telebirr mobile money account used for payroll and trip allowances. Use 09XXXXXXXX or the 9-digit Telebirr ID.">
                 <Input value={formData.telebirr_account} onChange={e => set("telebirr_account", e.target.value.replace(/[^\d+]/g, "").slice(0, 13))} onBlur={() => onBlur("telebirr_account")} placeholder="09XXXXXXXX" maxLength={13} inputMode="tel" className={errClass("telebirr_account")} />
               </Field>
             </div>
