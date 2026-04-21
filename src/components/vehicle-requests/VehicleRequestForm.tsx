@@ -868,7 +868,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     type: !!form.request_type,
     schedule: isDaily ? !!form.date : !!form.start_date,
     route: !!form.departure_place || !!form.destination,
-    resources: !!form.num_vehicles && !!form.passengers && !!form.vehicle_type && (!isUpgrade || !!form.vehicle_type_justification?.trim()),
+    resources: !!form.num_vehicles && !!form.passengers && !!form.vehicle_type && !!form.cargo_load && (!isUpgrade || !!form.vehicle_type_justification?.trim()),
     details: !!form.purpose && !!form.purpose_category,
   };
 
