@@ -479,7 +479,7 @@ const TripManagement = () => {
       />
 
       <ExportScheduleDialog open={exportOpen} onOpenChange={setExportOpen} />
-      <CreateTripRequestDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <UnifiedVehicleRequestDialog open={createOpen} onOpenChange={setCreateOpen} source="trip_management" />
       <CreateAssignmentDialog open={assignOpen} onOpenChange={setAssignOpen} />
     </Layout>
   );
