@@ -414,9 +414,9 @@ function IdentityPane(props: PaneProps) {
             }
           }}
         >
-          <SelectTrigger className="h-10">
+          <SelectTrigger>
             <SelectValue placeholder="Select category...">
-              {formData.specific_pool && <PoolCategoryChip value={formData.specific_pool} />}
+              {formData.specific_pool && <PoolCategoryChip value={formData.specific_pool} compact />}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
