@@ -23328,6 +23328,8 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           deletion_reason: string | null
+          department_id: string | null
+          department_name: string | null
           departure_lat: number | null
           departure_lng: number | null
           departure_place: string | null
@@ -23415,6 +23417,8 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           deletion_reason?: string | null
+          department_id?: string | null
+          department_name?: string | null
           departure_lat?: number | null
           departure_lng?: number | null
           departure_place?: string | null
@@ -23502,6 +23506,8 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           deletion_reason?: string | null
+          department_id?: string | null
+          department_name?: string | null
           departure_lat?: number | null
           departure_lng?: number | null
           departure_place?: string | null
@@ -23576,6 +23582,13 @@ export type Database = {
             columns: ["assigned_vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_requests_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
             referencedColumns: ["id"]
           },
           {
