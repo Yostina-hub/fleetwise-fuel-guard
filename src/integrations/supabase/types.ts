@@ -23247,6 +23247,60 @@ export type Database = {
           },
         ]
       }
+      vehicle_request_stops: {
+        Row: {
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          name: string
+          notes: string | null
+          organization_id: string
+          sequence: number
+          updated_at: string
+          vehicle_request_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name: string
+          notes?: string | null
+          organization_id: string
+          sequence: number
+          updated_at?: string
+          vehicle_request_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          sequence?: number
+          updated_at?: string
+          vehicle_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_request_stops_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_request_stops_vehicle_request_id_fkey"
+            columns: ["vehicle_request_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_requests: {
         Row: {
           actual_assignment_minutes: number | null
