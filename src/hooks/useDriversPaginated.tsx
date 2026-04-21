@@ -168,7 +168,12 @@ export const useDriversPaginated = (
     return q;
   }, [statusFilter, driverTypeFilter, employmentTypeFilter, assignmentFilter, searchQuery]);
 
-  const loadPage = useCallback(async (page: number) => {
+  // Cache so filter-only changes don't refetch counts/assignments (instant feel)
+  const assignedCacheRef = useRef<{ key: string; set: Set<string> } | null>(null);
+  const statusCountsCacheRef = useRef<{ key: string; counts: StatusCounts } | null>(null);
+  const categoryCountsCacheRef = useRef<{ key: string; counts: CategoryCounts } | null>(null);
+
+  const loadPage = useCallback(async (page: number, opts?: { forceCountsRefresh?: boolean }) => {
     if (!organizationId) {
       setDrivers([]);
       setLoading(false);
@@ -181,13 +186,33 @@ export const useDriversPaginated = (
       setLoading(true);
       setError(null);
 
-      const assignedSet = await fetchAssignedDriverIds();
+      // Counts/assignments only depend on the org — cache them so card clicks are instant.
+      const cacheKey = organizationId;
+      const force = opts?.forceCountsRefresh === true;
+
+      let assignedSet: Set<string>;
+      if (!force && assignedCacheRef.current?.key === cacheKey) {
+        assignedSet = assignedCacheRef.current.set;
+      } else {
+        assignedSet = await fetchAssignedDriverIds();
+        assignedCacheRef.current = { key: cacheKey, set: assignedSet };
+      }
       setAssignedDriverIds(assignedSet);
 
-      const [counts, catCounts] = await Promise.all([
-        fetchStatusCounts(),
-        fetchCategoryCounts(assignedSet),
-      ]);
+      const needCounts = force || statusCountsCacheRef.current?.key !== cacheKey || categoryCountsCacheRef.current?.key !== cacheKey;
+      let counts: StatusCounts;
+      let catCounts: CategoryCounts;
+      if (needCounts) {
+        [counts, catCounts] = await Promise.all([
+          fetchStatusCounts(),
+          fetchCategoryCounts(assignedSet),
+        ]);
+        statusCountsCacheRef.current = { key: cacheKey, counts };
+        categoryCountsCacheRef.current = { key: cacheKey, counts: catCounts };
+      } else {
+        counts = statusCountsCacheRef.current!.counts;
+        catCounts = categoryCountsCacheRef.current!.counts;
+      }
 
       // count query
       let countQ = supabase.from("drivers").select("*", { count: "exact", head: true }).eq("organization_id", organizationId);
