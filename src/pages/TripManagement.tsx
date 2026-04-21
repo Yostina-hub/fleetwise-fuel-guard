@@ -29,7 +29,7 @@ import { CalendarView } from "@/components/scheduling/CalendarView";
 import { TimelineView } from "@/components/scheduling/TimelineView";
 import { UtilizationAnalytics } from "@/components/scheduling/UtilizationAnalytics";
 import { ExportScheduleDialog } from "@/components/scheduling/ExportScheduleDialog";
-import { CreateTripRequestDialog } from "@/components/scheduling/CreateTripRequestDialog";
+import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 import { VehicleRequestsPanel } from "@/components/vehicle-requests/VehicleRequestsPanel";
 import DispatchJobsTab from "@/components/dispatch/DispatchJobsTab";
 import { AnimatePresence, motion } from "framer-motion";
