@@ -137,6 +137,7 @@ const VehicleRequests = () => {
   const [showCrossPool, setShowCrossPool] = useState<any>(null);
   const [showDeallocate, setShowDeallocate] = useState<any>(null);
   const [showDelete, setShowDelete] = useState<any>(null);
+  const [showEdit, setShowEdit] = useState<any>(null);
   const [showMultiAssign, setShowMultiAssign] = useState<any>(null);
   const [showImport, setShowImport] = useState(false);
 
