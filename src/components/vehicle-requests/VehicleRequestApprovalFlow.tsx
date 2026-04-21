@@ -18,6 +18,11 @@ import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
 import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetList";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
 import type { RequestAssignment } from "@/hooks/useRequestAssignments";
+import {
+  getVehicleClassProfile,
+  isUpgradeOverRecommendation,
+  COST_BAND_LABELS,
+} from "@/lib/vehicle-requests/vehicleClassRecommendation";
 
 interface Props {
   request: any;
@@ -370,8 +375,6 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       {request.recommended_vehicle_type &&
         request.vehicle_type &&
         request.recommended_vehicle_type !== request.vehicle_type && (() => {
-          const { getVehicleClassProfile, isUpgradeOverRecommendation, COST_BAND_LABELS } =
-            require("@/lib/vehicle-requests/vehicleClassRecommendation");
           const isUp = isUpgradeOverRecommendation(request.vehicle_type, request.recommended_vehicle_type);
           if (!isUp) return null;
           const rec = getVehicleClassProfile(request.recommended_vehicle_type);
