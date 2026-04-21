@@ -78,7 +78,7 @@ import {
   Radio,
   LocateFixed,
   ShieldAlert,
-  
+  IdCard,
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
@@ -160,9 +160,15 @@ const Vehicles = () => {
   const activityMap = useVehicle24hActivity(allVehicleIds);
   
   
+  // Persisted UI prefs (#29/#30) — defaults: newest first, all statuses
+  const VEH_PREFS_KEY = "vehicles.listPrefs.v1";
+  const persistedPrefs = (() => {
+    try { return JSON.parse(localStorage.getItem(VEH_PREFS_KEY) || "{}"); } catch { return {}; }
+  })();
+
   const [searchInput, setSearchInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [tripStatusFilter, setTripStatusFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>(persistedPrefs.statusFilter ?? "all");
+  const [tripStatusFilter, setTripStatusFilter] = useState<string | null>(persistedPrefs.tripStatusFilter ?? null);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>();
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -170,11 +176,11 @@ const Vehicles = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets');
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
-  const [viewMode, setViewMode] = useState<'table' | 'list'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'list'>(persistedPrefs.viewMode ?? 'table');
   const [showQuickInfo, setShowQuickInfo] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [sortColumn, setSortColumn] = useState<string>("plate");
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortColumn, setSortColumn] = useState<string>(persistedPrefs.sortColumn ?? "newest");
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(persistedPrefs.sortDirection ?? 'desc');
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([
     { key: 'sn', label: '#', visible: true, locked: true },
     { key: 'ignition', label: 'Ignition', visible: true },
@@ -195,6 +201,19 @@ const Vehicles = () => {
   const isColVisible = useCallback((key: string) => columnConfig.find(c => c.key === key)?.visible ?? true, [columnConfig]);
   
   const debouncedSearch = useDebounce(searchInput, 300);
+
+  // Persist user prefs (#29/#30)
+  useEffect(() => {
+    try {
+      localStorage.setItem(VEH_PREFS_KEY, JSON.stringify({
+        statusFilter,
+        tripStatusFilter,
+        viewMode,
+        sortColumn,
+        sortDirection,
+      }));
+    } catch {}
+  }, [statusFilter, tripStatusFilter, viewMode, sortColumn, sortDirection]);
   
   // Mobile view handler
   const handleMobileVehicleSelect = useCallback((vehicleId: string) => {
@@ -257,6 +276,7 @@ const Vehicles = () => {
         isOverspeed: speed > 80,
         todayDistance: calculatedMetrics.todayDistance || 0,
         odometer: vehicleTelemetry?.odometer_km ?? 0,
+        createdAt: v.created_at,
       };
     });
   }, [dbVehicles, telemetry, isVehicleOnline, getMetrics]);
@@ -353,13 +373,19 @@ const Vehicles = () => {
     filtered = [...filtered].sort((a, b) => {
       let aVal: any, bVal: any;
       switch (sortColumn) {
+        case 'newest':
+          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          break;
         case 'plate': aVal = a.plate; bVal = b.plate; break;
         case 'speed': aVal = a.speed; bVal = b.speed; break;
         case 'fuel': aVal = a.fuel; bVal = b.fuel; break;
         case 'status': aVal = a.status; bVal = b.status; break;
         case 'driver': aVal = a.driverName || ''; bVal = b.driverName || ''; break;
         case 'distance': aVal = a.todayDistance; bVal = b.todayDistance; break;
-        default: aVal = a.plate; bVal = b.plate;
+        default:
+          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       }
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
@@ -707,6 +733,7 @@ const Vehicles = () => {
                           isSelected={selectedVehicleId === vehicle.id}
                           onClick={() => handleVehicleRowClick(vehicle)}
                           onDoubleClick={() => handleVehicleClick(vehicle)}
+                          onProfile={() => navigate(`/vehicle-profile?id=${vehicle.id}`)}
                         />
                       ))
                     )}
@@ -729,7 +756,15 @@ const Vehicles = () => {
                             }}
                           />
                         </TableHead>
-                        {isColVisible('sn') && <TableHead className="text-foreground font-semibold w-12">SN</TableHead>}
+                        {isColVisible('sn') && (
+                          <TableHead
+                            className="text-foreground font-semibold w-12 cursor-pointer select-none"
+                            onClick={() => toggleSort('newest')}
+                            title="Sort by date added"
+                          >
+                            <div className="flex items-center gap-1">SN {sortColumn === 'newest' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
                         {isColVisible('ignition') && (
                           <TableHead className="text-foreground font-semibold w-12">
                             <Power className="w-3.5 h-3.5 mx-auto" />
@@ -1012,13 +1047,25 @@ const Vehicles = () => {
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6"
-                                    title="View Details"
+                                    title="Quick Details"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleVehicleClick(vehicle);
                                     }}
                                   >
                                     <Eye className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    title="Open Vehicle Profile"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/vehicle-profile?id=${vehicle.id}`);
+                                    }}
+                                  >
+                                    <IdCard className="w-3.5 h-3.5" />
                                   </Button>
                                   <Button
                                     variant="ghost"
@@ -1039,7 +1086,10 @@ const Vehicles = () => {
                             </ContextMenuTrigger>
                             <ContextMenuContent className="w-52">
                               <ContextMenuItem onClick={() => handleVehicleClick(vehicle)}>
-                                <Eye className="w-4 h-4 mr-2" /> View Details
+                                <Eye className="w-4 h-4 mr-2" /> Quick Details
+                              </ContextMenuItem>
+                              <ContextMenuItem onClick={() => navigate(`/vehicle-profile?id=${vehicle.id}`)}>
+                                <IdCard className="w-4 h-4 mr-2" /> Open Vehicle Profile
                               </ContextMenuItem>
                               <ContextMenuItem onClick={() => navigate(`/map?vehicle=${vehicle.id}&track=true`)}>
                                 <LocateFixed className="w-4 h-4 mr-2" /> Track on Map
