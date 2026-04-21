@@ -56,6 +56,10 @@ export const VehicleRequestsPanel = () => {
   const [showDetail, setShowDetail] = useState<any>(null);
   const [showCheckIn, setShowCheckIn] = useState<any>(null);
   const [showCrossPool, setShowCrossPool] = useState<any>(null);
+  // CRUD: pending confirmation targets. Cancel = soft (status update), Delete = hard.
+  const [confirmCancel, setConfirmCancel] = useState<any>(null);
+  const [confirmDelete, setConfirmDelete] = useState<any>(null);
+  const [actionPending, setActionPending] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
