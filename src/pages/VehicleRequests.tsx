@@ -831,6 +831,7 @@ const VehicleRequests = () => {
                         <SortableTh sortKey="route"          currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Route</SortableTh>
                         <SortableTh sortKey="pool_name"      currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Pool</SortableTh>
                         <SortableTh sortKey="needed_from"    currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Needed From</SortableTh>
+                        <th className="text-left py-3 px-3 font-semibold text-[11px] uppercase tracking-wide text-muted-foreground">Needed Until</th>
                         <SortableTh sortKey="vehicle"        currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Vehicle</SortableTh>
                         <SortableTh sortKey="trip_type"      currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3" align="center">Trip</SortableTh>
                         <th className="text-center py-3 px-3 font-semibold">Check-in</th>
@@ -889,6 +890,9 @@ const VehicleRequests = () => {
                           </td>
                           <td className="py-3 px-3 text-muted-foreground text-xs">
                             {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
+                          </td>
+                          <td className="py-3 px-3 text-muted-foreground text-xs">
+                            {r.needed_until ? format(new Date(r.needed_until), "MMM dd, HH:mm") : "—"}
                           </td>
                           <td className="py-3 px-3 text-xs">
                             {r.assigned_vehicle?.plate_number ? (
