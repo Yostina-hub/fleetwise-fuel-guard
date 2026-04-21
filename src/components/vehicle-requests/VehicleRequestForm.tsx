@@ -1090,7 +1090,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
             )}
             {isDaily ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                 <div className="md:col-span-1">
                   <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }} required minDate={new Date()} hideTime />
                   <FieldError field="date" />
