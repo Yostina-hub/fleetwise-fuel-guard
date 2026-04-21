@@ -865,12 +865,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const body = (
     <>
       {embedded ? (
-        <div className="px-4 sm:px-6 pt-5 pb-4 bg-muted/20">
-          <div className="mx-auto max-w-2xl">{HeaderInner}</div>
+        <div className="px-6 sm:px-8 pt-6 pb-5 border-b border-border bg-card">
+          {HeaderInner}
         </div>
       ) : (
-        <div className="px-4 sm:px-6 pt-6 pb-4 bg-muted/20">
-          <DialogHeader className="mx-auto max-w-2xl">
+        <div className="px-6 sm:px-8 pt-6 pb-5 border-b border-border bg-card sticky top-0 z-10">
+          <DialogHeader>
             <DialogTitle className="sr-only">Vehicle Request</DialogTitle>
             <DialogDescription className="sr-only">
               Vehicle request form — fill in the sections and submit.
@@ -880,7 +880,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         </div>
       )}
 
-      <div className={`${embedded ? "px-4 sm:px-6" : "px-4 sm:px-6"} pt-2 pb-6 space-y-4 bg-muted/20`}>
+      <div className={`${embedded ? "px-1" : "px-6 sm:px-8"} pt-6 pb-2 space-y-5`}>
         {/* Draft restored notice */}
         {restoredAt && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs animate-fade-in">
@@ -992,7 +992,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
         {/* Single-page form — sections render one after another, scroll naturally */}
-        <div className="mx-auto max-w-2xl space-y-4">
+        <div className="space-y-6">
 
           {/* TYPE SECTION */}
           <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
@@ -1000,7 +1000,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Layers className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Operation Type</h3>
             </div>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
               {[
                 { v: "daily_operation", title: "Daily Operation", desc: "Single-day trip with start & end time", icon: Clock },
                 { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip (02:00 – 12:00 window)", icon: Moon },
@@ -1014,23 +1014,21 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     key={v}
                     type="button"
                     onClick={() => update("request_type", v)}
-                    className={`group relative w-full text-left rounded-lg border px-4 py-3 transition-all ${
+                    className={`group relative text-left rounded-xl border p-4 transition-all ${
                       active
                         ? "border-primary/60 bg-primary/[0.04] shadow-sm ring-1 ring-primary/20"
                         : "border-border bg-card hover:border-border hover:bg-muted/30"
                     }`}
                   >
                     <div
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 transition-colors ${
                         active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                       }`}
                     >
                       <Icon className="w-5 h-5" />
                     </div>
-                    <div className="flex items-center gap-3 pr-7">
-                      <div className="font-medium text-base text-foreground">{title}</div>
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1 leading-relaxed pl-12">{desc}</div>
+                    <div className="font-medium text-sm text-foreground">{title}</div>
+                    <div className="text-xs text-muted-foreground mt-1 leading-snug">{desc}</div>
                     {active && (
                       <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-primary" />
                     )}
@@ -1076,7 +1074,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
             )}
             {isDaily ? (
-              <div className="grid grid-cols-1 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 <div className="">
                   <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }} required minDate={new Date()} hideTime />
                   <FieldError field="date" />
@@ -1158,7 +1156,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Route className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Route</h3>
             </div>
-            <div className="grid grid-cols-1 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <LocationPickerField
                 label="Departure Place"
                 value={form.departure_place}
@@ -1305,7 +1303,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Car className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Vehicle &amp; Pool</h3>
             </div>
-            <div className="grid grid-cols-1 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <VRField
                 id="vr-num-vehicles"
                 label={
@@ -1684,7 +1682,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         return embedded ? (
           <div className="pt-4 border-t border-border/60 mt-4">{FooterInner}</div>
         ) : (
-          <DialogFooter className="px-4 sm:px-6 py-4 bg-muted/20 border-t border-border/60 sm:justify-between sticky bottom-0 z-10">
+          <DialogFooter className="px-6 sm:px-8 py-4 mt-6 bg-muted/30 border-t border-border/60 sm:justify-between sticky bottom-0 z-10">
             {FooterInner}
           </DialogFooter>
         );
@@ -1726,7 +1724,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[94vh] overflow-y-auto p-0 gap-0 bg-muted/20">
+      <DialogContent className="max-w-5xl max-h-[94vh] overflow-y-auto p-0 gap-0">
         {isDriverOnly ? blockedBody : body}
       </DialogContent>
     </Dialog>
