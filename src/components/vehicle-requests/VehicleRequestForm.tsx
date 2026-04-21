@@ -92,6 +92,9 @@ const buildInitialForm = () => ({
   departure_lng: null as number | null,
   destination_lat: null as number | null,
   destination_lng: null as number | null,
+  // Optional ordered intermediate stops between Departure and final Destination.
+  // Persisted to `vehicle_request_stops` (sequence-ordered waypoints).
+  stops: [] as Array<{ name: string; lat: number | null; lng: number | null }>,
   num_vehicles: "1",
   passengers: "1",
   vehicle_type: "",
@@ -478,6 +481,26 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
       const { data, error } = await (supabase as any).from("vehicle_requests").insert(payload).select("id").single();
       if (error) throw error;
+
+      // ── Persist ordered intermediate stops (waypoints) ──
+      // Stored in `vehicle_request_stops` with sequence = 1..N. Skip blank rows.
+      const cleanStops = (form.stops || [])
+        .map((s) => ({ ...s, name: (s.name || "").trim() }))
+        .filter((s) => s.name.length > 0);
+      if (cleanStops.length > 0) {
+        const stopRows = cleanStops.map((s, i) => ({
+          vehicle_request_id: data.id,
+          organization_id: organizationId!,
+          sequence: i + 1,
+          name: s.name.slice(0, 200),
+          lat: s.lat,
+          lng: s.lng,
+        }));
+        const { error: stopsErr } = await (supabase as any)
+          .from("vehicle_request_stops")
+          .insert(stopRows);
+        if (stopsErr) console.error("Stops insert error:", stopsErr);
+      }
 
       const { data: routeResult, error: routeErr } = await supabase.rpc("route_vehicle_request_approval", { p_request_id: data.id });
       if (routeErr) console.error("Approval routing error:", routeErr);
@@ -1101,11 +1124,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 iconColor="text-green-500"
               />
               <LocationPickerField
-                label="Destination Place"
+                label="Final Destination"
                 value={form.destination}
                 onChange={v => update("destination", v)}
                 onCoordsChange={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
-                placeholder="Select or type destination"
+                placeholder="Select or type final destination"
                 iconColor="text-red-500"
               />
             </div>
@@ -1125,6 +1148,101 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 ) : <div />}
               </div>
             )}
+
+            {/* ── Ordered waypoints (intermediate stops between Departure and Final Destination) ── */}
+            <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <Label className="text-primary font-medium flex items-center gap-1">
+                    <Route className="w-3.5 h-3.5" /> Intermediate Stops
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Add ordered waypoints between Departure and Final Destination. Driver will visit them in this order.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    update("stops", [...form.stops, { name: "", lat: null, lng: null }] as any)
+                  }
+                  disabled={form.stops.length >= 10}
+                >
+                  + Add Stop
+                </Button>
+              </div>
+              {form.stops.length === 0 && (
+                <p className="text-[11px] text-muted-foreground italic">No intermediate stops. Trip goes directly from Departure to Final Destination.</p>
+              )}
+              {form.stops.map((stop, idx) => (
+                <div key={idx} className="grid grid-cols-[auto_1fr_auto_auto_auto] items-end gap-2 rounded-md border border-border bg-background/60 p-2">
+                  <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                    {idx + 1}
+                  </div>
+                  <LocationPickerField
+                    label={`Stop ${idx + 1}`}
+                    value={stop.name}
+                    onChange={(v) => {
+                      const next = [...form.stops];
+                      next[idx] = { ...next[idx], name: v };
+                      update("stops", next as any);
+                    }}
+                    onCoordsChange={(lat, lng) => {
+                      const next = [...form.stops];
+                      next[idx] = { ...next[idx], lat, lng };
+                      update("stops", next as any);
+                    }}
+                    placeholder={`Select or type stop ${idx + 1}`}
+                    iconColor="text-amber-500"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    title="Move up"
+                    disabled={idx === 0}
+                    onClick={() => {
+                      const next = [...form.stops];
+                      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                      update("stops", next as any);
+                    }}
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 rotate-90" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    title="Move down"
+                    disabled={idx === form.stops.length - 1}
+                    onClick={() => {
+                      const next = [...form.stops];
+                      [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
+                      update("stops", next as any);
+                    }}
+                  >
+                    <ChevronRight className="w-3.5 h-3.5 rotate-90" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    title="Remove stop"
+                    onClick={() => {
+                      const next = form.stops.filter((_, i) => i !== idx);
+                      update("stops", next as any);
+                    }}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
             <div>
               <Label className="text-primary font-medium flex items-center gap-1"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
               <Select value={form.trip_type} onValueChange={v => update("trip_type", v)}>
