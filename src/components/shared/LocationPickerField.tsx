@@ -3,9 +3,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Map } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { MapPin, Map, Loader2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { toast } from "sonner";
 import { MapLocationPickerDialog } from "./MapLocationPickerDialog";
 
 interface LocationPickerFieldProps {
@@ -28,16 +30,19 @@ export function LocationPickerField({
   required = false,
 }: LocationPickerFieldProps) {
   const [showMap, setShowMap] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   const { data: geofences } = useQuery({
-    queryKey: ["geofences-location-picker"],
+    queryKey: ["geofences-location-picker", organizationId],
     queryFn: async () => {
       const { data } = await supabase
         .from("geofences")
         .select("id, name, center_lat, center_lng")
         .eq("is_active", true)
         .order("name")
-        .limit(50);
+        .limit(100);
       return data || [];
     },
     staleTime: 60_000,
@@ -45,9 +50,45 @@ export function LocationPickerField({
 
   const isGeofenceMatch = geofences?.some((g) => g.name === value);
 
-  const handleMapSelect = (location: { name: string; lat: number; lng: number }) => {
+  /**
+   * Persist a freshly picked map point as a reusable "custom" geofence so it
+   * shows up in the saved-locations dropdown next time. Failures are silent
+   * (the user still gets the name+coords on the form), but we surface a
+   * toast on success so people know it was saved.
+   */
+  const autoSaveCustomLocation = async (loc: { name: string; lat: number; lng: number }) => {
+    if (!organizationId) return;
+    if (!loc.name?.trim()) return;
+    // Skip if a geofence with this name already exists
+    if (geofences?.some((g) => g.name.toLowerCase() === loc.name.trim().toLowerCase())) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from("geofences").insert({
+        organization_id: organizationId,
+        name: loc.name.trim(),
+        category: "custom",
+        geometry_type: "circle",
+        center_lat: loc.lat,
+        center_lng: loc.lng,
+        radius_meters: 100,
+        is_active: true,
+      });
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["geofences-location-picker", organizationId] });
+      toast.success(`Saved "${loc.name}" to your locations`);
+    } catch (err: any) {
+      // Non-blocking: keep form usable even if save fails
+      console.warn("Auto-save custom location failed:", err?.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleMapSelect = async (location: { name: string; lat: number; lng: number }) => {
     onChange(location.name);
     onCoordsChange?.(location.lat, location.lng);
+    await autoSaveCustomLocation(location);
   };
 
   const mapButton = (
@@ -57,8 +98,9 @@ export function LocationPickerField({
       size="sm"
       className="h-8 gap-1 text-xs"
       onClick={() => setShowMap(true)}
+      disabled={isSaving}
     >
-      <Map className="h-3.5 w-3.5" />
+      {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Map className="h-3.5 w-3.5" />}
       Pick on Map
     </Button>
   );
@@ -110,7 +152,7 @@ export function LocationPickerField({
                 onChange(v);
                 const geo = geofences?.find((g) => g.name === v);
                 if (geo?.center_lat != null && geo?.center_lng != null) {
-                  onCoordsChange?.(geo.center_lat, geo.center_lng);
+                  onCoordsChange?.(Number(geo.center_lat), Number(geo.center_lng));
                 }
               }
             }}
