@@ -256,7 +256,9 @@ const VehicleRequests = () => {
   }, [activeStatus, debouncedSearch, typeFilter, poolFilter]);
 
   // KPI quick numbers
+  const total = requests.length;
   const pending = counts["pending"] || 0;
+  const approved = counts["approved"] || 0;
   const assigned = counts["assigned"] || 0;
   const completed = counts["completed"] || 0;
 
