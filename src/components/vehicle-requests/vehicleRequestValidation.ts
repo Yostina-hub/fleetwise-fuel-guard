@@ -19,6 +19,13 @@
  *   - strips control chars from free-text fields
  */
 import { z } from "zod";
+import {
+  getVehicleClassProfile,
+  type CargoLoad,
+} from "@/lib/vehicle-requests/vehicleClassRecommendation";
+
+/** Cargo size ordering — keeps validation in sync with the recommender. */
+const CARGO_ORDER: Record<CargoLoad, number> = { none: 0, small: 1, medium: 2, large: 3 };
 
 /** Strip ASCII control chars (except \n, \t) and trim. Safe default for free-text. */
 export const sanitizeText = (v: unknown): string => {
