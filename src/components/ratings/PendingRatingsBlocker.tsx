@@ -7,7 +7,7 @@
  */
 import * as React from "react";
 import { format } from "date-fns";
-import { AlertTriangle, Star, Sparkles } from "lucide-react";
+import { AlertTriangle, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
