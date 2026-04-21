@@ -133,6 +133,22 @@ export function validateVRField(
       const v = sanitizeText(value);
       if (!v) return "Start time is required.";
       if (!HHMM_RE.test(v)) return "Start time must use 24-hour HH:MM format (e.g. 08:30).";
+      // If the trip date is today, reject times already in the past on the
+      // requester's machine clock — we cannot schedule a trip for a moment
+      // that has already passed.
+      const tripDate = toDate(ctx.date);
+      if (tripDate) {
+        const today = startOfToday();
+        const sameDay = tripDate.getFullYear() === today.getFullYear()
+          && tripDate.getMonth() === today.getMonth()
+          && tripDate.getDate() === today.getDate();
+        if (sameDay) {
+          const now = new Date();
+          const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+          if (v < nowHHMM)
+            return `Start time (${v}) is already in the past — current time is ${nowHHMM}. Pick a future time or change the date.`;
+        }
+      }
       return;
     }
 
