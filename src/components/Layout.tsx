@@ -264,8 +264,17 @@ const getNavItems = (t: (key: string) => string) => [
   { icon: Workflow, label: t("nav.workflowBuilder"), path: "/workflow-builder", highlight: true },
   { icon: Inbox, label: "Task Inbox", path: "/inbox" },
   { icon: FileText, label: "Forms", path: "/forms" },
-  { icon: GitBranch, label: t("nav.delegationMatrix"), path: "/delegation-matrix" },
   { icon: Upload, label: t("nav.bulkOperations"), path: "/bulk-operations" },
+
+  // ── ERP (HR, Finance & Governance) ──
+  {
+    icon: Building2,
+    label: "ERP",
+    subItems: [
+      { label: t("nav.hrFinance"), path: "/driver-hr" },
+      { label: t("nav.delegationMatrix"), path: "/delegation-matrix" },
+    ],
+  },
 
   // ── Settings ──
   { icon: Settings, label: t("nav.settings"), path: "/settings" },
