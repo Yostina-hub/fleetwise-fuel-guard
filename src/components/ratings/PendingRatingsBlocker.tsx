@@ -38,18 +38,18 @@ export function PendingRatingsBlocker({ className, onAllRated }: Props) {
     <>
       <div
         className={cn(
-          "rounded-xl border border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-4 shadow-sm",
+          "rounded-xl border border-warning/40 bg-gradient-to-br from-warning/10 via-warning/5 to-transparent p-4 shadow-sm",
           className,
         )}
       >
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/20 ring-1 ring-amber-500/40">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-warning/20 ring-1 ring-warning/40">
+            <AlertTriangle className="h-5 w-5 text-warning" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="text-sm font-semibold">Rate your previous trips first</h4>
-              <Badge variant="outline" className="border-amber-500/50 bg-amber-500/10 text-amber-600 text-[10px]">
+              <Badge variant="outline" className="border-warning/50 bg-warning/10 text-warning text-[10px]">
                 {pending.length} pending
               </Badge>
             </div>
