@@ -57,7 +57,7 @@ export const IdleCoachingQueue = () => {
   const vehiclePlate = (id: string | null) => {
     if (!id) return "—";
     const v = vehicles.find((x) => x.id === id);
-    return v?.plate_number || v?.name || id.slice(0, 8);
+    return v?.plate_number || id.slice(0, 8);
   };
 
   const filtered = useMemo(() => {
