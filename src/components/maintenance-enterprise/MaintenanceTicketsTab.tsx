@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -17,21 +17,23 @@ import { format, formatDistanceToNow } from "date-fns";
 const STATUSES = ["open", "triaged", "assigned", "in_progress", "pending_parts", "resolved", "closed"];
 const PRIORITIES = ["P1", "P2", "P3", "P4"];
 
+// Use semantic tokens instead of raw tailwind colors so the design system
+// stays the source of truth (and dark/light themes both render correctly).
 const statusColors: Record<string, string> = {
-  open: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  triaged: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  assigned: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  in_progress: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  pending_parts: "bg-red-500/20 text-red-400 border-red-500/30",
-  resolved: "bg-green-500/20 text-green-400 border-green-500/30",
-  closed: "bg-muted text-muted-foreground border-muted",
+  open:          "bg-primary/15 text-primary border-primary/30",
+  triaged:       "bg-secondary/15 text-secondary border-secondary/30",
+  assigned:      "bg-warning/15 text-warning border-warning/30",
+  in_progress:   "bg-warning/20 text-warning border-warning/40",
+  pending_parts: "bg-destructive/15 text-destructive border-destructive/30",
+  resolved:      "bg-success/15 text-success border-success/30",
+  closed:        "bg-muted text-muted-foreground border-border",
 };
 
 const priorityColors: Record<string, string> = {
-  P1: "bg-red-600/20 text-red-400 border-red-500/30",
-  P2: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  P3: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  P4: "bg-muted text-muted-foreground border-muted",
+  P1: "bg-destructive/20 text-destructive border-destructive/40",
+  P2: "bg-warning/20 text-warning border-warning/40",
+  P3: "bg-warning/10 text-warning border-warning/20",
+  P4: "bg-muted text-muted-foreground border-border",
 };
 
 const slaHours: Record<string, { response: number; resolution: number }> = {
@@ -41,14 +43,25 @@ const slaHours: Record<string, { response: number; resolution: number }> = {
   P4: { response: 24, resolution: 168 },
 };
 
+const MT_PREFS_KEY = "maintenance.tickets.prefs.v1";
+
 const MaintenanceTicketsTab = () => {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const initial = (() => {
+    try { return JSON.parse(localStorage.getItem(MT_PREFS_KEY) || "{}"); } catch { return {}; }
+  })();
+  const [searchQuery, setSearchQuery] = useState<string>(initial.searchQuery ?? "");
+  const [filterStatus, setFilterStatus] = useState<string>(initial.filterStatus ?? "all");
+  const [filterPriority, setFilterPriority] = useState<string>(initial.filterPriority ?? "all");
   const [createOpen, setCreateOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
+  const [viewMode, setViewMode] = useState<"list" | "kanban">(initial.viewMode ?? "kanban");
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(MT_PREFS_KEY, JSON.stringify({ searchQuery, filterStatus, filterPriority, viewMode }));
+    } catch { /* ignore */ }
+  }, [searchQuery, filterStatus, filterPriority, viewMode]);
 
   const [form, setForm] = useState({
     title: "", description: "", priority: "P3", category: "general", reported_by: "",
@@ -138,8 +151,15 @@ const MaintenanceTicketsTab = () => {
               <span className="text-xs text-muted-foreground">({cols.length})</span>
             </div>
             <div className="space-y-2">
-              {cols.map((ticket: any) => (
-                <Card key={ticket.id} className="glass-strong cursor-pointer hover:border-primary/30 transition-colors">
+              {cols.map((ticket: any) => {
+                const overdue =
+                  ticket.sla_resolution_deadline &&
+                  new Date(ticket.sla_resolution_deadline) < new Date() &&
+                  !["resolved", "closed"].includes(ticket.status);
+                return (
+                <Card key={ticket.id} className={`glass-strong cursor-pointer hover:border-primary/30 transition-colors ${
+                  overdue ? "border-destructive/40 bg-destructive/5" : ""
+                }`}>
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono text-muted-foreground">{ticket.ticket_number}</span>
@@ -148,8 +168,9 @@ const MaintenanceTicketsTab = () => {
                     <p className="text-sm font-medium line-clamp-2">{ticket.title}</p>
                     {ticket.sla_resolution_deadline && (
                       <div className="flex items-center gap-1">
-                        <Timer className="w-3 h-3 text-muted-foreground" />
-                        <span className={`text-[10px] ${new Date(ticket.sla_resolution_deadline) < new Date() ? "text-destructive" : "text-muted-foreground"}`}>
+                        <Timer className={`w-3 h-3 ${overdue ? "text-destructive" : "text-muted-foreground"}`} />
+                        <span className={`text-[10px] ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                          {overdue ? "Overdue " : ""}
                           {formatDistanceToNow(new Date(ticket.sla_resolution_deadline), { addSuffix: true })}
                         </span>
                       </div>
@@ -167,7 +188,8 @@ const MaintenanceTicketsTab = () => {
                     )}
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           </div>
         );
@@ -188,11 +210,11 @@ const MaintenanceTicketsTab = () => {
           <p className="text-xs text-muted-foreground">SLA Breached</p>
         </CardContent></Card>
         <Card className="glass-strong"><CardContent className="p-4 text-center">
-          <p className="text-2xl font-bold text-yellow-400">{tickets.filter((t: any) => t.priority === "P1" && !["resolved","closed"].includes(t.status)).length}</p>
+          <p className="text-2xl font-bold text-warning">{tickets.filter((t: any) => t.priority === "P1" && !["resolved","closed"].includes(t.status)).length}</p>
           <p className="text-xs text-muted-foreground">Critical (P1)</p>
         </CardContent></Card>
         <Card className="glass-strong"><CardContent className="p-4 text-center">
-          <p className="text-2xl font-bold text-green-400">{Math.round(avgResolution / 60)}h</p>
+          <p className="text-2xl font-bold text-success">{Math.round(avgResolution / 60)}h</p>
           <p className="text-xs text-muted-foreground">Avg Resolution</p>
         </CardContent></Card>
       </div>
