@@ -53,6 +53,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
     license_type: "", license_issue_date: "", license_expiry: "",
     employment_type: "regular", status: "active",
     joining_date: "", department: "", experience_years: "", route_type: "intracity",
+    assigned_pool: "",
     telebirr_account: "",
     emergency_contact_name: "", emergency_contact_phone: "",
     emergency_contact_relationship: "", blood_type: "",
@@ -101,6 +102,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
             department: (data as any).department || "",
             experience_years: (data as any).experience_years?.toString() || "",
             route_type: (data as any).route_type || "intracity",
+            assigned_pool: (data as any).assigned_pool || "",
             telebirr_account: (data as any).telebirr_account || "",
             emergency_contact_name: data.emergency_contact_name || "",
             emergency_contact_phone: data.emergency_contact_phone || "",
@@ -188,6 +190,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
       department: formData.department || null,
       experience_years: formData.experience_years ? parseInt(formData.experience_years) : null,
       route_type: formData.route_type || null,
+      assigned_pool: formData.assigned_pool || formData.department || null,
       telebirr_account: formData.telebirr_account.trim() || null,
       emergency_contact_name: formData.emergency_contact_name.trim() || null,
       emergency_contact_phone: formData.emergency_contact_phone.trim() || null,
@@ -373,8 +376,8 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                   <Field label="Effective Date"><Input type="date" value={formData.joining_date} onChange={e => set("joining_date", e.target.value)} /></Field>
                   <Field label="Assigned Pool">
                     <Select
-                      value={formData.department}
-                      onValueChange={v => { set("department", v); set("assigned_pool", v); }}
+                      value={formData.assigned_pool || formData.department}
+                      onValueChange={v => { set("assigned_pool", v); set("department", v); }}
                     >
                       <SelectTrigger><SelectValue placeholder="Select pool..." /></SelectTrigger>
                       <SelectContent>
