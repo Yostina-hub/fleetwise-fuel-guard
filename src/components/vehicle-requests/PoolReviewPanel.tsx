@@ -193,6 +193,87 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     onError: (err: any) => toast.error(err.message),
   });
 
+  // Contract-style decision: approve with conditions, reject, or request changes.
+  // - approved          → keeps status=approved, awaiting vehicle assignment, conditions stored as a contract clause
+  // - rejected          → status=rejected, requester sees pool reason
+  // - changes_requested → status=pending so requester can edit & resubmit; clears prior pool decision flags
+  const contractMutation = useMutation({
+    mutationFn: async ({
+      requestId,
+      decision,
+      conditions,
+      notes,
+    }: {
+      requestId: string;
+      decision: ContractDecision;
+      conditions: string;
+      notes: string;
+    }) => {
+      const user = (await supabase.auth.getUser()).data.user;
+      const now = new Date().toISOString();
+      const updates: any = {
+        pool_review_decision: decision,
+        pool_review_conditions: conditions || null,
+        pool_review_notes: notes || null,
+        pool_reviewer_id: user!.id,
+        pool_reviewed_at: now,
+      };
+
+      if (decision === "approved") {
+        // Keep request in pool queue for vehicle assignment, but mark contract signed.
+        updates.pool_review_status = "contract_signed";
+      } else if (decision === "rejected") {
+        updates.pool_review_status = "rejected";
+        updates.status = "rejected";
+        updates.rejected_at = now;
+        updates.rejection_reason = notes || "Rejected by pool supervisor";
+      } else if (decision === "changes_requested") {
+        // Send back to the requester for edits & resubmission.
+        updates.pool_review_status = "changes_requested";
+        updates.status = "pending";
+      }
+
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update(updates)
+        .eq("id", requestId);
+      if (error) throw error;
+
+      // Notify the requester so they see the contract decision in-app.
+      const request = requests.find((r: any) => r.id === requestId);
+      if (request?.requester_id) {
+        const titleMap: Record<ContractDecision, string> = {
+          approved: "Pool Contract Approved",
+          rejected: "Pool Contract Rejected",
+          changes_requested: "Pool Supervisor Requested Changes",
+        };
+        try {
+          await supabase.rpc("send_notification", {
+            _user_id: request.requester_id,
+            _type: "vehicle_request_pool_review",
+            _title: titleMap[decision],
+            _message: `Request ${request.request_number}: ${notes || conditions || decision.replace("_", " ")}`,
+            _link: "/vehicle-requests",
+          });
+        } catch (e) {
+          console.error("In-app notification error:", e);
+        }
+      }
+    },
+    onSuccess: (_d, vars) => {
+      const msgMap: Record<ContractDecision, string> = {
+        approved: "Contract approved — request ready for vehicle assignment",
+        rejected: "Request rejected with reason",
+        changes_requested: "Request sent back to requester for edits",
+      };
+      toast.success(msgMap[vars.decision]);
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
+      closeContractDialog();
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const assignMutation = useMutation({
     mutationFn: async ({ requestId, vehicleId, driverId }: { requestId: string; vehicleId: string; driverId?: string }) => {
       const request = requests.find((r: any) => r.id === requestId);
