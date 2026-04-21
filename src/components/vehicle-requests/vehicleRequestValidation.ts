@@ -109,14 +109,18 @@ export function validateVRField(
   ctx: Partial<VRFormValues> = {},
 ): string | undefined {
   const isProject = ctx.request_type === "project_operation";
-  const isDaily = ctx.request_type === "daily_operation";
+  const isNighttime = ctx.request_type === "nighttime_operation";
+  // Nighttime is a single-day variant of Daily (uses `date` + start/end times)
+  // but locked to a 02:00–12:00 window to match the night-shift policy.
+  const isDaily = ctx.request_type === "daily_operation" || isNighttime;
+  const NIGHT_WINDOW = { start: "02:00", end: "12:00" };
 
   switch (field) {
     case "request_type": {
       const v = sanitizeText(value);
-      if (!v) return "Please choose a request type (Daily, Project, Field, or Group operation).";
-      if (!["daily_operation", "project_operation", "field_operation", "group_operation"].includes(v))
-        return "Invalid request type. Pick one of the four operation cards above.";
+      if (!v) return "Please choose a request type (Daily, Nighttime, Project, Field, or Group operation).";
+      if (!["daily_operation", "nighttime_operation", "project_operation", "field_operation", "group_operation"].includes(v))
+        return "Invalid request type. Pick one of the operation cards above.";
       return;
     }
 
