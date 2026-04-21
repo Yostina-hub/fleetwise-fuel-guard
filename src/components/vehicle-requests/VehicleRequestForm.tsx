@@ -879,7 +879,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       </div>
       <div className="flex-1 min-w-0">
         <h2 className="text-lg sm:text-xl font-semibold tracking-tight text-foreground">
-          Fleet Request
+          Vehicle Request
         </h2>
         <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
           Fill in the sections below and submit — your progress auto-saves as you type.
