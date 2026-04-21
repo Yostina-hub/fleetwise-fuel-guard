@@ -92,6 +92,9 @@ const buildInitialForm = () => ({
   departure_lng: null as number | null,
   destination_lat: null as number | null,
   destination_lng: null as number | null,
+  // Optional ordered intermediate stops between Departure and final Destination.
+  // Persisted to `vehicle_request_stops` (sequence-ordered waypoints).
+  stops: [] as Array<{ name: string; lat: number | null; lng: number | null }>,
   num_vehicles: "1",
   passengers: "1",
   vehicle_type: "",
