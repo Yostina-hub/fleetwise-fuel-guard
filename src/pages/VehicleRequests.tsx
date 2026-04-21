@@ -28,6 +28,8 @@ import {
   XCircle,
   Truck,
   Eye,
+  Pencil,
+  RotateCcw,
   MessageSquare,
   LogIn,
   Shuffle,
@@ -60,6 +62,7 @@ import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/Vehicl
 import { MyVehicleRequestsSummary } from "@/components/vehicle-requests/MyVehicleRequestsSummary";
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
 import { DeleteRequestDialog } from "@/components/vehicle-requests/DeleteRequestDialog";
+import { EditRequestDialog } from "@/components/vehicle-requests/EditRequestDialog";
 import { MultiVehicleAssignDialog } from "@/components/vehicle-requests/MultiVehicleAssignDialog";
 import BulkImportVehicleRequestsDialog from "@/components/vehicle-requests/BulkImportVehicleRequestsDialog";
 import * as XLSX from "xlsx";
@@ -134,6 +137,7 @@ const VehicleRequests = () => {
   const [showCrossPool, setShowCrossPool] = useState<any>(null);
   const [showDeallocate, setShowDeallocate] = useState<any>(null);
   const [showDelete, setShowDelete] = useState<any>(null);
+  const [showEdit, setShowEdit] = useState<any>(null);
   const [showMultiAssign, setShowMultiAssign] = useState<any>(null);
   const [showImport, setShowImport] = useState(false);
 
@@ -1035,6 +1039,25 @@ const VehicleRequests = () => {
                                     <Undo2 className="w-3.5 h-3.5 text-amber-500" />
                                   </Button>
                                 )}
+                              {/* Edit / Resubmit — requester on pending or rejected rows
+                                  (before any approval check-in); admins anytime pre-check-in */}
+                              {!r.driver_checked_in_at &&
+                                (canManageAll ||
+                                  (isOwnRow(r) && ["pending", "rejected"].includes(r.status))) && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => setShowEdit(r)}
+                                    title={r.status === "rejected" ? "Fix & resubmit" : "Edit request"}
+                                  >
+                                    {r.status === "rejected" ? (
+                                      <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
+                                    ) : (
+                                      <Pencil className="w-3.5 h-3.5 text-primary" />
+                                    )}
+                                  </Button>
+                                )}
                               {/* Delete — admins/operators always; requester only on
                                   their own pending row before any check-in */}
                               {!["completed"].includes(r.status) &&
@@ -1194,6 +1217,13 @@ const VehicleRequests = () => {
               showDelete.requester_id === userId &&
               showDelete.status === "pending"
             }
+          />
+        )}
+        {showEdit && (
+          <EditRequestDialog
+            request={showEdit}
+            open={!!showEdit}
+            onClose={() => setShowEdit(null)}
           />
         )}
         {showMultiAssign && (
