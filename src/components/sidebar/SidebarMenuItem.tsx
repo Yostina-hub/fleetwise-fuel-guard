@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { PrefetchLink as Link } from "@/components/sidebar/PrefetchLink";
 import { cn } from "@/lib/utils";
 import { ChevronDown, LucideIcon } from "lucide-react";
 import {

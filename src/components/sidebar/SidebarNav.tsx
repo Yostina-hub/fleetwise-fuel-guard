@@ -1,4 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { PrefetchLink as Link } from "@/components/sidebar/PrefetchLink";
 import { cn } from "@/lib/utils";
 import { SidebarMenuItem } from "@/components/sidebar/SidebarMenuItem";
 import type { LucideIcon } from "lucide-react";
