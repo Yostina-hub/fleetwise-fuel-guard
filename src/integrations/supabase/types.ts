@@ -13181,6 +13181,65 @@ export type Database = {
           },
         ]
       }
+      maintenance_class_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          mtbf_days: number | null
+          notes: string | null
+          organization_id: string
+          priority: string | null
+          reminder_days_before: number | null
+          reminder_hours_before: number | null
+          reminder_km_before: number | null
+          service_type: string | null
+          updated_at: string
+          vehicle_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          mtbf_days?: number | null
+          notes?: string | null
+          organization_id: string
+          priority?: string | null
+          reminder_days_before?: number | null
+          reminder_hours_before?: number | null
+          reminder_km_before?: number | null
+          service_type?: string | null
+          updated_at?: string
+          vehicle_type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          mtbf_days?: number | null
+          notes?: string | null
+          organization_id?: string
+          priority?: string | null
+          reminder_days_before?: number | null
+          reminder_hours_before?: number | null
+          reminder_km_before?: number | null
+          service_type?: string | null
+          updated_at?: string
+          vehicle_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_class_overrides_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_contracts: {
         Row: {
           auto_renew: boolean | null
