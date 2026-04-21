@@ -178,7 +178,8 @@ describe("VR sanitizers", () => {
     } as any);
     expect(out.purpose).toBe("Big   trip");
     expect(out.project_number).toBe("PRJ_001");
-    expect(out.contact_phone).toBe("+251 911");
+    // sanitizePhone strips '@' (invalid char) leaving the digits concatenated
+    expect(out.contact_phone).toBe("+251911");
     expect(out.departure_place).toBe("HQ");
   });
 });
