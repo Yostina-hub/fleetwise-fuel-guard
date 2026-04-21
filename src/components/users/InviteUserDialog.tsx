@@ -471,7 +471,7 @@ const InviteUserDialog = ({
 
           {/* Full name */}
           <div className="space-y-1.5">
-            <Label htmlFor="invite-fullname">Full Name</Label>
+            <Label htmlFor="invite-fullname">Full Name <span className="text-destructive">*</span></Label>
             <Input
               id="invite-fullname"
               type="text"
