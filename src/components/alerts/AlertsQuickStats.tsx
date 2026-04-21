@@ -77,8 +77,7 @@ const AlertsQuickStats = ({
           <Tooltip key={stat.label}>
             <TooltipTrigger asChild>
               <Card 
-                className="border border-cyan-500/20 hover:border-cyan-500/40 hover:scale-[1.02] transition-all duration-300 cursor-default"
-                style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+                className="border border-cyan-500/20 hover:border-cyan-500/40 hover:scale-[1.02] transition-all duration-300 cursor-default bg-cyber-gradient"
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">

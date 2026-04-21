@@ -8,7 +8,7 @@ interface ReportsHeaderProps {
 
 export const ReportsHeader = ({ totalReports, dateRange }: ReportsHeaderProps) => {
   return (
-    <div className="relative overflow-hidden rounded-xl border border-cyan-500/20 p-6 md:p-8" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
+    <div className="relative overflow-hidden rounded-xl border border-cyan-500/20 p-6 md:p-8 bg-cyber-gradient">
       {/* Tech grid pattern overlay */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Arc segments */}

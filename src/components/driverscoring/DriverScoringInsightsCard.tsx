@@ -39,8 +39,7 @@ const DriverScoringInsightsCard = ({
 
   return (
     <Card 
-      className="border border-cyan-500/20"
-      style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+      className="border border-cyan-500/20 bg-cyber-gradient"
     >
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg text-white">

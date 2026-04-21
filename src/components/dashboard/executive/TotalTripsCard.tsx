@@ -111,7 +111,7 @@ export const TotalTripsCard = () => {
       transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ scale: 1.01 }}
     >
-      <Card className="border-cyan-500/20 backdrop-blur-sm overflow-hidden hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-500" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
+      <Card className="border-cyan-500/20 backdrop-blur-sm overflow-hidden hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-500 bg-cyber-gradient">
         <div className="absolute inset-0 bg-gradient-to-br from-[#8DC63F]/5 via-transparent to-cyan-500/5 pointer-events-none" />
         
         <CardHeader className="pb-2 relative">

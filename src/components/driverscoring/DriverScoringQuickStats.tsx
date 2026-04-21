@@ -50,8 +50,7 @@ const DriverScoringQuickStats = ({
       {stats.map((stat) => (
         <Card 
           key={stat.label} 
-          className="border border-cyan-500/20 hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
-          style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+          className="border border-cyan-500/20 hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 bg-cyber-gradient"
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">

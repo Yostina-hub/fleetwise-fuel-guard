@@ -51,7 +51,7 @@ export const ReportsNavigation = ({
       )}
 
       {/* Main Tabs - Tech Style */}
-      <div className="rounded-xl border border-cyan-500/20 p-1.5" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
+      <div className="rounded-xl border border-cyan-500/20 p-1.5 bg-cyber-gradient">
         <ScrollArea className="w-full">
           <nav className="flex gap-1" role="tablist" aria-label="Report categories">
             {mainTabs.map((tab) => {

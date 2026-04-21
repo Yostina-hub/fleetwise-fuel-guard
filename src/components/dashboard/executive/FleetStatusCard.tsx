@@ -23,7 +23,7 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
 
   if (loading) {
     return (
-      <div className="border border-cyan-500/20 backdrop-blur-sm rounded-lg p-4 h-72" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
+      <div className="border border-cyan-500/20 backdrop-blur-sm rounded-lg p-4 h-72 bg-cyber-gradient">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-surface-overlay/60 rounded w-1/3" />
           <div className="h-48 bg-surface-overlay/60 rounded" />
@@ -52,8 +52,7 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
       whileHover={{ scale: 1.01, borderColor: "rgba(0, 180, 255, 0.4)" }}
-      className="border border-cyan-500/20 backdrop-blur-sm rounded-lg p-4 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
-      style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+      className="border border-cyan-500/20 backdrop-blur-sm rounded-lg p-4 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 bg-cyber-gradient"
     >
       <div className="flex items-center gap-3 mb-4">
         <h3 className="font-bold text-lg text-white tracking-tight">{t('executive.fleetStatus')}</h3>
