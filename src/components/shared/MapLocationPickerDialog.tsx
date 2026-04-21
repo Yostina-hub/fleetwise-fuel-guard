@@ -99,20 +99,60 @@ export function MapLocationPickerDialog({
   };
 
   /**
-   * Try the browser's Geolocation API. If the requester grants permission
-   * we use *their* current position as the map center, otherwise we fall
-   * back to the supplied initialLat/initialLng (Addis Ababa center).
+   * Ask the browser for the user's current location. Resolves with `null` if
+   * geolocation is unavailable, denied, or the request times out. Logs the
+   * exact reason to the console so users can debug "why didn't it find me?".
+   *
+   * NOTE: this works best when called as a result of a user gesture (button
+   * click). The auto-attempt on dialog open may be silently denied in
+   * permissions-restricted contexts (e.g. the Lovable preview iframe without
+   * `allow="geolocation"`); the explicit "Use my location" button below is
+   * the reliable path.
    */
   const requestCurrentLocation = (): Promise<{ lat: number; lng: number } | null> =>
     new Promise((resolve) => {
-      if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
-      const timer = setTimeout(() => resolve(null), 6000);
+      if (typeof navigator === "undefined" || !navigator.geolocation) {
+        console.warn("[MapPicker] geolocation API unavailable in this browser");
+        return resolve(null);
+      }
+      const timer = setTimeout(() => {
+        console.warn("[MapPicker] geolocation request timed out");
+        resolve(null);
+      }, 12000);
       navigator.geolocation.getCurrentPosition(
-        (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
-        () => { clearTimeout(timer); resolve(null); },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 60_000 },
+        (pos) => {
+          clearTimeout(timer);
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        (err) => {
+          clearTimeout(timer);
+          console.warn("[MapPicker] geolocation error:", err.code, err.message);
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30_000 },
       );
     });
+
+  /**
+   * Explicit "Use my location" handler — fires from a user click so the
+   * browser will reliably show its permission prompt. Re-centers the map and
+   * refreshes the location-name field via reverse geocoding.
+   */
+  const useMyLocation = async () => {
+    setIsLocating(true);
+    const here = await requestCurrentLocation();
+    setIsLocating(false);
+    if (!here) {
+      setSearchError(
+        "Couldn't access your location. Make sure location permission is allowed for this site, then try again.",
+      );
+      return;
+    }
+    setLat(parseFloat(here.lat.toFixed(6)));
+    setLng(parseFloat(here.lng.toFixed(6)));
+    const name = await reverseGeocode(here.lat, here.lng);
+    if (name) setLocationName(name);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -310,41 +350,61 @@ export function MapLocationPickerDialog({
           <DialogDescription>Search for a place, click on the map, or drag the pin.</DialogDescription>
         </DialogHeader>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search location name (e.g. Bole, Meskel Square, Hawassa)"
-            className="pl-9 pr-9 h-9"
-          />
-          {isSearching && (
-            <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
-          )}
+        {/* Search Bar + "Use my location" — the explicit button reliably
+            triggers the browser permission prompt as a user gesture. */}
+        <div className="flex gap-2 items-start">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search location name (e.g. Bole, Meskel Square, Hawassa)"
+              className="pl-9 pr-9 h-9"
+            />
+            {isSearching && (
+              <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+            )}
 
-          {/* Search Results Dropdown */}
-          {searchResults.length > 0 && (
-            <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
-              {searchResults.map((r, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-start gap-2"
-                  onClick={() => flyToLocation(r)}
-                >
-                  <MapPin className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
-                  <span className="line-clamp-2">{r.display_name}</span>
-                </button>
-              ))}
-            </div>
-          )}
+            {/* Search Results Dropdown */}
+            {searchResults.length > 0 && (
+              <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                {searchResults.map((r, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-start gap-2"
+                    onClick={() => flyToLocation(r)}
+                  >
+                    <MapPin className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
+                    <span className="line-clamp-2">{r.display_name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
-          {!isSearching && searchError && searchResults.length === 0 && (
-            <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-lg">
-              {searchError}
-            </div>
-          )}
+            {!isSearching && searchError && searchResults.length === 0 && (
+              <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-lg">
+                {searchError}
+              </div>
+            )}
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={useMyLocation}
+            disabled={isLocating}
+            className="h-9 gap-1.5 shrink-0"
+            title="Center map on your current location"
+          >
+            {isLocating ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Navigation className="w-3.5 h-3.5" />
+            )}
+            My location
+          </Button>
         </div>
 
         {/* Map */}
