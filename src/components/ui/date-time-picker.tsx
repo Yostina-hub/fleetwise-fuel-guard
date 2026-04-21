@@ -101,13 +101,13 @@ export function DateTimePicker({
               disabled={disabled}
               className={cn(
                 "flex-1 justify-start text-left font-normal h-10",
-                !date && "text-muted-foreground",
-                date && "border-primary/40 bg-primary/5",
+                !safeDate && "text-muted-foreground",
+                safeDate && "border-primary/40 bg-primary/5",
               )}
             >
-              <CalendarIcon className={cn("mr-2 h-4 w-4 shrink-0", date && "text-primary")} />
+              <CalendarIcon className={cn("mr-2 h-4 w-4 shrink-0", safeDate && "text-primary")} />
               <span className="truncate">
-                {date ? smartLabel(date) : placeholder}
+                {safeDate ? smartLabel(safeDate) : placeholder}
               </span>
             </Button>
           </PopoverTrigger>
@@ -115,7 +115,7 @@ export function DateTimePicker({
             {/* Quick picks header — friendlier than scrolling the calendar */}
             <div className="border-b border-border bg-muted/30 p-2 flex items-center gap-1.5 flex-wrap">
               {quickPicks.map((q) => {
-                const isSel = date && isSameDay(date, q.value);
+                const isSel = safeDate && isSameDay(safeDate, q.value);
                 const blocked = normalizedMinDate && q.value < normalizedMinDate;
                 return (
                   <Button
@@ -132,7 +132,7 @@ export function DateTimePicker({
                   </Button>
                 );
               })}
-              {date && (
+              {safeDate && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -146,7 +146,7 @@ export function DateTimePicker({
             </div>
             <Calendar
               mode="single"
-              selected={date}
+              selected={safeDate}
               onSelect={(d) => { onDateChange(d); if (d) setOpen(false); }}
               disabled={normalizedMinDate ? (d) => d < normalizedMinDate : undefined}
               initialFocus
