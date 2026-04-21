@@ -27,7 +27,7 @@ import { AssignedLocationPicker } from "./AssignedLocationPicker";
 import { DatePickerField } from "./DatePickerField";
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
-import BasicInfoTabs from "./BasicInfoTabs";
+import BasicInfoTabs, { BASIC_FIELD_TO_SUBTAB, type BasicSubTabId } from "./BasicInfoTabs";
 import { useVehicleValidation } from "./useVehicleValidation";
 import { FIELD_TO_SECTION, type VehicleFieldName } from "./vehicleValidation";
 import { useFormDraft, loadDraft, clearDraft } from "./useFormDraft";
