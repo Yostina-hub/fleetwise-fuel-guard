@@ -29,7 +29,7 @@ export function BottomNav({ onMenuClick }: BottomNavProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
       {/* Blur backdrop */}
-      <div className="absolute inset-0 bg-[#0d1520]/90 backdrop-blur-xl border-t border-[#2a3a4d]/50" />
+      <div className="absolute inset-0 bg-surface-card/90 backdrop-blur-xl border-t border-surface-border/50" />
       
       {/* Safe area padding for home indicator */}
       <div className="relative flex items-center justify-around px-2 pt-2 pb-safe">
@@ -42,7 +42,7 @@ export function BottomNav({ onMenuClick }: BottomNavProps) {
               className={cn(
                 "relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 rounded-xl transition-all duration-200",
                 "active:scale-95 touch-manipulation",
-                active ? "text-primary" : "text-white/50"
+                active ? "text-primary" : "text-surface-muted-foreground"
               )}
             >
               {active && (
@@ -72,7 +72,7 @@ export function BottomNav({ onMenuClick }: BottomNavProps) {
           onClick={onMenuClick}
           className={cn(
             "relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 rounded-xl transition-all duration-200",
-            "active:scale-95 touch-manipulation text-white/50"
+            "active:scale-95 touch-manipulation text-surface-muted-foreground"
           )}
         >
           <Menu className="w-5 h-5" />

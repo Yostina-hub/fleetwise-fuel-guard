@@ -44,10 +44,9 @@ const GlowingCard = ({
         glowColorMap[glowColor] || glowColorMap.primary,
         className
       )}
-      style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
     >
       {/* Enhanced gradient overlay */}
-      <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none bg-cyber-gradient">
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-[#8DC63F]/5 opacity-60" />
         {/* Animated shimmer effect */}
         <motion.div

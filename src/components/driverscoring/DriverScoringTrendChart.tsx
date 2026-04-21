@@ -35,8 +35,7 @@ const DriverScoringTrendChart = () => {
 
   return (
     <Card 
-      className="border border-cyan-500/20"
-      style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+      className="border border-cyan-500/20 bg-cyber-gradient"
     >
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg text-white">
@@ -47,7 +46,7 @@ const DriverScoringTrendChart = () => {
       <CardContent>
         <div className="h-[200px]">
           {data.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-white/50 text-sm">
+            <div className="flex items-center justify-center h-full text-surface-muted-foreground text-sm">
               No historical data available yet
             </div>
           ) : (

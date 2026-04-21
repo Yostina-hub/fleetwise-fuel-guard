@@ -49,10 +49,10 @@ export function MobileHeader() {
   return (
     <header className="sticky top-0 z-40 md:hidden">
       {/* Status bar safe area */}
-      <div className="h-safe-top bg-[#0d1520]" />
+      <div className="h-safe-top bg-surface-card" />
       
       {/* Header content */}
-      <div className="bg-[#0d1520]/95 backdrop-blur-xl border-b border-[#2a3a4d]/50">
+      <div className="bg-surface-card/95 backdrop-blur-xl border-b border-surface-border/50">
         <div className="flex items-center justify-between px-4 h-14">
           {/* Logo and title */}
           <div className="flex items-center gap-3">
@@ -61,8 +61,8 @@ export function MobileHeader() {
               alt="ethio telecom" 
               className="h-7 w-auto object-contain"
             />
-            <div className="h-4 w-px bg-[#2a3a4d]" />
-            <h1 className="text-sm font-semibold text-white truncate max-w-[140px]">
+            <div className="h-4 w-px bg-surface-overlay" />
+            <h1 className="text-sm font-semibold text-surface-foreground truncate max-w-[140px]">
               {getTitle()}
             </h1>
           </div>

@@ -80,10 +80,10 @@ export const SidebarMenuItem = ({
           isCollapsed && "justify-center px-2",
           isActive
             ? isDark 
-              ? "bg-primary/20 text-white shadow-sm"
+              ? "bg-primary/20 text-surface-foreground shadow-sm"
               : "bg-primary/10 text-foreground shadow-sm"
             : isDark
-              ? "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+              ? "text-surface-foreground/70 hover:bg-surface-overlay hover:text-surface-foreground"
               : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
         )}
       >
@@ -132,10 +132,10 @@ export const SidebarMenuItem = ({
               "w-full flex items-center justify-center px-2 py-2 rounded-md transition-all duration-200 group text-sm",
               isChildActive
                 ? isDark
-                  ? "bg-primary/20 text-white shadow-sm"
+                  ? "bg-primary/20 text-surface-foreground shadow-sm"
                   : "bg-primary/10 text-foreground shadow-sm"
                 : isDark
-                  ? "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+                  ? "text-surface-foreground/70 hover:bg-surface-overlay hover:text-surface-foreground"
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             )}
           >
@@ -177,10 +177,10 @@ export const SidebarMenuItem = ({
             "w-full flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
             isChildActive
               ? isDark
-                ? "bg-primary/20 text-white shadow-sm"
+                ? "bg-primary/20 text-surface-foreground shadow-sm"
                 : "bg-primary/10 text-foreground shadow-sm"
               : isDark
-                ? "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+                ? "text-surface-foreground/70 hover:bg-surface-overlay hover:text-surface-foreground"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           )}
         >
@@ -205,10 +205,10 @@ export const SidebarMenuItem = ({
                 "flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200 text-sm border-l-2 ml-2",
                 isSubActive
                   ? isDark
-                    ? "border-primary bg-primary/10 text-white font-medium"
+                    ? "border-primary bg-primary/10 text-surface-foreground font-medium"
                     : "border-primary bg-primary/10 text-foreground font-medium"
                   : isDark
-                    ? "border-[#2a3a4d] text-white/60 hover:bg-[#2a3a4d]/50 hover:text-white hover:border-primary/50"
+                    ? "border-surface-border text-surface-muted-foreground hover:bg-surface-overlay/50 hover:text-surface-foreground hover:border-primary/50"
                     : "border-border text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground hover:border-primary/50"
               )}
             >

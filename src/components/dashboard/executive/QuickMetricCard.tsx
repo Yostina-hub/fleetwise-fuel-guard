@@ -40,14 +40,14 @@ const QuickMetricCard = ({
       transition={{ duration: 0.5, ease: "easeOut" }}
       whileHover={{ scale: 1.02, borderColor: "hsl(var(--primary))" }}
       className={`
-        bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4
+        bg-surface-elevated border border-surface-border rounded-lg p-4
         hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 
         transition-all duration-300
         ${className}
       `}
     >
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-white/90">{title}</span>
+        <span className="text-sm font-medium text-surface-foreground/90">{title}</span>
         {badge && (
           <Badge 
             variant="outline" 

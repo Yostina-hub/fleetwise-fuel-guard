@@ -65,8 +65,8 @@ export default function DriverNotificationBell({ driverId }: Props) {
           size="icon"
           className={cn(
             "relative h-8 w-8",
-            total > 0 ? "text-primary hover:text-primary" : "text-white/60 hover:text-white",
-            "hover:bg-[#2a3a4d]",
+            total > 0 ? "text-primary hover:text-primary" : "text-surface-muted-foreground hover:text-white",
+            "hover:bg-surface-overlay",
           )}
           aria-label={`${total} unread driver notifications`}
         >

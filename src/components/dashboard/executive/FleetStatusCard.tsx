@@ -23,10 +23,10 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
 
   if (loading) {
     return (
-      <div className="border border-cyan-500/20 backdrop-blur-sm rounded-lg p-4 h-72" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
+      <div className="border border-cyan-500/20 backdrop-blur-sm rounded-lg p-4 h-72 bg-cyber-gradient">
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-white/10 rounded w-1/3" />
-          <div className="h-48 bg-white/10 rounded" />
+          <div className="h-4 bg-surface-overlay/60 rounded w-1/3" />
+          <div className="h-48 bg-surface-overlay/60 rounded" />
         </div>
       </div>
     );
@@ -52,8 +52,7 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
       whileHover={{ scale: 1.01, borderColor: "rgba(0, 180, 255, 0.4)" }}
-      className="border border-cyan-500/20 backdrop-blur-sm rounded-lg p-4 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
-      style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+      className="border border-cyan-500/20 backdrop-blur-sm rounded-lg p-4 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 bg-cyber-gradient"
     >
       <div className="flex items-center gap-3 mb-4">
         <h3 className="font-bold text-lg text-white tracking-tight">{t('executive.fleetStatus')}</h3>
@@ -80,14 +79,14 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
             <motion.span className="text-2xl font-bold text-white" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} key={totalAssets}>
               {animatedTotal}
             </motion.span>
-            <span className="text-[10px] text-white/60 font-medium">{t('executive.vehicles')}</span>
+            <span className="text-[10px] text-surface-muted-foreground font-medium">{t('executive.vehicles')}</span>
           </div>
         </div>
 
         <div className="flex-1 min-w-0">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-white/60">
+              <tr className="text-surface-muted-foreground">
                 <th className="text-left py-1 font-semibold">{t('common.status')}</th>
                 <th className="text-center py-1 font-semibold">{t('executive.count')}</th>
                 <th className="text-right py-1 font-semibold">{t('executive.fleetPercent')}</th>

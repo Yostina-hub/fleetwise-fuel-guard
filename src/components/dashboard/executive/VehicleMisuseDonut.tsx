@@ -149,7 +149,7 @@ export const VehicleMisuseDonut = () => {
       transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ scale: 1.01 }}
     >
-      <Card className="border-cyan-500/20 backdrop-blur-sm overflow-hidden hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-500" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
+      <Card className="border-cyan-500/20 backdrop-blur-sm overflow-hidden hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-500 bg-cyber-gradient">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-red-500/5 pointer-events-none" />
         
         <CardHeader className="pb-2 relative">
@@ -164,7 +164,7 @@ export const VehicleMisuseDonut = () => {
               {t('executive.vehicleMisuseOverview')}
             </CardTitle>
             <Select value={period} onValueChange={(v) => setPeriod(v as TimePeriod)}>
-              <SelectTrigger className="w-[130px] h-8 text-xs bg-white/10 border-cyan-500/30 text-white">
+              <SelectTrigger className="w-[130px] h-8 text-xs bg-surface-overlay/60 border-cyan-500/30 text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

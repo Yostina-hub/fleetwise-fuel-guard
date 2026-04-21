@@ -32,7 +32,7 @@ const AlertsMapCard = ({ alerts, loading }: AlertsMapCardProps) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 h-full"
+      className="bg-surface-elevated border border-surface-border rounded-lg p-4 h-full"
     >
       {/* Header */}
       <h3 className="font-semibold text-base text-white flex items-center gap-2 mb-4">
@@ -41,7 +41,7 @@ const AlertsMapCard = ({ alerts, loading }: AlertsMapCardProps) => {
       </h3>
 
       {/* Map Container */}
-      <div className="relative h-[250px] rounded-lg overflow-hidden border border-[#2a3a4d]">
+      <div className="relative h-[250px] rounded-lg overflow-hidden border border-surface-border">
         {/* Map Background - styled to look like a real map */}
         <div 
           className="absolute inset-0"
@@ -116,7 +116,7 @@ const AlertsMapCard = ({ alerts, loading }: AlertsMapCardProps) => {
             })
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center text-white/60">
+              <div className="text-center text-surface-muted-foreground">
                 <MapPin className="h-10 w-10 mx-auto mb-2 opacity-50" />
                 <p className="text-xs font-medium">No alerts with location</p>
               </div>
@@ -128,21 +128,21 @@ const AlertsMapCard = ({ alerts, loading }: AlertsMapCardProps) => {
             <Button 
               variant="secondary" 
               size="icon" 
-              className="h-7 w-7 bg-[#1a2332]/90 hover:bg-[#2a3a4d] border border-[#2a3a4d]"
+              className="h-7 w-7 bg-surface-elevated/90 hover:bg-surface-overlay border border-surface-border"
             >
               <Plus className="h-3.5 w-3.5" />
             </Button>
             <Button 
               variant="secondary" 
               size="icon" 
-              className="h-7 w-7 bg-[#1a2332]/90 hover:bg-[#2a3a4d] border border-[#2a3a4d]"
+              className="h-7 w-7 bg-surface-elevated/90 hover:bg-surface-overlay border border-surface-border"
             >
               <Minus className="h-3.5 w-3.5" />
             </Button>
           </div>
 
           {/* Map Attribution */}
-          <div className="absolute bottom-1 right-2 text-[8px] text-white/40">
+          <div className="absolute bottom-1 right-2 text-[8px] text-surface-foreground/40">
             © Fleet Map
           </div>
         </div>

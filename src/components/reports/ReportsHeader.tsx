@@ -8,7 +8,7 @@ interface ReportsHeaderProps {
 
 export const ReportsHeader = ({ totalReports, dateRange }: ReportsHeaderProps) => {
   return (
-    <div className="relative overflow-hidden rounded-xl border border-cyan-500/20 p-6 md:p-8" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
+    <div className="relative overflow-hidden rounded-xl border border-cyan-500/20 p-6 md:p-8 bg-cyber-gradient">
       {/* Tech grid pattern overlay */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Arc segments */}
@@ -86,11 +86,11 @@ export const ReportsHeader = ({ totalReports, dateRange }: ReportsHeaderProps) =
               <span>Period: {dateRange}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="px-3 py-1.5 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 shadow-sm">
+              <div className="px-3 py-1.5 rounded-lg bg-surface-overlay/40 backdrop-blur-sm border border-surface-border/60 shadow-sm">
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-[#8DC63F]" aria-hidden="true" />
                   <span className="text-lg font-bold text-white">{totalReports}</span>
-                  <span className="text-xs text-white/60">Reports Available</span>
+                  <span className="text-xs text-surface-muted-foreground">Reports Available</span>
                 </div>
               </div>
             </div>
@@ -99,14 +99,14 @@ export const ReportsHeader = ({ totalReports, dateRange }: ReportsHeaderProps) =
       </div>
 
       {/* Bottom stats bar */}
-      <div className="relative flex items-center gap-6 mt-6 pt-4 border-t border-white/10">
+      <div className="relative flex items-center gap-6 mt-6 pt-4 border-t border-surface-border/60">
         <div className="flex items-center gap-2">
           <Server className="w-4 h-4 text-cyan-400" />
-          <span className="text-sm text-white/70">Real-time Data</span>
+          <span className="text-sm text-surface-foreground/70">Real-time Data</span>
         </div>
         <div className="flex items-center gap-2">
           <Globe className="w-4 h-4 text-[#8DC63F]" />
-          <span className="text-sm text-white/70">Global Coverage</span>
+          <span className="text-sm text-surface-foreground/70">Global Coverage</span>
         </div>
       </div>
     </div>

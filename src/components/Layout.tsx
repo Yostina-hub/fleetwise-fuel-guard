@@ -399,13 +399,13 @@ const LayoutInner = ({ children }: LayoutProps) => {
       {/* Desktop Sidebar - Hidden on mobile */}
       <aside 
         className={cn(
-          "hidden md:flex bg-[#1a2332] border-r border-[#2a3a4d] flex-col shrink-0 relative z-10 transition-all duration-300",
+          "hidden md:flex bg-surface-elevated border-r border-surface-border flex-col shrink-0 relative z-10 transition-all duration-300",
           isCollapsed ? "w-16" : "w-60"
         )}
       >
         {/* Header with Logo */}
         <div className={cn(
-          "py-4 bg-[#001a33] flex items-center",
+          "py-4 bg-surface-deep flex items-center",
           isCollapsed ? "px-2 justify-center" : "px-3"
         )}>
           <img 
@@ -429,7 +429,7 @@ const LayoutInner = ({ children }: LayoutProps) => {
         />
 
         {/* Toggle Button & Keyboard shortcut hint */}
-        <div className={cn("py-2 mt-auto border-t border-[#2a3a4d]/50", isCollapsed ? "px-2" : "px-3")}>
+        <div className={cn("py-2 mt-auto border-t border-surface-border/50", isCollapsed ? "px-2" : "px-3")}>
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <Button
@@ -437,7 +437,7 @@ const LayoutInner = ({ children }: LayoutProps) => {
                 size="sm"
                 onClick={toggleSidebar}
                 className={cn(
-                  "w-full text-white/60 hover:text-white hover:bg-[#2a3a4d]",
+                  "w-full text-surface-muted-foreground hover:text-surface-foreground hover:bg-surface-overlay",
                   isCollapsed ? "justify-center px-2" : "justify-start"
                 )}
               >
@@ -459,9 +459,9 @@ const LayoutInner = ({ children }: LayoutProps) => {
           </Tooltip>
           
           {!isCollapsed && (
-            <div className="flex items-center justify-center gap-2 text-[11px] text-white/50 mt-2">
+            <div className="flex items-center justify-center gap-2 text-[11px] text-surface-muted-foreground mt-2">
               <span>{t('nav.press')}</span>
-              <kbd className="px-1.5 py-0.5 bg-[#2a3a4d]/50 rounded text-[10px] font-mono border border-[#2a3a4d]">
+              <kbd className="px-1.5 py-0.5 bg-surface-overlay/50 rounded text-[10px] font-mono border border-surface-border">
                 ⌘K
               </kbd>
               <span>{t('nav.forCommands')}</span>
@@ -488,13 +488,13 @@ const LayoutInner = ({ children }: LayoutProps) => {
         <MobileHeader />
 
         {/* Desktop Content Header */}
-        <div className="hidden md:flex items-center justify-between gap-2 md:gap-3 px-3 md:px-6 py-2 border-b shrink-0 bg-[#1a2332] border-[#2a3a4d]">
+        <div className="hidden md:flex items-center justify-between gap-2 md:gap-3 px-3 md:px-6 py-2 border-b shrink-0 bg-surface-elevated border-surface-border">
           {/* Left side - Sidebar toggle */}
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="h-8 w-8 text-white/60 hover:text-white hover:bg-[#2a3a4d]"
+            className="h-8 w-8 text-surface-muted-foreground hover:text-surface-foreground hover:bg-surface-overlay"
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
@@ -505,14 +505,14 @@ const LayoutInner = ({ children }: LayoutProps) => {
               <>
                 <SuperAdminOrgSwitcher />
                 <SuperAdminImpersonation />
-                <div className="hidden sm:block h-5 w-px bg-[#2a3a4d]" />
+                <div className="hidden sm:block h-5 w-px bg-surface-overlay" />
               </>
             )}
             <div className="hidden sm:block">
-              <LanguageSelector variant="compact" className="text-sm text-white/70" />
+              <LanguageSelector variant="compact" className="text-sm text-surface-foreground/70" />
             </div>
             
-            <div className="hidden sm:block h-5 w-px bg-[#2a3a4d]" />
+            <div className="hidden sm:block h-5 w-px bg-surface-overlay" />
             
             <HeaderAlertBell />
             <DriverNotificationBell driverId={currentDriverId} />
@@ -521,21 +521,21 @@ const LayoutInner = ({ children }: LayoutProps) => {
             
             {/* Desktop user section */}
             <div className="flex items-center gap-2">
-              <div className="h-5 w-px bg-[#2a3a4d]" />
-              <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-[#0d1520]">
+              <div className="h-5 w-px bg-surface-overlay" />
+              <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-surface-card">
                 <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                   <span className="text-xs font-semibold text-primary">
                     {user?.email?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
-                <span className="text-xs font-medium max-w-[120px] truncate text-white">
+                <span className="text-xs font-medium max-w-[120px] truncate text-surface-foreground">
                   {user?.email}
                 </span>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 shrink-0 text-white/60 hover:text-white hover:bg-destructive/10"
+                className="h-8 w-8 shrink-0 text-surface-muted-foreground hover:text-surface-foreground hover:bg-destructive/10"
                 onClick={handleSignOut}
                 title="Sign out"
               >

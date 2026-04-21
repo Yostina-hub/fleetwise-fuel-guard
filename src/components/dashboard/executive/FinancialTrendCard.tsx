@@ -31,7 +31,7 @@ const FinancialTrendCard = ({ metrics, loading }: FinancialTrendCardProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] bg-white/10 rounded-lg animate-pulse" />
+          <div className="h-[300px] bg-surface-overlay/60 rounded-lg animate-pulse" />
         </CardContent>
       </Card>
     );

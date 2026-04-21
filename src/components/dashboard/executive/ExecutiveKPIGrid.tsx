@@ -103,7 +103,7 @@ const ExecutiveKPIGrid = ({ kpis, loading }: ExecutiveKPIGridProps) => {
                     {kpiIcons[kpi.label] || categoryIcons[kpi.category]}
                   </div>
                 </div>
-                <span className="text-xs uppercase tracking-wider text-white/60 font-medium">
+                <span className="text-xs uppercase tracking-wider text-surface-muted-foreground font-medium">
                   {kpi.category}
                 </span>
               </div>
@@ -118,17 +118,17 @@ const ExecutiveKPIGrid = ({ kpis, loading }: ExecutiveKPIGridProps) => {
                 >
                   {kpi.value}
                 </motion.h3>
-                <p className="text-sm text-white/80 font-medium">{kpi.label}</p>
+                <p className="text-sm text-surface-foreground/80 font-medium">{kpi.label}</p>
               </div>
 
               {/* Trend & Sparkline */}
-              <div className="flex items-center justify-between pt-2 border-t border-[#2a3a4d]">
+              <div className="flex items-center justify-between pt-2 border-t border-surface-border">
                 <div className={`flex items-center gap-1 text-sm ${trendColor}`}>
                   {getTrendIcon(kpi.trend)}
                   <span className="font-medium">
                     {kpi.change >= 0 ? '+' : ''}{kpi.change.toFixed(1)}%
                   </span>
-                  <span className="text-white/60 text-xs">{kpi.changeLabel}</span>
+                  <span className="text-surface-muted-foreground text-xs">{kpi.changeLabel}</span>
                 </div>
                 
                 <div className="opacity-70">

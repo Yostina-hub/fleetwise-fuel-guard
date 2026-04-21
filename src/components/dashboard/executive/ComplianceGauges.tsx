@@ -46,7 +46,7 @@ const ComplianceGauges = ({ items, loading }: ComplianceGaugesProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[350px] bg-white/10 rounded-lg animate-pulse" />
+          <div className="h-[350px] bg-surface-overlay/60 rounded-lg animate-pulse" />
         </CardContent>
       </Card>
     );

@@ -25,10 +25,10 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="rounded-2xl bg-[#1a2332] border border-[#2a3a4d] p-6 h-80"
+        className="rounded-2xl bg-surface-elevated border border-surface-border p-6 h-80"
       >
         <div className="animate-pulse flex items-center justify-center h-full">
-          <div className="w-48 h-48 rounded-full bg-white/10" />
+          <div className="w-48 h-48 rounded-full bg-surface-overlay/60" />
         </div>
       </motion.div>
     );
@@ -45,7 +45,7 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative rounded-2xl bg-[#1a2332] border border-[#2a3a4d] overflow-hidden"
+      className="relative rounded-2xl bg-surface-elevated border border-surface-border overflow-hidden"
     >
       {/* Glow effect */}
       <motion.div 
@@ -58,7 +58,7 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
         <div className="flex items-center justify-between mb-2">
           <div>
             <h3 className="text-lg font-semibold text-white">{t('executive.performanceAnalysis')}</h3>
-            <p className="text-sm text-white/60">{t('executive.fleetVsTarget')}</p>
+            <p className="text-sm text-surface-muted-foreground">{t('executive.fleetVsTarget')}</p>
           </div>
           <motion.div 
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/20 border border-primary/40"
@@ -66,7 +66,7 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
           >
             <Target className="w-5 h-5 text-primary" />
             <div>
-              <p className="text-xs text-white/60">{t('executive.overall')}</p>
+              <p className="text-xs text-surface-muted-foreground">{t('executive.overall')}</p>
               <p className="text-xl font-bold text-primary">{overallScore}%</p>
             </div>
           </motion.div>
@@ -112,11 +112,11 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
         <div className="flex items-center justify-center gap-6 mt-2">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-primary" />
-            <span className="text-xs text-white/80 font-medium">{t('executive.currentPerformance')}</span>
+            <span className="text-xs text-surface-foreground/80 font-medium">{t('executive.currentPerformance')}</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#2a3a4d] border border-[#3a4a5d]" />
-            <span className="text-xs text-white/80 font-medium">{t('executive.target')}</span>
+            <div className="w-3 h-3 rounded-full bg-surface-overlay border border-[#3a4a5d]" />
+            <span className="text-xs text-surface-foreground/80 font-medium">{t('executive.target')}</span>
           </div>
         </div>
       </div>

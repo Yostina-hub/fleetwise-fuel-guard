@@ -20,8 +20,7 @@ const AlertsQuickActions = ({
 }: AlertsQuickActionsProps) => {
   return (
     <Card 
-      className="border border-cyan-500/20"
-      style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+      className="border border-cyan-500/20 bg-cyber-gradient"
     >
       <CardContent className="p-4">
         <TooltipProvider>
@@ -47,7 +46,7 @@ const AlertsQuickActions = ({
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
-                  className="gap-2 bg-white/5 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200"
+                  className="gap-2 bg-surface-overlay/40 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200"
                   onClick={onAcknowledgeAll}
                   aria-label="Acknowledge all pending alerts"
                 >
@@ -63,7 +62,7 @@ const AlertsQuickActions = ({
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
-                  className="gap-2 bg-white/5 border-[#8DC63F]/50 text-[#8DC63F] hover:bg-[#8DC63F]/10"
+                  className="gap-2 bg-surface-overlay/40 border-[#8DC63F]/50 text-[#8DC63F] hover:bg-[#8DC63F]/10"
                   onClick={onExport}
                   aria-label="Export alerts to CSV"
                 >
@@ -79,7 +78,7 @@ const AlertsQuickActions = ({
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
-                  className="gap-2 bg-white/5 border-amber-400/50 text-amber-400 hover:bg-amber-400/10"
+                  className="gap-2 bg-surface-overlay/40 border-amber-400/50 text-amber-400 hover:bg-amber-400/10"
                   onClick={onConfigureRules}
                   aria-label="Configure alert rules"
                 >

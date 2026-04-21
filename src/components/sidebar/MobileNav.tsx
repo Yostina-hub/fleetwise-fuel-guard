@@ -31,11 +31,11 @@ export function MobileNav({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="w-[85vw] max-w-[320px] p-0 bg-[#0d1520] border-r border-[#2a3a4d]/50"
+        className="w-[85vw] max-w-[320px] p-0 bg-surface-card border-r border-surface-border/50"
       >
         <div className="flex flex-col h-full pt-safe">
           {/* Header with Logo - Native style */}
-          <div className="px-4 py-4 bg-[#001a33] flex items-center justify-between">
+          <div className="px-4 py-4 bg-surface-deep flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
                 src={ethioTelecomLogo}
@@ -46,7 +46,7 @@ export function MobileNav({
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full text-white/60 hover:text-white hover:bg-white/10 active:scale-95 transition-transform touch-manipulation"
+              className="h-9 w-9 rounded-full text-surface-muted-foreground hover:text-surface-foreground hover:bg-surface-overlay/60 active:scale-95 transition-transform touch-manipulation"
               onClick={() => onOpenChange(false)}
             >
               <X className="h-5 w-5" />
@@ -66,9 +66,9 @@ export function MobileNav({
           </div>
 
           {/* User section - Fixed at bottom with safe area */}
-          <div className="p-3 border-t border-[#2a3a4d]/30 bg-[#0a0f16] pb-safe">
+          <div className="p-3 border-t border-surface-border/30 bg-surface-deep pb-safe">
             <div 
-              className="flex items-center gap-3 px-3 py-3 rounded-xl bg-[#1a2332]/80 active:bg-[#1a2332] transition-colors touch-manipulation"
+              className="flex items-center gap-3 px-3 py-3 rounded-xl bg-surface-elevated/80 active:bg-surface-elevated transition-colors touch-manipulation"
               onClick={onSignOut}
             >
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
@@ -77,12 +77,12 @@ export function MobileNav({
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium text-white truncate block">
+                <span className="text-sm font-medium text-surface-foreground truncate block">
                   {userEmail}
                 </span>
-                <span className="text-xs text-white/50">Tap to sign out</span>
+                <span className="text-xs text-surface-muted-foreground">Tap to sign out</span>
               </div>
-              <LogOut className="w-5 h-5 text-white/40" />
+              <LogOut className="w-5 h-5 text-surface-foreground/40" />
             </div>
           </div>
         </div>

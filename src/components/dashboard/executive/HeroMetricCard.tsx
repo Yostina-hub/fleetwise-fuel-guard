@@ -88,7 +88,7 @@ const HeroMetricCard = ({
       whileHover={{ y: -5, scale: 1.02 }}
       className={`
         relative overflow-hidden rounded-2xl 
-        bg-[#1a2332] border border-[#2a3a4d]
+        bg-surface-elevated border border-surface-border
         backdrop-blur-sm
         transition-all duration-300
         shadow-lg ${colors.glow}
@@ -150,9 +150,9 @@ const HeroMetricCard = ({
           >
             {prefix}{formattedValue}{suffix}
           </motion.div>
-          <p className="text-sm font-medium text-white/80">{title}</p>
+          <p className="text-sm font-medium text-surface-foreground/80">{title}</p>
           {subtitle && (
-            <p className="text-xs text-white/60">{subtitle}</p>
+            <p className="text-xs text-surface-muted-foreground">{subtitle}</p>
           )}
         </div>
 

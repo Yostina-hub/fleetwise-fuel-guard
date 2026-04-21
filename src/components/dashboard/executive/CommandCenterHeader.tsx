@@ -53,7 +53,7 @@ const CommandCenterHeader = ({ totalVehicles, activeVehicles, totalTrips, active
                   <motion.span className="w-2 h-2 rounded-full bg-white" animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 1, repeat: Infinity }} />
                   {t('executive.liveOperations')}
                 </Badge>
-                <span className="text-sm text-white/90 flex items-center gap-1">
+                <span className="text-sm text-surface-foreground/90 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" />
                   {format(currentTime, 'HH:mm:ss')}
                 </span>
@@ -67,8 +67,8 @@ const CommandCenterHeader = ({ totalVehicles, activeVehicles, totalTrips, active
                 <Activity className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-white/80 uppercase tracking-wider">{t('executive.activeFleet')}</p>
-                <p className="text-xl font-bold text-white">{animatedVehicles}<span className="text-white/70 text-sm">/{totalVehicles}</span></p>
+                <p className="text-xs text-surface-foreground/80 uppercase tracking-wider">{t('executive.activeFleet')}</p>
+                <p className="text-xl font-bold text-white">{animatedVehicles}<span className="text-surface-foreground/70 text-sm">/{totalVehicles}</span></p>
               </div>
             </motion.div>
 
@@ -77,7 +77,7 @@ const CommandCenterHeader = ({ totalVehicles, activeVehicles, totalTrips, active
                 <Signal className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-white/80 uppercase tracking-wider">{t('executive.todaysTrips')}</p>
+                <p className="text-xs text-surface-foreground/80 uppercase tracking-wider">{t('executive.todaysTrips')}</p>
                 <p className="text-xl font-bold text-white">{animatedTrips}</p>
               </div>
             </motion.div>

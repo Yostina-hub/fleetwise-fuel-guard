@@ -84,6 +84,17 @@ export default {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+        surface: {
+          deep: "hsl(var(--surface-deep))",
+          DEFAULT: "hsl(var(--surface-card))",
+          card: "hsl(var(--surface-card))",
+          elevated: "hsl(var(--surface-elevated))",
+          overlay: "hsl(var(--surface-overlay))",
+          border: "hsl(var(--surface-border))",
+          foreground: "hsl(var(--surface-foreground))",
+          "muted-foreground": "hsl(var(--surface-muted-foreground))",
+          accent: "hsl(var(--surface-accent))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
