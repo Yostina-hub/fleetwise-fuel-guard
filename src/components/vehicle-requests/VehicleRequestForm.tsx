@@ -952,7 +952,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                                 <span className="text-xs text-muted-foreground truncate">{u.email}</span>
                               </div>
                               {u.isAlsoDriver && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">Driver</Badge>
+                                <Badge variant="outline" className="text-xs px-1.5 py-0 shrink-0">Driver</Badge>
                               )}
                             </div>
                           </CommandItem>
@@ -976,7 +976,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                                   <span className="text-sm truncate">{d.name}</span>
                                   <span className="text-xs text-muted-foreground truncate">{d.email}</span>
                                 </div>
-                                <Badge variant={d.status === "active" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 shrink-0 capitalize">
+                                <Badge variant={d.status === "active" ? "default" : "secondary"} className="text-xs px-1.5 py-0 shrink-0 capitalize">
                                   {d.status || "active"}
                                 </Badge>
                               </div>
@@ -1321,7 +1321,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <span className="inline-flex items-center gap-1.5">
                     No. Of Vehicles
                     {!allowsMultipleVehicles && (
-                      <Badge variant="outline" className="text-[10px] py-0 px-1.5">Locked at 1</Badge>
+                      <Badge variant="outline" className="text-xs py-0 px-1.5">Locked at 1</Badge>
                     )}
                   </span>
                 }
@@ -1381,7 +1381,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                       <SelectItem key={c.value} value={c.value}>
                         <div className="flex flex-col items-start">
                           <span className="text-sm">{c.label}</span>
-                          <span className="text-[10px] text-muted-foreground">{c.description}</span>
+                          <span className="text-xs text-muted-foreground">{c.description}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -1403,7 +1403,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <Badge className="gap-1.5">
                       <Car className="w-3 h-3" /> {recommendation.label}
                     </Badge>
-                    <Badge variant="outline" className={`text-[10px] ${COST_BAND_TONE[recommendation.costBand]}`}>
+                    <Badge variant="outline" className={`text-xs ${COST_BAND_TONE[recommendation.costBand]}`}>
                       {COST_BAND_LABELS[recommendation.costBand]}
                     </Badge>
                     <span className="text-xs text-muted-foreground ml-auto">
@@ -1420,12 +1420,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Label className="text-primary font-medium flex items-center gap-2">
                   Vehicle Type
                   {recommendation && form.vehicle_type === recommendation.value && (
-                    <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600 dark:text-emerald-400 gap-1">
+                    <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 gap-1">
                       <CheckCircle2 className="w-2.5 h-2.5" /> Matches recommendation
                     </Badge>
                   )}
                   {isUpgrade && (
-                    <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 dark:text-amber-400">
+                    <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-600 dark:text-amber-400">
                       Upgrade — justification required
                     </Badge>
                   )}
@@ -1449,7 +1449,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                                   {COST_BAND_LABELS[profile.costBand]}
                                 </Badge>
                               )}
-                              {isRec && <span className="text-[10px] text-primary ml-auto">★ recommended</span>}
+                              {isRec && <span className="text-xs text-primary ml-auto">★ recommended</span>}
                             </div>
                           </SelectItem>
                         );
@@ -1580,7 +1580,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                           <SelectItem key={c.value} value={c.value}>
                             <div className="flex flex-col items-start">
                               <span className="text-sm">{c.label}</span>
-                              <span className="text-[10px] text-muted-foreground">{c.description}</span>
+                              <span className="text-xs text-muted-foreground">{c.description}</span>
                             </div>
                           </SelectItem>
                         ))}
