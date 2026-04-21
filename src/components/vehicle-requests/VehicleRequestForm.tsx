@@ -691,8 +691,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     type: !!form.request_type,
     schedule: isDaily ? !!form.date : !!form.start_date,
     route: !!form.departure_place || !!form.destination,
-    resources: !!form.num_vehicles && !!form.passengers,
-    details: !!form.purpose,
+    resources: !!form.num_vehicles && !!form.passengers && !!form.vehicle_type && (!isUpgrade || !!form.vehicle_type_justification?.trim()),
+    details: !!form.purpose && !!form.purpose_category,
   };
 
   const body = (
@@ -1254,6 +1254,30 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
           {/* DETAILS TAB */}
           <TabsContent value="details" className="mt-5 space-y-4 animate-fade-in">
+            <div>
+              <Label className="text-primary font-medium">
+                Business Purpose Category <span className="text-destructive">*</span>
+              </Label>
+              <Select value={form.purpose_category} onValueChange={(v) => update("purpose_category", v)}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Select the business purpose…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BUSINESS_PURPOSE_CATEGORIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      <div className="flex flex-col items-start">
+                        <span className="text-sm">{c.label}</span>
+                        <span className="text-[10px] text-muted-foreground">{c.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-primary" />
+                Fleet vehicles are for business use only. Personal or family trips are not permitted.
+              </p>
+            </div>
             <div>
               <Label className="text-primary font-medium">Trip Description <span className="text-destructive">*</span></Label>
               <Textarea
