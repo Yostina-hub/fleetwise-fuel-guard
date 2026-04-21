@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { MapPin, User, Phone, Package, Truck, Clock, FileText, Navigation } from "lucide-react";
+import SLAIndicator from "./SLAIndicator";
 
 interface DispatchJobDetailDialogProps {
   open: boolean;
@@ -56,6 +57,11 @@ export const DispatchJobDetailDialog = ({
               <Badge variant="outline" className="capitalize">{job.priority}</Badge>
             )}
             <Badge variant="outline" className="capitalize">{job.job_type}</Badge>
+            <SLAIndicator
+              slaDeadline={job.sla_deadline_at}
+              actualTime={job.completed_at}
+              status={job.status}
+            />
           </DialogTitle>
           <DialogDescription>
             Created {format(new Date(job.created_at), "MMM dd, yyyy HH:mm")}
