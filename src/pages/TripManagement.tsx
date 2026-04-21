@@ -584,7 +584,7 @@ const TripManagement = () => {
       />
 
       <ExportScheduleDialog open={exportOpen} onOpenChange={setExportOpen} />
-      <UnifiedVehicleRequestDialog open={createOpen} onOpenChange={setCreateOpen} source="trip_management" />
+      {/* Inline form rendered above as a panel — no modal dialog */}
       <CreateAssignmentDialog open={assignOpen} onOpenChange={setAssignOpen} />
 
       {/* Reject-with-reason prompt — invoked by the kanban "X" quick action.
