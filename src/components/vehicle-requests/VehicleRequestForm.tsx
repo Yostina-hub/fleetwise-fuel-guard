@@ -36,6 +36,7 @@ import {
   COST_BAND_LABELS,
   COST_BAND_TONE,
   BUSINESS_PURPOSE_CATEGORIES,
+  BUSINESS_PURPOSE_GROUPS,
   CARGO_LOAD_OPTIONS,
   type CargoLoad,
 } from "@/lib/vehicle-requests/vehicleClassRecommendation";
@@ -1525,21 +1526,55 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <SelectTrigger className="h-10">
                   <SelectValue placeholder="Select the business purpose…" />
                 </SelectTrigger>
-                <SelectContent>
-                  {BUSINESS_PURPOSE_CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      <div className="flex flex-col items-start">
-                        <span className="text-sm">{c.label}</span>
-                        <span className="text-[10px] text-muted-foreground">{c.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-[420px]">
+                  {BUSINESS_PURPOSE_GROUPS.map((g) => {
+                    const items = BUSINESS_PURPOSE_CATEGORIES.filter(
+                      (c) => c.group === g.id && !c.hidden,
+                    );
+                    if (items.length === 0) return null;
+                    return (
+                      <SelectGroup key={g.id}>
+                        <SelectLabel
+                          className={
+                            g.restricted
+                              ? "text-amber-600 dark:text-amber-400 text-[11px] uppercase tracking-wide"
+                              : "text-[11px] uppercase tracking-wide text-muted-foreground"
+                          }
+                        >
+                          {g.label}
+                        </SelectLabel>
+                        {items.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>
+                            <div className="flex flex-col items-start">
+                              <span className="text-sm">{c.label}</span>
+                              <span className="text-[10px] text-muted-foreground">{c.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    );
+                  })}
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-primary" />
-                Fleet vehicles are for business use only. Personal or family trips are not permitted.
-              </p>
+              {(() => {
+                const selected = BUSINESS_PURPOSE_CATEGORIES.find(
+                  (c) => c.value === form.purpose_category,
+                );
+                if (selected?.group === "social") {
+                  return (
+                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      Restricted use — requires additional approval and clear business justification in the description below.
+                    </p>
+                  );
+                }
+                return (
+                  <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-primary" />
+                    Fleet vehicles are for business use only. Personal or family trips are not permitted.
+                  </p>
+                );
+              })()}
             </div>
             <div>
               <Label className="text-primary font-medium">Department / Division</Label>
