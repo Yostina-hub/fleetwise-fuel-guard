@@ -575,9 +575,9 @@ const VehicleRequests = () => {
   const hasActiveFilters =
     !!search || typeFilter !== "all" || poolFilter !== "all" || activeStatus !== "all";
 
-  return (
+    return (
     <Layout>
-      <div className="p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
+      <div className="p-4 md:p-6 lg:p-8 space-y-5 animate-fade-in">
         {showCreate ? (
           <Card className="overflow-hidden border-border/60 shadow-sm">
             <div className="flex items-center justify-between gap-3 px-5 sm:px-6 py-3 border-b border-border/60 bg-muted/30">
@@ -604,92 +604,66 @@ const VehicleRequests = () => {
           </Card>
         ) : (
           <>
-        {/* ============== HERO HEADER ============== */}
-        <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-blue-500/10 via-background to-violet-500/10 p-5 md:p-6">
-          <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
-          <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-500/10 blur-3xl" />
-          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <ClipboardList className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-black tracking-tight">
-                  {t("pages.vehicle_requests.title", "Vehicle Requests")}
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  {t(
-                    "pages.vehicle_requests.description",
-                    "Request, approve & assign vehicles across pools",
-                  )}
-                </p>
-              </div>
+        {/* ============== CLEAN PAGE HEADER ============== */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-1">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+              <ClipboardList className="h-5 w-5 text-primary" />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {canExportImport && (
-                <>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-1.5">
-                        <Download className="w-3.5 h-3.5" /> Export
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Export {filtered.length} requests</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={exportCsv}>
-                        <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={exportXlsx}>
-                        <FileText className="w-4 h-4 mr-2" /> Excel (.xlsx)
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={exportPrint}>
-                        <Printer className="w-4 h-4 mr-2" /> Print / PDF
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => setShowImport(true)}
-                  >
-                    <Upload className="w-3.5 h-3.5" /> Import
-                  </Button>
-                </>
-              )}
-              <Button
-                size="sm"
-                className="gap-1.5 bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 shadow-md shadow-blue-500/20"
-                onClick={() => setShowCreate(true)}
-              >
-                <Plus className="w-3.5 h-3.5" /> New Request
-              </Button>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
+                {t("pages.vehicle_requests.title", "Vehicle Requests")}
+              </h1>
+              <p className="text-muted-foreground text-xs md:text-sm">
+                {t(
+                  "pages.vehicle_requests.description",
+                  "Request, approve & assign vehicles across pools",
+                )}
+              </p>
             </div>
           </div>
-        </div>
-
-        {/* ============== KPI QUICK STATS ============== */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          <KpiCard
-            label="Pending"
-            value={pending}
-            icon={Clock}
-            color="amber"
-          />
-          <KpiCard
-            label="Assigned"
-            value={assigned}
-            icon={Truck}
-            color="blue"
-          />
-          <KpiCard
-            label="Completed"
-            value={completed}
-            icon={CheckCircle}
-            color="emerald"
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            {canExportImport && (
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5 h-9">
+                      <Download className="w-3.5 h-3.5" /> Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Export {filtered.length} requests</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={exportCsv}>
+                      <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportXlsx}>
+                      <FileText className="w-4 h-4 mr-2" /> Excel (.xlsx)
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={exportPrint}>
+                      <Printer className="w-4 h-4 mr-2" /> Print / PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-9"
+                  onClick={() => setShowImport(true)}
+                >
+                  <Upload className="w-3.5 h-3.5" /> Import
+                </Button>
+              </>
+            )}
+            <Button
+              size="sm"
+              className="gap-1.5 h-9"
+              onClick={() => setShowCreate(true)}
+            >
+              <Plus className="w-3.5 h-3.5" /> New Request
+            </Button>
+          </div>
         </div>
 
         <VehicleRequestKPI requests={requests} />
