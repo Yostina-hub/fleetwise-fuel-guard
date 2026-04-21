@@ -168,6 +168,12 @@ const App = () => {
                     <Suspense fallback={<PageLoader />}>
                       <Routes>
                         <Route path="/auth" element={<Auth />} />
+                        <Route path="/install" element={<InstallApp />} />
+                        <Route path="/privacy" element={<PrivacyPolicy />} />
+                        <Route path="/supplier-wo/:token" element={<SupplierWorkOrderView />} />
+
+                        {/* Persistent app shell — sidebar/header stay mounted across navigations */}
+                        <Route element={<LayoutShell />}>
                         {/* Drivers (and driver-only accounts) are bounced to /driver-portal so they never see the executive dashboard. */}
                         <Route path="/" element={<ProtectedRoute blockedForRoles={["driver"]} redirectTo="/driver-portal"><Dashboard /></ProtectedRoute>} />
                         <Route path="/map" element={<ProtectedRoute><MapView /></ProtectedRoute>} />
