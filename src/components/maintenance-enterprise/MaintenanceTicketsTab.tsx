@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -11,8 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Search, Clock, AlertTriangle, CheckCircle, Timer, ArrowUpRight } from "lucide-react";
+import { Plus, Search, Timer, GripVertical, ArrowUpDown } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+
+type SortMode = "manual" | "priority" | "sla" | "created" | "title";
+const SORT_LABELS: Record<SortMode, string> = {
+  manual:   "Manual order",
+  priority: "Priority (P1→P4)",
+  sla:      "SLA deadline",
+  created:  "Newest first",
+  title:    "Title (A→Z)",
+};
+const PRIORITY_RANK: Record<string, number> = { P1: 1, P2: 2, P3: 3, P4: 4 };
+const MT_ORDER_KEY = "maintenance.tickets.order.v1";
 
 const STATUSES = ["open", "triaged", "assigned", "in_progress", "pending_parts", "resolved", "closed"];
 const PRIORITIES = ["P1", "P2", "P3", "P4"];
