@@ -389,6 +389,20 @@ const Fleet = () => {
     handleExport(selectedVehicles, true);
   };
 
+  /**
+   * Unified Excel/CSV exporter for the toolbar dropdown.
+   * Mirrors print/PDF behavior: when rows are selected, export ONLY those;
+   * otherwise fall back to exporting every vehicle in the org.
+   */
+  const handleExportFormat = (format: "csv" | "xlsx") => {
+    if (selectedIds.length > 0) {
+      const selectedVehicles = vehicles.filter(v => selectedIds.includes(v.vehicleId));
+      handleExport(selectedVehicles, true, format);
+    } else {
+      handleExportAll(format);
+    }
+  };
+
   const orgName = "Fleet Management";
 
   const printColumns: PrintColumn[] = useMemo(() => [
@@ -499,14 +513,14 @@ const Fleet = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleExportAll("xlsx")}>
-                  <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel (.xlsx)
+                <DropdownMenuItem onClick={() => handleExportFormat("xlsx")}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel (.xlsx){selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExportAll("csv")}>
-                  <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
+                <DropdownMenuItem onClick={() => handleExportFormat("csv")}>
+                  <FileText className="w-4 h-4 mr-2" /> CSV (.csv){selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExportPdf}>
-                  <FileDown className="w-4 h-4 mr-2" /> PDF (.pdf)
+                  <FileDown className="w-4 h-4 mr-2" /> PDF (.pdf){selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handlePrint}>
                   <Printer className="w-4 h-4 mr-2" /> Print
