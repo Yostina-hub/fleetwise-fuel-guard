@@ -144,16 +144,30 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
         data.avatar_url = await uploadFleetFile("driver-documents", driver.id, "profile_photo", profilePhotoFile);
       }
 
-      const { error } = await supabase.from("drivers").update(data).eq("id", driver.id);
-      if (error) throw error;
+      const { data: updated, error } = await supabase
+        .from("drivers")
+        .update(data)
+        .eq("id", driver.id)
+        .select("id")
+        .maybeSingle();
+      if (error) {
+        console.error("[EditDriver] update error", error);
+        throw error;
+      }
+      if (!updated) {
+        throw new Error("Update blocked: you may not have permission to edit this driver, or the record was not found.");
+      }
+      return updated;
     },
     onSuccess: () => {
       toast({ title: "Success", description: "Driver updated successfully" });
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
+      queryClient.invalidateQueries({ queryKey: ["driver", driver?.id] });
       onOpenChange(false);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to update driver", variant: "destructive" });
+      console.error("[EditDriver] mutation failed", error);
+      toast({ title: "Error", description: error?.message || "Failed to update driver", variant: "destructive" });
     },
   });
 
