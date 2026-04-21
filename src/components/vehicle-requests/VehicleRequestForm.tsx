@@ -1002,16 +1002,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         <MyVehicleRequestsSummary variant="compact" />
 
         {/* Single-page form — sections render one after another, scroll naturally */}
-        <div className="space-y-8">
+        <div className="space-y-6">
 
           {/* TYPE SECTION */}
-          <section className="space-y-3 animate-fade-in">
-            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">1</span>
-              <h3 className="text-base font-semibold text-foreground">Operation Type</h3>
+          <section className="rounded-xl border border-border bg-card/40 p-5 sm:p-6 space-y-5 animate-fade-in">
+            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-semibold">1</span>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-foreground leading-tight">Operation Type</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Pick the kind of trip you're requesting.</p>
+              </div>
             </div>
-            <Label className="text-foreground font-medium text-sm">Vehicle Request Type</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
               {[
                 { v: "daily_operation", title: "Daily Operation", desc: "Single-day trip with start & end time", icon: Clock },
                 { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip (02:00 – 12:00 window)", icon: Moon },
