@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/Layout";
+import { Can } from "@/components/auth/Can";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -355,45 +356,49 @@ const Drivers = () => {
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border border-border/50">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5 h-8"
-                  onClick={() => setImportDialogOpen(true)}
-                >
-                  <Upload className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span className="hidden sm:inline">{t('common.import')}</span>
-                </Button>
+                <Can resource="drivers" action="import">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 h-8"
+                    onClick={() => setImportDialogOpen(true)}
+                  >
+                    <Upload className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span className="hidden sm:inline">{t('common.import')}</span>
+                  </Button>
+                </Can>
                 <div className="w-px h-5 bg-border" />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-1.5 h-8"
-                      disabled={isExporting}
-                    >
-                      {isExporting ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-                      ) : (
-                        <Download className="w-3.5 h-3.5" aria-hidden="true" />
-                      )}
-                      <span className="hidden sm:inline">{isExporting ? `${t('common.export')}...` : t('common.export')}</span>
-                      <ChevronDown className="w-3 h-3 opacity-60" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleExportAll}>
-                      <Download className="w-4 h-4 mr-2" /> CSV (.csv)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDriversExportPdf}>
-                      <FileDown className="w-4 h-4 mr-2" /> PDF (.pdf)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDriversPrint}>
-                      <Printer className="w-4 h-4 mr-2" /> Print
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Can resource="drivers" action="export">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1.5 h-8"
+                        disabled={isExporting}
+                      >
+                        {isExporting ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5" aria-hidden="true" />
+                        )}
+                        <span className="hidden sm:inline">{isExporting ? `${t('common.export')}...` : t('common.export')}</span>
+                        <ChevronDown className="w-3 h-3 opacity-60" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleExportAll}>
+                        <Download className="w-4 h-4 mr-2" /> CSV (.csv)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDriversExportPdf}>
+                        <FileDown className="w-4 h-4 mr-2" /> PDF (.pdf)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDriversPrint}>
+                        <Printer className="w-4 h-4 mr-2" /> Print
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </Can>
               </div>
               <Button
                 variant="outline"
@@ -404,14 +409,16 @@ const Drivers = () => {
                 <Activity className="w-3.5 h-3.5" aria-hidden="true" />
                 <span className="hidden md:inline">Driver Scoring</span>
               </Button>
-              <Button
-                size="sm"
-                className="gap-1.5 h-9 bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all"
-                onClick={() => setCreateDialogOpen(true)}
-              >
-                <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-                {t('drivers.addDriver')}
-              </Button>
+              <Can resource="drivers" action="create">
+                <Button
+                  size="sm"
+                  className="gap-1.5 h-9 bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all"
+                  onClick={() => setCreateDialogOpen(true)}
+                >
+                  <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+                  {t('drivers.addDriver')}
+                </Button>
+              </Can>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Can } from "@/components/auth/Can";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -679,11 +680,17 @@ export const FuelRequestWorkflow = () => {
               <Settings className="w-4 h-4" />Auto Trigger
             </Button>
           )}
-          <Button variant="outline" className="gap-2" onClick={() => setShowWoDialog({ id: null, frId: null })}>
-            <FileText className="w-4 h-4" />New Work Order
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={exportCSV}><Download className="w-4 h-4" />Export</Button>
-          <Button className="gap-2" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4" /> New Request</Button>
+          <Can resource="maintenance" action="create">
+            <Button variant="outline" className="gap-2" onClick={() => setShowWoDialog({ id: null, frId: null })}>
+              <FileText className="w-4 h-4" />New Work Order
+            </Button>
+          </Can>
+          <Can resource="fuel_requests" action="export">
+            <Button variant="outline" className="gap-2" onClick={exportCSV}><Download className="w-4 h-4" />Export</Button>
+          </Can>
+          <Can resource="fuel_requests" action="create">
+            <Button className="gap-2" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4" /> New Request</Button>
+          </Can>
         </div>
       </div>
 
@@ -802,19 +809,23 @@ export const FuelRequestWorkflow = () => {
                                   </TooltipTrigger><TooltipContent>View details</TooltipContent></Tooltip>
                                 </TooltipProvider>
                                 {r.status === "pending" && canApprove && getPendingFuelApproval(r.id) && (
-                                  <>
-                                    <Button variant="ghost" size="sm" className="text-success" onClick={() => { setShowApprove(r); setApprovedLiters(String(r.liters_requested)); }}>
-                                      <Check className="w-4 h-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setShowReject(r)}>
-                                      <X className="w-4 h-4" />
-                                    </Button>
-                                  </>
+                                  <Can resource="fuel_requests" action="approve">
+                                    <>
+                                      <Button variant="ghost" size="sm" className="text-success" onClick={() => { setShowApprove(r); setApprovedLiters(String(r.liters_requested)); }}>
+                                        <Check className="w-4 h-4" />
+                                      </Button>
+                                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setShowReject(r)}>
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    </>
+                                  </Can>
                                 )}
                                 {r.status === "approved" && canApprove && (
-                                  <Button variant="ghost" size="sm" className="text-primary" onClick={() => { setShowFulfill(r); setActualLiters(String(r.liters_approved || r.liters_requested)); }}>
-                                    <Fuel className="w-4 h-4" />
-                                  </Button>
+                                  <Can resource="fuel_requests" action="approve">
+                                    <Button variant="ghost" size="sm" className="text-primary" onClick={() => { setShowFulfill(r); setActualLiters(String(r.liters_approved || r.liters_requested)); }}>
+                                      <Fuel className="w-4 h-4" />
+                                    </Button>
+                                  </Can>
                                 )}
                                 {r.fuel_work_order_id && (
                                   <TooltipProvider>
