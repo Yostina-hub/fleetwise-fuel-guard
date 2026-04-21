@@ -295,6 +295,21 @@ const crossFieldRules: CrossFieldRule[] = [
     }
     return {};
   },
+  // #6 — Contract employment must declare an end date (and it must be > today).
+  (f) => {
+    if (f.employment_type === "contract") {
+      if (!f.contract_end_date) {
+        return { contract_end_date: "Contract end date is required for contract employees" };
+      }
+      const end = new Date(f.contract_end_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (end.getTime() <= today.getTime()) {
+        return { contract_end_date: "Contract end date must be in the future" };
+      }
+    }
+    return {};
+  },
 ];
 
 /**
@@ -376,6 +391,7 @@ export const DRIVER_FIELD_TO_SECTION: Record<DriverFieldName, string> = {
   govt_id_type: "legal", license_number: "legal", national_id: "legal",
   license_type: "legal", license_issue_date: "legal", license_expiry: "legal",
   employment_type: "employment", status: "employment", joining_date: "employment",
+  contract_end_date: "employment",
   department: "employment", experience_years: "employment",
   assigned_pool: "employment", route_type: "employment",
   telebirr_account: "payment",
