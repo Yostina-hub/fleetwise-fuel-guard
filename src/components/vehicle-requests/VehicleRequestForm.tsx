@@ -179,6 +179,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   // Date fields are stored as ISO strings in localStorage; rehydrate to Date
   // objects after restore so the date pickers render correctly.
+  // Also backfill any newly added fields (e.g. `stops`) that may be missing
+  // from older persisted drafts to avoid `undefined.length` crashes.
   useEffect(() => {
     setForm((prev) => {
       const next: any = { ...prev };
@@ -189,6 +191,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           const d = new Date(v);
           if (!isNaN(d.getTime())) { next[k] = d; changed = true; }
         }
+      }
+      if (!Array.isArray((prev as any).stops)) {
+        next.stops = [];
+        changed = true;
       }
       return changed ? next : prev;
     });
