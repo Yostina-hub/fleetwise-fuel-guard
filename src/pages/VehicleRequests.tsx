@@ -53,6 +53,7 @@ import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckIn
 import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
 import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
+import { MyVehicleRequestsSummary } from "@/components/vehicle-requests/MyVehicleRequestsSummary";
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
 import { DeleteRequestDialog } from "@/components/vehicle-requests/DeleteRequestDialog";
 import { MultiVehicleAssignDialog } from "@/components/vehicle-requests/MultiVehicleAssignDialog";
@@ -405,6 +406,9 @@ const VehicleRequests = () => {
         </div>
 
         <VehicleRequestKPI requests={requests} />
+
+        {/* Personal request summary — visible to every user, focuses on THEIR own requests */}
+        <MyVehicleRequestsSummary variant="full" />
 
         {organizationId && <PoolReviewPanel requests={requests} organizationId={organizationId} />}
 

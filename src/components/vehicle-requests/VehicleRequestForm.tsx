@@ -26,6 +26,7 @@ import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm } from "./vehicleRequestValidation";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
+import { MyVehicleRequestsSummary } from "./MyVehicleRequestsSummary";
 
 interface VehicleRequestFormProps {
   open: boolean;
@@ -669,6 +670,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
         {/* Mandatory rating gate */}
         {hasPendingRatings && <PendingRatingsBlocker className="mb-1" />}
+
+        {/* Personal request summary — helps requesters see status of prior submissions before filing a new one */}
+        <MyVehicleRequestsSummary variant="compact" />
 
         {/* Modern Tabs — responsive: icon-only on mobile, full label on >=sm */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
