@@ -260,10 +260,23 @@ export const useDriversPaginated = (
     loadPage(currentPage);
   }, [loadPage, currentPage]);
 
+  // Only treat the very first mount per organization as "initial loading"
+  // so filter/sort changes do NOT trigger the full-page skeleton (avoids reload feel).
+  const hasMountedRef = useRef(false);
   useEffect(() => {
-    isFirstLoad.current = true;
+    if (!hasMountedRef.current) {
+      isFirstLoad.current = true;
+      hasMountedRef.current = true;
+    } else {
+      isFirstLoad.current = false;
+    }
     loadPage(1);
   }, [organizationId, searchQuery, statusFilter, driverTypeFilter, employmentTypeFilter, assignmentFilter, sortBy, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset the mount flag when org changes so a new org gets a fresh initial load
+  useEffect(() => {
+    hasMountedRef.current = false;
+  }, [organizationId]);
 
   useEffect(() => {
     if (!organizationId) return;
