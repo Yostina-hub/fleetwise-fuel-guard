@@ -439,36 +439,39 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         filed_by_user_id: filerId,
         filed_by_name: filerName,
         filed_on_behalf: useOnBehalf,
-        request_type: form.request_type,
+        // Below — every user-controlled field flows through `safe` (the
+        // sanitized + Zod-validated payload). Lat/lng + dates remain raw
+        // because they're not free-text user input.
+        request_type: safe.request_type,
         purpose:
-          form.purpose +
+          safe.purpose +
           filedOnBehalfNote +
-          (form.contact_phone ? `\n\nContact phone: ${form.contact_phone}` : ""),
+          (safe.contact_phone ? `\n\nContact phone: ${safe.contact_phone}` : ""),
         needed_from: neededFrom,
         needed_until: neededUntil,
-        departure_place: form.departure_place || null,
-        destination: form.destination || null,
+        departure_place: safe.departure_place || null,
+        destination: safe.destination || null,
         departure_lat: form.departure_lat,
         departure_lng: form.departure_lng,
         destination_lat: form.destination_lat,
         destination_lng: form.destination_lng,
-        num_vehicles: allowsMultipleVehicles ? (parseInt(form.num_vehicles) || 1) : 1,
-        passengers: parseInt(form.passengers) || 1,
-        vehicle_type: form.vehicle_type || null,
-        trip_type: form.trip_type || null,
-        pool_category: form.pool_category || null,
-        pool_name: form.pool_name || null,
+        num_vehicles: allowsMultipleVehicles ? safe.num_vehicles : 1,
+        passengers: safe.passengers,
+        vehicle_type: safe.vehicle_type || null,
+        trip_type: safe.trip_type || null,
+        pool_category: safe.pool_category || null,
+        pool_name: sanitizedForm.pool_name || null,
         start_time: form.start_time || null,
         end_time: form.end_time || null,
-        project_number: form.request_type === "project_operation" ? (form.project_number || null) : null,
-        priority: form.priority || "normal",
+        project_number: safe.request_type === "project_operation" ? (safe.project_number || null) : null,
+        priority: safe.priority || "normal",
         // Resource-aware request audit fields.
-        purpose_category: form.purpose_category || null,
-        cargo_load: form.cargo_load || null,
+        purpose_category: safe.purpose_category || null,
+        cargo_load: safe.cargo_load || null,
         recommended_vehicle_type: recommendation?.value || null,
         vehicle_type_justification:
-          isUpgrade && form.vehicle_type_justification?.trim()
-            ? form.vehicle_type_justification.trim()
+          isUpgrade && safe.vehicle_type_justification?.trim()
+            ? safe.vehicle_type_justification.trim()
             : null,
         status: "pending",
       };
