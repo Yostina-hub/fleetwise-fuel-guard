@@ -255,11 +255,11 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
                           </div>
                           <div className="shrink-0">
                             {!inProgress ? (
-                              <Button size="sm" onClick={() => handleStartJob(j.id)} className="gap-1">
+                              <Button size="sm" onClick={() => setCheckTarget({ mode: "in", jobId: j.id })} className="gap-1">
                                 <PlayCircle className="w-4 h-4" /> Check In
                               </Button>
                             ) : (
-                              <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id, j.odometer_start)} className="gap-1">
+                              <Button size="sm" variant="outline" onClick={() => setCheckTarget({ mode: "out", jobId: j.id, odometerStart: j.odometer_start ?? null })} className="gap-1">
                                 <StopCircle className="w-4 h-4" /> Check Out
                               </Button>
                             )}
