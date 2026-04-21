@@ -61,7 +61,7 @@ export function MapLocationPickerDialog({
         console.warn("[MapPicker] reverseGeocode: no session");
         return null;
       }
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-search-geocode?lat=${rLat}&lon=${rLng}&reverse=1`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-reverse-geocode?lat=${rLat.toFixed(6)}&lon=${rLng.toFixed(6)}`;
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -74,16 +74,20 @@ export function MapLocationPickerDialog({
         return null;
       }
       const json = await res.json();
-      // Prefer the map's full place name; fall back to building one from
-      // address parts (e.g. "Bole, Addis Ababa, Ethiopia").
+      // If the proxy returned its coords-only fallback, treat as no name so we
+      // don't fill the field with "9.019200, 38.752500".
+      if (json?.fallback) {
+        console.warn("[MapPicker] reverseGeocode fallback:", json?.fallback_reason);
+        return null;
+      }
+      const addr = json?.address || {};
       const display =
         json?.display_name ||
-        json?.results?.[0]?.display_name ||
         json?.name ||
         [
-          json?.address?.suburb || json?.address?.neighbourhood || json?.address?.road,
-          json?.address?.city || json?.address?.town || json?.address?.village,
-          json?.address?.country,
+          addr.suburb || addr.neighbourhood || addr.road,
+          addr.city || addr.town || addr.village,
+          addr.country,
         ]
           .filter(Boolean)
           .join(", ");
