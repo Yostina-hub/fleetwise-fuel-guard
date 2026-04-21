@@ -50,7 +50,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
-import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
+import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
 import { RequesterFeedbackDialog } from "@/components/vehicle-requests/RequesterFeedbackDialog";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
@@ -578,6 +578,32 @@ const VehicleRequests = () => {
   return (
     <Layout>
       <div className="p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
+        {showCreate ? (
+          <Card className="overflow-hidden border-border/60 shadow-sm">
+            <div className="flex items-center justify-between gap-3 px-5 sm:px-6 py-3 border-b border-border/60 bg-muted/30">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 h-8 -ml-2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowCreate(false)}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to Requests
+              </Button>
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+                New Vehicle Request
+              </span>
+            </div>
+            <VehicleRequestForm
+              open
+              embedded
+              source="vehicle_requests_page"
+              onOpenChange={(v) => !v && setShowCreate(false)}
+              onSubmitted={() => setShowCreate(false)}
+            />
+          </Card>
+        ) : (
+          <>
         {/* ============== HERO HEADER ============== */}
         <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-blue-500/10 via-background to-violet-500/10 p-5 md:p-6">
           <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
@@ -1114,9 +1140,11 @@ const VehicleRequests = () => {
             )}
           </CardContent>
         </Card>
+          </>
+        )}
 
         {/* Dialogs */}
-        <UnifiedVehicleRequestDialog open={showCreate} onOpenChange={setShowCreate} />
+        {/* Inline form rendered in-page above — see "showCreate ? ..." panel */}
 
         {showDetail && (
           <Dialog open={!!showDetail} onOpenChange={() => setShowDetail(null)}>
