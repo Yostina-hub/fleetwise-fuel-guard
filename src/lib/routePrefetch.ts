@@ -61,6 +61,7 @@ const IMPORTERS: Record<string, Importer> = {
   "/trip-management": () => import("@/pages/TripManagement"),
   "/ev-management": () => import("@/pages/EVManagement"),
   "/vehicle-requests": () => import("@/pages/VehicleRequests"),
+  "/pool-supervisors": () => import("@/pages/PoolSupervisors"),
   "/my-requests": () => import("@/pages/RequesterPortal"),
   "/tire-management": () => import("@/pages/TireManagement"),
   "/cold-chain": () => import("@/pages/IoTSensorManagement"),
