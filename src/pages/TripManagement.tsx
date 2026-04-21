@@ -560,7 +560,10 @@ const TripManagement = () => {
   );
 };
 
-/* Small inline dialog component — kept here because it's only used by this page. */
+/* Two-mode reject dialog. The approver picks one of:
+   • "Send back for revision" — keeps the request pending and lets the
+     requester edit + resubmit. The reason becomes the reviewer note.
+   • "Reject permanently" — moves the request to terminal `rejected`. */
 function RejectReasonDialog({
   open, requestNumber, reason, onReasonChange, submitting, onCancel, onConfirm,
 }: {
@@ -570,39 +573,53 @@ function RejectReasonDialog({
   onReasonChange: (v: string) => void;
   submitting: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (mode: "revision" | "final") => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle>Reject vehicle request</DialogTitle>
           <DialogDescription>
             {requestNumber
-              ? <>Provide a reason for rejecting <span className="font-mono">{requestNumber}</span>. The requester will be notified.</>
-              : "Provide a reason — the requester will be notified."}
+              ? <>Choose how to reject <span className="font-mono">{requestNumber}</span>. The requester will see your reason.</>
+              : "Choose how to reject this request. The requester will see your reason."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          <Label htmlFor="rej-reason">Rejection reason *</Label>
+          <Label htmlFor="rej-reason">Reason *</Label>
           <Textarea
             id="rej-reason"
             value={reason}
             onChange={(e) => onReasonChange(e.target.value)}
-            placeholder="e.g. Vehicle not available on requested date"
+            placeholder="e.g. Wrong destination — please update and resubmit"
             rows={4}
             maxLength={500}
             autoFocus
           />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Send back for revision</span> lets the
+            requester edit and resubmit. <span className="font-medium text-foreground">Reject permanently</span> closes
+            the request — the requester can only view it.
+          </p>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel} disabled={submitting}>Cancel</Button>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="outline" onClick={onCancel} disabled={submitting}>
+            Cancel
+          </Button>
           <Button
-            variant="destructive"
-            onClick={onConfirm}
+            variant="secondary"
+            onClick={() => onConfirm("revision")}
             disabled={submitting || !reason.trim()}
           >
-            {submitting ? "Rejecting…" : "Confirm rejection"}
+            {submitting ? "Sending…" : "Send back for revision"}
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => onConfirm("final")}
+            disabled={submitting || !reason.trim()}
+          >
+            {submitting ? "Rejecting…" : "Reject permanently"}
           </Button>
         </DialogFooter>
       </DialogContent>
