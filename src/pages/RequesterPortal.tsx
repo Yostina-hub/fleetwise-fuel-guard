@@ -637,15 +637,41 @@ function RequestList({
                       </Badge>
                     </td>
                     <td className="py-2 px-3 text-center">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        title="View"
-                        onClick={() => onOpen(r)}
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </Button>
+                      {/* Edit / Delete are gated on `pending` — once the
+                          approver acts the requester can only view. */}
+                      <div className="inline-flex items-center gap-0.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          title="View"
+                          onClick={() => onOpen(r)}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        {r.status === "pending" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              title="Edit"
+                              onClick={() => onEdit(r)}
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              title="Delete"
+                              onClick={() => onDelete(r)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
