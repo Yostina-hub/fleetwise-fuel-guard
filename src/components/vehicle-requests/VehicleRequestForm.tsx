@@ -858,7 +858,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               variant="ghost"
               size="sm"
               className="h-6 px-2 text-xs"
-              onClick={() => { clearDraft(); setForm(initialWithPrefill); }}
+              onClick={() => { clearDraft(); setForm(initialWithPrefill); setOnBehalfOf(null); }}
             >
               Discard draft
             </Button>
