@@ -68,13 +68,14 @@ const buildInitialForm = () => ({
   request_type: "daily_operation",
   date: undefined as Date | undefined,
   // Default to the requester's current machine time (rounded up to next 5 min).
-  // End defaults to start + 60 min so the slot is always valid out of the box.
+  // Daily operations are short trips by policy → end defaults to start + 30 min
+  // (was 60). Users can extend within the org's working-hours window.
   start_time: roundedNowHHMM(),
-  end_time: roundedNowHHMM(60),
+  end_time: roundedNowHHMM(30),
   start_date: undefined as Date | undefined,
   start_date_time: roundedNowHHMM(),
   end_date: undefined as Date | undefined,
-  end_date_time: roundedNowHHMM(60),
+  end_date_time: roundedNowHHMM(30),
   departure_place: "",
   destination: "",
   departure_lat: null as number | null,
@@ -191,10 +192,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // dynamically from start_date so requesters don't have to compute it manually.
   // Users can still override the picker; we only fill when end_date is empty
   // OR when it's still equal to the previously-derived default.
+  // Default duration (in days) per request type — used to auto-derive end_date
+  // dynamically from start_date so requesters don't have to compute it manually.
+  // Users can still override the picker; we only fill when end_date is empty
+  // OR when it's still equal to the previously-derived default.
+  // Policy: Daily=intra-day (30 min slot), Field=1 day, Project=7 days.
   const DEFAULT_DURATION_DAYS: Record<string, number> = {
     daily_operation: 0,
     project_operation: 7,
-    field_operation: 30,
+    field_operation: 1,
     group_operation: 0,
   };
 
@@ -281,6 +287,55 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     },
     enabled: !!organizationId && open,
   });
+
+  // ── Working-hours policy (per-tenant, configurable) ───────────────────────
+  // Loaded from organization_settings. Used to hard-block Project /
+  // operational requests that fall outside the org's working window.
+  const { data: workingHoursPolicy } = useQuery({
+    queryKey: ["vr-working-hours-policy", organizationId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("organization_settings")
+        .select("vr_working_days, vr_working_start_time, vr_working_end_time")
+        .eq("organization_id", organizationId!)
+        .maybeSingle();
+      return {
+        days: (data?.vr_working_days as number[] | null) ?? [1, 2, 3, 4, 5],
+        start: (data?.vr_working_start_time as string | null) ?? "08:00",
+        end: (data?.vr_working_end_time as string | null) ?? "17:00",
+      };
+    },
+    enabled: !!organizationId && open,
+    staleTime: 5 * 60_000,
+  });
+
+  /**
+   * Validate a date-range against the org working-hours policy. Returns the
+   * first human-readable violation, or null if compliant. Pure function —
+   * tested by the form's submit handler before calling the mutation.
+   */
+  const checkWorkingHours = (from: Date | null, to: Date | null): string | null => {
+    if (!workingHoursPolicy || !from) return null;
+    const { days, start, end } = workingHoursPolicy;
+    const [sH, sM] = start.slice(0, 5).split(":").map(Number);
+    const [eH, eM] = end.slice(0, 5).split(":").map(Number);
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const winLabel = `${start.slice(0, 5)}–${end.slice(0, 5)} on ${days.map((d) => dayNames[d]).join(", ")}`;
+
+    const points: Date[] = to ? [from, to] : [from];
+    for (const p of points) {
+      if (!days.includes(p.getDay())) {
+        return `Working-hours policy: ${dayNames[p.getDay()]} is not an allowed working day. Allowed window: ${winLabel}.`;
+      }
+      const mins = p.getHours() * 60 + p.getMinutes();
+      const startMins = sH * 60 + sM;
+      const endMins = eH * 60 + eM;
+      if (mins < startMins || mins > endMins) {
+        return `Working-hours policy: ${p.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} is outside the working window. Allowed window: ${winLabel}.`;
+      }
+    }
+    return null;
+  };
 
   const filteredPools = useMemo(() => {
     if (!form.pool_category) return [];
@@ -516,6 +571,28 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       if (target) setActiveTab(target);
       return;
     }
+
+    // Working-hours policy enforcement (Project / operational only).
+    // Daily and Field requests are short-form and exempt; Project requests
+    // run during business hours and are hard-blocked outside the org window.
+    if (isProject) {
+      const fromDate = form.start_date
+        ? combineDateAndTime(form.start_date, form.start_date_time)
+        : null;
+      const toDate = form.end_date
+        ? combineDateAndTime(form.end_date, form.end_date_time)
+        : null;
+      const violation = checkWorkingHours(
+        fromDate ? new Date(fromDate) : null,
+        toDate ? new Date(toDate) : null
+      );
+      if (violation) {
+        toast.error(violation);
+        setActiveTab("schedule");
+        return;
+      }
+    }
+
     createMutation.mutate();
   };
 
@@ -769,6 +846,25 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
           {/* SCHEDULE TAB */}
           <TabsContent value="schedule" className="mt-5 space-y-4 animate-fade-in">
+            {/* Working-hours policy banner — Project / operational only */}
+            {isProject && workingHoursPolicy && (() => {
+              const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+              const days = workingHoursPolicy.days.map((d) => dayNames[d]).join(", ");
+              return (
+                <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
+                  <span className="text-muted-foreground">
+                    <span className="font-medium text-foreground">Working-hours policy:</span>{" "}
+                    Operational requests must run between{" "}
+                    <span className="font-medium text-foreground">
+                      {workingHoursPolicy.start.slice(0, 5)}–{workingHoursPolicy.end.slice(0, 5)}
+                    </span>{" "}
+                    on <span className="font-medium text-foreground">{days}</span>.
+                    Outside these hours? Use Daily or Field operations instead.
+                  </span>
+                </div>
+              );
+            })()}
             {isDaily ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-1">

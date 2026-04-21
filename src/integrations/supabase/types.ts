@@ -14299,6 +14299,9 @@ export type Database = {
           updated_at: string
           vapid_private_key: string | null
           vapid_public_key: string | null
+          vr_working_days: number[]
+          vr_working_end_time: string
+          vr_working_start_time: string
         }
         Insert: {
           avg_insurance_per_vehicle_annual?: number
@@ -14343,6 +14346,9 @@ export type Database = {
           updated_at?: string
           vapid_private_key?: string | null
           vapid_public_key?: string | null
+          vr_working_days?: number[]
+          vr_working_end_time?: string
+          vr_working_start_time?: string
         }
         Update: {
           avg_insurance_per_vehicle_annual?: number
@@ -14387,6 +14393,9 @@ export type Database = {
           updated_at?: string
           vapid_private_key?: string | null
           vapid_public_key?: string | null
+          vr_working_days?: number[]
+          vr_working_end_time?: string
+          vr_working_start_time?: string
         }
         Relationships: [
           {
