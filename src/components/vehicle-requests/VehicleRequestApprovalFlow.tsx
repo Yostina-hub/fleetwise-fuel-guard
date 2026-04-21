@@ -85,6 +85,28 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     },
   });
 
+  // Issue #41 — pull the requester's full profile so the detail view can show
+  // department, job title (used as section), employee code and contact info.
+  const { data: requesterProfile } = useQuery({
+    queryKey: ["request-requester-profile", request.requester_id],
+    enabled: !!request.requester_id,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("department, job_title, employee_code, phone, email")
+        .eq("id", request.requester_id)
+        .maybeSingle();
+      return data as {
+        department: string | null;
+        job_title: string | null;
+        employee_code: string | null;
+        phone: string | null;
+        email: string | null;
+      } | null;
+    },
+  });
+
   const requestApprovals = approvals.filter((a: any) => a.request_id === request.id);
 
   const approveMutation = useMutation({
