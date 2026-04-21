@@ -89,17 +89,19 @@ const DispatchJobsTab = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="outline">Pending</Badge>;
+        return <Badge variant="outline" className="bg-muted text-muted-foreground border-border">Pending</Badge>;
       case 'dispatched':
-        return <Badge className="bg-primary/10 text-primary border-primary/20">Dispatched</Badge>;
+        return <Badge className="bg-primary/10 text-primary border-primary/30">Dispatched</Badge>;
       case 'en_route':
-        return <Badge className="bg-warning/10 text-warning border-warning/20">En Route</Badge>;
+        return <Badge className="bg-warning/10 text-warning border-warning/30">En Route</Badge>;
+      case 'in_progress':
+        return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/30">In Progress</Badge>;
       case 'arrived':
-        return <Badge className="bg-info/10 text-info border-info/20">Arrived</Badge>;
+        return <Badge className="bg-info/10 text-info border-info/30">Arrived</Badge>;
       case 'completed':
-        return <Badge className="bg-success/10 text-success border-success/20">Completed</Badge>;
+        return <Badge className="bg-success/10 text-success border-success/30">Completed</Badge>;
       case 'cancelled':
-        return <Badge variant="destructive">Cancelled</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive border-destructive/30">Cancelled</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
