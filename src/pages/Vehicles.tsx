@@ -160,9 +160,15 @@ const Vehicles = () => {
   const activityMap = useVehicle24hActivity(allVehicleIds);
   
   
+  // Persisted UI prefs (#29/#30) — defaults: newest first, all statuses
+  const VEH_PREFS_KEY = "vehicles.listPrefs.v1";
+  const persistedPrefs = (() => {
+    try { return JSON.parse(localStorage.getItem(VEH_PREFS_KEY) || "{}"); } catch { return {}; }
+  })();
+
   const [searchInput, setSearchInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [tripStatusFilter, setTripStatusFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>(persistedPrefs.statusFilter ?? "all");
+  const [tripStatusFilter, setTripStatusFilter] = useState<string | null>(persistedPrefs.tripStatusFilter ?? null);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>();
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -170,11 +176,11 @@ const Vehicles = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets');
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
-  const [viewMode, setViewMode] = useState<'table' | 'list'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'list'>(persistedPrefs.viewMode ?? 'table');
   const [showQuickInfo, setShowQuickInfo] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [sortColumn, setSortColumn] = useState<string>("plate");
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortColumn, setSortColumn] = useState<string>(persistedPrefs.sortColumn ?? "newest");
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(persistedPrefs.sortDirection ?? 'desc');
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([
     { key: 'sn', label: '#', visible: true, locked: true },
     { key: 'ignition', label: 'Ignition', visible: true },
