@@ -820,8 +820,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     const msg = getError(field);
     if (!msg) return null;
     return (
-      <p className="mt-1 flex items-start gap-1 text-[11px] text-destructive animate-fade-in">
-        <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+      <p className="mt-1.5 flex items-start gap-1.5 text-xs text-destructive animate-fade-in">
+        <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
         <span>{msg}</span>
       </p>
     );
@@ -850,23 +850,23 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   const HeaderInner = (
     <div className="flex items-start gap-3 sm:gap-4">
-      <div className="shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center">
-        <Car className="w-5 h-5 text-primary" />
+      <div className="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center">
+        <Car className="w-6 h-6 text-primary" />
       </div>
       <div className="flex-1 min-w-0">
-        <h2 className="text-lg sm:text-xl font-semibold tracking-tight text-foreground">
+        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
           Vehicle Request
         </h2>
-        <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground">
           Fill in the sections below and submit — your progress auto-saves as you type.
         </p>
       </div>
       <Badge
         variant="outline"
-        className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 border-border bg-muted/40 text-muted-foreground font-normal"
+        className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 border-border bg-muted/40 text-muted-foreground font-normal"
       >
-        <ShieldCheck className="w-3 h-3 text-primary" />
-        <span className="text-[11px]">Auto-saved</span>
+        <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+        <span className="text-xs">Auto-saved</span>
       </Badge>
     </div>
   );
