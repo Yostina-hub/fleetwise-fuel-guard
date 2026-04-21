@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ClipboardList, Plus, Clock, CheckCircle, Truck, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ClipboardList, Plus, Clock, CheckCircle, Truck, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, X, Ban, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
@@ -51,6 +56,10 @@ export const VehicleRequestsPanel = () => {
   const [showDetail, setShowDetail] = useState<any>(null);
   const [showCheckIn, setShowCheckIn] = useState<any>(null);
   const [showCrossPool, setShowCrossPool] = useState<any>(null);
+  // CRUD: pending confirmation targets. Cancel = soft (status update), Delete = hard.
+  const [confirmCancel, setConfirmCancel] = useState<any>(null);
+  const [confirmDelete, setConfirmDelete] = useState<any>(null);
+  const [actionPending, setActionPending] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -208,7 +217,49 @@ export const VehicleRequestsPanel = () => {
     setPoolFilter("all");
   };
 
-  // Sortable column-header button — visually communicates current sort state
+  // Soft cancel: keep the row, mark status='cancelled'. Allowed pre-completion.
+  const handleCancel = async () => {
+    if (!confirmCancel) return;
+    setActionPending(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update({ status: "cancelled" })
+        .eq("id", confirmCancel.id);
+      if (error) throw error;
+      toast.success(`Request ${confirmCancel.request_number} cancelled`);
+      setConfirmCancel(null);
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel", organizationId] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to cancel request");
+    } finally {
+      setActionPending(false);
+    }
+  };
+
+  // Hard delete: only allowed for pending/cancelled/rejected to avoid losing
+  // operational history on assigned/completed requests.
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setActionPending(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .delete()
+        .eq("id", confirmDelete.id);
+      if (error) throw error;
+      toast.success(`Request ${confirmDelete.request_number} deleted`);
+      setConfirmDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel", organizationId] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete request");
+    } finally {
+      setActionPending(false);
+    }
+  };
+
+  const canCancel = (r: any) => ["pending", "approved", "assigned"].includes(r.status);
+  const canDelete = (r: any) => ["pending", "cancelled", "rejected"].includes(r.status);
   // (asc/desc/none) and toggles direction on subsequent clicks.
   const SortHeader = ({
     label,
@@ -389,9 +440,39 @@ export const VehicleRequestsPanel = () => {
                         </Badge>
                       </td>
                       <td className="py-2 px-3 text-center">
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowDetail(r)}>
-                          <Eye className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex items-center justify-center gap-0.5">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            title="View"
+                            onClick={() => setShowDetail(r)}
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                          {canCancel(r) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-amber-600 hover:text-amber-700"
+                              title="Cancel request"
+                              onClick={() => setConfirmCancel(r)}
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          {canDelete(r) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              title="Delete request"
+                              onClick={() => setConfirmDelete(r)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -429,6 +510,51 @@ export const VehicleRequestsPanel = () => {
       {showCrossPool && (
         <CrossPoolAssignmentDialog request={showCrossPool} open={!!showCrossPool} onClose={() => setShowCrossPool(null)} />
       )}
+
+      {/* Cancel confirmation — soft action, status flipped to 'cancelled'. */}
+      <AlertDialog open={!!confirmCancel} onOpenChange={(o) => !o && setConfirmCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel request {confirmCancel?.request_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The request will be marked as cancelled. This is reversible by the dispatcher
+              but will release any pending vehicle/driver assignments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionPending}>Keep request</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={actionPending}
+              onClick={(e) => { e.preventDefault(); handleCancel(); }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              {actionPending ? "Cancelling…" : "Cancel request"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete confirmation — hard, irreversible. Restricted by `canDelete`. */}
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete request {confirmDelete?.request_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the request and its history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionPending}>Keep request</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={actionPending}
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {actionPending ? "Deleting…" : "Delete permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
