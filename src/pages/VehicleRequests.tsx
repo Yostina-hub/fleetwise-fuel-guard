@@ -45,6 +45,9 @@ import {
   X,
   FileText,
   Printer,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
 import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
@@ -141,6 +144,28 @@ const VehicleRequests = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [poolFilter, setPoolFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+
+  // sorting
+  type SortKey =
+    | "request_number"
+    | "request_type"
+    | "requester_name"
+    | "route"
+    | "pool_name"
+    | "needed_from"
+    | "vehicle"
+    | "trip_type"
+    | "status";
+  const [sortKey, setSortKey] = useState<SortKey>("needed_from");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "needed_from" ? "desc" : "asc");
+    }
+  };
 
   // Realtime subscription for vehicle_requests
   useEffect(() => {
@@ -246,10 +271,52 @@ const VehicleRequests = () => {
     });
   }, [requests, activeStatus, debouncedSearch, typeFilter, poolFilter]);
 
+  // sorted (apply on top of filtered)
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    const dir = sortDir === "asc" ? 1 : -1;
+    const getVal = (r: any): string | number => {
+      switch (sortKey) {
+        case "request_number":
+          return String(r.request_number ?? "").toLowerCase();
+        case "request_type":
+          return String(r.request_type ?? "").toLowerCase();
+        case "requester_name":
+          return String(r.requester_name ?? "").toLowerCase();
+        case "route":
+          return `${r.departure_place ?? ""} ${r.destination ?? ""}`.trim().toLowerCase();
+        case "pool_name":
+          return String(r.pool_name ?? "").toLowerCase();
+        case "needed_from":
+          return r.needed_from ? new Date(r.needed_from).getTime() : 0;
+        case "vehicle":
+          return String(r.assigned_vehicle?.plate_number ?? "").toLowerCase();
+        case "trip_type":
+          return String(r.trip_type ?? "").toLowerCase();
+        case "status":
+          return String(r.status ?? "").toLowerCase();
+        default:
+          return "";
+      }
+    };
+    arr.sort((a, b) => {
+      const av = getVal(a);
+      const bv = getVal(b);
+      const aEmpty = av === "" || av === 0;
+      const bEmpty = bv === "" || bv === 0;
+      if (aEmpty && !bEmpty) return 1;
+      if (!aEmpty && bEmpty) return -1;
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir]);
+
   // pagination
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const paginated = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   useEffect(() => {
     setPage(1);
@@ -758,16 +825,16 @@ const VehicleRequests = () => {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40">
                       <tr className="border-b text-[11px] uppercase tracking-wide text-muted-foreground">
-                        <th className="text-left py-3 px-4 font-semibold">Request #</th>
-                        <th className="text-left py-3 px-3 font-semibold">Type</th>
-                        <th className="text-left py-3 px-3 font-semibold">Requester</th>
-                        <th className="text-left py-3 px-3 font-semibold">Route</th>
-                        <th className="text-left py-3 px-3 font-semibold">Pool</th>
-                        <th className="text-left py-3 px-3 font-semibold">Needed From</th>
-                        <th className="text-left py-3 px-3 font-semibold">Vehicle</th>
-                        <th className="text-center py-3 px-3 font-semibold">Trip</th>
+                        <SortableTh sortKey="request_number" currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-4">Request #</SortableTh>
+                        <SortableTh sortKey="request_type"   currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Type</SortableTh>
+                        <SortableTh sortKey="requester_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Requester</SortableTh>
+                        <SortableTh sortKey="route"          currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Route</SortableTh>
+                        <SortableTh sortKey="pool_name"      currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Pool</SortableTh>
+                        <SortableTh sortKey="needed_from"    currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Needed From</SortableTh>
+                        <SortableTh sortKey="vehicle"        currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Vehicle</SortableTh>
+                        <SortableTh sortKey="trip_type"      currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3" align="center">Trip</SortableTh>
                         <th className="text-center py-3 px-3 font-semibold">Check-in</th>
-                        <th className="text-center py-3 px-3 font-semibold">Status</th>
+                        <SortableTh sortKey="status"         currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3" align="center">Status</SortableTh>
                         <th className="text-center py-3 px-4 font-semibold">Actions</th>
                       </tr>
                     </thead>
@@ -1199,6 +1266,48 @@ function buildPageList(current: number, total: number): (number | "…")[] {
   if (current < total - 2) pages.push("…");
   pages.push(total);
   return pages;
+}
+
+// ===== Sortable header cell =====
+function SortableTh({
+  sortKey,
+  currentKey,
+  dir,
+  onSort,
+  children,
+  className,
+  align = "left",
+}: {
+  sortKey: string;
+  currentKey: string;
+  dir: "asc" | "desc";
+  onSort: (key: any) => void;
+  children: React.ReactNode;
+  className?: string;
+  align?: "left" | "center" | "right";
+}) {
+  const isActive = currentKey === sortKey;
+  const Icon = !isActive ? ArrowUpDown : dir === "asc" ? ArrowUp : ArrowDown;
+  const alignCls =
+    align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
+  const thAlign = align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left";
+  return (
+    <th className={cn("font-semibold", thAlign, className)}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={cn(
+          "inline-flex items-center gap-1.5 select-none transition-colors hover:text-foreground w-full",
+          alignCls,
+          isActive ? "text-foreground" : "text-muted-foreground",
+        )}
+        aria-sort={isActive ? (dir === "asc" ? "ascending" : "descending") : "none"}
+      >
+        <span>{children}</span>
+        <Icon className={cn("h-3 w-3 shrink-0", isActive ? "opacity-100" : "opacity-40")} />
+      </button>
+    </th>
+  );
 }
 
 export default VehicleRequests;
