@@ -689,7 +689,18 @@ const InviteUserDialog = ({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="gap-2">
+            <Button
+              type="submit"
+              disabled={
+                loading ||
+                !email.trim() ||
+                !fullName.trim() ||
+                !password ||
+                !selectedRole ||
+                Object.keys(errors).length > 0
+              }
+              className="gap-2"
+            >
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
