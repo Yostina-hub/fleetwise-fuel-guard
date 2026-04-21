@@ -579,6 +579,31 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     });
   }, [form.passengers, form.cargo_load]);
 
+  // Eligible vehicle types — driven by passengers + cargo (the previously
+  // selected fields). Only types that can actually carry the requested load
+  // are surfaced so users can't pick something that won't fit. Recommended
+  // type floats to the top, then by cost-band rank.
+  const eligibleVehicleTypes = useMemo(() => {
+    const passengers = Math.max(1, parseInt(form.passengers) || 1);
+    const cargoOrder = { none: 0, small: 1, medium: 2, large: 3 } as const;
+    const cargoNeeded = cargoOrder[form.cargo_load] ?? 0;
+    return VEHICLE_TYPES_OPTIONS
+      .map((vt) => ({ vt, profile: getVehicleClassProfile(vt.value) }))
+      .filter(({ profile }) => {
+        if (!profile) return false;
+        if (profile.costBand === "specialised") return false; // dispatcher-only
+        if (profile.capacity < passengers) return false;
+        if (cargoOrder[profile.cargo] < cargoNeeded) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const aRec = recommendation?.value === a.vt.value ? -1 : 0;
+        const bRec = recommendation?.value === b.vt.value ? -1 : 0;
+        if (aRec !== bRec) return aRec - bRec;
+        return (a.profile!.rank) - (b.profile!.rank);
+      });
+  }, [form.passengers, form.cargo_load, recommendation?.value]);
+
   // Auto-fill vehicle_type with the recommendation when the user hasn't
   // touched it yet. Manual edits are preserved.
   useEffect(() => {
@@ -588,6 +613,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recommendation?.value]);
+
+  // If the previously chosen vehicle type no longer fits the updated
+  // passengers/cargo combo, snap back to the recommendation so the form
+  // never carries a hidden, invalid selection.
+  useEffect(() => {
+    if (!form.vehicle_type) return;
+    const stillEligible = eligibleVehicleTypes.some((e) => e.vt.value === form.vehicle_type);
+    if (!stillEligible) {
+      setForm((f) => ({ ...f, vehicle_type: recommendation?.value || "" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eligibleVehicleTypes, recommendation?.value]);
 
   // True when the user is asking for a more expensive class than recommended.
   const isUpgrade = isUpgradeOverRecommendation(form.vehicle_type, recommendation?.value);
