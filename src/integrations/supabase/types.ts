@@ -23276,6 +23276,7 @@ export type Database = {
           driver_checkin_notes: string | null
           driver_checkin_odometer: number | null
           driver_checkout_odometer: number | null
+          driver_rating: number | null
           end_time: string | null
           id: string
           kpi_target_minutes: number | null
@@ -23293,7 +23294,10 @@ export type Database = {
           pool_reviewer_id: string | null
           priority: string | null
           project_number: string | null
+          punctuality_rating: number | null
           purpose: string
+          rated_at: string | null
+          rating_comment: string | null
           rejection_reason: string | null
           request_number: string
           request_type: string | null
@@ -23308,6 +23312,7 @@ export type Database = {
           trip_duration_days: number | null
           trip_type: string | null
           updated_at: string
+          vehicle_rating: number | null
           vehicle_type: string | null
           workflow_instance_id: string | null
         }
@@ -23351,6 +23356,7 @@ export type Database = {
           driver_checkin_notes?: string | null
           driver_checkin_odometer?: number | null
           driver_checkout_odometer?: number | null
+          driver_rating?: number | null
           end_time?: string | null
           id?: string
           kpi_target_minutes?: number | null
@@ -23368,7 +23374,10 @@ export type Database = {
           pool_reviewer_id?: string | null
           priority?: string | null
           project_number?: string | null
+          punctuality_rating?: number | null
           purpose: string
+          rated_at?: string | null
+          rating_comment?: string | null
           rejection_reason?: string | null
           request_number: string
           request_type?: string | null
@@ -23383,6 +23392,7 @@ export type Database = {
           trip_duration_days?: number | null
           trip_type?: string | null
           updated_at?: string
+          vehicle_rating?: number | null
           vehicle_type?: string | null
           workflow_instance_id?: string | null
         }
@@ -23426,6 +23436,7 @@ export type Database = {
           driver_checkin_notes?: string | null
           driver_checkin_odometer?: number | null
           driver_checkout_odometer?: number | null
+          driver_rating?: number | null
           end_time?: string | null
           id?: string
           kpi_target_minutes?: number | null
@@ -23443,7 +23454,10 @@ export type Database = {
           pool_reviewer_id?: string | null
           priority?: string | null
           project_number?: string | null
+          punctuality_rating?: number | null
           purpose?: string
+          rated_at?: string | null
+          rating_comment?: string | null
           rejection_reason?: string | null
           request_number?: string
           request_type?: string | null
@@ -23458,6 +23472,7 @@ export type Database = {
           trip_duration_days?: number | null
           trip_type?: string | null
           updated_at?: string
+          vehicle_rating?: number | null
           vehicle_type?: string | null
           workflow_instance_id?: string | null
         }

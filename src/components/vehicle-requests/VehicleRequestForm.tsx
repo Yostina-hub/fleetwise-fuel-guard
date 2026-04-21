@@ -24,6 +24,8 @@ import { VEHICLE_TYPES_OPTIONS, ASSIGNED_POOLS } from "@/components/fleet/formCo
 import { AlertCircle } from "lucide-react";
 import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm } from "./vehicleRequestValidation";
+import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
+import { usePendingRatings } from "@/hooks/usePendingRatings";
 
 interface VehicleRequestFormProps {
   open: boolean;
@@ -163,6 +165,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
+
+  // Mandatory rating gate — block new requests until prior completed trips are rated.
+  // The DB also enforces this with a trigger; the UI gives immediate feedback.
+  const { data: pendingRatings = [] } = usePendingRatings(open);
+  const hasPendingRatings = pendingRatings.length > 0;
 
   // Default duration (in days) per request type — used to auto-derive end_date
   // dynamically from start_date so requesters don't have to compute it manually.
@@ -393,7 +400,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       setOnBehalfOf(null);
       onSubmitted?.({ id: data?.id });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => {
+      const msg: string = err?.message ?? "Submission failed";
+      // DB trigger returns "PENDING_RATINGS:N" when prior trips are unrated.
+      const m = msg.match(/PENDING_RATINGS:(\d+)/);
+      if (m) {
+        toast.error("Rate your previous trips first", {
+          description: `You have ${m[1]} completed trip${m[1] === "1" ? "" : "s"} that need a rating before you can submit a new request.`,
+        });
+        return;
+      }
+      toast.error(msg);
+    },
   });
 
   const isDaily = form.request_type === "daily_operation";
@@ -648,6 +666,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             </span>
           </div>
         )}
+
+        {/* Mandatory rating gate */}
+        {hasPendingRatings && <PendingRatingsBlocker className="mb-1" />}
 
         {/* Modern Tabs — responsive: icon-only on mobile, full label on >=sm */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
@@ -1014,7 +1035,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Button
                   size="sm"
                   onClick={handleSubmit}
-                  disabled={!canSubmit || createMutation.isPending}
+                  disabled={!canSubmit || createMutation.isPending || hasPendingRatings}
+                  title={hasPendingRatings ? "Rate your previous trips before submitting" : undefined}
                   className="gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
