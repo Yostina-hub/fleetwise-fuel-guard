@@ -243,23 +243,29 @@ export const VehicleRequestsPanel = () => {
 
   return (
     <div className="space-y-4">
-      {/* Quick Stats + Create */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-4 text-sm">
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-amber-500" />
-            <span className="font-semibold">{pending}</span>
-            <span className="text-muted-foreground">Pending</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Truck className="w-3.5 h-3.5 text-blue-500" />
-            <span className="font-semibold">{assigned}</span>
-            <span className="text-muted-foreground">Assigned</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-            <span className="font-semibold">{completed}</span>
-            <span className="text-muted-foreground">Completed</span>
+      {/* Date Filter (top) + Quick Stats + Create */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <DateRangeFilter
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+          />
+          <div className="flex gap-4 text-sm">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              <span className="font-semibold">{pending}</span>
+              <span className="text-muted-foreground">Pending</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Truck className="w-3.5 h-3.5 text-blue-500" />
+              <span className="font-semibold">{assigned}</span>
+              <span className="text-muted-foreground">Assigned</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+              <span className="font-semibold">{completed}</span>
+              <span className="text-muted-foreground">Completed</span>
+            </div>
           </div>
         </div>
         <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowCreate(true)}>
