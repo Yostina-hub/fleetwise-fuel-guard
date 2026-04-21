@@ -344,30 +344,44 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     field_operation: "Field Operation",
   }[request.request_type] || request.request_type || "General";
 
+  const Field = ({ label, value, full }: { label: string; value: React.ReactNode; full?: boolean }) => (
+    <div className={`min-w-0 ${full ? "col-span-2" : ""}`}>
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium mb-0.5">{label}</div>
+      <div className="text-sm text-foreground break-words">{value}</div>
+    </div>
+  );
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0">
       {/* Request Details */}
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div><span className="text-muted-foreground">Type:</span> <Badge variant="outline">{requestTypeLabel}</Badge></div>
-        <div><span className="text-muted-foreground">Status:</span> <Badge variant={request.status === "approved" ? "default" : request.status === "rejected" ? "destructive" : "secondary"}>{request.status}</Badge></div>
-        <div><span className="text-muted-foreground">Requester:</span> {request.requester_name}</div>
-        <div><span className="text-muted-foreground">Priority:</span> {request.priority || "normal"}</div>
-        <div><span className="text-muted-foreground">From:</span> {format(new Date(request.needed_from), "MMM dd, yyyy HH:mm")}</div>
-        {request.needed_until && <div><span className="text-muted-foreground">Until:</span> {format(new Date(request.needed_until), "MMM dd, yyyy HH:mm")}</div>}
-        {request.departure_place && <div><span className="text-muted-foreground">Departure:</span> {request.departure_place}</div>}
-        {request.destination && <div><span className="text-muted-foreground">Destination:</span> {request.destination}</div>}
-        {request.trip_type && <div><span className="text-muted-foreground">Trip:</span> {request.trip_type === "one_way" ? "One Way" : "Round Trip"}</div>}
-        {request.vehicle_type && <div><span className="text-muted-foreground">Vehicle Type:</span> {request.vehicle_type}</div>}
-        {request.pool_category && <div><span className="text-muted-foreground">Pool:</span> {request.pool_category} / {request.pool_name}</div>}
-        {request.num_vehicles && <div><span className="text-muted-foreground">Vehicles:</span> {request.num_vehicles}</div>}
-        {request.passengers && <div><span className="text-muted-foreground">Passengers:</span> {request.passengers}</div>}
-        {request.trip_duration_days && <div><span className="text-muted-foreground">Duration:</span> {request.trip_duration_days} days</div>}
-        {request.project_number && <div><span className="text-muted-foreground">Project #:</span> {request.project_number}</div>}
-        {request.distance_log_km && <div><span className="text-muted-foreground">Distance:</span> {request.distance_log_km} km</div>}
+      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <Field label="Type" value={<Badge variant="outline">{requestTypeLabel}</Badge>} />
+          <Field label="Status" value={<Badge variant={request.status === "approved" ? "default" : request.status === "rejected" ? "destructive" : "secondary"}>{request.status}</Badge>} />
+          <Field label="Requester" value={request.requester_name} />
+          <Field label="Priority" value={<span className="capitalize">{request.priority || "normal"}</span>} />
+          <Field label="From" value={format(new Date(request.needed_from), "MMM dd, yyyy HH:mm")} />
+          {request.needed_until && <Field label="Until" value={format(new Date(request.needed_until), "MMM dd, yyyy HH:mm")} />}
+          {request.departure_place && <Field label="Departure" value={request.departure_place} />}
+          {request.destination && <Field label="Destination" value={request.destination} />}
+          {request.trip_type && <Field label="Trip" value={request.trip_type === "one_way" ? "One Way" : "Round Trip"} />}
+          {request.vehicle_type && <Field label="Vehicle Type" value={request.vehicle_type} />}
+          {request.pool_category && <Field label="Pool" value={`${request.pool_category} / ${request.pool_name}`} />}
+          {request.num_vehicles && <Field label="Vehicles" value={request.num_vehicles} />}
+          {request.passengers && <Field label="Passengers" value={request.passengers} />}
+          {request.trip_duration_days && <Field label="Duration" value={`${request.trip_duration_days} days`} />}
+          {request.project_number && <Field label="Project #" value={request.project_number} />}
+          {request.distance_log_km && <Field label="Distance" value={`${request.distance_log_km} km`} />}
+        </div>
       </div>
 
       {request.purpose && (
-        <div className="text-sm"><span className="text-muted-foreground">Purpose:</span> {request.purpose}</div>
+        <div className="rounded-lg border border-border/60 bg-card/40 p-4 min-w-0">
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium mb-1">Purpose</div>
+          <p className="text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed max-h-40 overflow-y-auto">
+            {request.purpose}
+          </p>
+        </div>
       )}
 
       {/* Resource-aware downgrade suggestion — appears when the requester

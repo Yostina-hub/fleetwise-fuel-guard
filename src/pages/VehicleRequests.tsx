@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1120,27 +1120,32 @@ const VehicleRequests = () => {
 
         {showDetail && (
           <Dialog open={!!showDetail} onOpenChange={() => setShowDetail(null)}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-blue-500" />
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0">
+              <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/60 shrink-0">
+                <DialogTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="w-4 h-4 text-primary" />
                   Request {showDetail.request_number}
                 </DialogTitle>
+                <DialogDescription className="sr-only">
+                  Vehicle request details, workflow progress, and approval actions.
+                </DialogDescription>
               </DialogHeader>
-              <VehicleRequestWorkflowProgress request={showDetail} />
-              <VehicleRequestApprovalFlow
-                request={showDetail}
-                approvals={approvals}
-                onClose={() => setShowDetail(null)}
-                onCheckIn={() => {
-                  setShowDetail(null);
-                  setShowCheckIn(showDetail);
-                }}
-                onCrossPool={() => {
-                  setShowDetail(null);
-                  setShowCrossPool(showDetail);
-                }}
-              />
+              <div className="px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 space-y-4 min-w-0">
+                <VehicleRequestWorkflowProgress request={showDetail} />
+                <VehicleRequestApprovalFlow
+                  request={showDetail}
+                  approvals={approvals}
+                  onClose={() => setShowDetail(null)}
+                  onCheckIn={() => {
+                    setShowDetail(null);
+                    setShowCheckIn(showDetail);
+                  }}
+                  onCrossPool={() => {
+                    setShowDetail(null);
+                    setShowCrossPool(showDetail);
+                  }}
+                />
+              </div>
             </DialogContent>
           </Dialog>
         )}
