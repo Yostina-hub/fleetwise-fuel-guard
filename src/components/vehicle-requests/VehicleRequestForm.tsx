@@ -795,9 +795,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             {/* Per-field errors are rendered inline below their inputs. */}
 
             {isField && (
-              <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-xs text-muted-foreground">
-                <p className="font-medium text-blue-400">Field Operation Note</p>
-                <p>Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled for the duration of the trip.</p>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+                <p className="font-medium text-primary">Field Operation Note</p>
+                <p className="mt-0.5">Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled for the duration of the trip.</p>
               </div>
             )}
           </TabsContent>
