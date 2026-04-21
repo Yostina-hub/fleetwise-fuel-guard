@@ -18,6 +18,11 @@ import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
 import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetList";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
 import type { RequestAssignment } from "@/hooks/useRequestAssignments";
+import {
+  getVehicleClassProfile,
+  isUpgradeOverRecommendation,
+  COST_BAND_LABELS,
+} from "@/lib/vehicle-requests/vehicleClassRecommendation";
 
 interface Props {
   request: any;
