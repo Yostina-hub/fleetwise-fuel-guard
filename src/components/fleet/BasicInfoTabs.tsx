@@ -350,8 +350,22 @@ function SpecPane(props: PaneProps) {
           placeholder="YYYY"
         />
       </Field>
-      <Field label="MFG Date" hint="Exact factory date (optional)" error={err("mfg_date")} status={stat("mfg_date")}>
-        <DatePickerField value={formData.mfg_date || ""} onChange={v => { set("mfg_date", v); change("mfg_date", v); }} onBlur={blur("mfg_date")} maxDate={new Date()} />
+      <Field label="MFG Year" hint="Factory year (optional)" error={err("mfg_date")} status={stat("mfg_date")}>
+        <Input
+          type="number"
+          inputMode="numeric"
+          min={1900}
+          max={new Date().getFullYear()}
+          placeholder="YYYY"
+          value={formData.mfg_date ? formData.mfg_date.slice(0, 4) : ""}
+          onChange={e => {
+            const yr = e.target.value.replace(/\D/g, "").slice(0, 4);
+            const iso = yr.length === 4 ? `${yr}-01-01` : "";
+            set("mfg_date", iso);
+            change("mfg_date", iso);
+          }}
+          onBlur={blur("mfg_date")}
+        />
       </Field>
       <Field label="Color" error={err("color")} status={stat("color")}>
         <Input value={formData.color} onChange={e => change("color", sanitizeWhileTyping(e.target.value).slice(0, 40))} onBlur={blur("color")} placeholder="e.g. White" maxLength={40} />
