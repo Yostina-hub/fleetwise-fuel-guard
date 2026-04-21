@@ -1628,8 +1628,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-primary font-medium">Trip Description <span className="text-destructive">*</span></Label>
+            <VRField
+              id="vr-purpose"
+              label="Trip Description"
+              icon={FileText}
+              required
+              error={getError("purpose")}
+              filled={(form.purpose?.length || 0) >= 10}
+              hint={
+                <span className={(form.purpose?.length || 0) >= 1000 ? "text-destructive font-medium" : undefined}>
+                  {form.purpose?.length || 0}/1000 characters
+                </span>
+              }
+            >
               <Textarea
                 value={form.purpose}
                 onChange={e => update("purpose", e.target.value.slice(0, 1000))}
@@ -1637,13 +1648,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 placeholder="Describe the purpose of this trip — what, where, and why (min 10 characters)…"
                 rows={4}
                 maxLength={1000}
-                aria-invalid={!!getError("purpose")}
               />
-              <FieldError field="purpose" />
-              <p className={`text-[11px] mt-1 ${(form.purpose?.length || 0) >= 1000 ? "text-destructive font-medium" : "text-muted-foreground"}`}>
-                {form.purpose?.length || 0}/1000 characters
-              </p>
-            </div>
+            </VRField>
             <div className="rounded-lg border border-border bg-gradient-to-br from-muted/50 to-muted/20 p-4 text-xs text-muted-foreground space-y-2">
               <p className="font-medium text-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Approval Routing</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1">
