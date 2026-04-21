@@ -71,7 +71,7 @@ export function TimePicker({
   const setHour = (h: string) => onChange(mm ? `${h}:${mm}` : `${h}:`);
   const setMinute = (m: string) => onChange(hh ? `${hh}:${m}` : `:${m}`);
 
-  const display = hh && mm ? `${hh}:${mm}` : "";
+  const display = hh && mm ? `${hh}:${mm}` : (hh || mm) ? `${hh || "--"}:${mm || "--"}` : "";
 
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) onBlur?.(); }}>
