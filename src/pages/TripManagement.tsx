@@ -197,7 +197,12 @@ const TripManagement = () => {
     }
   };
 
-  const pendingApprovalCount = pendingApprovals?.length || 0;
+  // Real pending count from the unified vehicle_requests pipeline
+  // (the legacy trip_approvals queue is rarely populated).
+  const pendingApprovalCount = useMemo(
+    () => (requests || []).filter((r: any) => r.status === "pending" || r.status === "submitted").length,
+    [requests]
+  );
 
   // ── RBAC enforcement ────────────────────────────────────────────────
   // Show loader while permissions resolve to avoid flash of unauthorized UI.
