@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useDriverScores } from "@/hooks/useDriverScores";
+import { useFleetPassengerFeedback } from "@/hooks/useDriverPassengerFeedback";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useVehicles } from "@/hooks/useVehicles";
 import { 
@@ -65,6 +66,7 @@ const getTrendIcon = (trend: string) => {
 
 export const DriverScoringTab = () => {
   const { driverScores, scoreHistory, isLoading, calculateScore } = useDriverScores();
+  const { data: passengerFeedback = {} } = useFleetPassengerFeedback();
   const { drivers } = useDrivers(); // Needed for calculate dialog
   const { vehicles } = useVehicles();
   const [isCalculateDialogOpen, setIsCalculateDialogOpen] = useState(false);
@@ -464,10 +466,22 @@ export const DriverScoringTab = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={getRatingColor(score.safety_rating)}>
-                            {getRatingIcon(score.safety_rating)}
-                            <span className="ml-1 capitalize">{score.safety_rating}</span>
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge className={getRatingColor(score.safety_rating)}>
+                              {getRatingIcon(score.safety_rating)}
+                              <span className="ml-1 capitalize">{score.safety_rating}</span>
+                            </Badge>
+                            {(() => {
+                              const fb = score.driver_id ? passengerFeedback[score.driver_id] : null;
+                              const low = fb && fb.totalRated >= 3 && (fb.avgDriver30d ?? fb.avgDriver ?? 5) < 3.5;
+                              return low ? (
+                                <Badge variant="outline" className="text-[9px] bg-red-500/10 text-red-400 border-red-500/30 gap-1">
+                                  <AlertCircle className="w-2.5 h-2.5" />
+                                  Poor Customer Feedback
+                                </Badge>
+                              ) : null;
+                            })()}
+                          </div>
                         </TableCell>
                         <TableCell>{getTrendIcon(score.trend)}</TableCell>
                         <TableCell>
