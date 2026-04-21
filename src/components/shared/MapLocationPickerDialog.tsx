@@ -267,8 +267,14 @@ export function MapLocationPickerDialog({
     }
   };
 
-  const handleConfirm = () => {
-    const name = locationName.trim() || `${lat}, ${lng}`;
+  const handleConfirm = async () => {
+    let name = locationName.trim();
+    // If somehow the name is empty at confirm time, try one more reverse
+    // geocode so we never return raw coordinates as the location's name.
+    if (!name) {
+      const fetched = await reverseGeocode(lat, lng);
+      name = (fetched || "").trim() || "Pinned location";
+    }
     onSelect({ name, lat, lng });
     onClose();
   };
@@ -327,37 +333,23 @@ export function MapLocationPickerDialog({
           className="w-full h-[350px] rounded-lg border border-border overflow-hidden"
         />
 
-        {/* Coordinates & Name */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <Label className="text-xs text-muted-foreground">Location Name</Label>
-            <Input
-              value={locationName}
-              onChange={(e) => setLocationName(e.target.value)}
-              placeholder="e.g. Bole HQ"
-              className="h-8 text-sm"
-            />
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground">Latitude</Label>
-            <Input
-              type="number"
-              step="0.000001"
-              value={lat}
-              onChange={(e) => setLat(parseFloat(e.target.value) || 0)}
-              className="h-8 text-sm"
-            />
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground">Longitude</Label>
-            <Input
-              type="number"
-              step="0.000001"
-              value={lng}
-              onChange={(e) => setLng(parseFloat(e.target.value) || 0)}
-              className="h-8 text-sm"
-            />
-          </div>
+        {/* Selected place — name is auto-filled from the map; coords kept
+            as a tiny read-only hint so users know the pin is real, but they
+            never have to type latitude/longitude themselves. */}
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-destructive" /> Selected location
+            {isLocating && <Loader2 className="w-3 h-3 animate-spin" />}
+          </Label>
+          <Input
+            value={locationName}
+            onChange={(e) => setLocationName(e.target.value)}
+            placeholder={isLocating ? "Detecting your location…" : "Click the map or search to pick a place"}
+            className="h-9"
+          />
+          <p className="text-[11px] text-muted-foreground/80 pl-0.5">
+            Pin: {lat.toFixed(5)}, {lng.toFixed(5)}
+          </p>
         </div>
 
         <DialogFooter>

@@ -58,9 +58,14 @@ export function LocationPickerField({
    */
   const autoSaveCustomLocation = async (loc: { name: string; lat: number; lng: number }) => {
     if (!organizationId) return;
-    if (!loc.name?.trim()) return;
+    const trimmed = loc.name?.trim() || "";
+    if (!trimmed) return;
+    // Don't pollute the saved-locations list with placeholder names or
+    // raw "lat, lng" strings — only save real, human-readable place names.
+    if (trimmed.toLowerCase() === "pinned location") return;
+    if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(trimmed)) return;
     // Skip if a geofence with this name already exists
-    if (geofences?.some((g) => g.name.toLowerCase() === loc.name.trim().toLowerCase())) return;
+    if (geofences?.some((g) => g.name.toLowerCase() === trimmed.toLowerCase())) return;
 
     setIsSaving(true);
     try {
