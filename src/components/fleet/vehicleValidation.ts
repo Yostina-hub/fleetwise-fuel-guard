@@ -55,12 +55,12 @@ export const vehicleFieldSchemas = {
     .trim()
     .min(1, "Plate number is required")
     .regex(/^\d{1,5}$/, "Plate number must be 1–5 digits"),
-  purpose_for: trimmedRequired("Purpose"),
+  purpose_for: trimmedOptional(100),
   specific_pool: trimmedOptional(100),
   specific_location: trimmedOptional(200),
   assigned_location: trimmedOptional(100),
-  vehicle_type: trimmedRequired("Vehicle type"),
-  vehicle_group: trimmedRequired("Group"),
+  vehicle_type: trimmedOptional(50),
+  vehicle_group: trimmedOptional(80),
 
   // ----- Specifications -----
   make: trimmedRequired("Make", 1, 100),
@@ -86,10 +86,10 @@ export const vehicleFieldSchemas = {
     .or(z.literal(""))
     .refine((v) => !v || /^[A-HJ-NPR-Z0-9]{11,17}$/i.test(v), "VIN must be 11–17 characters (no I, O, Q)"),
   engine_number: trimmedOptional(50),
-  transmission_type: trimmedRequired("Transmission"),
-  drive_type: trimmedRequired("Drive type"),
+  transmission_type: trimmedOptional(30),
+  drive_type: trimmedOptional(20),
   engine_cc: numericString("Engine CC", { min: 0, max: 50000, integer: true }),
-  fuel_type: trimmedRequired("Energy type"),
+  fuel_type: trimmedOptional(30),
 
   // ----- Valuation -----
   purchasing_price: numericString("Purchasing price", { min: 0 }),
