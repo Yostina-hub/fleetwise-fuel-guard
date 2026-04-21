@@ -188,7 +188,8 @@ const MaintenanceTicketsTab = () => {
                     )}
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           </div>
         );
@@ -209,11 +210,11 @@ const MaintenanceTicketsTab = () => {
           <p className="text-xs text-muted-foreground">SLA Breached</p>
         </CardContent></Card>
         <Card className="glass-strong"><CardContent className="p-4 text-center">
-          <p className="text-2xl font-bold text-yellow-400">{tickets.filter((t: any) => t.priority === "P1" && !["resolved","closed"].includes(t.status)).length}</p>
+          <p className="text-2xl font-bold text-warning">{tickets.filter((t: any) => t.priority === "P1" && !["resolved","closed"].includes(t.status)).length}</p>
           <p className="text-xs text-muted-foreground">Critical (P1)</p>
         </CardContent></Card>
         <Card className="glass-strong"><CardContent className="p-4 text-center">
-          <p className="text-2xl font-bold text-green-400">{Math.round(avgResolution / 60)}h</p>
+          <p className="text-2xl font-bold text-success">{Math.round(avgResolution / 60)}h</p>
           <p className="text-xs text-muted-foreground">Avg Resolution</p>
         </CardContent></Card>
       </div>
