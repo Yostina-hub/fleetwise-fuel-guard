@@ -14,17 +14,17 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
       className={cn("p-3 pointer-events-auto", className)}
       classNames={{
         months: "flex flex-col sm:flex-row gap-4",
-        month: "space-y-4",
+        month: "space-y-3 min-w-[260px]",
         caption: "flex justify-center pt-1 relative items-center h-9",
         caption_label: "text-sm font-semibold",
-        caption_dropdowns: "flex items-center gap-1.5 px-8",
+        caption_dropdowns: "flex items-center justify-center gap-1.5 w-full px-10",
         dropdown: cn(
           "h-8 rounded-md border border-input bg-background px-2 text-sm font-medium",
           "hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring",
-          "appearance-none cursor-pointer",
+          "appearance-none cursor-pointer max-w-[110px] truncate",
         ),
-        dropdown_month: "relative",
-        dropdown_year: "relative",
+        dropdown_month: "relative flex-shrink",
+        dropdown_year: "relative flex-shrink",
         vhidden: "hidden",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
@@ -35,7 +35,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
         head_row: "flex",
-        head_cell: "text-muted-foreground rounded-md w-9 font-medium text-[0.75rem] uppercase tracking-wide",
+        head_cell: "text-muted-foreground rounded-md w-9 font-medium text-[0.7rem] uppercase tracking-wide",
         row: "flex w-full mt-1.5",
         cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
         day: cn(
