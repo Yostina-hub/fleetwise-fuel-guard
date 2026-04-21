@@ -50,7 +50,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
-import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
+import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
 import { RequesterFeedbackDialog } from "@/components/vehicle-requests/RequesterFeedbackDialog";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
@@ -1116,7 +1116,7 @@ const VehicleRequests = () => {
         </Card>
 
         {/* Dialogs */}
-        <UnifiedVehicleRequestDialog open={showCreate} onOpenChange={setShowCreate} />
+        {/* Inline form rendered in-page below — see "showCreate ? ..." panel */}
 
         {showDetail && (
           <Dialog open={!!showDetail} onOpenChange={() => setShowDetail(null)}>
