@@ -51,10 +51,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
-import { RequestStatusBadge, REQUEST_STATUSES } from "@/components/requester-portal/RequestStatusBadge";
+import { REQUEST_STATUSES } from "@/components/requester-portal/RequestStatusBadge";
 import {
   RequestDetailDrawer,
   type RequestDetail,
