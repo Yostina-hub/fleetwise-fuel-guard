@@ -223,6 +223,7 @@ const App = () => {
                         <Route path="/trip-management" element={<ProtectedRoute><TripManagement /></ProtectedRoute>} />
                         <Route path="/ev-management" element={<ProtectedRoute><EVManagement /></ProtectedRoute>} />
                         <Route path="/vehicle-requests" element={<ProtectedRoute><VehicleRequests /></ProtectedRoute>} />
+                        <Route path="/pool-supervisors" element={<ProtectedRoute><PoolSupervisors /></ProtectedRoute>} />
                         <Route path="/my-requests" element={<ProtectedRoute><RequesterPortal /></ProtectedRoute>} />
                         <Route path="/tire-management" element={<ProtectedRoute><TireManagement /></ProtectedRoute>} />
                         <Route path="/cold-chain" element={<ProtectedRoute><IoTSensorManagement /></ProtectedRoute>} />
