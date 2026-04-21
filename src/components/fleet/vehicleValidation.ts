@@ -55,12 +55,12 @@ export const vehicleFieldSchemas = {
     .trim()
     .min(1, "Plate number is required")
     .regex(/^\d{1,5}$/, "Plate number must be 1–5 digits"),
-  purpose_for: trimmedRequired("Purpose"),
+  purpose_for: trimmedOptional(100),
   specific_pool: trimmedOptional(100),
   specific_location: trimmedOptional(200),
   assigned_location: trimmedOptional(100),
-  vehicle_type: trimmedRequired("Vehicle type"),
-  vehicle_group: trimmedRequired("Group"),
+  vehicle_type: trimmedOptional(50),
+  vehicle_group: trimmedOptional(80),
 
   // ----- Specifications -----
   make: trimmedRequired("Make", 1, 100),
