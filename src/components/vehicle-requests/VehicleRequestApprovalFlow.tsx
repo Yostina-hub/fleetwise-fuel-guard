@@ -369,38 +369,128 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     </div>
   );
 
-  return (
-    <div className="space-y-4 min-w-0">
-      {/* Request Details */}
-      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-          <Field label="Type" value={<Badge variant="outline">{requestTypeLabel}</Badge>} />
-          <Field label="Status" value={<Badge variant={request.status === "approved" ? "default" : request.status === "rejected" ? "destructive" : "secondary"}>{request.status}</Badge>} />
-          <Field label="Requester" value={request.requester_name} />
-          <Field label="Priority" value={<span className="capitalize">{request.priority || "normal"}</span>} />
-          <Field label="From" value={fmtOrgTime(request.needed_from)} />
-          {request.needed_until && <Field label="Until" value={fmtOrgTime(request.needed_until)} />}
-          {request.departure_place && <Field label="Departure" value={request.departure_place} />}
-          {request.destination && <Field label="Destination" value={request.destination} />}
-          {request.trip_type && <Field label="Trip" value={request.trip_type === "one_way" ? "One Way" : "Round Trip"} />}
-          {request.vehicle_type && <Field label="Vehicle Type" value={request.vehicle_type} />}
-          {request.department_name && <Field label="Department" value={request.department_name} />}
-          {request.pool_category && <Field label="Pool" value={`${request.pool_category} / ${request.pool_name}`} />}
-          {request.num_vehicles && <Field label="Vehicles" value={request.num_vehicles} />}
-          {request.passengers && <Field label="Passengers" value={request.passengers} />}
-          {request.trip_duration_days && <Field label="Duration" value={`${request.trip_duration_days} days`} />}
-          {request.project_number && <Field label="Project #" value={request.project_number} />}
-          {request.distance_log_km && <Field label="Distance" value={`${request.distance_log_km} km`} />}
+  // Grouped detail blocks (issues #36 route view, #38 requested date,
+  // #41 user org details, #55 tabular structured display).
+  const Section = ({
+    title,
+    children,
+  }: { title: string; children: React.ReactNode }) => (
+    <div className="rounded-lg border border-border/60 bg-card/40 overflow-hidden">
+      <div className="px-4 py-2 bg-muted/40 border-b border-border/40">
+        <div className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
+          {title}
         </div>
       </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3 min-w-0">
+      {/* Header summary — type, status, requested date */}
+      <Section title="Request Summary">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <Field label="Request #" value={<span className="font-mono">{request.request_number}</span>} />
+          <Field label="Type" value={<Badge variant="outline">{requestTypeLabel}</Badge>} />
+          <Field label="Status" value={<Badge variant={request.status === "approved" ? "default" : request.status === "rejected" ? "destructive" : "secondary"}>{request.status}</Badge>} />
+          <Field label="Priority" value={<span className="capitalize">{request.priority || "normal"}</span>} />
+          {/* Issue #38 — show when the request was actually filed */}
+          {request.created_at && (
+            <Field label="Requested On" value={fmtOrgTime(request.created_at)} />
+          )}
+          {request.trip_type && (
+            <Field label="Trip" value={request.trip_type === "one_way" ? "One Way" : "Round Trip"} />
+          )}
+        </div>
+      </Section>
+
+      {/* Issue #41 — Requester organisational context */}
+      <Section title="Requester">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <Field label="Name" value={request.requester_name || "—"} />
+          {request.filed_on_behalf && request.filed_by_name && (
+            <Field label="Filed By" value={`${request.filed_by_name} (on behalf)`} />
+          )}
+          <Field label="Department" value={request.department_name || "—"} />
+          <Field label="Business Unit" value={request.business_unit_name || "—"} />
+          {request.contact_phone && (
+            <Field label="Contact Phone" value={request.contact_phone} />
+          )}
+        </div>
+      </Section>
+
+      {/* Issue #36 — Route shown clearly with named places + addresses */}
+      <Section title="Route">
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="mt-1 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Departure</div>
+              <div className="text-sm font-medium text-foreground break-words">
+                {request.departure_place || request.departure_address || "—"}
+              </div>
+              {request.departure_address && request.departure_place !== request.departure_address && (
+                <div className="text-xs text-muted-foreground break-words">{request.departure_address}</div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="mt-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-500/20" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Destination</div>
+              <div className="text-sm font-medium text-foreground break-words">
+                {request.destination || request.destination_address || "—"}
+              </div>
+              {request.destination_address && request.destination !== request.destination_address && (
+                <div className="text-xs text-muted-foreground break-words">{request.destination_address}</div>
+              )}
+            </div>
+          </div>
+          {request.distance_log_km && (
+            <div className="text-xs text-muted-foreground pt-1 border-t border-border/40">
+              Estimated distance: <span className="text-foreground font-medium">{request.distance_log_km} km</span>
+            </div>
+          )}
+        </div>
+      </Section>
+
+      {/* Schedule */}
+      <Section title="Schedule">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <Field label="Needed From" value={fmtOrgTime(request.needed_from)} />
+          <Field label="Needed Until" value={request.needed_until ? fmtOrgTime(request.needed_until) : "—"} />
+          {request.trip_duration_days && (
+            <Field label="Duration" value={`${request.trip_duration_days} day${request.trip_duration_days > 1 ? "s" : ""}`} />
+          )}
+        </div>
+      </Section>
+
+      {/* Resource — pool / vehicle / cargo */}
+      <Section title="Vehicle & Resources">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          {request.vehicle_type && <Field label="Vehicle Type" value={request.vehicle_type} />}
+          <Field label="Vehicles Requested" value={request.num_vehicles || 1} />
+          <Field label="Passengers" value={request.passengers || "—"} />
+          {request.cargo_load && <Field label="Cargo / Load" value={request.cargo_load} />}
+          {request.pool_category && (
+            <Field
+              label="Assigned Location"
+              value={`${request.pool_category} / ${request.pool_name || "—"}`}
+              full
+            />
+          )}
+          {request.project_number && (
+            <Field label="Project #" value={request.project_number} full />
+          )}
+        </div>
+      </Section>
 
       {request.purpose && (
-        <div className="rounded-lg border border-border/60 bg-card/40 p-4 min-w-0">
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium mb-1">Purpose</div>
+        <Section title="Purpose / Justification">
           <p className="text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed max-h-40 overflow-y-auto">
             {request.purpose}
           </p>
-        </div>
+        </Section>
       )}
 
       {/* Resource-aware downgrade suggestion — appears when the requester
