@@ -39,7 +39,8 @@ import { CalendarView } from "@/components/scheduling/CalendarView";
 import { TimelineView } from "@/components/scheduling/TimelineView";
 import { UtilizationAnalytics } from "@/components/scheduling/UtilizationAnalytics";
 import { ExportScheduleDialog } from "@/components/scheduling/ExportScheduleDialog";
-import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
+import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
+import { ChevronLeft } from "lucide-react";
 import { VehicleRequestsPanel } from "@/components/vehicle-requests/VehicleRequestsPanel";
 import DispatchJobsTab from "@/components/dispatch/DispatchJobsTab";
 import { PendingApprovalsPanel } from "@/components/trips/PendingApprovalsPanel";
@@ -373,6 +374,34 @@ const TripManagement = () => {
           </div>
         </div>
 
+        {createOpen ? (
+          <Card className="overflow-hidden border-border/60 shadow-sm">
+            <div className="flex items-center justify-between gap-3 px-5 sm:px-6 py-3 border-b border-border/60 bg-muted/30">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 h-8 -ml-2 text-muted-foreground hover:text-foreground"
+                onClick={() => setCreateOpen(false)}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to Trips
+              </Button>
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+                New Fleet Request
+              </span>
+            </div>
+            <div className="p-0">
+              <VehicleRequestForm
+                open
+                embedded
+                source="trip_management"
+                onOpenChange={(v) => !v && setCreateOpen(false)}
+                onSubmitted={() => setCreateOpen(false)}
+              />
+            </div>
+          </Card>
+        ) : (
+          <>
         {/* Quick Trip Request — only for users who can manage fleet */}
         {canManage && <QuickTripRequest />}
 
@@ -556,6 +585,8 @@ const TripManagement = () => {
             </TabsContent>
           )}
         </Tabs>
+          </>
+        )}
       </div>
 
       {/* Detail Panel */}
@@ -583,7 +614,7 @@ const TripManagement = () => {
       />
 
       <ExportScheduleDialog open={exportOpen} onOpenChange={setExportOpen} />
-      <UnifiedVehicleRequestDialog open={createOpen} onOpenChange={setCreateOpen} source="trip_management" />
+      {/* Inline form rendered above as a panel — no modal dialog */}
       <CreateAssignmentDialog open={assignOpen} onOpenChange={setAssignOpen} />
 
       {/* Reject-with-reason prompt — invoked by the kanban "X" quick action.
