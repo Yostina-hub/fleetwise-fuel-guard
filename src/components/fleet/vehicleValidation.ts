@@ -48,20 +48,20 @@ const numericString = (label: string, opts?: { min?: number; max?: number; integ
     );
 
 /**
- * Compliance expiry date: optional, but if provided MUST be today or future.
- * Blocks registering a vehicle whose insurance / registration / permit
- * has already expired.
+ * Compliance expiry date: REQUIRED — user must explicitly pick a date
+ * (no silent default). Must be today or future (cannot register a vehicle
+ * with an expired document).
  */
-const futureOrEmptyDate = (label: string) =>
+const futureRequiredDate = (label: string) =>
   z
     .string()
-    .optional()
-    .or(z.literal(""))
+    .min(1, `${label} expiry date is required — please select a date`)
+    .refine((v) => !Number.isNaN(Date.parse(v)), {
+      message: `${label} expiry date is invalid`,
+    })
     .refine(
       (v) => {
-        if (!v) return true;
         const d = new Date(v);
-        if (Number.isNaN(d.getTime())) return false;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return d.getTime() >= today.getTime();
