@@ -1117,7 +1117,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               </div>
             ) : (
-              <div className={`grid grid-cols-1 ${isProject ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4`}>
+              <div className={`grid grid-cols-1 ${isProject ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4 sm:gap-5`}>
                 <div>
                   <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime />
                   <FieldError field="start_date" />
