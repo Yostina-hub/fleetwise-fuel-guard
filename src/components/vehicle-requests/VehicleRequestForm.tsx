@@ -1175,7 +1175,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <p className="text-xs text-muted-foreground mt-0.5">Where does the trip start, stop, and end?</p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
               <LocationPickerField
                 label="Departure Place"
                 value={form.departure_place}
