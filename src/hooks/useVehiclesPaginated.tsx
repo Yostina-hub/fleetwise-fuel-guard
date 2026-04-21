@@ -44,6 +44,8 @@ interface UseVehiclesPaginatedOptions {
   vehicleTypeFilter?: string;
   fuelTypeFilter?: string;
   ownershipFilter?: string;
+  /** "all" | "corporate" | "zonal" | "regional" — filters vehicles via depot.depot_type */
+  scopeFilter?: string;
   sortField?: string;
   sortDirection?: 'asc' | 'desc';
   vehicleIdFilter?: string | null; // Filter to a specific vehicle ID
@@ -72,6 +74,7 @@ export const useVehiclesPaginated = (
     vehicleTypeFilter = "all",
     fuelTypeFilter = "all",
     ownershipFilter = "all",
+    scopeFilter = "all",
     sortField = "created_at",
     sortDirection = "desc",
     vehicleIdFilter = null
