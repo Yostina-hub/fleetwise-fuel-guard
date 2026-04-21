@@ -295,8 +295,8 @@ export function validateVRField(
       if (!v) return "Trip description is required so approvers understand the purpose.";
       if (v.length < 10)
         return `Trip description is too brief (${v.length}/10 chars). Add more detail — what, where, and why.`;
-      if (v.length > 2000)
-        return `Trip description is too long (${v.length}/2000 chars). Please summarize.`;
+      if (v.length > 1000)
+        return `Trip description is too long (${v.length}/1000 chars). Please summarize.`;
       return;
     }
 
@@ -402,7 +402,7 @@ export const vehicleRequestZodSchema = z.object({
     .string()
     .trim()
     .min(10, "Trip description must be at least 10 characters.")
-    .max(2000, "Trip description must be 2000 characters or fewer."),
+    .max(1000, "Trip description must be 1000 characters or fewer."),
   purpose_category: z
     .string()
     .trim()

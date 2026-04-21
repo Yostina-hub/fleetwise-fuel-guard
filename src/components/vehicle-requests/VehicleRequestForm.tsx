@@ -112,7 +112,7 @@ const buildInitialForm = () => ({
   contact_phone: "",
   // Resource-aware request fields (demand-shaping pattern).
   purpose_category: "" as string,                  // business taxonomy — required
-  cargo_load: "none" as CargoLoad,                 // drives the recommendation engine
+  cargo_load: "" as CargoLoad | "",                // mandatory — drives recommendation engine
   vehicle_type_justification: "" as string,        // required when user upgrades over recommendation
 });
 
@@ -708,9 +708,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // so the audit field `recommended_vehicle_type` always reflects what the
   // user saw at the moment they submitted.
   const recommendation = useMemo(() => {
+    if (!form.cargo_load) return null;
     return recommendVehicleClass({
       passengers: parseInt(form.passengers) || 1,
-      cargo: form.cargo_load,
+      cargo: form.cargo_load as CargoLoad,
     });
   }, [form.passengers, form.cargo_load]);
 
@@ -721,7 +722,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const eligibleVehicleTypes = useMemo(() => {
     const passengers = Math.max(1, parseInt(form.passengers) || 1);
     const cargoOrder = { none: 0, small: 1, medium: 2, large: 3 } as const;
-    const cargoNeeded = cargoOrder[form.cargo_load] ?? 0;
+    const cargoNeeded = cargoOrder[(form.cargo_load || "none") as CargoLoad] ?? 0;
     return VEHICLE_TYPES_OPTIONS
       .map((vt) => ({ vt, profile: getVehicleClassProfile(vt.value) }))
       .filter(({ profile }) => {
@@ -867,7 +868,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     type: !!form.request_type,
     schedule: isDaily ? !!form.date : !!form.start_date,
     route: !!form.departure_place || !!form.destination,
-    resources: !!form.num_vehicles && !!form.passengers && !!form.vehicle_type && (!isUpgrade || !!form.vehicle_type_justification?.trim()),
+    resources: !!form.num_vehicles && !!form.passengers && !!form.vehicle_type && !!form.cargo_load && (!isUpgrade || !!form.vehicle_type_justification?.trim()),
     details: !!form.purpose && !!form.purpose_category,
   };
 
@@ -878,7 +879,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       </div>
       <div className="flex-1 min-w-0">
         <h2 className="text-lg sm:text-xl font-semibold tracking-tight text-foreground">
-          Fleet Request
+          Vehicle Request
         </h2>
         <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
           Fill in the sections below and submit — your progress auto-saves as you type.
@@ -903,9 +904,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       ) : (
         <div className="relative -m-6 mb-0 px-6 pt-6 pb-5 border-b border-border/60 bg-card">
           <DialogHeader className="relative">
-            <DialogTitle className="sr-only">Fleet Request</DialogTitle>
+            <DialogTitle className="sr-only">Vehicle Request</DialogTitle>
             <DialogDescription className="sr-only">
-              Fleet vehicle request form — fill in the sections and submit.
+              Vehicle request form — fill in the sections and submit.
             </DialogDescription>
             {HeaderInner}
           </DialogHeader>
@@ -1379,11 +1380,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
               <div>
                 <Label className="text-primary font-medium flex items-center gap-1">
-                  Cargo / Equipment
-                  <FieldHint>Helps recommend the smallest sufficient vehicle.</FieldHint>
+                  Cargo / Equipment <span className="text-destructive">*</span>
+                  <FieldHint>Required — helps recommend the smallest sufficient vehicle and reserve cargo capacity.</FieldHint>
                 </Label>
-                <Select value={form.cargo_load} onValueChange={(v) => update("cargo_load", v as CargoLoad)}>
-                  <SelectTrigger className="h-10"><SelectValue placeholder="Select cargo size" /></SelectTrigger>
+                <Select
+                  value={form.cargo_load}
+                  onValueChange={(v) => update("cargo_load", v as CargoLoad)}
+                >
+                  <SelectTrigger
+                    className="h-10"
+                    aria-invalid={!form.cargo_load}
+                  >
+                    <SelectValue placeholder="Select cargo size (required)" />
+                  </SelectTrigger>
                   <SelectContent>
                     {CARGO_LOAD_OPTIONS.map(c => (
                       <SelectItem key={c.value} value={c.value}>
@@ -1395,6 +1404,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     ))}
                   </SelectContent>
                 </Select>
+                {!form.cargo_load && (
+                  <p className="text-[11px] text-destructive mt-1">
+                    Pick the cargo size — choose "None" if you're only carrying passengers.
+                  </p>
+                )}
               </div>
 
               {/* Resource-aware recommendation banner — pure derivation from passengers + cargo */}
@@ -1634,16 +1648,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Label className="text-primary font-medium">Trip Description <span className="text-destructive">*</span></Label>
               <Textarea
                 value={form.purpose}
-                onChange={e => update("purpose", e.target.value.slice(0, 2000))}
+                onChange={e => update("purpose", e.target.value.slice(0, 1000))}
                 onBlur={e => handleBlur("purpose", e.target.value, form as any)}
                 placeholder="Describe the purpose of this trip — what, where, and why (min 10 characters)…"
                 rows={4}
-                maxLength={2000}
+                maxLength={1000}
                 aria-invalid={!!getError("purpose")}
               />
               <FieldError field="purpose" />
-              <p className={`text-[11px] mt-1 ${(form.purpose?.length || 0) >= 2000 ? "text-destructive font-medium" : "text-muted-foreground"}`}>
-                {form.purpose?.length || 0}/2000 characters
+              <p className={`text-[11px] mt-1 ${(form.purpose?.length || 0) >= 1000 ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                {form.purpose?.length || 0}/1000 characters
               </p>
             </div>
             <div className="rounded-lg border border-border bg-gradient-to-br from-muted/50 to-muted/20 p-4 text-xs text-muted-foreground space-y-2">
@@ -1704,10 +1718,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       <DialogHeader>
         <DialogTitle className="flex items-center justify-center gap-2">
           <Car className="w-5 h-5 text-primary" />
-          Fleet Requests Are Not Available
+          Vehicle Requests Are Not Available
         </DialogTitle>
         <DialogDescription className="pt-2">
-          Drivers cannot initiate fleet requests. Vehicle requests are filed by
+          Drivers cannot initiate vehicle requests. Vehicle requests are filed by
           end-users, supervisors, dispatchers, and managers — who then assign
           you to the trip after approval.
         </DialogDescription>
