@@ -685,15 +685,20 @@ function ChangeStatusDialog({
     }
   }, [open, currentStatus]);
 
-  const OPTIONS = [
+  const ALL_OPTIONS = [
     { value: "pending",   label: "Pending (send back for revision)" },
     { value: "approved",  label: "Approved" },
     { value: "rejected",  label: "Rejected (final)" },
     { value: "cancelled", label: "Cancelled" },
   ];
+  // Block illegal transitions out of terminal states. Completed trips
+  // can't be re-opened from this dialog — that requires a fresh request.
+  const TERMINAL = new Set(["completed", "closed"]);
+  const isTerminal = currentStatus ? TERMINAL.has(currentStatus) : false;
+  const OPTIONS = isTerminal ? [] : ALL_OPTIONS;
   // Reason required when moving to a negative state.
   const requiresNote = target === "rejected" || target === "pending" || target === "cancelled";
-  const canSubmit = !!target && target !== currentStatus && (!requiresNote || note.trim().length > 0);
+  const canSubmit = !isTerminal && !!target && target !== currentStatus && (!requiresNote || note.trim().length > 0);
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
@@ -710,13 +715,20 @@ function ChangeStatusDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          {isTerminal && (
+            <div className="p-3 rounded-md bg-muted/60 border border-border text-xs text-muted-foreground">
+              This request is in a terminal state (<span className="font-medium text-foreground">{currentStatus}</span>) and
+              cannot be changed. Create a new vehicle request if needed.
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="cs-target">New status</Label>
             <select
               id="cs-target"
               value={target}
               onChange={(e) => setTarget(e.target.value)}
-              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+              disabled={isTerminal}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm disabled:opacity-50"
             >
               {OPTIONS.map((o) => (
                 <option key={o.value} value={o.value} disabled={o.value === currentStatus}>
@@ -736,6 +748,7 @@ function ChangeStatusDialog({
               placeholder="Explain the change so the requester has context"
               rows={3}
               maxLength={500}
+              disabled={isTerminal}
             />
           </div>
         </div>

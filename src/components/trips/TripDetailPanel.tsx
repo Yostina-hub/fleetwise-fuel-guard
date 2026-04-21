@@ -7,7 +7,7 @@ import {
 import { Label } from "@/components/ui/label";
 import {
   MapPin, Clock, Users, Send, CheckCircle, XCircle, Truck, Package,
-  MessageSquare, History, Shield, Ban, RefreshCw
+  MessageSquare, History, Shield, Ban, RefreshCw, Gauge, LogIn, LogOut, User
 } from "lucide-react";
 import { format } from "date-fns";
 import { ApprovalFlowViewer } from "@/components/scheduling/ApprovalFlowViewer";
@@ -93,6 +93,85 @@ export const TripDetailPanel = ({
               </InfoBlock>
             )}
           </div>
+
+          {/* Assigned vehicle / driver pill */}
+          {(trip.assigned_vehicle || trip.assigned_driver) && (
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1.5">
+                <Truck className="w-3 h-3" /> Assigned Resources
+              </Label>
+              <div className="flex items-center gap-3 text-sm flex-wrap">
+                {trip.assigned_vehicle && (
+                  <span className="flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5 text-primary" />
+                    <span className="font-mono font-medium">{trip.assigned_vehicle.plate_number}</span>
+                  </span>
+                )}
+                {trip.assigned_driver && (
+                  <span className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-primary" />
+                    {trip.assigned_driver.first_name} {trip.assigned_driver.last_name}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Driver check-in / check-out timeline (post-assignment) */}
+          {(trip.driver_checked_in_at || trip.driver_checked_out_at) && (
+            <div className="p-3 rounded-lg bg-muted/40 border border-border/50">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                <Clock className="w-3 h-3" /> Trip Timeline
+              </Label>
+              <div className="space-y-2 text-sm">
+                {trip.driver_checked_in_at && (
+                  <div className="flex items-start gap-2">
+                    <LogIn className="w-3.5 h-3.5 text-success mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-medium">Checked in</div>
+                      <div className="text-xs text-muted-foreground">
+                        {format(new Date(trip.driver_checked_in_at), "MMM dd, yyyy HH:mm")}
+                        {trip.driver_checkin_odometer != null && (
+                          <> · <Gauge className="inline w-3 h-3" /> {trip.driver_checkin_odometer} km</>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {trip.driver_checked_out_at && (
+                  <div className="flex items-start gap-2">
+                    <LogOut className="w-3.5 h-3.5 text-destructive mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-medium">Checked out</div>
+                      <div className="text-xs text-muted-foreground">
+                        {format(new Date(trip.driver_checked_out_at), "MMM dd, yyyy HH:mm")}
+                        {trip.driver_checkout_odometer != null && (
+                          <> · <Gauge className="inline w-3 h-3" /> {trip.driver_checkout_odometer} km</>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {trip.distance_log_km != null && (
+                  <div className="flex items-center gap-2 pt-1 border-t border-border/40 mt-1">
+                    <Gauge className="w-3.5 h-3.5 text-primary" />
+                    <span className="font-medium">Distance traveled:</span>
+                    <span>{Number(trip.distance_log_km).toFixed(1)} km</span>
+                    {trip.distance_estimate_km != null && (
+                      <span className="text-xs text-muted-foreground">
+                        (est. {Number(trip.distance_estimate_km).toFixed(1)} km)
+                      </span>
+                    )}
+                  </div>
+                )}
+                {trip.driver_checkin_notes && (
+                  <div className="text-xs text-muted-foreground pt-1 italic">
+                    "{trip.driver_checkin_notes}"
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {trip.notes && (
             <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
