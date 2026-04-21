@@ -104,13 +104,13 @@ export const ErpOracleQueueCard = () => {
   const statusBadge = (status: string) => {
     switch (status) {
       case "pushed":
-        return <Badge variant="outline" className="border-emerald-500/40 text-emerald-500"><CheckCircle2 className="h-3 w-3 mr-1" />Pushed</Badge>;
+        return <Badge variant="outline" className="border-success/40 text-success"><CheckCircle2 className="h-3 w-3 mr-1" />Pushed</Badge>;
       case "failed":
         return <Badge variant="outline" className="border-destructive/40 text-destructive"><AlertTriangle className="h-3 w-3 mr-1" />Failed</Badge>;
       case "awaiting_credentials":
-        return <Badge variant="outline" className="border-amber-500/40 text-amber-500"><AlertTriangle className="h-3 w-3 mr-1" />Awaiting creds</Badge>;
+        return <Badge variant="outline" className="border-warning/40 text-warning"><AlertTriangle className="h-3 w-3 mr-1" />Awaiting creds</Badge>;
       default:
-        return <Badge variant="outline" className="border-blue-500/40 text-blue-500"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
+        return <Badge variant="outline" className="border-info/40 text-info"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
     }
   };
 
@@ -139,7 +139,7 @@ export const ErpOracleQueueCard = () => {
           </div>
           <div className="rounded-lg border border-border p-3">
             <div className="text-xs text-muted-foreground">Pushed</div>
-            <div className="text-2xl font-bold text-emerald-500">{counts.pushed}</div>
+            <div className="text-2xl font-bold text-success">{counts.pushed}</div>
           </div>
           <div className="rounded-lg border border-border p-3">
             <div className="text-xs text-muted-foreground">Failed</div>
@@ -147,7 +147,7 @@ export const ErpOracleQueueCard = () => {
           </div>
           <div className="rounded-lg border border-border p-3">
             <div className="text-xs text-muted-foreground">Awaiting creds</div>
-            <div className="text-2xl font-bold text-amber-500">{counts.awaiting_credentials}</div>
+            <div className="text-2xl font-bold text-warning">{counts.awaiting_credentials}</div>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ export const ErpOracleQueueCard = () => {
                     <span className="font-mono truncate">{r.entity_type}</span>
                     <span className="text-muted-foreground">· {r.event_type}</span>
                     {r.attempts > 1 && (
-                      <span className="text-amber-500">· {r.attempts} attempts</span>
+                      <span className="text-warning">· {r.attempts} attempts</span>
                     )}
                   </div>
                   <div className="text-muted-foreground whitespace-nowrap">
@@ -179,7 +179,7 @@ export const ErpOracleQueueCard = () => {
         </div>
 
         {counts.awaiting_credentials > 0 && (
-          <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded p-3">
+          <div className="text-xs text-warning bg-warning/10 border border-warning/30 rounded p-3">
             <strong>Configure Oracle ERP credentials</strong> — set <code>ORACLE_ERP_BASE_URL</code>,{" "}
             <code>ORACLE_ERP_USERNAME</code>, and <code>ORACLE_ERP_PASSWORD</code> in backend secrets,
             then click <em>Run sync now</em> to release queued events.
