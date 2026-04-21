@@ -128,12 +128,12 @@ export const vehicleFieldSchemas = {
   safety_comfort_category: trimmedOptional(50),
 
   // ----- Compliance -----
-  // Expiry dates are optional, but if provided MUST be today or future.
+  // Expiry dates MUST be explicitly selected (no defaults) and not expired.
   registration_cert_no: trimmedOptional(100),
-  registration_expiry: futureOrEmptyDate("Registration"),
+  registration_expiry: futureRequiredDate("Registration"),
   insurance_policy_no: trimmedOptional(100),
-  insurance_expiry: futureOrEmptyDate("Insurance"),
-  permit_expiry: futureOrEmptyDate("Permit"),
+  insurance_expiry: futureRequiredDate("Insurance"),
+  permit_expiry: futureRequiredDate("Permit"),
 
   // ----- Operations -----
   capacity_kg: numericString("Capacity (kg)", { min: 0, max: 200000 }),
