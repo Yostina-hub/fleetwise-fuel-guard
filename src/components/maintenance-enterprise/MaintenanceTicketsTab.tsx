@@ -364,6 +364,30 @@ const MaintenanceTicketsTab = () => {
             {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
           </SelectContent>
         </Select>
+        {viewMode === "kanban" && (
+          <>
+            <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+              <SelectTrigger className="w-[170px]">
+                <ArrowUpDown className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(SORT_LABELS) as SortMode[]).map(s => (
+                  <SelectItem key={s} value={s}>{SORT_LABELS[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {sortMode === "manual" && Object.keys(manualOrder).length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setManualOrder({}); toast.success("Manual order cleared"); }}
+              >
+                Reset order
+              </Button>
+            )}
+          </>
+        )}
         <Button variant={viewMode === "kanban" ? "default" : "outline"} size="sm" onClick={() => setViewMode("kanban")}>Kanban</Button>
         <Button variant={viewMode === "list" ? "default" : "outline"} size="sm" onClick={() => setViewMode("list")}>List</Button>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
