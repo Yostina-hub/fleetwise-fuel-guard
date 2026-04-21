@@ -1268,4 +1268,46 @@ function buildPageList(current: number, total: number): (number | "…")[] {
   return pages;
 }
 
+// ===== Sortable header cell =====
+function SortableTh({
+  sortKey,
+  currentKey,
+  dir,
+  onSort,
+  children,
+  className,
+  align = "left",
+}: {
+  sortKey: string;
+  currentKey: string;
+  dir: "asc" | "desc";
+  onSort: (key: any) => void;
+  children: React.ReactNode;
+  className?: string;
+  align?: "left" | "center" | "right";
+}) {
+  const isActive = currentKey === sortKey;
+  const Icon = !isActive ? ArrowUpDown : dir === "asc" ? ArrowUp : ArrowDown;
+  const alignCls =
+    align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
+  const thAlign = align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left";
+  return (
+    <th className={cn("font-semibold", thAlign, className)}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={cn(
+          "inline-flex items-center gap-1.5 select-none transition-colors hover:text-foreground w-full",
+          alignCls,
+          isActive ? "text-foreground" : "text-muted-foreground",
+        )}
+        aria-sort={isActive ? (dir === "asc" ? "ascending" : "descending") : "none"}
+      >
+        <span>{children}</span>
+        <Icon className={cn("h-3 w-3 shrink-0", isActive ? "opacity-100" : "opacity-40")} />
+      </button>
+    </th>
+  );
+}
+
 export default VehicleRequests;
