@@ -234,6 +234,73 @@ function Field({
   );
 }
 
+/* ---------- Specific Location override (collapsed by default) ---------- */
+function SpecificLocationOverride({
+  poolCategory,
+  assignedValue,
+  specificValue,
+  onChange,
+}: {
+  poolCategory: string;
+  assignedValue: string;
+  specificValue: string;
+  onChange: (v: string) => void;
+}) {
+  const isOverridden = specificValue && specificValue !== assignedValue;
+  const [open, setOpen] = useState(isOverridden);
+  const options = useMemo(
+    () => ASSIGNED_LOCATIONS.filter(l => l.group === poolCategory),
+    [poolCategory],
+  );
+  const currentLabel =
+    ASSIGNED_LOCATIONS.find(l => l.value === specificValue)?.label || specificValue;
+
+  if (!open) {
+    return (
+      <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px]">
+        <span className="text-muted-foreground">
+          Specific Location: <span className="text-foreground font-medium">{currentLabel}</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-primary hover:underline underline-offset-2"
+        >
+          Override
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 space-y-1">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-muted-foreground">Specific Location override</span>
+        <button
+          type="button"
+          onClick={() => {
+            onChange(assignedValue);
+            setOpen(false);
+          }}
+          className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+        >
+          Reset to Assigned
+        </button>
+      </div>
+      <Select value={specificValue} onValueChange={onChange}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder="Pick a different location" />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(o => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 /* ---------- Pane prop helpers ---------- */
 type PaneProps = Omit<Props, "plateNumber"> & { plateNumber?: string };
 
@@ -317,12 +384,12 @@ function IdentityPane(props: PaneProps) {
         </Select>
       </Field>
 
-      <Field name="assigned_location" label="Assigned Location" hint="Filtered by Pool Category" error={err("assigned_location")} status={stat("assigned_location")}>
+      <Field name="assigned_location" label="Assigned Location" hint="Filtered by Pool Category — also fills Specific Location" error={err("assigned_location")} status={stat("assigned_location")} span={2}>
         <Select
           value={formData.assigned_location || ""}
           onValueChange={v => {
             commitSelect("assigned_location", v);
-            // Auto-fill Specific Location to mirror the pick
+            // Mirror the pick into Specific Location (single source of truth by default)
             commitSelect("specific_location", v);
           }}
           disabled={!formData.specific_pool}
@@ -336,23 +403,14 @@ function IdentityPane(props: PaneProps) {
               .map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
           </SelectContent>
         </Select>
-      </Field>
-
-      <Field name="specific_location" label="Specific Location" hint="Auto-fills from Assigned Location — override if needed" error={err("specific_location")} status={stat("specific_location")}>
-        <Select
-          value={formData.specific_location || ""}
-          onValueChange={v => commitSelect("specific_location", v)}
-          disabled={!formData.specific_pool}
-        >
-          <SelectTrigger className={!formData.specific_pool ? "opacity-50" : ""}>
-            <SelectValue placeholder={formData.specific_pool ? "Select location..." : "Pick category first"} />
-          </SelectTrigger>
-          <SelectContent>
-            {ASSIGNED_LOCATIONS
-              .filter(l => l.group === formData.specific_pool)
-              .map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        {formData.assigned_location && (
+          <SpecificLocationOverride
+            poolCategory={formData.specific_pool}
+            assignedValue={formData.assigned_location}
+            specificValue={formData.specific_location || ""}
+            onChange={v => commitSelect("specific_location", v)}
+          />
+        )}
       </Field>
 
       <Field name="vehicle_type" label="Vehicle Type" error={err("vehicle_type")} status={stat("vehicle_type")}>
