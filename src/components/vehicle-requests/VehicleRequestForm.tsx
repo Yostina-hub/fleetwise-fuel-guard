@@ -30,7 +30,7 @@ import { VRField } from "./VRField";
 import { deriveVisibility } from "./visibility";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
-import { MyVehicleRequestsSummary } from "./MyVehicleRequestsSummary";
+
 import { useDepartments } from "@/hooks/useDepartments";
 import {
   recommendVehicleClass,
