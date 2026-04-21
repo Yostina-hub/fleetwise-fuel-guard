@@ -200,6 +200,19 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       if (result.firstError) {
         const targetTab = FIELD_TO_SECTION[result.firstError.field];
         if (targetTab) setActiveSection(targetTab as typeof activeSection);
+        // If error is in Basic Info, also switch to the right sub-tab.
+        const subTab = BASIC_FIELD_TO_SUBTAB[result.firstError.field];
+        if (subTab) setActiveBasicTab(subTab);
+        // Scroll the errored field into view + try to focus its first input.
+        const fieldName = result.firstError.field;
+        setTimeout(() => {
+          const el = document.querySelector<HTMLElement>(`[data-field="${fieldName}"]`);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            const focusable = el.querySelector<HTMLElement>("input, button, [role='combobox'], textarea");
+            focusable?.focus();
+          }
+        }, 80);
       }
       toast({
         title: "Please fix the highlighted fields",
