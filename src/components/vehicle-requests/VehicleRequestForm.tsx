@@ -937,27 +937,21 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
                 <div>
                   <Label className="text-primary font-medium">Start Time <span className="text-destructive">*</span></Label>
-                  <Input
-                    type="time"
+                  <TimePicker
                     value={form.start_time}
-                    onChange={e => update("start_time", e.target.value)}
-                    onBlur={e => handleBlur("start_time", e.target.value, form as any)}
-                    required
-                    className="h-10"
-                    aria-invalid={!!getError("start_time")}
+                    onChange={v => update("start_time", v)}
+                    onBlur={() => handleBlur("start_time", form.start_time, form as any)}
+                    ariaInvalid={!!getError("start_time")}
                   />
                   <FieldError field="start_time" />
                 </div>
                 <div>
                   <Label className="text-primary font-medium">End Time <span className="text-destructive">*</span></Label>
-                  <Input
-                    type="time"
+                  <TimePicker
                     value={form.end_time}
-                    onChange={e => update("end_time", e.target.value)}
-                    onBlur={e => handleBlur("end_time", e.target.value, form as any)}
-                    required
-                    className="h-10"
-                    aria-invalid={!!getError("end_time")}
+                    onChange={v => update("end_time", v)}
+                    onBlur={() => handleBlur("end_time", form.end_time, form as any)}
+                    ariaInvalid={!!getError("end_time")}
                   />
                   <FieldError field="end_time" />
                 </div>
