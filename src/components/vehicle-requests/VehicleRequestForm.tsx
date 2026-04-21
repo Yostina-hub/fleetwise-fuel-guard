@@ -1097,16 +1097,106 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <FieldError field="passengers" />
               </div>
               <div>
-                <Label className="text-primary font-medium">Vehicle Type</Label>
-                <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
-                  <SelectTrigger className="h-10"><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
+                <Label className="text-primary font-medium">Cargo / Equipment</Label>
+                <Select value={form.cargo_load} onValueChange={(v) => update("cargo_load", v as CargoLoad)}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select cargo size" /></SelectTrigger>
                   <SelectContent>
-                    {VEHICLE_TYPES_OPTIONS.map(vt => (
-                      <SelectItem key={vt.value} value={vt.value}>{vt.label}</SelectItem>
+                    {CARGO_LOAD_OPTIONS.map(c => (
+                      <SelectItem key={c.value} value={c.value}>
+                        <div className="flex flex-col items-start">
+                          <span className="text-sm">{c.label}</span>
+                          <span className="text-[10px] text-muted-foreground">{c.description}</span>
+                        </div>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] text-muted-foreground mt-1">Helps recommend the smallest sufficient vehicle.</p>
               </div>
+
+              {/* Resource-aware recommendation banner — pure derivation from passengers + cargo */}
+              {recommendation && (
+                <div className="md:col-span-2 rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2 animate-fade-in">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-sm font-medium text-foreground">Recommended for you:</span>
+                    <Badge className="gap-1.5">
+                      <Car className="w-3 h-3" /> {recommendation.label}
+                    </Badge>
+                    <Badge variant="outline" className={`text-[10px] ${COST_BAND_TONE[recommendation.costBand]}`}>
+                      {COST_BAND_LABELS[recommendation.costBand]}
+                    </Badge>
+                    <span className="text-[11px] text-muted-foreground ml-auto">
+                      Fits {recommendation.capacity} people · {form.cargo_load} cargo
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Picking a larger class than needed wastes fleet capacity and costs more. You can override below if there's a real reason — please justify it for the approver.
+                  </p>
+                </div>
+              )}
+
+              <div className="md:col-span-2">
+                <Label className="text-primary font-medium flex items-center gap-2">
+                  Vehicle Type
+                  {recommendation && form.vehicle_type === recommendation.value && (
+                    <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600 dark:text-emerald-400 gap-1">
+                      <CheckCircle2 className="w-2.5 h-2.5" /> Matches recommendation
+                    </Badge>
+                  )}
+                  {isUpgrade && (
+                    <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 dark:text-amber-400">
+                      Upgrade — justification required
+                    </Badge>
+                  )}
+                </Label>
+                <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
+                  <SelectContent>
+                    {VEHICLE_TYPES_OPTIONS.map(vt => {
+                      const profile = getVehicleClassProfile(vt.value);
+                      const isRec = recommendation?.value === vt.value;
+                      return (
+                        <SelectItem key={vt.value} value={vt.value}>
+                          <div className="flex items-center gap-2 w-full">
+                            <span className="text-sm">{vt.label}</span>
+                            {profile && (
+                              <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${COST_BAND_TONE[profile.costBand]}`}>
+                                {COST_BAND_LABELS[profile.costBand]}
+                              </Badge>
+                            )}
+                            {isRec && <span className="text-[10px] text-primary ml-auto">★ recommended</span>}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {chosenProfile && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Capacity: {chosenProfile.capacity} · Cargo: {chosenProfile.cargo} · Tier: {COST_BAND_LABELS[chosenProfile.costBand]}
+                  </p>
+                )}
+              </div>
+
+              {/* Justification — only shown when over-spec'd */}
+              {isUpgrade && (
+                <div className="md:col-span-2 animate-fade-in">
+                  <Label className="text-amber-600 dark:text-amber-400 font-medium">
+                    Why is {chosenProfile?.label} needed instead of {recommendation?.label}? <span className="text-destructive">*</span>
+                  </Label>
+                  <Textarea
+                    value={form.vehicle_type_justification}
+                    onChange={(e) => update("vehicle_type_justification", e.target.value)}
+                    placeholder="e.g. Carrying bulky equipment that doesn't fit a sedan, or transporting senior leadership delegation."
+                    rows={2}
+                    maxLength={500}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Visible to your approver. Be specific — generic reasons may be rejected.
+                  </p>
+                </div>
+              )}
               <div>
                 <Label className="text-primary font-medium">Priority</Label>
                 <Select value={form.priority} onValueChange={v => update("priority", v)}>
