@@ -109,14 +109,18 @@ export function validateVRField(
   ctx: Partial<VRFormValues> = {},
 ): string | undefined {
   const isProject = ctx.request_type === "project_operation";
-  const isDaily = ctx.request_type === "daily_operation";
+  const isNighttime = ctx.request_type === "nighttime_operation";
+  // Nighttime is a single-day variant of Daily (uses `date` + start/end times)
+  // but locked to a 02:00–12:00 window to match the night-shift policy.
+  const isDaily = ctx.request_type === "daily_operation" || isNighttime;
+  const NIGHT_WINDOW = { start: "02:00", end: "12:00" };
 
   switch (field) {
     case "request_type": {
       const v = sanitizeText(value);
-      if (!v) return "Please choose a request type (Daily, Project, Field, or Group operation).";
-      if (!["daily_operation", "project_operation", "field_operation", "group_operation"].includes(v))
-        return "Invalid request type. Pick one of the four operation cards above.";
+      if (!v) return "Please choose a request type (Daily, Nighttime, Project, Field, or Group operation).";
+      if (!["daily_operation", "nighttime_operation", "project_operation", "field_operation", "group_operation"].includes(v))
+        return "Invalid request type. Pick one of the operation cards above.";
       return;
     }
 
@@ -133,6 +137,9 @@ export function validateVRField(
       const v = sanitizeText(value);
       if (!v) return "Start time is required.";
       if (!HHMM_RE.test(v)) return "Start time must use 24-hour HH:MM format (e.g. 08:30).";
+      if (isNighttime && (v < NIGHT_WINDOW.start || v >= NIGHT_WINDOW.end)) {
+        return `Nighttime operations must start between ${NIGHT_WINDOW.start} and ${NIGHT_WINDOW.end}.`;
+      }
       // If the trip date is today, reject times already in the past on the
       // requester's machine clock — we cannot schedule a trip for a moment
       // that has already passed.
@@ -157,6 +164,9 @@ export function validateVRField(
       const v = sanitizeText(value);
       if (!v) return "End time is required.";
       if (!HHMM_RE.test(v)) return "End time must use 24-hour HH:MM format (e.g. 17:00).";
+      if (isNighttime && (v <= NIGHT_WINDOW.start || v > NIGHT_WINDOW.end)) {
+        return `Nighttime operations must end by ${NIGHT_WINDOW.end} (and after ${NIGHT_WINDOW.start}).`;
+      }
       const start = sanitizeText(ctx.start_time);
       if (start && HHMM_RE.test(start) && v <= start)
         return `End time (${v}) must be later than start time (${start}). A trip needs at least 1 minute.`;
@@ -345,7 +355,7 @@ export function sanitizeVehicleRequestForm(values: VRFormValues): VRFormValues {
 
 /** Optional zod schema (e.g. for server payload guard). */
 export const vehicleRequestZodSchema = z.object({
-  request_type: z.enum(["daily_operation", "project_operation", "field_operation", "group_operation"]),
+  request_type: z.enum(["daily_operation", "nighttime_operation", "project_operation", "field_operation", "group_operation"]),
   purpose: z.string().trim().min(10).max(2000),
   project_number: z.string().trim().max(30).optional().or(z.literal("")),
   contact_phone: z.string().trim().max(20).optional().or(z.literal("")),
