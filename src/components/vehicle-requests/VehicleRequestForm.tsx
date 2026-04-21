@@ -776,13 +776,27 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const isUpgrade = isUpgradeOverRecommendation(form.vehicle_type, recommendation?.value);
   const chosenProfile = getVehicleClassProfile(form.vehicle_type);
 
+  // Live-validate the *current* form (not the stale `errors` state, which only
+  // reflects fields the user has blurred). This prevents the Submit button
+  // from staying disabled after the user has fixed every field but hasn't
+  // re-blurred them. `handleSubmit` still runs the full validateAll pipeline,
+  // so this only controls the disabled state of the button itself.
+  const liveValidation = useMemo(() => {
+    try {
+      const sanitized = sanitizeVehicleRequestForm(form as any) as any;
+      return validateVehicleRequestForm({ ...form, ...sanitized } as any);
+    } catch {
+      return { valid: false, errors: {} as Record<string, string> };
+    }
+  }, [form]);
+
   const canSubmit =
     !!form.purpose &&
     !!form.purpose_category &&
     (isDaily ? !!form.date : !!form.start_date) &&
     (!isProject || !!form.project_number?.trim()) &&
     (!isUpgrade || !!form.vehicle_type_justification?.trim()) &&
-    errorCount === 0;
+    liveValidation.valid;
 
   const handleSubmit = () => {
     const sanitized = sanitizeVehicleRequestForm(form as any) as any;
