@@ -78,15 +78,14 @@ const roundedNowHHMM = (offsetMinutes = 0): string => {
 const buildInitialForm = () => ({
   request_type: "daily_operation",
   date: undefined as Date | undefined,
-  // Default to the requester's current machine time (rounded up to next 5 min).
-  // Daily operations are short trips by policy → end defaults to start + 30 min
-  // (was 60). Users can extend within the org's working-hours window.
-  start_time: roundedNowHHMM(),
-  end_time: roundedNowHHMM(30),
+  // Times must be explicitly entered by the user — no defaults so the
+  // validation can flag empty fields instead of silently accepting "now".
+  start_time: "",
+  end_time: "",
   start_date: undefined as Date | undefined,
-  start_date_time: roundedNowHHMM(),
+  start_date_time: "",
   end_date: undefined as Date | undefined,
-  end_date_time: roundedNowHHMM(30),
+  end_date_time: "",
   departure_place: "",
   destination: "",
   departure_lat: null as number | null,
