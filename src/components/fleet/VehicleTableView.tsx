@@ -623,8 +623,11 @@ export const VehicleTableView = ({
                   </TableHead>
                 )}
                 {visibleColumnDefs.map((col) => {
-                  const sortable = SORTABLE_COLUMNS[col.id];
                   const isActions = col.id === "actions";
+                  const isSortable = !isActions;
+                  const backendField = SORTABLE_COLUMNS[col.id];
+                  const isActive =
+                    (backendField && sortField === backendField) || localSort?.col === col.id;
                   return (
                     <TableHead
                       key={col.id}
@@ -635,17 +638,19 @@ export const VehicleTableView = ({
                         isActions && "text-right",
                       )}
                     >
-                      {sortable && onSortChange ? (
+                      {isSortable ? (
                         <Button
                           variant="ghost"
                           size="sm"
                           className={cn(
                             "h-8 -ml-3 font-medium text-xs uppercase tracking-wide",
                             col.align === "right" && "ml-auto -mr-3",
+                            isActive && "text-foreground",
                           )}
-                          onClick={() => handleSort(sortable)}
+                          onClick={() => handleSort(col.id)}
+                          aria-label={`Sort by ${col.label}`}
                         >
-                          {col.label} {sortIcon(sortable)}
+                          {col.label} {sortIcon(col.id)}
                         </Button>
                       ) : (
                         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -658,7 +663,7 @@ export const VehicleTableView = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vehicles.map((vehicle) => (
+              {displayedVehicles.map((vehicle) => (
                 <TableRow
                   key={vehicle.id}
                   className={cn(
