@@ -433,62 +433,7 @@ const TripManagement = () => {
           {/* Approvals Tab */}
           {canApprove && (
             <TabsContent value="approvals" className="mt-4 space-y-4">
-              {pendingApprovals && pendingApprovals.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {pendingApprovals.map((approval: any) => (
-                    <motion.div
-                      key={approval.id}
-                      initial={{ opacity: 0, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="p-4 rounded-xl border-2 border-warning/30 bg-warning/5"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <span className="font-mono text-xs font-bold text-primary">
-                            {approval.trip_request?.request_number}
-                          </span>
-                          <p className="text-sm font-medium mt-1">{approval.trip_request?.purpose}</p>
-                        </div>
-                        <span className="text-[10px] text-muted-foreground">Step {approval.step}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                        <span>{approval.trip_request?.profiles?.email?.split("@")[0]}</span>
-                        <span>•</span>
-                        <span>{approval.trip_request?.pickup_geofence?.name}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="flex-1 h-8 text-xs gap-1"
-                          onClick={() => approveRequest.mutate({
-                            approvalId: approval.id,
-                            requestId: approval.trip_request_id,
-                            comment: "Approved",
-                          })}
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" /> Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="flex-1 h-8 text-xs gap-1"
-                          onClick={() => rejectRequest.mutate({
-                            approvalId: approval.id,
-                            requestId: approval.trip_request_id,
-                            comment: "Rejected",
-                          })}
-                        >
-                          <XCircle className="w-3.5 h-3.5" /> Reject
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  No pending approvals. All caught up! ✓
-                </div>
-              )}
+              <PendingApprovalsPanel />
               <ApprovalHistory />
             </TabsContent>
           )}
