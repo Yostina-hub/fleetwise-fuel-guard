@@ -1140,6 +1140,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   className="h-10"
                   aria-invalid={!!getError("passengers")}
                 />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Enter passengers <span className="font-medium">excluding the driver</span> (i.e. seats needed minus 1).
+                </p>
                 <FieldError field="passengers" />
               </div>
               <div>
