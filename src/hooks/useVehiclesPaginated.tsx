@@ -44,6 +44,8 @@ interface UseVehiclesPaginatedOptions {
   vehicleTypeFilter?: string;
   fuelTypeFilter?: string;
   ownershipFilter?: string;
+  /** "all" | "corporate" | "zonal" | "regional" — filters vehicles via depot.depot_type */
+  scopeFilter?: string;
   sortField?: string;
   sortDirection?: 'asc' | 'desc';
   vehicleIdFilter?: string | null; // Filter to a specific vehicle ID
@@ -72,6 +74,7 @@ export const useVehiclesPaginated = (
     vehicleTypeFilter = "all",
     fuelTypeFilter = "all",
     ownershipFilter = "all",
+    scopeFilter = "all",
     sortField = "created_at",
     sortDirection = "desc",
     vehicleIdFilter = null
@@ -87,6 +90,25 @@ export const useVehiclesPaginated = (
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalPages = Math.ceil(totalCount / pageSize);
+
+  /**
+   * Resolve depot IDs that match the requested scope (corporate/zonal/regional).
+   * Returns null when no scope filter is active. Returns [] when no depots match
+   * — caller should short-circuit to an empty result set.
+   */
+  const resolveScopeDepotIds = useCallback(async (): Promise<string[] | null> => {
+    if (scopeFilter === "all") return null;
+    let depotQuery: any = supabase.from("depots").select("id").eq("depot_type", scopeFilter);
+    if (!isViewingAllOrgs && organizationId) {
+      depotQuery = depotQuery.eq("organization_id", organizationId);
+    }
+    const { data, error } = await depotQuery;
+    if (error) {
+      console.error("Failed to resolve scope depots", error);
+      return [];
+    }
+    return (data ?? []).map((d: any) => d.id);
+  }, [scopeFilter, organizationId, isViewingAllOrgs]);
 
   const loadPage = useCallback(async (page: number) => {
     if (!organizationId && !isViewingAllOrgs) {
@@ -205,6 +227,16 @@ export const useVehiclesPaginated = (
         }
       }
 
+      const scopeDepotIds = await resolveScopeDepotIds();
+      if (scopeDepotIds !== null) {
+        if (scopeDepotIds.length === 0) {
+          setHasMore(false);
+          setLoading(false);
+          return;
+        }
+        query = query.in("depot_id", scopeDepotIds);
+      }
+
       if (searchQuery) {
         query = query.or(
           `plate_number.ilike.%${searchQuery}%,make.ilike.%${searchQuery}%,model.ilike.%${searchQuery}%,vin.ilike.%${searchQuery}%`
@@ -224,7 +256,7 @@ export const useVehiclesPaginated = (
     } finally {
       setLoading(false);
     }
-  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, totalCount, vehicleIdFilter, isViewingAllOrgs]);
+  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, totalCount, vehicleIdFilter, isViewingAllOrgs, resolveScopeDepotIds]);
 
   const refetch = useCallback(async () => {
     await loadPage(1);
@@ -234,7 +266,7 @@ export const useVehiclesPaginated = (
   useEffect(() => {
     loadPage(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, sortField, sortDirection, vehicleIdFilter, isViewingAllOrgs]);
+  }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, scopeFilter, sortField, sortDirection, vehicleIdFilter, isViewingAllOrgs]);
 
   // Subscribe to realtime changes with throttling
   useEffect(() => {

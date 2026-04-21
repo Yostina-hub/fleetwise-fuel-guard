@@ -2571,6 +2571,7 @@ export type Database = {
           address: string | null
           business_unit_id: string
           created_at: string
+          depot_type: string
           id: string
           name: string
           updated_at: string
@@ -2579,6 +2580,7 @@ export type Database = {
           address?: string | null
           business_unit_id: string
           created_at?: string
+          depot_type?: string
           id?: string
           name: string
           updated_at?: string
@@ -2587,6 +2589,7 @@ export type Database = {
           address?: string | null
           business_unit_id?: string
           created_at?: string
+          depot_type?: string
           id?: string
           name?: string
           updated_at?: string
