@@ -482,6 +482,26 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       const { data, error } = await (supabase as any).from("vehicle_requests").insert(payload).select("id").single();
       if (error) throw error;
 
+      // ── Persist ordered intermediate stops (waypoints) ──
+      // Stored in `vehicle_request_stops` with sequence = 1..N. Skip blank rows.
+      const cleanStops = (form.stops || [])
+        .map((s) => ({ ...s, name: (s.name || "").trim() }))
+        .filter((s) => s.name.length > 0);
+      if (cleanStops.length > 0) {
+        const stopRows = cleanStops.map((s, i) => ({
+          vehicle_request_id: data.id,
+          organization_id: organizationId!,
+          sequence: i + 1,
+          name: s.name.slice(0, 200),
+          lat: s.lat,
+          lng: s.lng,
+        }));
+        const { error: stopsErr } = await (supabase as any)
+          .from("vehicle_request_stops")
+          .insert(stopRows);
+        if (stopsErr) console.error("Stops insert error:", stopsErr);
+      }
+
       const { data: routeResult, error: routeErr } = await supabase.rpc("route_vehicle_request_approval", { p_request_id: data.id });
       if (routeErr) console.error("Approval routing error:", routeErr);
 
