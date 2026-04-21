@@ -117,13 +117,18 @@ export function LocationPickerField({
 
   if (!geofences || geofences.length === 0) {
     return (
-      <div>
-        <Label className="flex items-center gap-1">
+      <div className="space-y-1.5">
+        <Label className="flex items-center gap-1 text-xs">
           <MapPin className={`h-3.5 w-3.5 ${iconColor}`} />
           {label} {required && "*"}
         </Label>
-        <div className="flex gap-2">
-          <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="flex-1" />
+        <div className="flex gap-2 items-center">
+          <Input
+            value={cleanValue}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="flex-1 h-10"
+          />
           {mapButton}
         </div>
         <MapLocationPickerDialog
