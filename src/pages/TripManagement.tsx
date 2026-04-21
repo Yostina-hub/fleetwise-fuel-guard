@@ -45,6 +45,48 @@ const TripManagement = () => {
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
   const { isSuperAdmin, hasRole, hasPermission, loading: permsLoading } = usePermissions();
 
+  // ── Current system data source ─────────────────────────────────────
+  // The Trips tab now mirrors the unified `vehicle_requests` flow that
+  // VehicleRequestForm + assignment + driver-checkin produce. Legacy
+  // `trip_requests` are kept available for the Approvals tab below.
+  const { data: vehicleRequests = [], isLoading: loadingVR } = useQuery({
+    queryKey: ["trip-mgmt-vehicle-requests", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(`
+          *,
+          assigned_vehicle:assigned_vehicle_id(plate_number, make, model),
+          assigned_driver:assigned_driver_id(first_name, last_name)
+        `)
+        .eq("organization_id", organizationId)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!organizationId,
+  });
+
+  // Realtime: refresh kanban when vehicle_requests change.
+  useEffect(() => {
+    if (!organizationId) return;
+    const ch = supabase
+      .channel("trip-mgmt-vr-realtime")
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "vehicle_requests" },
+        () => { /* react-query refetch via invalidate */
+          // Lightweight: trigger a refetch by invalidating.
+          (window as any).__qc?.invalidateQueries?.({ queryKey: ["trip-mgmt-vehicle-requests"] });
+        }
+      ).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [organizationId]);
+
+  const requests = vehicleRequests;
+  const loading = loadingVR;
+
   // Resolve driver record for current user (only used when isDriverOnly)
   const { data: driverSelf, isLoading: driverLoading } = useQuery({
     queryKey: ["trip-mgmt-driver-self", organizationId],
