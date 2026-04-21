@@ -145,6 +145,28 @@ const VehicleRequests = () => {
   const [poolFilter, setPoolFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
 
+  // sorting
+  type SortKey =
+    | "request_number"
+    | "request_type"
+    | "requester_name"
+    | "route"
+    | "pool_name"
+    | "needed_from"
+    | "vehicle"
+    | "trip_type"
+    | "status";
+  const [sortKey, setSortKey] = useState<SortKey>("needed_from");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "needed_from" ? "desc" : "asc");
+    }
+  };
+
   // Realtime subscription for vehicle_requests
   useEffect(() => {
     const channel = supabase
@@ -249,10 +271,52 @@ const VehicleRequests = () => {
     });
   }, [requests, activeStatus, debouncedSearch, typeFilter, poolFilter]);
 
+  // sorted (apply on top of filtered)
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    const dir = sortDir === "asc" ? 1 : -1;
+    const getVal = (r: any): string | number => {
+      switch (sortKey) {
+        case "request_number":
+          return String(r.request_number ?? "").toLowerCase();
+        case "request_type":
+          return String(r.request_type ?? "").toLowerCase();
+        case "requester_name":
+          return String(r.requester_name ?? "").toLowerCase();
+        case "route":
+          return `${r.departure_place ?? ""} ${r.destination ?? ""}`.trim().toLowerCase();
+        case "pool_name":
+          return String(r.pool_name ?? "").toLowerCase();
+        case "needed_from":
+          return r.needed_from ? new Date(r.needed_from).getTime() : 0;
+        case "vehicle":
+          return String(r.assigned_vehicle?.plate_number ?? "").toLowerCase();
+        case "trip_type":
+          return String(r.trip_type ?? "").toLowerCase();
+        case "status":
+          return String(r.status ?? "").toLowerCase();
+        default:
+          return "";
+      }
+    };
+    arr.sort((a, b) => {
+      const av = getVal(a);
+      const bv = getVal(b);
+      const aEmpty = av === "" || av === 0;
+      const bEmpty = bv === "" || bv === 0;
+      if (aEmpty && !bEmpty) return 1;
+      if (!aEmpty && bEmpty) return -1;
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir]);
+
   // pagination
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const paginated = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   useEffect(() => {
     setPage(1);
