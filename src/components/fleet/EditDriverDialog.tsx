@@ -53,7 +53,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
     license_type: "", license_issue_date: "", license_expiry: "",
     employment_type: "regular", status: "active",
     joining_date: "", department: "", experience_years: "", route_type: "intracity",
-    bank_name: "", bank_account: "",
+    telebirr_account: "",
     emergency_contact_name: "", emergency_contact_phone: "",
     emergency_contact_relationship: "", blood_type: "",
     notes: "", rfid_tag: "", ibutton_id: "", bluetooth_id: "",
@@ -101,8 +101,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
             department: (data as any).department || "",
             experience_years: (data as any).experience_years?.toString() || "",
             route_type: (data as any).route_type || "intracity",
-            bank_name: (data as any).bank_name || "",
-            bank_account: (data as any).bank_account || "",
+            telebirr_account: (data as any).telebirr_account || "",
             emergency_contact_name: data.emergency_contact_name || "",
             emergency_contact_phone: data.emergency_contact_phone || "",
             emergency_contact_relationship: data.emergency_contact_relationship || "",
@@ -189,8 +188,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
       department: formData.department || null,
       experience_years: formData.experience_years ? parseInt(formData.experience_years) : null,
       route_type: formData.route_type || null,
-      bank_name: formData.bank_name.trim() || null,
-      bank_account: formData.bank_account.trim() || null,
+      telebirr_account: formData.telebirr_account.trim() || null,
       emergency_contact_name: formData.emergency_contact_name.trim() || null,
       emergency_contact_phone: formData.emergency_contact_phone.trim() || null,
       emergency_contact_relationship: formData.emergency_contact_relationship || null,
@@ -410,11 +408,18 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                 </div>
               </Section>
 
-              {/* Banking */}
-              <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Banking Information">
+              {/* Telebirr (optional) */}
+              <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Telebirr Account (Optional)">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="Bank Name"><Input value={formData.bank_name} onChange={e => set("bank_name", e.target.value)} /></Field>
-                  <Field label="Bank Account Number"><Input value={formData.bank_account} onChange={e => set("bank_account", e.target.value)} /></Field>
+                  <Field label="Telebirr Account">
+                    <Input
+                      value={formData.telebirr_account}
+                      onChange={e => set("telebirr_account", e.target.value.replace(/[^\d+]/g, "").slice(0, 13))}
+                      placeholder="09XXXXXXXX"
+                      inputMode="tel"
+                      maxLength={13}
+                    />
+                  </Field>
                 </div>
               </Section>
 
