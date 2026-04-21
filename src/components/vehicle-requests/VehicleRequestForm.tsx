@@ -974,7 +974,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         const isLast = tabIndex === TABS.length - 1;
         const FooterInner = (
           <div className="flex w-full items-center justify-between gap-3">
-            <Button variant="ghost" size="sm" onClick={() => { setForm(initialForm); validation.reset(); }} className="text-muted-foreground">
+            <Button variant="ghost" size="sm" onClick={() => { setForm(buildInitialForm()); validation.reset(); }} className="text-muted-foreground">
               Clear
             </Button>
             <div className="flex items-center gap-2">
