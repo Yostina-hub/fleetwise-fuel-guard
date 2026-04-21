@@ -13,6 +13,8 @@ import {
   Search,
   History,
   Sparkles,
+  FlaskConical,
+  Sliders,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -24,6 +26,8 @@ import MaintenanceSchedulesTab from "@/components/maintenance/MaintenanceSchedul
 import VehicleInspectionsTab from "@/components/maintenance/VehicleInspectionsTab";
 import MaintenanceHistoryTab from "@/components/maintenance/MaintenanceHistoryTab";
 import ServiceHistoryTab from "@/components/maintenance/ServiceHistoryTab";
+import MaintenanceClassOverridesTab from "@/components/maintenance/MaintenanceClassOverridesTab";
+import MaintenanceDryRunDialog from "@/components/maintenance/MaintenanceDryRunDialog";
 import MaintenanceQuickStats from "@/components/maintenance/MaintenanceQuickStats";
 import MaintenanceQuickActions from "@/components/maintenance/MaintenanceQuickActions";
 import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
@@ -52,6 +56,7 @@ const Maintenance = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("schedules");
   const [runningScheduler, setRunningScheduler] = useState(false);
+  const [dryRunOpen, setDryRunOpen] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -135,6 +140,16 @@ const Maintenance = () => {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setDryRunOpen(true)}
+                className="gap-2"
+                title="Preview what the auto-scheduler would create without committing"
+              >
+                <FlaskConical className="w-4 h-4" aria-hidden="true" />
+                Dry Run
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleRunScheduler}
                 disabled={runningScheduler}
                 className="gap-2"
@@ -196,7 +211,7 @@ const Maintenance = () => {
         {/* Tabbed Content */}
         <div ref={tabsRef}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full max-w-2xl grid-cols-4">
+            <TabsList className="grid w-full max-w-3xl grid-cols-5">
               <TabsTrigger value="schedules" className="gap-2">
                 <Calendar className="w-4 h-4" aria-hidden="true" />
                 Schedules
@@ -212,6 +227,10 @@ const Maintenance = () => {
               <TabsTrigger value="work-orders" className="gap-2">
                 <ListChecks className="w-4 h-4" aria-hidden="true" />
                 Work Orders
+              </TabsTrigger>
+              <TabsTrigger value="class-tuning" className="gap-2">
+                <Sliders className="w-4 h-4" aria-hidden="true" />
+                Class Tuning
               </TabsTrigger>
             </TabsList>
 
@@ -230,8 +249,17 @@ const Maintenance = () => {
             <TabsContent value="work-orders">
               <MaintenanceHistoryTab />
             </TabsContent>
+
+            <TabsContent value="class-tuning">
+              <MaintenanceClassOverridesTab />
+            </TabsContent>
           </Tabs>
         </div>
+
+        <MaintenanceDryRunDialog
+          open={dryRunOpen}
+          onOpenChange={setDryRunOpen}
+        />
       </div>
     </Layout>
   );
