@@ -36,6 +36,7 @@ import {
   COST_BAND_LABELS,
   COST_BAND_TONE,
   BUSINESS_PURPOSE_CATEGORIES,
+  BUSINESS_PURPOSE_GROUPS,
   CARGO_LOAD_OPTIONS,
   type CargoLoad,
 } from "@/lib/vehicle-requests/vehicleClassRecommendation";
