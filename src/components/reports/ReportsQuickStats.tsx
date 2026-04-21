@@ -74,7 +74,7 @@ export const ReportsQuickStats = ({ metrics, vehicleCount, driverCount }: Report
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className={cn("p-2 rounded-lg bg-white/5 border border-white/10")}>
+              <div className={cn("p-2 rounded-lg bg-surface-overlay/40 border border-surface-border/60")}>
                 <stat.icon className={cn("w-4 h-4", stat.color === "text-primary" ? "text-cyan-400" : stat.color === "text-green-500" ? "text-[#8DC63F]" : stat.color)} />
               </div>
               {stat.trend !== null && stat.trend !== 0 && (
@@ -94,7 +94,7 @@ export const ReportsQuickStats = ({ metrics, vehicleCount, driverCount }: Report
               )}
             </div>
             <div className="text-2xl font-bold text-white">{stat.value.toLocaleString()}</div>
-            <div className="text-xs text-white/60 mt-1">{stat.label}</div>
+            <div className="text-xs text-surface-muted-foreground mt-1">{stat.label}</div>
           </CardContent>
         </Card>
       ))}

@@ -279,9 +279,9 @@ export default function LiveDeliveryMap() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-white truncate">{request.name}</p>
-                      <p className="text-xs text-white/70">{request.action}</p>
+                      <p className="text-xs text-surface-foreground/70">{request.action}</p>
                       {request.vehiclePlate && (
-                        <p className="text-xs text-white/60">{request.vehiclePlate}</p>
+                        <p className="text-xs text-surface-muted-foreground">{request.vehiclePlate}</p>
                       )}
                       <div className="flex items-center gap-1 mt-1">
                         <MapPin className="w-3 h-3 text-orange-400" />
@@ -292,7 +292,7 @@ export default function LiveDeliveryMap() {
                 </motion.div>
               ))}
               {[...realtimeActivities, ...requests].length === 0 && (
-                <div className="text-center py-8 text-white/60 text-sm font-medium">
+                <div className="text-center py-8 text-surface-muted-foreground text-sm font-medium">
                   No active requests
                 </div>
               )}
@@ -493,9 +493,9 @@ export default function LiveDeliveryMap() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-white truncate">{delivery.name}</p>
-                      <p className="text-xs text-white/70">{delivery.action}</p>
+                      <p className="text-xs text-surface-foreground/70">{delivery.action}</p>
                       {delivery.vehiclePlate && (
-                        <p className="text-xs text-white/60">{delivery.vehiclePlate}</p>
+                        <p className="text-xs text-surface-muted-foreground">{delivery.vehiclePlate}</p>
                       )}
                       <div className="flex items-center gap-1 mt-1">
                         <CheckCircle2 className="w-3 h-3 text-green-400" />
@@ -506,7 +506,7 @@ export default function LiveDeliveryMap() {
                 </motion.div>
               ))}
               {deliveries.length === 0 && (
-                <div className="text-center py-8 text-white/60 text-sm font-medium">
+                <div className="text-center py-8 text-surface-muted-foreground text-sm font-medium">
                   No recent deliveries
                 </div>
               )}

@@ -82,12 +82,12 @@ const AlertsQuickStats = ({
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-white/5 border border-white/10">
+                    <div className="p-2 rounded-lg bg-surface-overlay/40 border border-surface-border/60">
                       <stat.icon className={`w-5 h-5 ${stat.color === "text-primary" ? "text-cyan-400" : stat.color === "text-success" ? "text-[#8DC63F]" : stat.color === "text-warning" ? "text-amber-400" : stat.color === "text-destructive" ? "text-red-400" : stat.color}`} aria-hidden="true" />
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-white">{stat.value}</p>
-                      <p className="text-xs text-white/60">{stat.label}</p>
+                      <p className="text-xs text-surface-muted-foreground">{stat.label}</p>
                     </div>
                   </div>
                 </CardContent>

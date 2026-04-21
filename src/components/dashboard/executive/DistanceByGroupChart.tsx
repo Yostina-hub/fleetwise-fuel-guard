@@ -24,7 +24,7 @@ const DistanceByGroupChart = ({ data, groups, loading }: DistanceByGroupChartPro
 
   if (loading) {
     return (
-      <div className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 lg:col-span-2 h-80">
+      <div className="bg-surface-elevated border border-surface-border rounded-lg p-4 lg:col-span-2 h-80">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-muted/20 rounded w-1/3" />
           <div className="h-56 bg-muted/20 rounded" />
@@ -38,7 +38,7 @@ const DistanceByGroupChart = ({ data, groups, loading }: DistanceByGroupChartPro
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg shadow-xl p-3">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-surface-elevated border border-surface-border rounded-lg shadow-xl p-3">
           <p className="font-medium text-foreground mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-xs flex items-center gap-2 py-0.5">
@@ -54,7 +54,7 @@ const DistanceByGroupChart = ({ data, groups, loading }: DistanceByGroupChartPro
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.6, ease: "easeOut" }} whileHover={{ borderColor: "rgba(59, 130, 246, 0.4)" }} className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 lg:col-span-2 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300">
+    <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.6, ease: "easeOut" }} whileHover={{ borderColor: "rgba(59, 130, 246, 0.4)" }} className="bg-surface-elevated border border-surface-border rounded-lg p-4 lg:col-span-2 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300">
       <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
         <div className="flex items-center gap-3">
           <h3 className="font-bold text-lg text-white tracking-tight">{t('executive.distanceByFleet')}</h3>

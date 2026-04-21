@@ -87,12 +87,12 @@ const LivePulseTimeline = ({ events, loading }: LivePulseTimelineProps) => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <p className="font-medium text-white text-sm truncate">{event.title}</p>
-                        <span className="text-xs text-white/70 whitespace-nowrap flex items-center gap-1">
+                        <span className="text-xs text-surface-foreground/70 whitespace-nowrap flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {format(event.timestamp, 'HH:mm')}
                         </span>
                       </div>
-                      <p className="text-xs text-white/70 line-clamp-2">{event.description}</p>
+                      <p className="text-xs text-surface-foreground/70 line-clamp-2">{event.description}</p>
                       {event.vehiclePlate && (
                         <Badge variant="outline" className="mt-1 text-xs bg-background/50">
                           <Truck className="w-3 h-3 mr-1" />

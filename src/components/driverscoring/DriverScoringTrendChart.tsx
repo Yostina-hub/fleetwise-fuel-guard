@@ -47,7 +47,7 @@ const DriverScoringTrendChart = () => {
       <CardContent>
         <div className="h-[200px]">
           {data.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-white/50 text-sm">
+            <div className="flex items-center justify-center h-full text-surface-muted-foreground text-sm">
               No historical data available yet
             </div>
           ) : (

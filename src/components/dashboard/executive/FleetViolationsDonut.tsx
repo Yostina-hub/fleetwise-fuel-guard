@@ -188,7 +188,7 @@ export const FleetViolationsDonut = () => {
               {t('executive.fleetViolations')}
             </CardTitle>
             <Select value={period} onValueChange={(v) => setPeriod(v as TimePeriod)}>
-              <SelectTrigger className="w-[130px] h-8 text-xs bg-white/10 border-cyan-500/30 text-white">
+              <SelectTrigger className="w-[130px] h-8 text-xs bg-surface-overlay/60 border-cyan-500/30 text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

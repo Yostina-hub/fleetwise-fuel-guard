@@ -33,7 +33,7 @@ export function ThemeToggle({ className, variant = "default" }: ThemeToggleProps
           <button
             className={cn(
               "flex items-center gap-2.5 w-full px-3 py-2 rounded-md transition-all duration-200 text-sm",
-              "text-white/70 hover:bg-[#2a3a4d] hover:text-white",
+              "text-surface-foreground/70 hover:bg-surface-overlay hover:text-white",
               className
             )}
           >
@@ -66,7 +66,7 @@ export function ThemeToggle({ className, variant = "default" }: ThemeToggleProps
         <Button
           variant="ghost"
           size="icon"
-          className={cn("h-9 w-9 text-white/70 hover:text-white hover:bg-white/10", className)}
+          className={cn("h-9 w-9 text-surface-foreground/70 hover:text-white hover:bg-surface-overlay/60", className)}
         >
           <CurrentIcon className="h-4 w-4" />
           <span className="sr-only">Toggle theme</span>

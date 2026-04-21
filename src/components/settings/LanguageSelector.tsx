@@ -29,13 +29,13 @@ const LanguageSelector = ({ variant = 'default', className }: LanguageSelectorPr
   if (variant === 'compact') {
     return (
       <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-        <SelectTrigger className={`w-[120px] bg-[#0d1520] border-[#2a3a4d] text-white/80 hover:bg-[#2a3a4d] ${className}`}>
+        <SelectTrigger className={`w-[120px] bg-surface-card border-surface-border text-surface-foreground/80 hover:bg-surface-overlay ${className}`}>
           <Globe className="w-4 h-4 mr-2" />
           <SelectValue>{currentLang.code.toUpperCase()}</SelectValue>
         </SelectTrigger>
-        <SelectContent className="bg-[#1a2332] border-[#2a3a4d]">
+        <SelectContent className="bg-surface-elevated border-surface-border">
           {languages.map((lang) => (
-            <SelectItem key={lang.code} value={lang.code} className="text-white/80 hover:bg-[#2a3a4d] focus:bg-[#2a3a4d] focus:text-white">
+            <SelectItem key={lang.code} value={lang.code} className="text-surface-foreground/80 hover:bg-surface-overlay focus:bg-surface-overlay focus:text-white">
               <span className="flex items-center gap-2">
                 <span>{lang.nativeName}</span>
               </span>

@@ -24,7 +24,7 @@ const IdleTimeDonut = ({ totalIdleTime, groups, loading, idlePercentage = 25 }: 
 
   if (loading) {
     return (
-      <div className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 h-72">
+      <div className="bg-surface-elevated border border-surface-border rounded-lg p-4 h-72">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-muted/20 rounded w-1/3" />
           <div className="h-48 bg-muted/20 rounded" />
@@ -46,7 +46,7 @@ const IdleTimeDonut = ({ totalIdleTime, groups, loading, idlePercentage = 25 }: 
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
       whileHover={{ scale: 1.01, borderColor: "rgba(249, 115, 22, 0.4)" }}
-      className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300"
+      className="bg-surface-elevated border border-surface-border rounded-lg p-4 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300"
     >
       <div className="flex items-center gap-3 mb-4">
         <h3 className="font-bold text-lg text-white tracking-tight">{t('executive.idleTime')}</h3>
@@ -88,7 +88,7 @@ const IdleTimeDonut = ({ totalIdleTime, groups, loading, idlePercentage = 25 }: 
             </thead>
             <tbody>
               {groups.map((group, i) => (
-                <motion.tr key={group.name} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="border-t border-[#2a3a4d]">
+                <motion.tr key={group.name} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="border-t border-surface-border">
                   <td className="py-2">
                     <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-normal" style={{ borderColor: groupColors[i % groupColors.length], color: groupColors[i % groupColors.length], backgroundColor: `${groupColors[i % groupColors.length]}15` }}>
                       {group.name}

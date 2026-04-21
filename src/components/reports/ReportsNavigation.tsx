@@ -67,7 +67,7 @@ export const ReportsNavigation = ({
                     "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap",
                     isActive
                       ? "bg-gradient-to-r from-[#8DC63F] to-[#6ba32d] text-white shadow-md shadow-[#8DC63F]/25"
-                      : "text-white/60 hover:text-white hover:bg-white/10"
+                      : "text-surface-muted-foreground hover:text-white hover:bg-surface-overlay/60"
                   )}
                 >
                   {Icon && <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-cyan-400")} aria-hidden="true" />}
@@ -96,7 +96,7 @@ export const ReportsNavigation = ({
                     "px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap border",
                     isActive
                       ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/20"
-                      : "bg-[#001a33] text-white/60 border-white/10 hover:border-cyan-500/30 hover:text-white hover:bg-white/5"
+                      : "bg-surface-deep text-surface-muted-foreground border-surface-border/60 hover:border-cyan-500/30 hover:text-white hover:bg-surface-overlay/40"
                   )}
                 >
                   {tab.label}

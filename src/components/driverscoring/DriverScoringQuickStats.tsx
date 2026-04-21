@@ -55,12 +55,12 @@ const DriverScoringQuickStats = ({
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+              <div className="p-2.5 rounded-xl bg-surface-overlay/40 border border-surface-border/60">
                 <stat.icon className={`h-5 w-5 ${stat.color === "text-green-500" ? "text-[#8DC63F]" : stat.color === "text-orange-500" ? "text-amber-400" : stat.color}`} aria-hidden="true" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-white">{stat.value}</p>
-                <p className="text-xs text-white/60">{stat.label}</p>
+                <p className="text-xs text-surface-muted-foreground">{stat.label}</p>
               </div>
             </div>
           </CardContent>

@@ -54,7 +54,7 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
 
   if (loading) {
     return (
-      <Card className="bg-[#1a2332] border-[#2a3a4d] h-full">
+      <Card className="bg-surface-elevated border-surface-border h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
             <Radio className="w-5 h-5 text-emerald-400 animate-pulse" />
@@ -64,7 +64,7 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
         <CardContent>
           <div className="space-y-3">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-16 bg-white/10 rounded-lg animate-pulse" />
+              <div key={i} className="h-16 bg-surface-overlay/60 rounded-lg animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -73,7 +73,7 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
   }
 
   return (
-    <Card className="bg-[#1a2332] border-[#2a3a4d] h-full w-full overflow-hidden">
+    <Card className="bg-surface-elevated border-surface-border h-full w-full overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-white">
@@ -137,17 +137,17 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
                       <p className="text-sm leading-relaxed text-white">{activity.message}</p>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
                         {activity.vehiclePlate && (
-                          <Badge variant="secondary" className="text-xs gap-1 bg-[#2a3a4d] text-white border-[#3a4a5d]">
+                          <Badge variant="secondary" className="text-xs gap-1 bg-surface-overlay text-white border-[#3a4a5d]">
                             <Truck className="w-3 h-3" />
                             {activity.vehiclePlate}
                           </Badge>
                         )}
                         {activity.driverName && (
-                          <span className="text-xs text-white/60">
+                          <span className="text-xs text-surface-muted-foreground">
                             {activity.driverName}
                           </span>
                         )}
-                        <span className="flex items-center gap-1 text-xs text-white/60 ml-auto">
+                        <span className="flex items-center gap-1 text-xs text-surface-muted-foreground ml-auto">
                           <Clock className="w-3 h-3" />
                           {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
                         </span>
@@ -159,7 +159,7 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
             </AnimatePresence>
 
             {allActivities.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-white/60">
+              <div className="flex flex-col items-center justify-center py-12 text-surface-muted-foreground">
                 <Activity className="w-12 h-12 mb-4 opacity-50" />
                 <p className="text-sm">No recent activity</p>
               </div>

@@ -200,13 +200,13 @@ export function CommandCenterHUD({ vehicles, visible, onClose }: CommandCenterHU
                     threatColors[threatLevel],
                     threatGlow[threatLevel]
                   )} />
-                  <span className="text-[11px] font-bold tracking-widest text-white/90 font-mono">
+                  <span className="text-[11px] font-bold tracking-widest text-surface-foreground/90 font-mono">
                     {threatLevel}
                   </span>
                 </div>
 
                 {/* Live Clock */}
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-white/5 border border-white/10">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-surface-overlay/40 border border-surface-border/60">
                   <Clock className="w-3.5 h-3.5 text-cyan-400" />
                   <span className="text-xs font-mono text-cyan-300 tracking-wider">
                     {currentTime.toLocaleTimeString('en-US', { hour12: false })}
@@ -214,21 +214,21 @@ export function CommandCenterHUD({ vehicles, visible, onClose }: CommandCenterHU
                 </div>
 
                 {/* Date */}
-                <span className="text-[10px] text-white/40 font-mono hidden sm:block">
+                <span className="text-[10px] text-surface-foreground/40 font-mono hidden sm:block">
                   {currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
 
                 {/* Center: Title */}
                 <div className="flex-1 text-center">
-                  <span className="text-xs font-bold tracking-[0.3em] text-white/70 uppercase font-mono">
+                  <span className="text-xs font-bold tracking-[0.3em] text-surface-foreground/70 uppercase font-mono">
                     Fleet Command Center
                   </span>
                 </div>
 
                 {/* Fleet Readiness */}
-                <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-white/5 border border-white/10">
+                <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-surface-overlay/40 border border-surface-border/60">
                   <Target className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-xs font-mono text-white/80">READINESS</span>
+                  <span className="text-xs font-mono text-surface-foreground/80">READINESS</span>
                   <span className={cn(
                     "text-sm font-bold font-mono",
                     kpis.readiness >= 75 ? "text-emerald-400" :
@@ -241,7 +241,7 @@ export function CommandCenterHUD({ vehicles, visible, onClose }: CommandCenterHU
                 {/* Close */}
                 <button
                   onClick={onClose}
-                  className="text-white/40 hover:text-white/80 transition-colors text-xs font-mono px-2 py-1 rounded border border-white/10 hover:border-white/30"
+                  className="text-surface-foreground/40 hover:text-surface-foreground/80 transition-colors text-xs font-mono px-2 py-1 rounded border border-surface-border/60 hover:border-white/30"
                 >
                   ESC
                 </button>
@@ -268,7 +268,7 @@ export function CommandCenterHUD({ vehicles, visible, onClose }: CommandCenterHU
                   >
                     <kpi.icon className={cn("w-3.5 h-3.5", kpi.color, kpi.pulse && "animate-pulse")} />
                     <div className="flex flex-col">
-                      <span className="text-[8px] font-mono text-white/40 tracking-wider leading-tight">{kpi.label}</span>
+                      <span className="text-[8px] font-mono text-surface-foreground/40 tracking-wider leading-tight">{kpi.label}</span>
                       <span className={cn("text-sm font-bold font-mono leading-tight", kpi.color)}>
                         {kpi.value}
                         {kpi.unit && <span className="text-[9px] ml-0.5 text-white/30">{kpi.unit}</span>}
@@ -291,7 +291,7 @@ export function CommandCenterHUD({ vehicles, visible, onClose }: CommandCenterHU
                       animate={{ y: 0, opacity: 1 }}
                       exit={{ y: -12, opacity: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="text-[11px] font-mono text-white/70 whitespace-nowrap"
+                      className="text-[11px] font-mono text-surface-foreground/70 whitespace-nowrap"
                     >
                       {tickerMessages[tickerIndex]}
                     </motion.span>
@@ -309,12 +309,12 @@ export function CommandCenterHUD({ vehicles, visible, onClose }: CommandCenterHU
             transition={{ type: 'spring', damping: 25, stiffness: 300, delay: 0.1 }}
             className="absolute bottom-0 left-0 right-80 z-30 pointer-events-auto"
           >
-            <div className="bg-black/80 backdrop-blur-xl border-t border-white/10 px-4 py-2 flex items-center justify-between gap-4">
+            <div className="bg-black/80 backdrop-blur-xl border-t border-surface-border/60 px-4 py-2 flex items-center justify-between gap-4">
               {/* Top Speed Monitor */}
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/10">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface-overlay/40 border border-surface-border/60">
                   <Gauge className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="text-[9px] font-mono text-white/50">TOP SPEED</span>
+                  <span className="text-[9px] font-mono text-surface-muted-foreground">TOP SPEED</span>
                   {topSpeedVehicle ? (
                     <span className={cn(
                       "text-xs font-bold font-mono",
@@ -329,21 +329,21 @@ export function CommandCenterHUD({ vehicles, visible, onClose }: CommandCenterHU
                 </div>
 
                 {/* Active Alerts */}
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/10">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface-overlay/40 border border-surface-border/60">
                   <AlertTriangle className={cn(
                     "w-3.5 h-3.5",
                     (recentAlerts?.filter(a => a.status === 'active').length || 0) > 0 ? "text-amber-400 animate-pulse" : "text-white/30"
                   )} />
-                  <span className="text-[9px] font-mono text-white/50">ALERTS</span>
+                  <span className="text-[9px] font-mono text-surface-muted-foreground">ALERTS</span>
                   <span className="text-xs font-bold font-mono text-amber-300">
                     {recentAlerts?.filter(a => a.status === 'active').length || 0}
                   </span>
                 </div>
 
                 {/* Geofence Activity */}
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/10">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface-overlay/40 border border-surface-border/60">
                   <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                  <span className="text-[9px] font-mono text-white/50">ZONE EVENTS</span>
+                  <span className="text-[9px] font-mono text-surface-muted-foreground">ZONE EVENTS</span>
                   <span className="text-xs font-bold font-mono text-indigo-300">
                     {geofenceEvents?.length || 0}
                   </span>
@@ -393,7 +393,7 @@ export function CommandCenterHUD({ vehicles, visible, onClose }: CommandCenterHU
                 )}>
                   {kpis.readiness}
                 </span>
-                <span className="text-[7px] font-mono text-white/40 tracking-widest">READINESS</span>
+                <span className="text-[7px] font-mono text-surface-foreground/40 tracking-widest">READINESS</span>
               </div>
             </div>
           </motion.div>

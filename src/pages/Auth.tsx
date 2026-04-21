@@ -391,7 +391,7 @@ const Auth = () => {
             <ExecutiveTechBackground />
           </div>
           {/* Subtle overlay for better readability */}
-          <div className="absolute inset-0 bg-[#001a33]/20 z-[2]" />
+          <div className="absolute inset-0 bg-surface-deep/20 z-[2]" />
         </>
       )}
 
@@ -427,13 +427,13 @@ const Auth = () => {
               {features.map((feature, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center gap-4 p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-[#8DC63F]/50 hover:bg-white/10 transition-all duration-300 animate-fade-in group cursor-default"
+                  className="flex items-center gap-4 p-4 rounded-xl bg-surface-overlay/40 backdrop-blur-sm border border-surface-border/60 hover:border-[#8DC63F]/50 hover:bg-surface-overlay/60 transition-all duration-300 animate-fade-in group cursor-default"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-surface-overlay/60 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <feature.icon className={`w-6 h-6 ${feature.color}`} />
                   </div>
-                  <span className="text-lg text-white/90 font-medium">{feature.text}</span>
+                  <span className="text-lg text-surface-foreground/90 font-medium">{feature.text}</span>
                 </div>
               ))}
             </div>
@@ -448,14 +448,14 @@ const Auth = () => {
                     <stat.icon className="w-4 h-4 text-[#8DC63F]" />
                     <div className="text-2xl font-bold text-white">{stat.value}</div>
                   </div>
-                  <div className="text-sm text-white/60">{stat.label}</div>
+                  <div className="text-sm text-surface-muted-foreground">{stat.label}</div>
                 </div>
               ))}
             </div>
             
             <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
             
-            <p className="text-sm text-white/50 flex items-center gap-2">
+            <p className="text-sm text-surface-muted-foreground flex items-center gap-2">
               <Globe className="w-4 h-4" />
               Trusted by leading logistics companies worldwide
             </p>
@@ -465,7 +465,7 @@ const Auth = () => {
         {/* Right Side - Auth Forms */}
         <div className="flex items-center justify-center p-4 lg:p-12">
           <div className="w-full max-w-md">
-            <Card className="border border-white/20 shadow-2xl shadow-black/50 backdrop-blur-xl bg-[#001a33]/80 animate-scale-in overflow-hidden">
+            <Card className="border border-surface-border/80 shadow-2xl shadow-black/50 backdrop-blur-xl bg-surface-deep/80 animate-scale-in overflow-hidden">
               {/* Card glow effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-[#8DC63F]/5 pointer-events-none" />
               
@@ -480,13 +480,13 @@ const Auth = () => {
                     <CardTitle className="text-2xl text-center font-bold text-white">
                       Two-Factor Authentication
                     </CardTitle>
-                    <CardDescription className="text-center text-base text-white/60">
+                    <CardDescription className="text-center text-base text-surface-muted-foreground">
                       Enter the 6-digit code from your authenticator app
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="relative space-y-6">
                     <div className="space-y-2">
-                      <Label htmlFor="totp-code" className="text-sm font-medium text-white/80">
+                      <Label htmlFor="totp-code" className="text-sm font-medium text-surface-foreground/80">
                         Verification Code
                       </Label>
                       <Input
@@ -494,14 +494,14 @@ const Auth = () => {
                         value={totpCode}
                         onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                         placeholder="000000"
-                        className="h-14 text-center text-2xl font-mono tracking-[0.5em] bg-white/5 border-white/20 text-white placeholder:text-white/30 focus:border-[#8DC63F] focus:ring-2 focus:ring-[#8DC63F]/20"
+                        className="h-14 text-center text-2xl font-mono tracking-[0.5em] bg-surface-overlay/40 border-surface-border/80 text-white placeholder:text-white/30 focus:border-[#8DC63F] focus:ring-2 focus:ring-[#8DC63F]/20"
                         maxLength={6}
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && totpCode.length === 6) handle2FAVerify();
                         }}
                       />
-                      <p className="text-xs text-white/40 text-center mt-2">
+                      <p className="text-xs text-surface-foreground/40 text-center mt-2">
                         You can also enter a backup recovery code
                       </p>
                     </div>
@@ -527,7 +527,7 @@ const Auth = () => {
                     <button
                       type="button"
                       onClick={() => { setPending2FA(false); setTotpCode(""); setPending2FACredentials(null); }}
-                      className="w-full text-center text-sm text-white/50 hover:text-white/80 transition-colors flex items-center justify-center gap-2"
+                      className="w-full text-center text-sm text-surface-muted-foreground hover:text-surface-foreground/80 transition-colors flex items-center justify-center gap-2"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       Back to sign in
@@ -548,7 +548,7 @@ const Auth = () => {
                 <CardTitle className="text-2xl text-center font-bold text-white">
                   {activeTab === "signin" ? "Welcome back" : "Get started"}
                 </CardTitle>
-                <CardDescription className="text-center text-base text-white/60">
+                <CardDescription className="text-center text-base text-surface-muted-foreground">
                   {activeTab === "signin" 
                     ? "Sign in to your account to continue" 
                     : "Create your account to get started"
@@ -562,20 +562,20 @@ const Auth = () => {
                   <TabsContent value="signin" className="space-y-4 animate-fade-in">
                     <form onSubmit={handleSignIn} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="signin-email" className="text-sm font-medium text-white/80">Email Address</Label>
+                        <Label htmlFor="signin-email" className="text-sm font-medium text-surface-foreground/80">Email Address</Label>
                         <Input
                           id="signin-email"
                           name="email"
                           type="email"
                           placeholder="you@company.com"
                           required
-                          className="h-12 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-[#8DC63F] focus:ring-2 focus:ring-[#8DC63F]/20 transition-all duration-300"
+                          className="h-12 bg-surface-overlay/40 border-surface-border/80 text-white placeholder:text-surface-foreground/40 focus:border-[#8DC63F] focus:ring-2 focus:ring-[#8DC63F]/20 transition-all duration-300"
                         />
                       </div>
                       
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <Label htmlFor="signin-password" className="text-sm font-medium text-white/80">Password</Label>
+                          <Label htmlFor="signin-password" className="text-sm font-medium text-surface-foreground/80">Password</Label>
                           <button 
                             type="button"
                             onClick={async () => {
@@ -632,12 +632,12 @@ const Auth = () => {
                             type={showPassword ? "text" : "password"}
                             placeholder="••••••••"
                             required
-                            className="h-12 pr-12 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-[#8DC63F] focus:ring-2 focus:ring-[#8DC63F]/20 transition-all duration-300"
+                            className="h-12 pr-12 bg-surface-overlay/40 border-surface-border/80 text-white placeholder:text-surface-foreground/40 focus:border-[#8DC63F] focus:ring-2 focus:ring-[#8DC63F]/20 transition-all duration-300"
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-surface-muted-foreground hover:text-white transition-colors"
                           >
                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </button>
@@ -672,8 +672,8 @@ const Auth = () => {
             </Card>
 
             {/* Keyboard shortcut hint */}
-            <p className="text-center text-xs text-white/40 mt-6 hidden lg:block">
-              Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-[10px] font-mono text-white/60">⌘K</kbd> anywhere for quick navigation
+            <p className="text-center text-xs text-surface-foreground/40 mt-6 hidden lg:block">
+              Press <kbd className="px-1.5 py-0.5 bg-surface-overlay/60 rounded text-[10px] font-mono text-surface-muted-foreground">⌘K</kbd> anywhere for quick navigation
             </p>
 
             {/* Mobile features */}
@@ -681,7 +681,7 @@ const Auth = () => {
               {features.slice(0, 2).map((feature, index) => (
                 <div 
                   key={index}
-                  className="flex items-center gap-2 text-sm text-white/70 p-3 bg-white/5 rounded-lg border border-white/10"
+                  className="flex items-center gap-2 text-sm text-surface-foreground/70 p-3 bg-surface-overlay/40 rounded-lg border border-surface-border/60"
                 >
                   <feature.icon className="w-4 h-4 text-[#8DC63F]" />
                   <span>{feature.text}</span>

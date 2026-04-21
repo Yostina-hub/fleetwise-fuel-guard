@@ -132,7 +132,7 @@ export const TotalTripsCard = () => {
                 className="data-[state=checked]:bg-[#8DC63F]"
               />
               <Select value={period} onValueChange={(v) => setPeriod(v as TimePeriod)}>
-                <SelectTrigger className="w-[100px] h-8 text-xs bg-white/10 border-cyan-500/30 text-white">
+                <SelectTrigger className="w-[100px] h-8 text-xs bg-surface-overlay/60 border-cyan-500/30 text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -160,7 +160,7 @@ export const TotalTripsCard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 + index * 0.1 }}
               >
-                <p className="text-xs text-white/60 font-medium">{stat.label}</p>
+                <p className="text-xs text-surface-muted-foreground font-medium">{stat.label}</p>
                 <motion.p 
                   className={`text-3xl font-bold ${stat.color}`}
                   initial={{ scale: 0 }}

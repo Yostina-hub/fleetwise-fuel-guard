@@ -83,7 +83,7 @@ export const SidebarMenuItem = ({
               ? "bg-primary/20 text-white shadow-sm"
               : "bg-primary/10 text-foreground shadow-sm"
             : isDark
-              ? "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+              ? "text-surface-foreground/70 hover:bg-surface-overlay hover:text-white"
               : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
         )}
       >
@@ -135,7 +135,7 @@ export const SidebarMenuItem = ({
                   ? "bg-primary/20 text-white shadow-sm"
                   : "bg-primary/10 text-foreground shadow-sm"
                 : isDark
-                  ? "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+                  ? "text-surface-foreground/70 hover:bg-surface-overlay hover:text-white"
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             )}
           >
@@ -180,7 +180,7 @@ export const SidebarMenuItem = ({
                 ? "bg-primary/20 text-white shadow-sm"
                 : "bg-primary/10 text-foreground shadow-sm"
               : isDark
-                ? "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+                ? "text-surface-foreground/70 hover:bg-surface-overlay hover:text-white"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           )}
         >
@@ -208,7 +208,7 @@ export const SidebarMenuItem = ({
                     ? "border-primary bg-primary/10 text-white font-medium"
                     : "border-primary bg-primary/10 text-foreground font-medium"
                   : isDark
-                    ? "border-[#2a3a4d] text-white/60 hover:bg-[#2a3a4d]/50 hover:text-white hover:border-primary/50"
+                    ? "border-surface-border text-surface-muted-foreground hover:bg-surface-overlay/50 hover:text-white hover:border-primary/50"
                     : "border-border text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground hover:border-primary/50"
               )}
             >

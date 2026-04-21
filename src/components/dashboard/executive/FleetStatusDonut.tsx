@@ -31,7 +31,7 @@ const FleetStatusDonut = ({ vehicles, loading }: FleetStatusDonutProps) => {
 
   if (loading) {
     return (
-      <Card className="bg-[#1a2332] border-[#2a3a4d]">
+      <Card className="bg-surface-elevated border-surface-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
             <Truck className="w-5 h-5 text-primary" />
@@ -46,7 +46,7 @@ const FleetStatusDonut = ({ vehicles, loading }: FleetStatusDonutProps) => {
   }
 
   return (
-    <Card className="bg-[#1a2332] border-[#2a3a4d]">
+    <Card className="bg-surface-elevated border-surface-border">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-white">
           <Truck className="w-5 h-5 text-primary" />
@@ -69,7 +69,7 @@ const FleetStatusDonut = ({ vehicles, loading }: FleetStatusDonutProps) => {
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <motion.div initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.5, duration: 0.5 }} className="text-center">
               <span className="text-3xl font-bold text-white">{vehicles.length}</span>
-              <p className="text-xs text-white/60">{t('executive.totalFleet')}</p>
+              <p className="text-xs text-surface-muted-foreground">{t('executive.totalFleet')}</p>
             </motion.div>
           </div>
         </div>
@@ -79,17 +79,17 @@ const FleetStatusDonut = ({ vehicles, loading }: FleetStatusDonutProps) => {
             <motion.div key={item.name} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 + index * 0.1 }} className="text-center p-2 rounded-lg" style={{ backgroundColor: `${item.color}15` }}>
               <div className="flex items-center justify-center gap-1 mb-1">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-xs text-white/60">{item.name}</span>
+                <span className="text-xs text-surface-muted-foreground">{item.name}</span>
               </div>
               <span className="text-lg font-bold text-white">{item.value}</span>
-              <span className="text-xs text-white/60 ml-1">({item.percentage.toFixed(0)}%)</span>
+              <span className="text-xs text-surface-muted-foreground ml-1">({item.percentage.toFixed(0)}%)</span>
             </motion.div>
           ))}
         </div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-[#2a3a4d]">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-surface-border">
           <Activity className={`w-4 h-4 ${activePercentage >= 70 ? 'text-success' : activePercentage >= 50 ? 'text-warning' : 'text-destructive'}`} />
-          <span className="text-sm text-white/80">
+          <span className="text-sm text-surface-foreground/80">
             {activePercentage >= 70 ? t('executive.operatingOptimally') : activePercentage >= 50 ? t('executive.moderatelyActive') : t('executive.underutilized')}
           </span>
         </motion.div>

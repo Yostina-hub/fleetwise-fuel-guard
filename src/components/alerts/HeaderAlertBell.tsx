@@ -51,7 +51,7 @@ export const HeaderAlertBell = () => {
     ? "text-red-400 hover:text-red-300"
     : warningCount > 0
     ? "text-amber-400 hover:text-amber-300"
-    : "text-white/60 hover:text-white";
+    : "text-surface-muted-foreground hover:text-white";
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -59,7 +59,7 @@ export const HeaderAlertBell = () => {
         <Button
           variant="ghost"
           size="icon"
-          className={cn("relative h-8 w-8", bellColor, "hover:bg-[#2a3a4d]")}
+          className={cn("relative h-8 w-8", bellColor, "hover:bg-surface-overlay")}
           aria-label={`${totalUnresolved} unresolved alerts`}
         >
           <AlertTriangle className={cn("h-5 w-5", criticalCount > 0 && "animate-pulse")} />

@@ -97,7 +97,7 @@ export function SidebarNav({ navItems, adminItems, developerItems = [], isSuperA
       )}
 
       {pinnedItems.length > 0 && (
-        <div className={cn("border-t shrink-0", isDark ? "border-[#2a3a4d]/50" : "border-border")} />
+        <div className={cn("border-t shrink-0", isDark ? "border-surface-border/50" : "border-border")} />
       )}
 
       {/* Main Scrollable Navigation Section */}
@@ -121,13 +121,13 @@ export function SidebarNav({ navItems, adminItems, developerItems = [], isSuperA
               <div className="pt-3 pb-1.5">
                 <div className={cn(
                   "px-3 text-[10px] font-semibold uppercase tracking-wider",
-                  isDark ? "text-white/50" : "text-muted-foreground"
+                  isDark ? "text-surface-muted-foreground" : "text-muted-foreground"
                 )}>
                   Admin
                 </div>
               </div>
             )}
-            {isCollapsed && <div className="border-t border-[#2a3a4d]/50 my-2" />}
+            {isCollapsed && <div className="border-t border-surface-border/50 my-2" />}
             {adminItems
               .filter((item) => {
                 // org_admin only sees Users
@@ -148,7 +148,7 @@ export function SidebarNav({ navItems, adminItems, developerItems = [], isSuperA
                       ? "bg-primary/20 text-white shadow-sm"
                       : "bg-primary/10 text-foreground shadow-sm"
                     : isDark
-                      ? "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+                      ? "text-surface-foreground/70 hover:bg-surface-overlay hover:text-white"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 )}
               >
@@ -185,7 +185,7 @@ export function SidebarNav({ navItems, adminItems, developerItems = [], isSuperA
                       ? "bg-cyan-500/20 text-cyan-300 shadow-sm"
                       : "bg-primary/10 text-foreground shadow-sm"
                     : isDark
-                      ? "text-white/70 hover:bg-cyan-500/10 hover:text-cyan-300"
+                      ? "text-surface-foreground/70 hover:bg-cyan-500/10 hover:text-cyan-300"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 )}
               >

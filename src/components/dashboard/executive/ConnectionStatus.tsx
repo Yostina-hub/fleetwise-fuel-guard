@@ -75,7 +75,7 @@ const ConnectionStatus = ({ isConnected, lastUpdate }: ConnectionStatusProps) =>
       {/* Pulse ring effect for connected state */}
       {isConnected && (
         <motion.div
-          className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full bg-white/10"
+          className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full bg-surface-overlay/60"
           animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
           transition={{ duration: 2, repeat: Infinity }}
         />

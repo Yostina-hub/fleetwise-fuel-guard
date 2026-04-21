@@ -351,14 +351,14 @@ const Dashboard = () => {
             <h1 className={`text-3xl font-bold ${activeTab === 'executive' ? 'text-white' : 'bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent'}`}>
               {t('dashboard.title')}
             </h1>
-            <p className={`mt-1 ${activeTab === 'executive' ? 'text-white/70' : 'text-muted-foreground'}`}>{t('dashboard.subtitle')}</p>
+            <p className={`mt-1 ${activeTab === 'executive' ? 'text-surface-foreground/70' : 'text-muted-foreground'}`}>{t('dashboard.subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
             <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
             <DashboardSearch />
             <Button 
               variant="outline" 
-              className={`gap-2 ${activeTab === 'executive' ? 'border-cyan-500/30 bg-white/10 text-white hover:bg-white/20' : ''}`}
+              className={`gap-2 ${activeTab === 'executive' ? 'border-cyan-500/30 bg-surface-overlay/60 text-white hover:bg-surface-overlay/80' : ''}`}
               onClick={handleRefresh}
               disabled={refreshing}
               aria-label="Refresh dashboard data"
@@ -371,7 +371,7 @@ const Dashboard = () => {
 
         {/* Tabs for different views */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid w-full max-w-xs sm:max-w-lg grid-cols-3 ${activeTab === 'executive' ? 'bg-white/10 border border-cyan-500/20' : ''}`}>
+          <TabsList className={`grid w-full max-w-xs sm:max-w-lg grid-cols-3 ${activeTab === 'executive' ? 'bg-surface-overlay/60 border border-cyan-500/20' : ''}`}>
             <TabsTrigger value="executive" className={`gap-2 ${activeTab === 'executive' ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : ''}`}>
               <Crown className="w-4 h-4" />
               Executive
