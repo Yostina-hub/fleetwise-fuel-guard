@@ -1096,7 +1096,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <FieldError field="date" />
                 </div>
                 <div>
-                  <Label className="text-primary font-medium">Start Time <span className="text-destructive">*</span></Label>
+                  <Label className="text-primary font-medium text-sm mb-1.5 block">Start Time <span className="text-destructive">*</span></Label>
                   <TimePicker
                     value={form.start_time}
                     onChange={v => update("start_time", v)}
@@ -1106,7 +1106,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <FieldError field="start_time" />
                 </div>
                 <div>
-                  <Label className="text-primary font-medium">End Time <span className="text-destructive">*</span></Label>
+                  <Label className="text-primary font-medium text-sm mb-1.5 block">End Time <span className="text-destructive">*</span></Label>
                   <TimePicker
                     value={form.end_time}
                     onChange={v => update("end_time", v)}
@@ -1214,7 +1214,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <Label className="text-primary font-medium flex items-center gap-1">
+                  <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                     <Route className="w-3.5 h-3.5" /> Intermediate Stops
                     <FieldHint>
                       Add ordered waypoints between Departure and Final Destination. Driver will visit them in this order.
@@ -1305,7 +1305,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             </div>
 
             <div>
-              <Label className="text-primary font-medium flex items-center gap-1"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
+              <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
               <Select value={form.trip_type} onValueChange={v => update("trip_type", v)}>
                 <SelectTrigger><SelectValue placeholder="Select Trip Type" /></SelectTrigger>
                 <SelectContent>
@@ -1373,7 +1373,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 />
               </VRField>
               <div>
-                <Label className="text-primary font-medium flex items-center gap-1">
+                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                   Cargo / Equipment <span className="text-destructive">*</span>
                   <FieldHint>Required — helps recommend the smallest sufficient vehicle and reserve cargo capacity.</FieldHint>
                 </Label>
@@ -1428,7 +1428,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               )}
 
               <div className="md:col-span-2">
-                <Label className="text-primary font-medium flex items-center gap-2">
+                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-2">
                   Vehicle Type
                   {recommendation && form.vehicle_type === recommendation.value && (
                     <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 gap-1">
@@ -1478,7 +1478,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               {/* Justification — only shown when over-spec'd */}
               {isUpgrade && (
                 <div className="md:col-span-2 animate-fade-in">
-                  <Label className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                  <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1.5 flex items-center gap-1.5">
                     Why is {chosenProfile?.label} needed instead of {recommendation?.label}? <span className="text-destructive">*</span>
                     <FieldHint tone="warning">
                       Visible to your approver. Be specific — generic reasons may be rejected.
@@ -1494,7 +1494,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               )}
               <div>
-                <Label className="text-primary font-medium">Priority</Label>
+                <Label className="text-primary font-medium text-sm mb-1.5 block">Priority</Label>
                 <Select value={form.priority} onValueChange={v => update("priority", v)}>
                   <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -1506,7 +1506,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Select>
               </div>
               <div className="md:col-span-2">
-                <Label className="text-primary font-medium flex items-center gap-1">
+                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                   Assigned Pool
                   <FieldHint>Operational pool the trip will be served from.</FieldHint>
                 </Label>
@@ -1563,7 +1563,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
             </div>
             <div>
-              <Label className="text-primary font-medium flex items-center gap-1">
+              <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                 Business Purpose Category <span className="text-destructive">*</span>
                 <FieldHint>
                   Fleet vehicles are for business use only. Personal or family trips are not permitted.
@@ -1619,7 +1619,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               })()}
             </div>
             <div>
-              <Label className="text-primary font-medium flex items-center gap-1">
+              <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                 Department / Division
                 <FieldHint>
                   The unit this trip is charged to / belongs to. Helps approval routing & reporting.
