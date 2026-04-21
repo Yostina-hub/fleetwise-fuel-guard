@@ -26,6 +26,7 @@ import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm } from "./vehicleRequestValidation";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
+import { MyVehicleRequestsSummary } from "./MyVehicleRequestsSummary";
 
 interface VehicleRequestFormProps {
   open: boolean;
