@@ -33,7 +33,7 @@ const ANGLES: Array<{ key: "photo_front_url" | "photo_back_url" | "photo_left_ur
 
 const FUEL_TYPES = ["diesel", "petrol", "hybrid", "electric", "cng", "lpg"];
 const STATUSES = ["active", "maintenance", "idle", "retired"];
-const OWNERSHIP = ["owned", "rented", "leased", "outsourced"];
+const OWNERSHIP = ["owned", "ethio_telecom", "outsourced", "rented", "leased", "commercial", "government", "3pl"];
 const TRANSMISSIONS = ["manual", "automatic", "amt", "cvt"];
 const CONDITIONS = ["new", "good", "fair", "poor"];
 
