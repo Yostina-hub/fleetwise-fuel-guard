@@ -158,6 +158,11 @@ export const TripDetailPanel = ({
                 <Ban className="w-4 h-4" /> Cancel Request
               </Button>
             )}
+            {onChangeStatus && (
+              <Button variant="outline" onClick={() => onChangeStatus(trip)} className="gap-1.5">
+                <RefreshCw className="w-4 h-4" /> Change Status
+              </Button>
+            )}
             <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
           </div>
         </div>
