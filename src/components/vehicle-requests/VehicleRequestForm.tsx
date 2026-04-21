@@ -1723,16 +1723,29 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                 {t('common.cancel', 'Cancel')}
               </Button>
-              <Button
-                size="sm"
-                onClick={handleSubmit}
-                disabled={!canSubmit || createMutation.isPending || hasPendingRatings}
-                title={hasPendingRatings ? "Rate your previous trips before submitting" : undefined}
-                className="gap-1.5"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                {createMutation.isPending ? "Submitting..." : "Submit Request"}
-              </Button>
+              {tabIndex > 0 && (
+                <Button variant="outline" size="sm" onClick={goPrev} className="gap-1.5">
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+              )}
+              {tabIndex < TABS.length - 1 ? (
+                <Button size="sm" onClick={goNext} className="gap-1.5">
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={handleSubmit}
+                  disabled={!canSubmit || createMutation.isPending || hasPendingRatings}
+                  title={hasPendingRatings ? "Rate your previous trips before submitting" : undefined}
+                  className="gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {createMutation.isPending ? "Submitting..." : "Submit Request"}
+                </Button>
+              )}
             </div>
           </div>
         );
