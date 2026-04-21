@@ -39,7 +39,6 @@ import {
   PlayCircle,
   Plus,
   Search,
-  XCircle,
   Inbox,
   Loader2,
   RefreshCw,
