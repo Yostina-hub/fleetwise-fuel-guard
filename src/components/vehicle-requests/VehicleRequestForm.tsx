@@ -64,6 +64,39 @@ const POOL_HIERARCHY: Record<string, string[]> = {
 };
 
 /**
+ * Pool Category metadata — mirrors the visual chip used in the Vehicle
+ * Registration form (BasicInfoTabs) so requesters see the same icon + tone
+ * for Corporate / Zone / Region across both flows.
+ *
+ * Keys map to the lower-case `pool_category` we persist on `vehicle_requests`.
+ */
+const POOL_CATEGORY_META: Record<
+  "corporate" | "zone" | "region",
+  { label: string; icon: typeof Building2; tone: string; desc: string; locationGroup: "Corporate" | "Zone" | "Region" }
+> = {
+  corporate: { label: "Corporate", icon: Building2, tone: "text-blue-500 bg-blue-500/10 ring-blue-500/20",     desc: "Head office assets",  locationGroup: "Corporate" },
+  zone:      { label: "Zone",      icon: Layers,    tone: "text-amber-500 bg-amber-500/10 ring-amber-500/20",   desc: "Zonal pool",          locationGroup: "Zone" },
+  region:    { label: "Region",    icon: Globe2,    tone: "text-emerald-500 bg-emerald-500/10 ring-emerald-500/20", desc: "Regional pool",   locationGroup: "Region" },
+};
+
+function PoolCategoryChip({ value, compact = false }: { value: string; compact?: boolean }) {
+  const meta = POOL_CATEGORY_META[value as keyof typeof POOL_CATEGORY_META];
+  if (!meta) return <span>{value}</span>;
+  const Icon = meta.icon;
+  return (
+    <span className="flex items-center gap-2 min-w-0">
+      <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md ring-1 ${meta.tone}`}>
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <span className="flex flex-col min-w-0 leading-tight">
+        <span className="text-sm font-medium truncate">{meta.label}</span>
+        {!compact && <span className="text-[10px] text-muted-foreground truncate">{meta.desc}</span>}
+      </span>
+    </span>
+  );
+}
+
+/**
  * Build a "HH:MM" string from a Date, rounded *up* to the next 5-minute mark.
  * Used so the form's default Start Time always reflects the requester's
  * current machine time (not a stale 08:00) and is never already in the past
