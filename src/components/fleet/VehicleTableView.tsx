@@ -213,6 +213,9 @@ export const VehicleTableView = ({
 
   const [visibleColumns, setVisibleColumns] = useState<VehicleColumnId[]>(() => loadVisibleColumns());
 
+  /** Local client-side sort, used for any column that isn't a backend SortField. */
+  const [localSort, setLocalSort] = useState<{ col: VehicleColumnId; dir: SortDirection } | null>(null);
+
   const sortField = externalSortField;
   const sortDirection = externalSortDirection || "asc";
 
@@ -221,21 +224,47 @@ export const VehicleTableView = ({
     [visibleColumns],
   );
 
-  const handleSort = (field: SortField) => {
-    if (!onSortChange) return;
-    if (sortField === field) {
-      onSortChange(field, sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      onSortChange(field, "asc");
+  const handleSort = (col: VehicleColumnId) => {
+    if (col === "actions") return;
+    const backend = SORTABLE_COLUMNS[col];
+    if (backend && onSortChange) {
+      // Backend sorting (works across paginated data)
+      setLocalSort(null);
+      if (sortField === backend) {
+        onSortChange(backend, sortDirection === "asc" ? "desc" : "asc");
+      } else {
+        onSortChange(backend, "asc");
+      }
+      return;
     }
+    // Client-side sorting (current page)
+    setLocalSort((prev) => {
+      if (!prev || prev.col !== col) return { col, dir: "asc" };
+      if (prev.dir === "asc") return { col, dir: "desc" };
+      return null; // third click clears
+    });
   };
 
-  const sortIcon = (field: SortField) => {
-    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 ml-1 opacity-50" />;
-    return sortDirection === "asc"
+  const sortIcon = (col: VehicleColumnId) => {
+    const backend = SORTABLE_COLUMNS[col];
+    const isBackendActive = backend && sortField === backend;
+    const isLocalActive = localSort?.col === col;
+    if (!isBackendActive && !isLocalActive) {
+      return <ArrowUpDown className="w-3.5 h-3.5 ml-1 opacity-50" />;
+    }
+    const dir = isBackendActive ? sortDirection : (localSort?.dir ?? "asc");
+    return dir === "asc"
       ? <ArrowUp className="w-3.5 h-3.5 ml-1" />
       : <ArrowDown className="w-3.5 h-3.5 ml-1" />;
   };
+
+  /** Apply client-side sorting on top of the (already backend-sorted) page. */
+  const displayedVehicles = useMemo(() => {
+    if (!localSort) return vehicles;
+    const { col, dir } = localSort;
+    const sorted = [...vehicles].sort((a, b) => compareValues(getSortValue(a, col), getSortValue(b, col)));
+    return dir === "desc" ? sorted.reverse() : sorted;
+  }, [vehicles, localSort]);
 
   const allSelected = vehicles.length > 0 && selectedIds.length === vehicles.length;
   const someSelected = selectedIds.length > 0 && selectedIds.length < vehicles.length;
