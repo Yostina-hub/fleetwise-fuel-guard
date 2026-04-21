@@ -175,17 +175,15 @@ export function MapLocationPickerDialog({
     };
   }, [searchQuery]);
 
-  // Map init — re-runs when geolocation resolves so the map opens centered
-  // on the requester's actual position (or the Addis fallback).
+  // Map init — runs once per open. We deliberately exclude lat/lng from deps
+  // so clicking/dragging doesn't tear down and rebuild the map (which would
+  // swallow subsequent clicks). The re-center effect below handles updates.
   useEffect(() => {
     if (!open) return;
 
-    const startLat = lat;
-    const startLng = lng;
-
     const timer = setTimeout(() => {
       const container = mapContainer.current;
-      if (!container) return;
+      if (!container || mapRef.current) return;
 
       container.style.width = "100%";
       container.style.height = "350px";
@@ -195,7 +193,7 @@ export function MapLocationPickerDialog({
       const map = new maplibregl.Map({
         container,
         style,
-        center: [startLng, startLat],
+        center: [lng, lat],
         zoom: 14,
         attributionControl: false,
       });
@@ -204,7 +202,7 @@ export function MapLocationPickerDialog({
       map.addControl(new maplibregl.NavigationControl(), "top-right");
 
       const marker = new maplibregl.Marker({ color: "#ef4444", draggable: true })
-        .setLngLat([startLng, startLat])
+        .setLngLat([lng, lat])
         .addTo(map);
 
       marker.on("dragend", async () => {
@@ -239,12 +237,14 @@ export function MapLocationPickerDialog({
       markerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, lat === initialLat && lng === initialLng ? false : `${lat},${lng}`]);
+  }, [open]);
 
-  // Sync marker when lat/lng change
+  // Re-center map + marker when lat/lng change (e.g. after geolocate resolves
+  // or a search result is picked) — without recreating the map.
   useEffect(() => {
-    if (markerRef.current) {
-      markerRef.current.setLngLat([lng, lat]);
+    if (markerRef.current) markerRef.current.setLngLat([lng, lat]);
+    if (mapRef.current) {
+      mapRef.current.easeTo({ center: [lng, lat], duration: 600 });
     }
   }, [lat, lng]);
 
