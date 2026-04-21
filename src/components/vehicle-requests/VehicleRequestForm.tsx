@@ -112,7 +112,7 @@ const buildInitialForm = () => ({
   contact_phone: "",
   // Resource-aware request fields (demand-shaping pattern).
   purpose_category: "" as string,                  // business taxonomy — required
-  cargo_load: "none" as CargoLoad,                 // drives the recommendation engine
+  cargo_load: "" as CargoLoad | "",                // mandatory — drives recommendation engine
   vehicle_type_justification: "" as string,        // required when user upgrades over recommendation
 });
 
