@@ -1395,7 +1395,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground mt-1">Helps recommend the smallest sufficient vehicle.</p>
               </div>
 
               {/* Resource-aware recommendation banner — pure derivation from passengers + cargo */}
