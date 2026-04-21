@@ -849,25 +849,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   };
 
   const HeaderInner = (
-    <div className="flex items-start gap-3 sm:gap-4">
-      <div className="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center">
-        <Car className="w-6 h-6 text-primary" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+      <div className="h-2 bg-primary" aria-hidden="true" />
+      <div className="p-5 sm:p-6">
+        <h2 className="text-2xl font-semibold text-foreground">
           Vehicle Request
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Fill in the sections below and submit — your progress auto-saves as you type.
+        <p className="mt-2 text-base text-muted-foreground">
+          Complete the questions below to submit your vehicle request.
         </p>
       </div>
-      <Badge
-        variant="outline"
-        className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 border-border bg-muted/40 text-muted-foreground font-normal"
-      >
-        <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-        <span className="text-xs">Auto-saved</span>
-      </Badge>
     </div>
   );
 
