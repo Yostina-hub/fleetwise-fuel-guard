@@ -1492,14 +1492,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Label className="text-primary font-medium">Trip Description <span className="text-destructive">*</span></Label>
               <Textarea
                 value={form.purpose}
-                onChange={e => update("purpose", e.target.value)}
+                onChange={e => update("purpose", e.target.value.slice(0, 2000))}
                 onBlur={e => handleBlur("purpose", e.target.value, form as any)}
                 placeholder="Describe the purpose of this trip — what, where, and why (min 10 characters)…"
                 rows={4}
+                maxLength={2000}
                 aria-invalid={!!getError("purpose")}
               />
               <FieldError field="purpose" />
-              <p className="text-[11px] text-muted-foreground mt-1">
+              <p className={`text-[11px] mt-1 ${(form.purpose?.length || 0) >= 2000 ? "text-destructive font-medium" : "text-muted-foreground"}`}>
                 {form.purpose?.length || 0}/2000 characters
               </p>
             </div>
