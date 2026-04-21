@@ -853,7 +853,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           Fleet Request
         </h2>
         <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-          A guided 5-step intake. Fields adapt as you go — progress auto-saves.
+          Fill in the sections below and submit — your progress auto-saves as you type.
         </p>
       </div>
       <Badge
@@ -861,7 +861,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 border-border bg-muted/40 text-muted-foreground font-normal"
       >
         <ShieldCheck className="w-3 h-3 text-primary" />
-        <span className="text-[11px]">Step {tabIndex + 1} / {TABS.length}</span>
+        <span className="text-[11px]">Auto-saved</span>
       </Badge>
     </div>
   );
@@ -877,7 +877,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <DialogHeader className="relative">
             <DialogTitle className="sr-only">Fleet Request</DialogTitle>
             <DialogDescription className="sr-only">
-              A guided 5-step intake. Fields adapt as you go — progress auto-saves.
+              Fleet vehicle request form — fill in the sections and submit.
             </DialogDescription>
             {HeaderInner}
           </DialogHeader>
@@ -996,39 +996,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         {/* Personal request summary — helps requesters see status of prior submissions before filing a new one */}
         <MyVehicleRequestsSummary variant="compact" />
 
-        {/* Modern Tabs — responsive: icon-only on mobile, full label on >=sm */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-          <TabsList className="w-full h-auto p-1 bg-muted/40 grid grid-cols-5 gap-1 rounded-xl border border-border/60">
-            {TABS.map((tab, i) => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.id;
-              const done = tabComplete[tab.id] && !active;
-              return (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className="relative flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-1.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground transition-all"
-                >
-                  <span
-                    className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-semibold shrink-0 ${
-                      active
-                        ? "bg-primary text-primary-foreground"
-                        : done
-                          ? "bg-primary/15 text-primary"
-                          : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {done ? <CheckCircle2 className="w-3 h-3" /> : i + 1}
-                  </span>
-                  <span className="hidden sm:inline text-xs font-medium leading-none">{tab.label}</span>
-                  <Icon className="sm:hidden w-3.5 h-3.5" />
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+        {/* Single-page form — sections render one after another, scroll naturally */}
+        <div className="space-y-8">
 
-          {/* TYPE TAB */}
-          <TabsContent value="type" className="mt-5 space-y-3 animate-fade-in">
+          {/* TYPE SECTION */}
+          <section className="space-y-3 animate-fade-in">
+            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">1</span>
+              <h3 className="text-sm font-semibold text-foreground">Operation Type</h3>
+            </div>
             <Label className="text-foreground font-medium text-sm">Vehicle Request Type</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
               {[
@@ -1066,10 +1042,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 );
               })}
             </div>
-          </TabsContent>
+          </section>
 
-          {/* SCHEDULE TAB */}
-          <TabsContent value="schedule" className="mt-5 space-y-4 animate-fade-in">
+          {/* SCHEDULE SECTION */}
+          <section className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">2</span>
+              <h3 className="text-sm font-semibold text-foreground">Schedule</h3>
+            </div>
             {/* Working-hours policy banner — Project / operational only */}
             {isProject && workingHoursPolicy && (() => {
               const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -1171,10 +1151,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <p className="mt-0.5">Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled for the duration of the trip.</p>
               </div>
             )}
-          </TabsContent>
+          </section>
 
-          {/* ROUTE TAB */}
-          <TabsContent value="route" className="mt-5 space-y-4 animate-fade-in">
+          {/* ROUTE SECTION */}
+          <section className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">3</span>
+              <h3 className="text-sm font-semibold text-foreground">Route</h3>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <LocationPickerField
                 label="Departure Place"
@@ -1314,10 +1298,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </SelectContent>
               </Select>
             </div>
-          </TabsContent>
+          </section>
 
-          {/* RESOURCES TAB */}
-          <TabsContent value="resources" className="mt-5 space-y-4 animate-fade-in">
+          {/* RESOURCES SECTION */}
+          <section className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">4</span>
+              <h3 className="text-sm font-semibold text-foreground">Vehicle & Pool</h3>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-primary font-medium flex items-center gap-1">
@@ -1521,10 +1509,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <p className="text-[11px] text-muted-foreground mt-1">Optional. Helps dispatch reach the requester quickly if plans change.</p>
               </div>
             </div>
-          </TabsContent>
+          </section>
 
-          {/* DETAILS TAB */}
-          <TabsContent value="details" className="mt-5 space-y-4 animate-fade-in">
+          {/* DETAILS SECTION */}
+          <section className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2 pb-1 border-b border-border/60">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">5</span>
+              <h3 className="text-sm font-semibold text-foreground">Purpose & Submit</h3>
+            </div>
             <div>
               <Label className="text-primary font-medium">
                 Business Purpose Category <span className="text-destructive">*</span>
@@ -1595,12 +1587,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <div className="rounded-md bg-background/60 border border-border/50 p-2"><span className="font-medium text-foreground">Managers+</span> → Auto-approved</div>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </section>
+        </div>
       </div>
 
       {(() => {
-        const isLast = tabIndex === TABS.length - 1;
         const FooterInner = (
           <div className="flex w-full flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
             <Button
@@ -1615,27 +1606,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                 {t('common.cancel', 'Cancel')}
               </Button>
-              {tabIndex > 0 && (
-                <Button variant="outline" size="sm" onClick={goPrev} className="gap-1">
-                  <ChevronLeft className="w-4 h-4" /> Back
-                </Button>
-              )}
-              {!isLast ? (
-                <Button size="sm" onClick={goNext} className="gap-1">
-                  Next <ChevronRight className="w-4 h-4" />
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={handleSubmit}
-                  disabled={!canSubmit || createMutation.isPending || hasPendingRatings}
-                  title={hasPendingRatings ? "Rate your previous trips before submitting" : undefined}
-                  className="gap-1.5"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  {createMutation.isPending ? "Submitting..." : "Submit Request"}
-                </Button>
-              )}
+              <Button
+                size="sm"
+                onClick={handleSubmit}
+                disabled={!canSubmit || createMutation.isPending || hasPendingRatings}
+                title={hasPendingRatings ? "Rate your previous trips before submitting" : undefined}
+                className="gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                {createMutation.isPending ? "Submitting..." : "Submit Request"}
+              </Button>
             </div>
           </div>
         );
