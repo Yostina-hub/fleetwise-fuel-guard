@@ -75,10 +75,14 @@ export function useFormDraft<T extends Record<string, any>>(
   initialValues: T,
 ): UseFormDraftResult<T> {
   // Lazily hydrate from storage so the first render already shows the draft.
+  // Always merge the restored draft on top of `initialValues` so that any
+  // newly added fields (added in a later code version) are backfilled with
+  // their defaults — preventing `undefined.length` style crashes when reading
+  // arrays/objects that didn't exist when the draft was first persisted.
   const [values, setValues] = useState<T>(() => {
     if (!key) return initialValues;
     const draft = readDraft(key);
-    return (draft?.values as T) ?? initialValues;
+    return draft?.values ? ({ ...initialValues, ...(draft.values as T) }) : initialValues;
   });
   const [restoredAt, setRestoredAt] = useState<string | null>(() => {
     if (!key) return null;
@@ -99,7 +103,7 @@ export function useFormDraft<T extends Record<string, any>>(
     }
     const draft = readDraft(key);
     if (draft) {
-      setValues(draft.values as T);
+      setValues({ ...initialValues, ...(draft.values as T) });
       setRestoredAt(draft.savedAt);
       setSavedAt(draft.savedAt);
     } else {
