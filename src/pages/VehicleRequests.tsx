@@ -44,6 +44,7 @@ import {
   Sparkles,
   X,
   FileText,
+  Printer,
 } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
 import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
@@ -255,7 +256,9 @@ const VehicleRequests = () => {
   }, [activeStatus, debouncedSearch, typeFilter, poolFilter]);
 
   // KPI quick numbers
+  const total = requests.length;
   const pending = counts["pending"] || 0;
+  const approved = counts["approved"] || 0;
   const assigned = counts["assigned"] || 0;
   const completed = counts["completed"] || 0;
 
@@ -350,6 +353,151 @@ const VehicleRequests = () => {
     toast.success(`Exported ${filtered.length} requests as XLSX`);
   };
 
+  const exportPrint = () => {
+    if (filtered.length === 0) {
+      toast.info("Nothing to print with the current filter.");
+      return;
+    }
+    const { headers, rows } = buildExportRows();
+    const printedAt = format(new Date(), "yyyy-MM-dd HH:mm");
+    const statusLabel = activeStatus === "all" ? "All Statuses" : activeStatus.charAt(0).toUpperCase() + activeStatus.slice(1);
+    const typeLabel = typeFilter === "all" ? "All Types" : (REQUEST_TYPE_LABELS[typeFilter] ?? typeFilter);
+
+    const headerLabels: Record<string, string> = {
+      request_number: "Req #",
+      request_type: "Type",
+      status: "Status",
+      priority: "Priority",
+      requester_name: "Requester",
+      departure_place: "From",
+      destination: "To",
+      pool_name: "Pool",
+      needed_from: "Needed From",
+      needed_until: "Needed Until",
+      passengers: "Pax",
+      num_vehicles: "Veh #",
+      vehicle_type: "Veh Type",
+      trip_type: "Trip",
+      project_number: "Project",
+      distance_estimate_km: "Dist (km)",
+      vehicle_plate: "Plate",
+      vehicle_make_model: "Make/Model",
+      driver: "Driver",
+      purpose: "Purpose",
+      created_at: "Created",
+    };
+
+    const escapeHtml = (v: any) => {
+      if (v === null || v === undefined || v === "") return "—";
+      return String(v)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    };
+
+    const statusBadgeClass = (s: string) => {
+      const k = String(s || "").toLowerCase();
+      if (k === "approved" || k === "completed") return "badge ok";
+      if (k === "pending") return "badge pending";
+      if (k === "assigned") return "badge info";
+      if (k === "rejected" || k === "cancelled") return "badge danger";
+      return "badge muted";
+    };
+
+    const tbodyHtml = rows
+      .map((row) => {
+        const cells = row
+          .map((v, i) => {
+            const key = headers[i];
+            if (key === "status") {
+              return `<td><span class="${statusBadgeClass(String(v))}">${escapeHtml(v)}</span></td>`;
+            }
+            return `<td>${escapeHtml(v)}</td>`;
+          })
+          .join("");
+        return `<tr>${cells}</tr>`;
+      })
+      .join("");
+
+    const theadHtml = headers.map((h) => `<th>${escapeHtml(headerLabels[h] ?? h)}</th>`).join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Vehicle Requests Report — ${printedAt}</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 10px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; border-bottom: 2px solid #0f172a; margin-bottom: 14px; }
+  .brand { display: flex; flex-direction: column; gap: 2px; }
+  .brand h1 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
+  .brand .sub { color: #475569; font-size: 11px; }
+  .meta { text-align: right; font-size: 10px; color: #475569; line-height: 1.5; }
+  .meta strong { color: #0f172a; }
+  .summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
+  .kpi { border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; }
+  .kpi .l { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+  .kpi .v { font-size: 16px; font-weight: 700; margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  thead th { background: #0f172a; color: #fff; font-weight: 600; text-align: left; padding: 6px 5px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.03em; }
+  tbody td { padding: 5px; border-bottom: 1px solid #e2e8f0; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; font-size: 9px; }
+  tbody tr:nth-child(even) td { background: #f8fafc; }
+  .badge { display: inline-block; padding: 2px 6px; border-radius: 999px; font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+  .badge.ok { background: #dcfce7; color: #166534; }
+  .badge.pending { background: #fef3c7; color: #92400e; }
+  .badge.info { background: #dbeafe; color: #1e40af; }
+  .badge.danger { background: #fee2e2; color: #991b1b; }
+  .badge.muted { background: #e2e8f0; color: #334155; }
+  .footer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 9px; color: #64748b; }
+  @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <h1>Vehicle Requests Report</h1>
+      <div class="sub">Filter: <strong>${escapeHtml(statusLabel)}</strong> · Type: <strong>${escapeHtml(typeLabel)}</strong>${search ? ` · Search: <strong>${escapeHtml(search)}</strong>` : ""}</div>
+    </div>
+    <div class="meta">
+      <div><strong>Generated</strong> ${escapeHtml(printedAt)}</div>
+      <div><strong>Records</strong> ${filtered.length}</div>
+    </div>
+  </div>
+  <div class="summary">
+    <div class="kpi"><div class="l">Total</div><div class="v">${total}</div></div>
+    <div class="kpi"><div class="l">Pending</div><div class="v">${pending}</div></div>
+    <div class="kpi"><div class="l">Approved</div><div class="v">${approved}</div></div>
+    <div class="kpi"><div class="l">Assigned</div><div class="v">${assigned}</div></div>
+    <div class="kpi"><div class="l">Completed</div><div class="v">${completed}</div></div>
+  </div>
+  <table>
+    <thead><tr>${theadHtml}</tr></thead>
+    <tbody>${tbodyHtml}</tbody>
+  </table>
+  <div class="footer">
+    <span>Confidential — Fleet Management</span>
+    <span>Generated by Fleet System · ${escapeHtml(printedAt)}</span>
+  </div>
+  <script>
+    window.addEventListener('load', () => { setTimeout(() => { window.focus(); window.print(); }, 200); });
+  </script>
+</body>
+</html>`;
+
+    const w = window.open("", "_blank", "width=1100,height=800");
+    if (!w) {
+      toast.error("Pop-up blocked. Please allow pop-ups to print.");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    toast.success(`Prepared ${filtered.length} requests for printing`);
+  };
+
   const clearFilters = () => {
     setSearch("");
     setTypeFilter("all");
@@ -401,6 +549,10 @@ const VehicleRequests = () => {
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={exportXlsx}>
                         <FileText className="w-4 h-4 mr-2" /> Excel (.xlsx)
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={exportPrint}>
+                        <Printer className="w-4 h-4 mr-2" /> Print / PDF
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
