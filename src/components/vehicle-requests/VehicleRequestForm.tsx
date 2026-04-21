@@ -28,6 +28,7 @@ import { sanitizeVehicleRequestForm, vehicleRequestZodSchema } from "./vehicleRe
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
 import { MyVehicleRequestsSummary } from "./MyVehicleRequestsSummary";
+import { useDepartments } from "@/hooks/useDepartments";
 import {
   recommendVehicleClass,
   isUpgradeOverRecommendation,
@@ -102,6 +103,7 @@ const buildInitialForm = () => ({
   pool_category: "",
   pool_name: "",
   purpose: "",
+  department_id: "" as string,
   project_number: "",
   // New: priority + contact phone — surfaced for dispatch/approver context.
   priority: "normal",
@@ -127,6 +129,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     realRoles,
   } = useAuth();
   const queryClient = useQueryClient();
+  const { departments } = useDepartments();
 
   // When a super_admin is impersonating, the override puts the impersonated
   // user into `useAuth().user` — but `supabase.auth.getUser()` still returns
@@ -496,6 +499,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         end_time: form.end_time || null,
         project_number: safe.request_type === "project_operation" ? (safe.project_number || null) : null,
         priority: safe.priority || "normal",
+        // Department selection (optional, snapshot name for history readability).
+        department_id: form.department_id || null,
+        department_name:
+          (departments.find((d) => d.id === form.department_id)?.name) || null,
         // Resource-aware request audit fields.
         purpose_category: safe.purpose_category || null,
         cargo_load: safe.cargo_load || null,
@@ -1514,6 +1521,28 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 text-primary" />
                 Fleet vehicles are for business use only. Personal or family trips are not permitted.
+              </p>
+            </div>
+            <div>
+              <Label className="text-primary font-medium">Department / Division</Label>
+              <Select
+                value={form.department_id || "__none__"}
+                onValueChange={(v) => update("department_id", v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Select department (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— No department —</SelectItem>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.code ? `${d.code} · ${d.name}` : d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                The unit this trip is charged to / belongs to. Helps approval routing & reporting.
               </p>
             </div>
             <div>

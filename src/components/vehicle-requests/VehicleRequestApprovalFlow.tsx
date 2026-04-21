@@ -12,6 +12,24 @@ import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
+
+/**
+ * Format an ISO timestamp in the organization's active timezone (default
+ * Africa/Addis_Ababa) so dates always display the wall-clock the requester
+ * picked, regardless of the viewer's browser timezone (e.g. UTC previews).
+ */
+const fmtOrgTime = (iso?: string | null, opts: Intl.DateTimeFormatOptions = {
+  year: "numeric", month: "short", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", hour12: false,
+}): string => {
+  if (!iso) return "";
+  const tz = (typeof window !== "undefined" && window.localStorage?.getItem("org_timezone")) || "Africa/Addis_Ababa";
+  try {
+    return new Intl.DateTimeFormat("en-GB", { ...opts, timeZone: tz }).format(new Date(iso));
+  } catch {
+    return new Date(iso).toLocaleString();
+  }
+};
 import { sendDispatchSms } from "@/services/smsNotificationService";
 import { notifyRequesterDecisionSms, notifyAssignmentSms, getAppUrl } from "@/services/vehicleRequestSmsService";
 import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
@@ -360,12 +378,13 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
           <Field label="Status" value={<Badge variant={request.status === "approved" ? "default" : request.status === "rejected" ? "destructive" : "secondary"}>{request.status}</Badge>} />
           <Field label="Requester" value={request.requester_name} />
           <Field label="Priority" value={<span className="capitalize">{request.priority || "normal"}</span>} />
-          <Field label="From" value={format(new Date(request.needed_from), "MMM dd, yyyy HH:mm")} />
-          {request.needed_until && <Field label="Until" value={format(new Date(request.needed_until), "MMM dd, yyyy HH:mm")} />}
+          <Field label="From" value={fmtOrgTime(request.needed_from)} />
+          {request.needed_until && <Field label="Until" value={fmtOrgTime(request.needed_until)} />}
           {request.departure_place && <Field label="Departure" value={request.departure_place} />}
           {request.destination && <Field label="Destination" value={request.destination} />}
           {request.trip_type && <Field label="Trip" value={request.trip_type === "one_way" ? "One Way" : "Round Trip"} />}
           {request.vehicle_type && <Field label="Vehicle Type" value={request.vehicle_type} />}
+          {request.department_name && <Field label="Department" value={request.department_name} />}
           {request.pool_category && <Field label="Pool" value={`${request.pool_category} / ${request.pool_name}`} />}
           {request.num_vehicles && <Field label="Vehicles" value={request.num_vehicles} />}
           {request.passengers && <Field label="Passengers" value={request.passengers} />}
