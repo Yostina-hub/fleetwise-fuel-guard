@@ -201,6 +201,19 @@ const Vehicles = () => {
   const isColVisible = useCallback((key: string) => columnConfig.find(c => c.key === key)?.visible ?? true, [columnConfig]);
   
   const debouncedSearch = useDebounce(searchInput, 300);
+
+  // Persist user prefs (#29/#30)
+  useEffect(() => {
+    try {
+      localStorage.setItem(VEH_PREFS_KEY, JSON.stringify({
+        statusFilter,
+        tripStatusFilter,
+        viewMode,
+        sortColumn,
+        sortDirection,
+      }));
+    } catch {}
+  }, [statusFilter, tripStatusFilter, viewMode, sortColumn, sortDirection]);
   
   // Mobile view handler
   const handleMobileVehicleSelect = useCallback((vehicleId: string) => {
