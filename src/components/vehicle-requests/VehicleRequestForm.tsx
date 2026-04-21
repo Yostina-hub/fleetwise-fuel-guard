@@ -904,9 +904,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       ) : (
         <div className="relative -m-6 mb-0 px-6 pt-6 pb-5 border-b border-border/60 bg-card">
           <DialogHeader className="relative">
-            <DialogTitle className="sr-only">Fleet Request</DialogTitle>
+            <DialogTitle className="sr-only">Vehicle Request</DialogTitle>
             <DialogDescription className="sr-only">
-              Fleet vehicle request form — fill in the sections and submit.
+              Vehicle request form — fill in the sections and submit.
             </DialogDescription>
             {HeaderInner}
           </DialogHeader>
