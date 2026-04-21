@@ -115,12 +115,12 @@ export const DriverAttendanceManagement = ({ driverId, driverName, employeeId, e
 
   const statusColor = (s: string) => {
     switch (s) {
-      case "present": return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-      case "late": return "bg-amber-500/20 text-amber-400 border-amber-500/30";
-      case "absent": return "bg-red-500/20 text-red-400 border-red-500/30";
-      case "leave": return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-      case "half_day": return "bg-purple-500/20 text-purple-400 border-purple-500/30";
-      default: return "bg-muted text-muted-foreground";
+      case "present":  return "bg-success/20 text-success border-success/30";
+      case "late":     return "bg-warning/20 text-warning border-warning/30";
+      case "absent":   return "bg-destructive/20 text-destructive border-destructive/30";
+      case "leave":    return "bg-primary/20 text-primary border-primary/30";
+      case "half_day": return "bg-secondary/20 text-secondary border-secondary/30";
+      default:         return "bg-muted text-muted-foreground border-border";
     }
   };
 

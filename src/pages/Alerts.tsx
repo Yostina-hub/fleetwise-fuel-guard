@@ -59,18 +59,33 @@ import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 10;
+const ALERTS_PREFS_KEY = "alerts.page.prefs.v1";
 
 const Alerts = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [severityFilter, setSeverityFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const initial = (() => {
+    try { return JSON.parse(localStorage.getItem(ALERTS_PREFS_KEY) || "{}"); } catch { return {}; }
+  })();
+  const [searchQuery, setSearchQuery] = useState<string>(initial.searchQuery ?? "");
+  const [severityFilter, setSeverityFilter] = useState<string>(initial.severityFilter ?? "all");
+  const [statusFilter, setStatusFilter] = useState<string>(initial.statusFilter ?? "all");
+  const [typeFilter, setTypeFilter] = useState<string>(initial.typeFilter ?? "all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedAlerts, setSelectedAlerts] = useState<string[]>([]);
+
+  // Persist non-volatile filters (skip date pickers — those are session-scoped).
+  useMemo(() => {
+    try {
+      localStorage.setItem(
+        ALERTS_PREFS_KEY,
+        JSON.stringify({ searchQuery, severityFilter, statusFilter, typeFilter }),
+      );
+    } catch { /* ignore */ }
+    return null;
+  }, [searchQuery, severityFilter, statusFilter, typeFilter]);
   
   const { 
     alerts: dbAlerts, 
