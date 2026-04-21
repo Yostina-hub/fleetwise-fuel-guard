@@ -9,10 +9,10 @@ import { IdCard, Cog, Gauge, CheckCircle2, AlertCircle } from "lucide-react";
 import {
   PLATE_CODES, PLATE_REGIONS, VEHICLE_TYPES_OPTIONS, VEHICLE_GROUPS, DRIVE_TYPES,
   ENERGY_TYPES, ENERGY_SOURCES,
-  PURPOSE_FOR_OPTIONS, SPECIFIC_POOL_OPTIONS, TRANSMISSION_TYPES,
+  PURPOSE_FOR_OPTIONS, TRANSMISSION_TYPES,
   CURRENT_CONDITION_OPTIONS, SAFETY_COMFORT_CATEGORIES,
+  ASSIGNED_LOCATIONS,
 } from "./formConstants";
-import { AssignedLocationPicker } from "./AssignedLocationPicker";
 import { DatePickerField } from "./DatePickerField";
 import {
   sanitizeWhileTyping, sanitizeVin, sanitizePlateDigits, sanitizeNumeric,
