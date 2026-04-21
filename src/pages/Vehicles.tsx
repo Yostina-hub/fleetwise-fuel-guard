@@ -755,7 +755,15 @@ const Vehicles = () => {
                             }}
                           />
                         </TableHead>
-                        {isColVisible('sn') && <TableHead className="text-foreground font-semibold w-12">SN</TableHead>}
+                        {isColVisible('sn') && (
+                          <TableHead
+                            className="text-foreground font-semibold w-12 cursor-pointer select-none"
+                            onClick={() => toggleSort('newest')}
+                            title="Sort by date added"
+                          >
+                            <div className="flex items-center gap-1">SN {sortColumn === 'newest' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
                         {isColVisible('ignition') && (
                           <TableHead className="text-foreground font-semibold w-12">
                             <Power className="w-3.5 h-3.5 mx-auto" />
