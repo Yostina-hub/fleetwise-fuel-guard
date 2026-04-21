@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
+import { CheckInOutDialog, type CheckInOutPayload } from "@/components/trips/CheckInOutDialog";
 
 
 interface DriverTripsViewProps {
@@ -27,7 +28,12 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
   const [tab, setTab] = useState("active");
-  
+  // Check-in/out dialog target (replaces window.prompt flow)
+  const [checkTarget, setCheckTarget] = useState<
+    | { mode: "in"; jobId: string }
+    | { mode: "out"; jobId: string; odometerStart: number | null }
+    | null
+  >(null);
 
   // Active vehicle request assignment + dispatch jobs
   const { data: assignments, isLoading: aLoading } = useQuery({
@@ -89,14 +95,16 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
     return () => { supabase.removeChannel(channel); };
   }, [driverId, queryClient]);
 
-  const handleStartJob = async (jobId: string) => {
-    const odoStr = window.prompt("Enter starting odometer (km) — leave blank to skip:");
-    const odoStart = odoStr && !isNaN(Number(odoStr)) ? Number(odoStr) : null;
+  const submitCheckIn = async (jobId: string, payload: CheckInOutPayload) => {
     try {
       const { error } = await (supabase as any).from("dispatch_jobs").update({
         status: "in_progress",
         actual_pickup_at: new Date().toISOString(),
-        ...(odoStart !== null ? { odometer_start: odoStart } : {}),
+        ...(payload.odometer !== null ? { odometer_start: payload.odometer } : {}),
+        ...(payload.notes ? { driver_notes: payload.notes } : {}),
+        ...(payload.lat !== null && payload.lng !== null
+          ? { pickup_lat: payload.lat, pickup_lng: payload.lng }
+          : {}),
       }).eq("id", jobId);
       if (error) throw error;
       toast.success("Trip started — drive safely!");
@@ -106,24 +114,22 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
     }
   };
 
-  const handleCompleteJob = async (jobId: string, odoStartKnown?: number | null) => {
-    const odoStr = window.prompt(
-      odoStartKnown != null
-        ? `Enter ending odometer (km) — start was ${odoStartKnown}:`
-        : "Enter ending odometer (km) — leave blank to skip:"
-    );
-    const odoEnd = odoStr && !isNaN(Number(odoStr)) ? Number(odoStr) : null;
+  const submitCheckOut = async (jobId: string, odoStartKnown: number | null, payload: CheckInOutPayload) => {
     let distance: number | null = null;
-    if (odoEnd !== null && odoStartKnown != null && odoEnd >= odoStartKnown) {
-      distance = odoEnd - odoStartKnown;
+    if (payload.odometer !== null && odoStartKnown != null && payload.odometer >= odoStartKnown) {
+      distance = payload.odometer - odoStartKnown;
     }
     try {
       const { error } = await (supabase as any).from("dispatch_jobs").update({
         status: "completed",
         actual_dropoff_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
-        ...(odoEnd !== null ? { odometer_end: odoEnd } : {}),
+        ...(payload.odometer !== null ? { odometer_end: payload.odometer } : {}),
         ...(distance !== null ? { distance_traveled_km: distance } : {}),
+        ...(payload.notes ? { driver_notes_end: payload.notes } : {}),
+        ...(payload.lat !== null && payload.lng !== null
+          ? { dropoff_lat: payload.lat, dropoff_lng: payload.lng }
+          : {}),
       }).eq("id", jobId);
       if (error) throw error;
       toast.success(distance !== null ? `Trip completed · ${distance} km logged` : "Trip completed");
@@ -249,11 +255,11 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
                           </div>
                           <div className="shrink-0">
                             {!inProgress ? (
-                              <Button size="sm" onClick={() => handleStartJob(j.id)} className="gap-1">
+                              <Button size="sm" onClick={() => setCheckTarget({ mode: "in", jobId: j.id })} className="gap-1">
                                 <PlayCircle className="w-4 h-4" /> Check In
                               </Button>
                             ) : (
-                              <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id, j.odometer_start)} className="gap-1">
+                              <Button size="sm" variant="outline" onClick={() => setCheckTarget({ mode: "out", jobId: j.id, odometerStart: j.odometer_start ?? null })} className="gap-1">
                                 <StopCircle className="w-4 h-4" /> Check Out
                               </Button>
                             )}
@@ -340,6 +346,21 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
         </TabsContent>
       </Tabs>
 
+      {/* Check-In / Check-Out dialog */}
+      <CheckInOutDialog
+        open={!!checkTarget}
+        mode={checkTarget?.mode === "out" ? "out" : "in"}
+        odometerStart={checkTarget?.mode === "out" ? checkTarget.odometerStart : null}
+        onOpenChange={(v) => { if (!v) setCheckTarget(null); }}
+        onSubmit={async (payload) => {
+          if (!checkTarget) return;
+          if (checkTarget.mode === "in") {
+            await submitCheckIn(checkTarget.jobId, payload);
+          } else {
+            await submitCheckOut(checkTarget.jobId, checkTarget.odometerStart, payload);
+          }
+        }}
+      />
     </div>
   );
 };

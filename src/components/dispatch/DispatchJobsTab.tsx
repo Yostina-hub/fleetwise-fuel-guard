@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { DateTimePicker, combineDateAndTime } from "@/components/ui/date-time-picker";
-import { 
+import {
   Plus, Search, Truck, MapPin, Clock, User, Phone, Package,
-  CheckCircle, Loader2, Navigation, Play, Square
+  CheckCircle, Loader2, Navigation, Play, Square, Eye
 } from "lucide-react";
 import { useDispatchJobs } from "@/hooks/useDispatchJobs";
 import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
@@ -20,15 +20,30 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 import SLAIndicator from "./SLAIndicator";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { DispatchJobDetailDialog } from "./DispatchJobDetailDialog";
 
 const ITEMS_PER_PAGE = 10;
 
+const PREFS_KEY = "dispatch.jobs.prefs.v1";
+
 const DispatchJobsTab = () => {
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  // Persisted filters (status + search)
+  const persisted = (() => {
+    try { return JSON.parse(localStorage.getItem(PREFS_KEY) || "{}"); } catch { return {}; }
+  })();
+
+  const [statusFilter, setStatusFilter] = useState<string>(persisted.statusFilter ?? "all");
+  const [searchQuery, setSearchQuery] = useState(persisted.searchQuery ?? "");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
+  const [detailJob, setDetailJob] = useState<any | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify({ statusFilter, searchQuery }));
+    } catch { /* ignore */ }
+  }, [statusFilter, searchQuery]);
 
   const { jobs, loading, createJob, updateJobStatus, assignJob } = useDispatchJobs({
     status: statusFilter !== 'all' ? statusFilter : undefined,
@@ -74,17 +89,19 @@ const DispatchJobsTab = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="outline">Pending</Badge>;
+        return <Badge variant="outline" className="bg-muted text-muted-foreground border-border">Pending</Badge>;
       case 'dispatched':
-        return <Badge className="bg-primary/10 text-primary border-primary/20">Dispatched</Badge>;
+        return <Badge className="bg-primary/10 text-primary border-primary/30">Dispatched</Badge>;
       case 'en_route':
-        return <Badge className="bg-warning/10 text-warning border-warning/20">En Route</Badge>;
+        return <Badge className="bg-warning/10 text-warning border-warning/30">En Route</Badge>;
+      case 'in_progress':
+        return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/30">In Progress</Badge>;
       case 'arrived':
-        return <Badge className="bg-info/10 text-info border-info/20">Arrived</Badge>;
+        return <Badge className="bg-info/10 text-info border-info/30">Arrived</Badge>;
       case 'completed':
-        return <Badge className="bg-success/10 text-success border-success/20">Completed</Badge>;
+        return <Badge className="bg-success/10 text-success border-success/30">Completed</Badge>;
       case 'cancelled':
-        return <Badge variant="destructive">Cancelled</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive border-destructive/30">Cancelled</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -226,7 +243,17 @@ const DispatchJobsTab = () => {
           </Card>
         ) : (
           paginatedJobs.map(job => (
-            <Card key={job.id} className={job.priority === 'urgent' ? 'border-destructive/50' : ''}>
+            <Card
+              key={job.id}
+              className={cn(
+                "cursor-pointer transition-colors hover:border-primary/50",
+                job.priority === 'urgent' && "border-destructive/50",
+              )}
+              onClick={() => setDetailJob(job)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter") setDetailJob(job); }}
+            >
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                   <div className="space-y-3 flex-1">
@@ -309,11 +336,12 @@ const DispatchJobsTab = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 min-w-[150px]">
+                  <div className="flex flex-col gap-2 min-w-[150px]" onClick={(e) => e.stopPropagation()}>
                     {job.status === 'pending' && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => {
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedJob(job.id);
                           setShowAssignDialog(true);
                         }}
@@ -322,36 +350,43 @@ const DispatchJobsTab = () => {
                       </Button>
                     )}
                     {job.status === 'dispatched' && (
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         className="gap-1"
-                        onClick={() => handleStatusChange(job.id, 'en_route')}
+                        onClick={(e) => { e.stopPropagation(); handleStatusChange(job.id, 'en_route'); }}
                       >
                         <Play className="w-4 h-4" aria-hidden="true" />
                         Start Trip
                       </Button>
                     )}
                     {job.status === 'en_route' && (
-                      <Button 
+                      <Button
                         size="sm"
                         className="gap-1"
-                        onClick={() => handleStatusChange(job.id, 'arrived')}
+                        onClick={(e) => { e.stopPropagation(); handleStatusChange(job.id, 'arrived'); }}
                       >
                         <Navigation className="w-4 h-4" aria-hidden="true" />
                         Mark Arrived
                       </Button>
                     )}
                     {job.status === 'arrived' && (
-                      <Button 
+                      <Button
                         size="sm"
                         className="gap-1 bg-success hover:bg-success/90"
-                        onClick={() => handleStatusChange(job.id, 'completed')}
+                        onClick={(e) => { e.stopPropagation(); handleStatusChange(job.id, 'completed'); }}
                       >
                         <CheckCircle className="w-4 h-4" aria-hidden="true" />
                         Complete
                       </Button>
                     )}
-                    <Button size="sm" variant="outline">View Details</Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1"
+                      onClick={(e) => { e.stopPropagation(); setDetailJob(job); }}
+                    >
+                      <Eye className="w-4 h-4" /> View Details
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -492,6 +527,15 @@ const DispatchJobsTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Job Detail Dialog */}
+      <DispatchJobDetailDialog
+        open={!!detailJob}
+        onOpenChange={(v) => { if (!v) setDetailJob(null); }}
+        job={detailJob}
+        vehiclePlate={getVehiclePlate(detailJob?.vehicle_id || undefined)}
+        driverName={getDriverName(detailJob?.driver_id || undefined)}
+      />
 
       {/* Assign Dialog */}
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
