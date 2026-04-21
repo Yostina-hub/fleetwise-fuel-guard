@@ -1039,6 +1039,25 @@ const VehicleRequests = () => {
                                     <Undo2 className="w-3.5 h-3.5 text-amber-500" />
                                   </Button>
                                 )}
+                              {/* Edit / Resubmit — requester on pending or rejected rows
+                                  (before any approval check-in); admins anytime pre-check-in */}
+                              {!r.driver_checked_in_at &&
+                                (canManageAll ||
+                                  (isOwnRow(r) && ["pending", "rejected"].includes(r.status))) && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => setShowEdit(r)}
+                                    title={r.status === "rejected" ? "Fix & resubmit" : "Edit request"}
+                                  >
+                                    {r.status === "rejected" ? (
+                                      <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
+                                    ) : (
+                                      <Pencil className="w-3.5 h-3.5 text-primary" />
+                                    )}
+                                  </Button>
+                                )}
                               {/* Delete — admins/operators always; requester only on
                                   their own pending row before any check-in */}
                               {!["completed"].includes(r.status) &&
