@@ -317,8 +317,15 @@ export function validateVRField(
     }
 
     case "contact_phone": {
+      const raw = sanitizeText(value);
+      if (!raw) return; // optional — empty is allowed
       const v = sanitizePhone(value);
-      if (!v) return; // optional
+      // User typed something but only invalid characters remained after sanitizing.
+      if (!v)
+        return "Phone number contains invalid characters. Use digits, spaces, dashes, parentheses, and an optional leading + (e.g. +251 911 234 567).";
+      // Detect characters the user typed that are not allowed in a phone.
+      if (raw.replace(/[^\d+\s\-()]/g, "").length !== raw.length)
+        return "Phone number contains invalid characters. Only digits, spaces, dashes, parentheses, and a leading + are allowed.";
       if (!PHONE_RE.test(v))
         return "Phone number looks invalid. Use international format with 7–20 digits (e.g. +251 911 234 567).";
       const digitsOnly = v.replace(/\D/g, "");
@@ -326,6 +333,11 @@ export function validateVRField(
         return `Phone number is too short (${digitsOnly.length} digits). It must contain at least 7 digits.`;
       if (digitsOnly.length > 15)
         return `Phone number is too long (${digitsOnly.length} digits). Maximum is 15 digits per ITU E.164.`;
+      // Reject a leading + followed by no digits, or multiple + signs.
+      if ((v.match(/\+/g) || []).length > 1)
+        return "Phone number can only contain one leading + sign.";
+      if (v.includes("+") && !v.startsWith("+"))
+        return "The + sign must appear only at the start of the phone number.";
       return;
     }
 
