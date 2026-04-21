@@ -259,7 +259,6 @@ const App = () => {
                         <Route path="/passenger-tracking" element={<ProtectedRoute><PassengerTracking /></ProtectedRoute>} />
                         <Route path="/rfid-pairing" element={<ProtectedRoute><RFIDPairing /></ProtectedRoute>} />
                         <Route path="/fuel-card-providers" element={<ProtectedRoute><FuelCardProviders /></ProtectedRoute>} />
-                        <Route path="/install" element={<InstallApp />} />
                         <Route path="/fuel-events-map" element={<ProtectedRoute><FuelEventsMap /></ProtectedRoute>} />
                         <Route path="/infrastructure-monitoring" element={<ProtectedRoute requiredRole="super_admin"><InfrastructureMonitoring /></ProtectedRoute>} />
                         <Route path="/operations-console" element={<ProtectedRoute requiredRole="super_admin"><OperationsConsole /></ProtectedRoute>} />
@@ -267,10 +266,8 @@ const App = () => {
                         <Route path="/licensing-compliance" element={<ProtectedRoute><LicensingCompliance /></ProtectedRoute>} />
                         <Route path="/vehicle-profile" element={<ProtectedRoute><VehicleProfile /></ProtectedRoute>} />
                         <Route path="/asset-management" element={<ProtectedRoute><AssetManagement /></ProtectedRoute>} />
-                        <Route path="/privacy" element={<PrivacyPolicy />} />
                         <Route path="/3pl" element={<ProtectedRoute><ThirdPartyLogistics /></ProtectedRoute>} />
                         <Route path="/supplier-portal" element={<ProtectedRoute><SupplierPortal /></ProtectedRoute>} />
-                        <Route path="/supplier-wo/:token" element={<SupplierWorkOrderView />} />
                         <Route path="/supplier-payments" element={<ProtectedRoute><SupplierPaymentReview /></ProtectedRoute>} />
                         {/* ── ET FMG SOP Workflow routes ── */}
                         {/* SOP pages are admin/ops surfaces. Drivers are bounced to /my-license so
@@ -297,6 +294,7 @@ const App = () => {
                         <Route path="/sop/vehicle-request" element={<ProtectedRoute blockedForRoles={["driver"]}><VehicleRequestSopPage /></ProtectedRoute>} />
                         {/* Driver-facing license & document hub */}
                         <Route path="/my-license" element={<ProtectedRoute><MyLicense /></ProtectedRoute>} />
+                        </Route>
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
