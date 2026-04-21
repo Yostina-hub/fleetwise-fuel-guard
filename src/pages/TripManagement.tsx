@@ -573,6 +573,13 @@ const TripManagement = () => {
           cancelRequest.mutate(id);
           setDetailOpen(false);
         }}
+        onChangeStatus={canApprove ? (trip) => {
+          setStatusTarget({
+            tripId: trip.id,
+            requestNumber: trip.request_number,
+            current: trip.status,
+          });
+        } : undefined}
       />
 
       <ExportScheduleDialog open={exportOpen} onOpenChange={setExportOpen} />
