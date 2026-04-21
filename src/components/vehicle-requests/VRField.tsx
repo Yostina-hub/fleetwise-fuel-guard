@@ -90,15 +90,15 @@ export function VRField({
   });
 
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div className={cn("space-y-2", className)}>
       <Label
         htmlFor={id}
         className={cn(
-          "text-sm font-medium flex items-center gap-1.5",
+          "text-sm font-medium flex items-center gap-1.5 leading-tight",
           status === "error" ? "text-destructive" : "text-primary",
         )}
       >
-        {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
+        {Icon && <Icon className="w-4 h-4 shrink-0" />}
         <span>{label}</span>
         {required && <span className="text-destructive">*</span>}
         {tooltip && <FieldHint tone={tooltipTone}>{tooltip}</FieldHint>}
@@ -118,13 +118,13 @@ export function VRField({
         <p
           id={errorId}
           role="alert"
-          className="flex items-start gap-1.5 text-[11px] font-medium text-destructive animate-fade-in"
+          className="flex items-start gap-1.5 text-xs font-medium text-destructive animate-fade-in"
         >
-          <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" aria-hidden="true" />
+          <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" aria-hidden="true" />
           <span>{error}</span>
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-[11px] text-muted-foreground">
+        <p id={hintId} className="text-xs text-muted-foreground">
           {hint}
         </p>
       ) : null}

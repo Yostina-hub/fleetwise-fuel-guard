@@ -820,8 +820,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     const msg = getError(field);
     if (!msg) return null;
     return (
-      <p className="mt-1 flex items-start gap-1 text-[11px] text-destructive animate-fade-in">
-        <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+      <p className="mt-1.5 flex items-start gap-1.5 text-xs text-destructive animate-fade-in">
+        <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
         <span>{msg}</span>
       </p>
     );
@@ -850,23 +850,23 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   const HeaderInner = (
     <div className="flex items-start gap-3 sm:gap-4">
-      <div className="shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center">
-        <Car className="w-5 h-5 text-primary" />
+      <div className="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center">
+        <Car className="w-6 h-6 text-primary" />
       </div>
       <div className="flex-1 min-w-0">
-        <h2 className="text-lg sm:text-xl font-semibold tracking-tight text-foreground">
+        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
           Vehicle Request
         </h2>
-        <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground">
           Fill in the sections below and submit — your progress auto-saves as you type.
         </p>
       </div>
       <Badge
         variant="outline"
-        className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 border-border bg-muted/40 text-muted-foreground font-normal"
+        className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 border-border bg-muted/40 text-muted-foreground font-normal"
       >
-        <ShieldCheck className="w-3 h-3 text-primary" />
-        <span className="text-[11px]">Auto-saved</span>
+        <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+        <span className="text-xs">Auto-saved</span>
       </Badge>
     </div>
   );
@@ -952,7 +952,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                                 <span className="text-xs text-muted-foreground truncate">{u.email}</span>
                               </div>
                               {u.isAlsoDriver && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">Driver</Badge>
+                                <Badge variant="outline" className="text-xs px-1.5 py-0 shrink-0">Driver</Badge>
                               )}
                             </div>
                           </CommandItem>
@@ -976,7 +976,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                                   <span className="text-sm truncate">{d.name}</span>
                                   <span className="text-xs text-muted-foreground truncate">{d.email}</span>
                                 </div>
-                                <Badge variant={d.status === "active" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 shrink-0 capitalize">
+                                <Badge variant={d.status === "active" ? "default" : "secondary"} className="text-xs px-1.5 py-0 shrink-0 capitalize">
                                   {d.status || "active"}
                                 </Badge>
                               </div>
@@ -1007,11 +1007,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* TYPE SECTION */}
           <section className="space-y-3 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">1</span>
-              <h3 className="text-sm font-semibold text-foreground">Operation Type</h3>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">1</span>
+              <h3 className="text-base font-semibold text-foreground">Operation Type</h3>
             </div>
             <Label className="text-foreground font-medium text-sm">Vehicle Request Type</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {[
                 { v: "daily_operation", title: "Daily Operation", desc: "Single-day trip with start & end time", icon: Clock },
                 { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip (02:00 – 12:00 window)", icon: Moon },
@@ -1025,23 +1025,23 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     key={v}
                     type="button"
                     onClick={() => update("request_type", v)}
-                    className={`group relative text-left rounded-xl border p-3.5 transition-all ${
+                    className={`group relative text-left rounded-xl border p-4 transition-all ${
                       active
                         ? "border-primary/60 bg-primary/[0.04] shadow-sm ring-1 ring-primary/20"
                         : "border-border bg-card hover:border-border hover:bg-muted/30"
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 transition-colors ${
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 transition-colors ${
                         active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-5 h-5" />
                     </div>
                     <div className="font-medium text-sm text-foreground">{title}</div>
-                    <div className="text-[11px] text-muted-foreground mt-1 leading-snug">{desc}</div>
+                    <div className="text-xs text-muted-foreground mt-1 leading-snug">{desc}</div>
                     {active && (
-                      <CheckCircle2 className="absolute top-2.5 right-2.5 w-4 h-4 text-primary" />
+                      <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-primary" />
                     )}
                   </button>
                 );
@@ -1052,8 +1052,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* SCHEDULE SECTION */}
           <section className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">2</span>
-              <h3 className="text-sm font-semibold text-foreground">Schedule</h3>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">2</span>
+              <h3 className="text-base font-semibold text-foreground">Schedule</h3>
             </div>
             {/* Working-hours policy banner — Project / operational only */}
             {isProject && workingHoursPolicy && (() => {
@@ -1164,8 +1164,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* ROUTE SECTION */}
           <section className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">3</span>
-              <h3 className="text-sm font-semibold text-foreground">Route</h3>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">3</span>
+              <h3 className="text-base font-semibold text-foreground">Route</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <LocationPickerField
@@ -1226,7 +1226,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Button>
               </div>
               {form.stops.length === 0 && (
-                <p className="text-[11px] text-muted-foreground italic">No intermediate stops. Trip goes directly from Departure to Final Destination.</p>
+                <p className="text-xs text-muted-foreground italic">No intermediate stops. Trip goes directly from Departure to Final Destination.</p>
               )}
               {form.stops.map((stop, idx) => (
                 <div key={idx} className="grid grid-cols-[auto_1fr_auto_auto_auto] items-end gap-2 rounded-md border border-border bg-background/60 p-2">
@@ -1311,8 +1311,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* RESOURCES SECTION */}
           <section className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">4</span>
-              <h3 className="text-sm font-semibold text-foreground">Vehicle & Pool</h3>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">4</span>
+              <h3 className="text-base font-semibold text-foreground">Vehicle & Pool</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <VRField
@@ -1321,7 +1321,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <span className="inline-flex items-center gap-1.5">
                     No. Of Vehicles
                     {!allowsMultipleVehicles && (
-                      <Badge variant="outline" className="text-[10px] py-0 px-1.5">Locked at 1</Badge>
+                      <Badge variant="outline" className="text-xs py-0 px-1.5">Locked at 1</Badge>
                     )}
                   </span>
                 }
@@ -1381,14 +1381,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                       <SelectItem key={c.value} value={c.value}>
                         <div className="flex flex-col items-start">
                           <span className="text-sm">{c.label}</span>
-                          <span className="text-[10px] text-muted-foreground">{c.description}</span>
+                          <span className="text-xs text-muted-foreground">{c.description}</span>
                         </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {!form.cargo_load && (
-                  <p className="text-[11px] text-destructive mt-1">
+                  <p className="text-xs text-destructive mt-1">
                     Pick the cargo size — choose "None" if you're only carrying passengers.
                   </p>
                 )}
@@ -1403,14 +1403,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <Badge className="gap-1.5">
                       <Car className="w-3 h-3" /> {recommendation.label}
                     </Badge>
-                    <Badge variant="outline" className={`text-[10px] ${COST_BAND_TONE[recommendation.costBand]}`}>
+                    <Badge variant="outline" className={`text-xs ${COST_BAND_TONE[recommendation.costBand]}`}>
                       {COST_BAND_LABELS[recommendation.costBand]}
                     </Badge>
-                    <span className="text-[11px] text-muted-foreground ml-auto">
+                    <span className="text-xs text-muted-foreground ml-auto">
                       Fits {recommendation.capacity} people · {form.cargo_load} cargo
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Picking a larger class than needed wastes fleet capacity and costs more. You can override below if there's a real reason — please justify it for the approver.
                   </p>
                 </div>
@@ -1420,12 +1420,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Label className="text-primary font-medium flex items-center gap-2">
                   Vehicle Type
                   {recommendation && form.vehicle_type === recommendation.value && (
-                    <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600 dark:text-emerald-400 gap-1">
+                    <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 gap-1">
                       <CheckCircle2 className="w-2.5 h-2.5" /> Matches recommendation
                     </Badge>
                   )}
                   {isUpgrade && (
-                    <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 dark:text-amber-400">
+                    <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-600 dark:text-amber-400">
                       Upgrade — justification required
                     </Badge>
                   )}
@@ -1449,7 +1449,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                                   {COST_BAND_LABELS[profile.costBand]}
                                 </Badge>
                               )}
-                              {isRec && <span className="text-[10px] text-primary ml-auto">★ recommended</span>}
+                              {isRec && <span className="text-xs text-primary ml-auto">★ recommended</span>}
                             </div>
                           </SelectItem>
                         );
@@ -1458,7 +1458,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
                 {chosenProfile && (
-                  <p className="text-[11px] text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Capacity: {chosenProfile.capacity} · Cargo: {chosenProfile.cargo} · Tier: {COST_BAND_LABELS[chosenProfile.costBand]}
                   </p>
                 )}
@@ -1545,8 +1545,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* DETAILS SECTION */}
           <section className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">5</span>
-              <h3 className="text-sm font-semibold text-foreground">Purpose & Submit</h3>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">5</span>
+              <h3 className="text-base font-semibold text-foreground">Purpose & Submit</h3>
             </div>
             <div>
               <Label className="text-primary font-medium flex items-center gap-1">
@@ -1570,8 +1570,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                         <SelectLabel
                           className={
                             g.restricted
-                              ? "text-amber-600 dark:text-amber-400 text-[11px] uppercase tracking-wide"
-                              : "text-[11px] uppercase tracking-wide text-muted-foreground"
+                              ? "text-amber-600 dark:text-amber-400 text-xs uppercase tracking-wide"
+                              : "text-xs uppercase tracking-wide text-muted-foreground"
                           }
                         >
                           {g.label}
@@ -1580,7 +1580,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                           <SelectItem key={c.value} value={c.value}>
                             <div className="flex flex-col items-start">
                               <span className="text-sm">{c.label}</span>
-                              <span className="text-[10px] text-muted-foreground">{c.description}</span>
+                              <span className="text-xs text-muted-foreground">{c.description}</span>
                             </div>
                           </SelectItem>
                         ))}
@@ -1595,7 +1595,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 );
                 if (selected?.group === "social") {
                   return (
-                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       Restricted use — requires additional approval and clear business justification in the description below.
                     </p>
