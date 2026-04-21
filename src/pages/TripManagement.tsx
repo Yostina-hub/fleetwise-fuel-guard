@@ -140,10 +140,22 @@ const TripManagement = () => {
     setSearchParams({ tab }, { replace: true });
   };
 
+  // Map StatsBar filter keys → underlying vehicle_requests.status values.
+  const STATUS_FILTER_MAP: Record<string, string[]> = {
+    pending:     ["pending", "submitted", "draft"],
+    approved:    ["approved"],
+    assigned:    ["assigned", "scheduled", "dispatched"],
+    in_progress: ["in_progress", "in_service"],
+    completed:   ["completed", "closed"],
+    rejected:    ["rejected"],
+    cancelled:   ["cancelled", "canceled"],
+  };
+
   const filteredTrips = useMemo(() => {
     let trips = requests || [];
     if (statusFilter) {
-      trips = trips.filter((t: any) => t.status === statusFilter);
+      const allowed = STATUS_FILTER_MAP[statusFilter] ?? [statusFilter];
+      trips = trips.filter((t: any) => allowed.includes(t.status));
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
