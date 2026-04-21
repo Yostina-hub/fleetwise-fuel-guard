@@ -579,6 +579,31 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     });
   }, [form.passengers, form.cargo_load]);
 
+  // Eligible vehicle types — driven by passengers + cargo (the previously
+  // selected fields). Only types that can actually carry the requested load
+  // are surfaced so users can't pick something that won't fit. Recommended
+  // type floats to the top, then by cost-band rank.
+  const eligibleVehicleTypes = useMemo(() => {
+    const passengers = Math.max(1, parseInt(form.passengers) || 1);
+    const cargoOrder = { none: 0, small: 1, medium: 2, large: 3 } as const;
+    const cargoNeeded = cargoOrder[form.cargo_load] ?? 0;
+    return VEHICLE_TYPES_OPTIONS
+      .map((vt) => ({ vt, profile: getVehicleClassProfile(vt.value) }))
+      .filter(({ profile }) => {
+        if (!profile) return false;
+        if (profile.costBand === "specialised") return false; // dispatcher-only
+        if (profile.capacity < passengers) return false;
+        if (cargoOrder[profile.cargo] < cargoNeeded) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const aRec = recommendation?.value === a.vt.value ? -1 : 0;
+        const bRec = recommendation?.value === b.vt.value ? -1 : 0;
+        if (aRec !== bRec) return aRec - bRec;
+        return (a.profile!.rank) - (b.profile!.rank);
+      });
+  }, [form.passengers, form.cargo_load, recommendation?.value]);
+
   // Auto-fill vehicle_type with the recommendation when the user hasn't
   // touched it yet. Manual edits are preserved.
   useEffect(() => {
@@ -588,6 +613,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recommendation?.value]);
+
+  // If the previously chosen vehicle type no longer fits the updated
+  // passengers/cargo combo, snap back to the recommendation so the form
+  // never carries a hidden, invalid selection.
+  useEffect(() => {
+    if (!form.vehicle_type) return;
+    const stillEligible = eligibleVehicleTypes.some((e) => e.vt.value === form.vehicle_type);
+    if (!stillEligible) {
+      setForm((f) => ({ ...f, vehicle_type: recommendation?.value || "" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eligibleVehicleTypes, recommendation?.value]);
 
   // True when the user is asking for a more expensive class than recommended.
   const isUpgrade = isUpgradeOverRecommendation(form.vehicle_type, recommendation?.value);
@@ -1162,25 +1199,33 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
                   <SelectTrigger className="h-10"><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
                   <SelectContent>
-                    {VEHICLE_TYPES_OPTIONS.map(vt => {
-                      const profile = getVehicleClassProfile(vt.value);
-                      const isRec = recommendation?.value === vt.value;
-                      return (
-                        <SelectItem key={vt.value} value={vt.value}>
-                          <div className="flex items-center gap-2 w-full">
-                            <span className="text-sm">{vt.label}</span>
-                            {profile && (
-                              <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${COST_BAND_TONE[profile.costBand]}`}>
-                                {COST_BAND_LABELS[profile.costBand]}
-                              </Badge>
-                            )}
-                            {isRec && <span className="text-[10px] text-primary ml-auto">★ recommended</span>}
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
+                    {eligibleVehicleTypes.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        No vehicle class fits {form.passengers} passenger(s) with {form.cargo_load} cargo. Adjust the passenger count or cargo size, or contact dispatch.
+                      </div>
+                    ) : (
+                      eligibleVehicleTypes.map(({ vt, profile }) => {
+                        const isRec = recommendation?.value === vt.value;
+                        return (
+                          <SelectItem key={vt.value} value={vt.value}>
+                            <div className="flex items-center gap-2 w-full">
+                              <span className="text-sm">{vt.label}</span>
+                              {profile && (
+                                <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${COST_BAND_TONE[profile.costBand]}`}>
+                                  {COST_BAND_LABELS[profile.costBand]}
+                                </Badge>
+                              )}
+                              {isRec && <span className="text-[10px] text-primary ml-auto">★ recommended</span>}
+                            </div>
+                          </SelectItem>
+                        );
+                      })
+                    )}
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Suggestions filtered by {form.passengers} passenger(s) and {form.cargo_load} cargo.
+                </p>
                 {chosenProfile && (
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Capacity: {chosenProfile.capacity} · Cargo: {chosenProfile.cargo} · Tier: {COST_BAND_LABELS[chosenProfile.costBand]}
