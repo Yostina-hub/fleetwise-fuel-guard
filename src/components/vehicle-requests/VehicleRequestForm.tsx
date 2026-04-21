@@ -1394,7 +1394,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               {/* Resource-aware recommendation banner — pure derivation from passengers + cargo */}
               {recommendation && (
-                <div className="md:col-span-2 rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2 animate-fade-in">
+                <div className="md:col-span-2 lg:col-span-3 rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2 animate-fade-in">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Sparkles className="w-4 h-4 text-primary shrink-0" />
                     <span className="text-sm font-medium text-foreground">Recommended for you:</span>
@@ -1414,7 +1414,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               )}
 
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 lg:col-span-3">
                 <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-2">
                   Vehicle Type
                   {recommendation && form.vehicle_type === recommendation.value && (
@@ -1464,7 +1464,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               {/* Justification — only shown when over-spec'd */}
               {isUpgrade && (
-                <div className="md:col-span-2 animate-fade-in">
+                <div className="md:col-span-2 lg:col-span-3 animate-fade-in">
                   <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1.5 flex items-center gap-1.5">
                     Why is {chosenProfile?.label} needed instead of {recommendation?.label}? <span className="text-destructive">*</span>
                     <FieldHint tone="warning">
@@ -1492,7 +1492,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </div>
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 lg:col-span-3">
                 <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                   Assigned Pool
                   <FieldHint>Operational pool the trip will be served from.</FieldHint>
@@ -1519,7 +1519,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </div>
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 lg:col-span-3">
                 <VRField
                   id="vr-contact-phone"
                   label="Contact Phone (during trip)"
