@@ -1312,7 +1312,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <section className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
               <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">4</span>
-              <h3 className="text-sm font-semibold text-foreground">Vehicle & Pool</h3>
+              <h3 className="text-base font-semibold text-foreground">Vehicle & Pool</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <VRField
@@ -1546,7 +1546,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <section className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 pb-1 border-b border-border/60">
               <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold">5</span>
-              <h3 className="text-sm font-semibold text-foreground">Purpose & Submit</h3>
+              <h3 className="text-base font-semibold text-foreground">Purpose & Submit</h3>
             </div>
             <div>
               <Label className="text-primary font-medium flex items-center gap-1">
