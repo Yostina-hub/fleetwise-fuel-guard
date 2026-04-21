@@ -1,17 +1,21 @@
 import { useState, useRef } from "react";
 import Layout from "@/components/Layout";
+import { Can } from "@/components/auth/Can";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Wrench, 
+import {
+  Wrench,
   Calendar,
   Loader2,
   ClipboardCheck,
   ListChecks,
   Search,
-  History
+  History,
+  Sparkles,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useMaintenanceMetrics } from "@/hooks/useMaintenanceMetrics";
