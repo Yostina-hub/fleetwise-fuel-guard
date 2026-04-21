@@ -5,7 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, XCircle, Truck, Users, Send, UserCheck, Layers, User } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  CheckCircle,
+  XCircle,
+  Truck,
+  Users,
+  Send,
+  UserCheck,
+  Layers,
+  User,
+  FileSignature,
+  RotateCcw,
+  ScrollText,
+} from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
@@ -102,6 +122,8 @@ const consolidateRequests = (requests: any[]): { groups: ConsolidatedGroup[]; un
   return { groups: consolidatedGroups, ungrouped };
 };
 
+type ContractDecision = "approved" | "rejected" | "changes_requested";
+
 export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   const queryClient = useQueryClient();
   const { available } = useAvailableVehicles();
@@ -109,6 +131,24 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [selectedDriver, setSelectedDriver] = useState("");
   const [showConsolidated, setShowConsolidated] = useState(true);
+
+  // Contract-style decision dialog state
+  const [contractTarget, setContractTarget] = useState<{ requestId: string; requestNumber: string } | null>(null);
+  const [contractDecision, setContractDecision] = useState<ContractDecision>("approved");
+  const [contractConditions, setContractConditions] = useState("");
+  const [contractNotes, setContractNotes] = useState("");
+
+  const openContractDialog = (r: any, decision: ContractDecision = "approved") => {
+    setContractTarget({ requestId: r.id, requestNumber: r.request_number });
+    setContractDecision(decision);
+    setContractConditions(r.pool_review_conditions || "");
+    setContractNotes(r.pool_review_notes || "");
+  };
+  const closeContractDialog = () => {
+    setContractTarget(null);
+    setContractConditions("");
+    setContractNotes("");
+  };
 
   // Available drivers for assignment
   const { data: availableDrivers = [] } = useQuery({
@@ -149,6 +189,87 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
       toast.success("Pool review updated");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  // Contract-style decision: approve with conditions, reject, or request changes.
+  // - approved          → keeps status=approved, awaiting vehicle assignment, conditions stored as a contract clause
+  // - rejected          → status=rejected, requester sees pool reason
+  // - changes_requested → status=pending so requester can edit & resubmit; clears prior pool decision flags
+  const contractMutation = useMutation({
+    mutationFn: async ({
+      requestId,
+      decision,
+      conditions,
+      notes,
+    }: {
+      requestId: string;
+      decision: ContractDecision;
+      conditions: string;
+      notes: string;
+    }) => {
+      const user = (await supabase.auth.getUser()).data.user;
+      const now = new Date().toISOString();
+      const updates: any = {
+        pool_review_decision: decision,
+        pool_review_conditions: conditions || null,
+        pool_review_notes: notes || null,
+        pool_reviewer_id: user!.id,
+        pool_reviewed_at: now,
+      };
+
+      if (decision === "approved") {
+        // Keep request in pool queue for vehicle assignment, but mark contract signed.
+        updates.pool_review_status = "contract_signed";
+      } else if (decision === "rejected") {
+        updates.pool_review_status = "rejected";
+        updates.status = "rejected";
+        updates.rejected_at = now;
+        updates.rejection_reason = notes || "Rejected by pool supervisor";
+      } else if (decision === "changes_requested") {
+        // Send back to the requester for edits & resubmission.
+        updates.pool_review_status = "changes_requested";
+        updates.status = "pending";
+      }
+
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update(updates)
+        .eq("id", requestId);
+      if (error) throw error;
+
+      // Notify the requester so they see the contract decision in-app.
+      const request = requests.find((r: any) => r.id === requestId);
+      if (request?.requester_id) {
+        const titleMap: Record<ContractDecision, string> = {
+          approved: "Pool Contract Approved",
+          rejected: "Pool Contract Rejected",
+          changes_requested: "Pool Supervisor Requested Changes",
+        };
+        try {
+          await supabase.rpc("send_notification", {
+            _user_id: request.requester_id,
+            _type: "vehicle_request_pool_review",
+            _title: titleMap[decision],
+            _message: `Request ${request.request_number}: ${notes || conditions || decision.replace("_", " ")}`,
+            _link: "/vehicle-requests",
+          });
+        } catch (e) {
+          console.error("In-app notification error:", e);
+        }
+      }
+    },
+    onSuccess: (_d, vars) => {
+      const msgMap: Record<ContractDecision, string> = {
+        approved: "Contract approved — request ready for vehicle assignment",
+        rejected: "Request rejected with reason",
+        changes_requested: "Request sent back to requester for edits",
+      };
+      toast.success(msgMap[vars.decision]);
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
+      closeContractDialog();
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -308,8 +429,69 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         <div className="text-xs text-muted-foreground">Project: {r.project_number}</div>
       )}
 
+      {/* Contract decision summary — visible once supervisor has signed off */}
+      {r.pool_review_decision && (
+        <div className={`rounded-md border px-2.5 py-2 text-xs space-y-1 ${
+          r.pool_review_decision === "approved"
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : r.pool_review_decision === "rejected"
+            ? "border-rose-500/30 bg-rose-500/5"
+            : "border-amber-500/30 bg-amber-500/5"
+        }`}>
+          <div className="flex items-center gap-1.5 font-medium">
+            <FileSignature className="w-3 h-3" />
+            Pool contract: <span className="capitalize">{r.pool_review_decision.replace("_", " ")}</span>
+            {r.pool_reviewed_at && (
+              <span className="text-muted-foreground font-normal">· {format(new Date(r.pool_reviewed_at), "MMM dd, HH:mm")}</span>
+            )}
+          </div>
+          {r.pool_review_conditions && (
+            <div><span className="text-muted-foreground">Conditions:</span> {r.pool_review_conditions}</div>
+          )}
+          {r.pool_review_notes && (
+            <div><span className="text-muted-foreground">Notes:</span> {r.pool_review_notes}</div>
+          )}
+        </div>
+      )}
+
       {expandedId === r.id && (
         <div className="border-t pt-3 space-y-3">
+          {/* === Contract decision (gate before vehicle assignment) === */}
+          <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <FileSignature className="w-3.5 h-3.5 text-primary" />
+              Pool Supervisor Contract Decision
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Approve with conditions, reject, or send back for changes. Decision is recorded with your name & timestamp.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                className="text-xs gap-1"
+                onClick={() => openContractDialog(r, "approved")}
+              >
+                <CheckCircle className="w-3 h-3" /> Approve with Conditions
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs gap-1"
+                onClick={() => openContractDialog(r, "changes_requested")}
+              >
+                <RotateCcw className="w-3 h-3" /> Request Changes
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs gap-1 text-destructive hover:text-destructive"
+                onClick={() => openContractDialog(r, "rejected")}
+              >
+                <XCircle className="w-3 h-3" /> Reject
+              </Button>
+            </div>
+          </div>
+
           <div>
             <Label className="text-xs flex items-center gap-1 mb-1">
               <Truck className="w-3 h-3" /> Available Vehicles ({available.length})
@@ -346,7 +528,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
             </Select>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-xs"
@@ -492,6 +674,105 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         {/* Ungrouped individual requests */}
         {ungrouped.map(renderRequestRow)}
       </CardContent>
+
+      {/* === Contract decision dialog === */}
+      <Dialog open={!!contractTarget} onOpenChange={(v) => !v && closeContractDialog()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ScrollText className="w-5 h-5 text-primary" />
+              Pool Supervisor Contract
+            </DialogTitle>
+            <DialogDescription>
+              Record your decision on request{" "}
+              <span className="font-medium text-foreground">{contractTarget?.requestNumber}</span>.
+              The requester will be notified.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs">Decision</Label>
+              <Select value={contractDecision} onValueChange={(v) => setContractDecision(v as ContractDecision)}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="approved">✅ Approve with conditions</SelectItem>
+                  <SelectItem value="changes_requested">✏️ Request changes (resubmit)</SelectItem>
+                  <SelectItem value="rejected">❌ Reject</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {contractDecision === "approved" && (
+              <div>
+                <Label className="text-xs">Conditions / Contract Clauses</Label>
+                <Textarea
+                  value={contractConditions}
+                  onChange={(e) => setContractConditions(e.target.value)}
+                  placeholder="e.g. Vehicle to be returned by 18:00. Max 200km. Driver must log fuel receipts."
+                  rows={3}
+                  maxLength={1000}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  These terms become part of the trip contract and are visible to the requester & driver.
+                </p>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs">
+                {contractDecision === "rejected"
+                  ? "Reason for rejection"
+                  : contractDecision === "changes_requested"
+                  ? "What needs to change?"
+                  : "Additional notes (optional)"}
+                {contractDecision !== "approved" && <span className="text-destructive"> *</span>}
+              </Label>
+              <Textarea
+                value={contractNotes}
+                onChange={(e) => setContractNotes(e.target.value)}
+                placeholder={
+                  contractDecision === "rejected"
+                    ? "e.g. No vehicles in this pool can serve a project of this duration."
+                    : contractDecision === "changes_requested"
+                    ? "e.g. Please reduce passenger count to 4 or pick a smaller vehicle class."
+                    : "Optional notes for the requester."
+                }
+                rows={3}
+                maxLength={1000}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={closeContractDialog}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={
+                contractMutation.isPending ||
+                (contractDecision !== "approved" && !contractNotes.trim())
+              }
+              onClick={() =>
+                contractTarget &&
+                contractMutation.mutate({
+                  requestId: contractTarget.requestId,
+                  decision: contractDecision,
+                  conditions: contractConditions,
+                  notes: contractNotes,
+                })
+              }
+              className="gap-1.5"
+            >
+              <FileSignature className="w-4 h-4" />
+              {contractMutation.isPending ? "Saving..." : "Sign & Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

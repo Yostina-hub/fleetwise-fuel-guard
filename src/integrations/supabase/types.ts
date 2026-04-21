@@ -23361,6 +23361,9 @@ export type Database = {
           pool_category: string | null
           pool_location: string | null
           pool_name: string | null
+          pool_review_conditions: string | null
+          pool_review_decision: string | null
+          pool_review_notes: string | null
           pool_review_status: string | null
           pool_reviewed_at: string | null
           pool_reviewer_id: string | null
@@ -23450,6 +23453,9 @@ export type Database = {
           pool_category?: string | null
           pool_location?: string | null
           pool_name?: string | null
+          pool_review_conditions?: string | null
+          pool_review_decision?: string | null
+          pool_review_notes?: string | null
           pool_review_status?: string | null
           pool_reviewed_at?: string | null
           pool_reviewer_id?: string | null
@@ -23539,6 +23545,9 @@ export type Database = {
           pool_category?: string | null
           pool_location?: string | null
           pool_name?: string | null
+          pool_review_conditions?: string | null
+          pool_review_decision?: string | null
+          pool_review_notes?: string | null
           pool_review_status?: string | null
           pool_reviewed_at?: string | null
           pool_reviewer_id?: string | null
