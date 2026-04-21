@@ -256,6 +256,16 @@ All colors MUST be HSL.
     --shadow-glow-strong: 0 0 56px hsla(84 60% 48% / 0.45);
     --shadow-elevated: 0 8px 24px -8px hsla(202 60% 25% / 0.18), 0 2px 6px hsla(215 25% 25% / 0.06);
     --shadow-floating: 0 20px 50px -12px hsla(202 60% 25% / 0.25), 0 4px 12px hsla(215 25% 25% / 0.08);
+
+    /* Surface tokens — Light theme (frosted whites) */
+    --surface-deep: 0 0% 100%;
+    --surface-card: 0 0% 100%;
+    --surface-elevated: 200 40% 98%;
+    --surface-overlay: 200 40% 95%;
+    --surface-border: 210 30% 88%;
+    --surface-foreground: 356 10% 12%;
+    --surface-muted-foreground: 215 20% 38%;
+    --surface-accent: 202 100% 45%;
   }
 
   /* Aurora ambient background applied at body level for the light theme */
@@ -332,6 +342,16 @@ All colors MUST be HSL.
     --shadow-glow-strong: 0 0 60px hsla(195 100% 50% / 0.5);
     --shadow-elevated: 0 10px 40px hsla(0 0% 0% / 0.4);
     --shadow-floating: 0 20px 60px hsla(0 0% 0% / 0.6);
+
+    /* Surface tokens — Cyber theme (deep tech blue corridor) */
+    --surface-deep: 213 50% 7%;         /* near-black tech blue */
+    --surface-card: 213 60% 11%;        /* #0d1520 */
+    --surface-elevated: 213 60% 14%;    /* #1a2332 */
+    --surface-overlay: 213 50% 20%;     /* #2a3a4d */
+    --surface-border: 213 50% 22%;
+    --surface-foreground: 195 100% 90%;
+    --surface-muted-foreground: 195 80% 70%;
+    --surface-accent: 195 100% 50%;
   }
 
   /* ===== Workflow / Inbox semantic tokens (theme-agnostic) ===== */
