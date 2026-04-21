@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Clock, Users, Car, Route, UserCog, X, MapPin, Layers, FileText, Sparkles, CalendarDays, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Moon } from "lucide-react";
+import { Clock, Users, Car, Route, UserCog, X, MapPin, Layers, FileText, Sparkles, CalendarDays, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Moon, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -116,6 +117,32 @@ const buildInitialForm = () => ({
 });
 
 const initialForm = buildInitialForm();
+
+/** Compact info tooltip used next to field labels to keep the form clean. */
+const FieldHint = ({ children, tone = "muted" }: { children: React.ReactNode; tone?: "muted" | "warning" }) => (
+  <TooltipProvider delayDuration={150}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="More info"
+          className={
+            "inline-flex items-center justify-center rounded-full transition-colors " +
+            (tone === "warning"
+              ? "text-amber-600 hover:text-amber-700 dark:text-amber-400"
+              : "text-muted-foreground hover:text-foreground")
+          }
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+        {children}
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
 
 export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
@@ -1201,10 +1228,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <div>
                   <Label className="text-primary font-medium flex items-center gap-1">
                     <Route className="w-3.5 h-3.5" /> Intermediate Stops
+                    <FieldHint>
+                      Add ordered waypoints between Departure and Final Destination. Driver will visit them in this order.
+                    </FieldHint>
                   </Label>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Add ordered waypoints between Departure and Final Destination. Driver will visit them in this order.
-                  </p>
                 </div>
                 <Button
                   type="button"
@@ -1312,6 +1339,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Label className="text-primary font-medium flex items-center gap-1">
                   <Car className="w-3.5 h-3.5" /> No. Of Vehicle
                   {!allowsMultipleVehicles && <Badge variant="outline" className="ml-1 text-[10px] py-0 px-1.5">Locked at 1</Badge>}
+                  <FieldHint>
+                    {allowsMultipleVehicles
+                      ? "Project Operations support a fleet — request as many vehicles as needed."
+                      : "Daily & Field operations are limited to one vehicle. Switch to Project Operation to request more."}
+                  </FieldHint>
                 </Label>
                 <Input
                   type="number"
@@ -1325,14 +1357,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   aria-invalid={!!getError("num_vehicles")}
                 />
                 <FieldError field="num_vehicles" />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  {allowsMultipleVehicles
-                    ? "Project Operations support a fleet — request as many vehicles as needed."
-                    : "Daily & Field operations are limited to one vehicle. Switch to Project Operation to request more."}
-                </p>
               </div>
               <div>
-                <Label className="text-primary font-medium flex items-center gap-1"><Users className="w-3.5 h-3.5" /> No. Of Passenger</Label>
+                <Label className="text-primary font-medium flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5" /> No. Of Passenger
+                  <FieldHint>
+                    Enter passengers excluding the driver (i.e. seats needed minus 1).
+                  </FieldHint>
+                </Label>
                 <Input
                   type="number"
                   min={1}
@@ -1343,13 +1375,13 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   className="h-10"
                   aria-invalid={!!getError("passengers")}
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Enter passengers <span className="font-medium">excluding the driver</span> (i.e. seats needed minus 1).
-                </p>
                 <FieldError field="passengers" />
               </div>
               <div>
-                <Label className="text-primary font-medium">Cargo / Equipment</Label>
+                <Label className="text-primary font-medium flex items-center gap-1">
+                  Cargo / Equipment
+                  <FieldHint>Helps recommend the smallest sufficient vehicle.</FieldHint>
+                </Label>
                 <Select value={form.cargo_load} onValueChange={(v) => update("cargo_load", v as CargoLoad)}>
                   <SelectTrigger className="h-10"><SelectValue placeholder="Select cargo size" /></SelectTrigger>
                   <SelectContent>
@@ -1363,7 +1395,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground mt-1">Helps recommend the smallest sufficient vehicle.</p>
               </div>
 
               {/* Resource-aware recommendation banner — pure derivation from passengers + cargo */}
@@ -1429,9 +1460,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     )}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Suggestions filtered by {form.passengers} passenger(s) and {form.cargo_load} cargo.
-                </p>
                 {chosenProfile && (
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Capacity: {chosenProfile.capacity} · Cargo: {chosenProfile.cargo} · Tier: {COST_BAND_LABELS[chosenProfile.costBand]}
@@ -1442,8 +1470,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               {/* Justification — only shown when over-spec'd */}
               {isUpgrade && (
                 <div className="md:col-span-2 animate-fade-in">
-                  <Label className="text-amber-600 dark:text-amber-400 font-medium">
+                  <Label className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
                     Why is {chosenProfile?.label} needed instead of {recommendation?.label}? <span className="text-destructive">*</span>
+                    <FieldHint tone="warning">
+                      Visible to your approver. Be specific — generic reasons may be rejected.
+                    </FieldHint>
                   </Label>
                   <Textarea
                     value={form.vehicle_type_justification}
@@ -1452,9 +1483,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     rows={2}
                     maxLength={500}
                   />
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Visible to your approver. Be specific — generic reasons may be rejected.
-                  </p>
                 </div>
               )}
               <div>
@@ -1470,7 +1498,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Select>
               </div>
               <div className="md:col-span-2">
-                <Label className="text-primary font-medium">Assigned Pool</Label>
+                <Label className="text-primary font-medium flex items-center gap-1">
+                  Assigned Pool
+                  <FieldHint>Operational pool the trip will be served from.</FieldHint>
+                </Label>
                 <Select value={form.pool_name} onValueChange={v => {
                   // Derive a category bucket so downstream filters/reports keep working.
                   const found = ASSIGNED_POOLS.find(p => p.value === v);
@@ -1492,10 +1523,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground mt-1">Operational pool the trip will be served from.</p>
               </div>
               <div className="md:col-span-2">
-                <Label className="text-primary font-medium">Contact Phone (during trip)</Label>
+                <Label className="text-primary font-medium flex items-center gap-1">
+                  Contact Phone (during trip)
+                  <FieldHint>Optional. Helps dispatch reach the requester quickly if plans change.</FieldHint>
+                </Label>
                 <Input
                   type="tel"
                   inputMode="tel"
@@ -1507,7 +1540,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   aria-invalid={!!getError("contact_phone")}
                 />
                 <FieldError field="contact_phone" />
-                <p className="text-[11px] text-muted-foreground mt-1">Optional. Helps dispatch reach the requester quickly if plans change.</p>
               </div>
             </div>
           </section>
@@ -1519,8 +1551,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <h3 className="text-sm font-semibold text-foreground">Purpose & Submit</h3>
             </div>
             <div>
-              <Label className="text-primary font-medium">
+              <Label className="text-primary font-medium flex items-center gap-1">
                 Business Purpose Category <span className="text-destructive">*</span>
+                <FieldHint>
+                  Fleet vehicles are for business use only. Personal or family trips are not permitted.
+                </FieldHint>
               </Label>
               <Select value={form.purpose_category} onValueChange={(v) => update("purpose_category", v)}>
                 <SelectTrigger className="h-10">
@@ -1568,16 +1603,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     </p>
                   );
                 }
-                return (
-                  <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-primary" />
-                    Fleet vehicles are for business use only. Personal or family trips are not permitted.
-                  </p>
-                );
+                return null;
               })()}
             </div>
             <div>
-              <Label className="text-primary font-medium">Department / Division</Label>
+              <Label className="text-primary font-medium flex items-center gap-1">
+                Department / Division
+                <FieldHint>
+                  The unit this trip is charged to / belongs to. Helps approval routing & reporting.
+                </FieldHint>
+              </Label>
               <Select
                 value={form.department_id || "__none__"}
                 onValueChange={(v) => update("department_id", v === "__none__" ? "" : v)}
@@ -1594,9 +1629,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                The unit this trip is charged to / belongs to. Helps approval routing & reporting.
-              </p>
             </div>
             <div>
               <Label className="text-primary font-medium">Trip Description <span className="text-destructive">*</span></Label>
