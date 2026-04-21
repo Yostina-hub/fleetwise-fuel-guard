@@ -358,14 +358,14 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                     <Field label="Registration Certificate No" error={fieldValidation.getError("registration_cert_no")} status={fieldValidation.getStatus("registration_cert_no", formData.registration_cert_no)}>
                       <Input value={formData.registration_cert_no} onChange={e => { const v = sanitizeWhileTyping(e.target.value).slice(0,100); set("registration_cert_no", v); fieldValidation.handleChange("registration_cert_no", v); }} onBlur={() => fieldValidation.handleBlur("registration_cert_no", formData.registration_cert_no)} maxLength={100} />
                     </Field>
-                    <Field label="Registration Expiry" error={fieldValidation.getError("registration_expiry")}>
-                      <DatePickerField value={formData.registration_expiry} onChange={v => set("registration_expiry", v)} onBlur={() => fieldValidation.handleBlur("registration_expiry", formData.registration_expiry)} />
+                    <Field label="Registration Expiry *" error={fieldValidation.getError("registration_expiry")}>
+                      <DatePickerField value={formData.registration_expiry} onChange={v => { set("registration_expiry", v); fieldValidation.handleChange("registration_expiry", v); }} onBlur={() => fieldValidation.handleBlur("registration_expiry", formData.registration_expiry)} />
                     </Field>
                     <Field label="Insurance Policy No" error={fieldValidation.getError("insurance_policy_no")} status={fieldValidation.getStatus("insurance_policy_no", formData.insurance_policy_no)}>
                       <Input value={formData.insurance_policy_no} onChange={e => { const v = sanitizeWhileTyping(e.target.value).slice(0,100); set("insurance_policy_no", v); fieldValidation.handleChange("insurance_policy_no", v); }} onBlur={() => fieldValidation.handleBlur("insurance_policy_no", formData.insurance_policy_no)} maxLength={100} />
                     </Field>
-                    <Field label="Insurance Expiry" error={fieldValidation.getError("insurance_expiry")}>
-                      <DatePickerField value={formData.insurance_expiry} onChange={v => set("insurance_expiry", v)} onBlur={() => fieldValidation.handleBlur("insurance_expiry", formData.insurance_expiry)} />
+                    <Field label="Insurance Expiry *" error={fieldValidation.getError("insurance_expiry")}>
+                      <DatePickerField value={formData.insurance_expiry} onChange={v => { set("insurance_expiry", v); fieldValidation.handleChange("insurance_expiry", v); }} onBlur={() => fieldValidation.handleBlur("insurance_expiry", formData.insurance_expiry)} />
                     </Field>
                     <Field label="Commercial Permit">
                       <Select value={formData.commercial_permit} onValueChange={v => set("commercial_permit", v)}>
@@ -376,8 +376,8 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Permit Expiry" error={fieldValidation.getError("permit_expiry")}>
-                      <DatePickerField value={formData.permit_expiry} onChange={v => set("permit_expiry", v)} onBlur={() => fieldValidation.handleBlur("permit_expiry", formData.permit_expiry)} />
+                    <Field label="Permit Expiry *" error={fieldValidation.getError("permit_expiry")}>
+                      <DatePickerField value={formData.permit_expiry} onChange={v => { set("permit_expiry", v); fieldValidation.handleChange("permit_expiry", v); }} onBlur={() => fieldValidation.handleBlur("permit_expiry", formData.permit_expiry)} />
                     </Field>
                   </div>
                 </Section>
