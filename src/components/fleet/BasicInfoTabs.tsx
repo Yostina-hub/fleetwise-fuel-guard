@@ -443,7 +443,7 @@ function IdentityPane(props: PaneProps) {
           }}
           disabled={!formData.specific_pool}
         >
-          <SelectTrigger className={`h-10 ${!formData.specific_pool ? "opacity-50" : ""}`}>
+          <SelectTrigger className={!formData.specific_pool ? "opacity-50" : ""}>
             <SelectValue placeholder={formData.specific_pool ? "Select location..." : "Pick category first"}>
               {formData.assigned_location && (
                 <span className="flex items-center gap-2">
