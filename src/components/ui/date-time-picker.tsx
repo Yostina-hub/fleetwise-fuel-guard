@@ -27,6 +27,19 @@ interface DateTimePickerProps {
 }
 
 /**
+ * Coerce unknown values (Date, ISO string, timestamp) into a valid Date or undefined.
+ * Prevents `d.getTime is not a function` when callers accidentally pass a string.
+ */
+function toDateSafe(value: unknown): Date | undefined {
+  if (value instanceof Date) return isNaN(value.getTime()) ? undefined : value;
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? undefined : d;
+  }
+  return undefined;
+}
+
+/**
  * Friendly relative-day label: "Today", "Tomorrow", "In 3 days · Wed Apr 23".
  * Shown inside the trigger to make picked dates instantly readable.
  */
@@ -51,6 +64,8 @@ export function DateTimePicker({
   hideTime,
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
+  // Defensive: callers occasionally pass an ISO string instead of a Date.
+  const safeDate = React.useMemo(() => toDateSafe(date), [date]);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = addDays(today, 1);
@@ -86,13 +101,13 @@ export function DateTimePicker({
               disabled={disabled}
               className={cn(
                 "flex-1 justify-start text-left font-normal h-10",
-                !date && "text-muted-foreground",
-                date && "border-primary/40 bg-primary/5",
+                !safeDate && "text-muted-foreground",
+                safeDate && "border-primary/40 bg-primary/5",
               )}
             >
-              <CalendarIcon className={cn("mr-2 h-4 w-4 shrink-0", date && "text-primary")} />
+              <CalendarIcon className={cn("mr-2 h-4 w-4 shrink-0", safeDate && "text-primary")} />
               <span className="truncate">
-                {date ? smartLabel(date) : placeholder}
+                {safeDate ? smartLabel(safeDate) : placeholder}
               </span>
             </Button>
           </PopoverTrigger>
@@ -100,7 +115,7 @@ export function DateTimePicker({
             {/* Quick picks header — friendlier than scrolling the calendar */}
             <div className="border-b border-border bg-muted/30 p-2 flex items-center gap-1.5 flex-wrap">
               {quickPicks.map((q) => {
-                const isSel = date && isSameDay(date, q.value);
+                const isSel = safeDate && isSameDay(safeDate, q.value);
                 const blocked = normalizedMinDate && q.value < normalizedMinDate;
                 return (
                   <Button
@@ -117,7 +132,7 @@ export function DateTimePicker({
                   </Button>
                 );
               })}
-              {date && (
+              {safeDate && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -131,7 +146,7 @@ export function DateTimePicker({
             </div>
             <Calendar
               mode="single"
-              selected={date}
+              selected={safeDate}
               onSelect={(d) => { onDateChange(d); if (d) setOpen(false); }}
               disabled={normalizedMinDate ? (d) => d < normalizedMinDate : undefined}
               initialFocus
