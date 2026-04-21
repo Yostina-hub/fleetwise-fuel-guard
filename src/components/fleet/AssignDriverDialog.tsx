@@ -21,8 +21,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Car } from "lucide-react";
+import { Loader2, User, Car, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AssignDriverDialogProps {
   open: boolean;
@@ -84,12 +86,32 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
     },
   });
 
+  // Active drivers available for selection. Verified drivers are listed first.
+  const activeDrivers = drivers
+    .filter(d => d.status === 'active')
+    .sort((a, b) => {
+      const av = (a as any).verification_status === 'verified' ? 0 : 1;
+      const bv = (b as any).verification_status === 'verified' ? 0 : 1;
+      return av - bv;
+    });
+
+  const selectedDriver = activeDrivers.find(d => d.id === selectedDriverId);
+  const selectedIsVerified = !selectedDriver || (selectedDriver as any).verification_status === 'verified';
+  const isUnassigning = selectedDriverId === "none";
+
   const handleSubmit = () => {
-    const driverId = selectedDriverId === "none" ? null : selectedDriverId;
+    // Hard-block: cannot assign a driver who hasn't been verified.
+    if (!isUnassigning && !selectedIsVerified) {
+      toast({
+        title: "Driver not verified",
+        description: "This driver's identity and license must be verified before they can be assigned to a vehicle.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const driverId = isUnassigning ? null : selectedDriverId;
     assignMutation.mutate(driverId);
   };
-
-  const activeDrivers = drivers.filter(d => d.status === 'active');
 
   if (!vehicle) return null;
 
