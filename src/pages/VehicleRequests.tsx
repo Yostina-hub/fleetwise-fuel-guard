@@ -57,6 +57,8 @@ import { MyVehicleRequestsSummary } from "@/components/vehicle-requests/MyVehicl
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
 import { DeleteRequestDialog } from "@/components/vehicle-requests/DeleteRequestDialog";
 import { MultiVehicleAssignDialog } from "@/components/vehicle-requests/MultiVehicleAssignDialog";
+import BulkImportVehicleRequestsDialog from "@/components/vehicle-requests/BulkImportVehicleRequestsDialog";
+import * as XLSX from "xlsx";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -129,6 +131,7 @@ const VehicleRequests = () => {
   const [showDeallocate, setShowDeallocate] = useState<any>(null);
   const [showDelete, setShowDelete] = useState<any>(null);
   const [showMultiAssign, setShowMultiAssign] = useState<any>(null);
+  const [showImport, setShowImport] = useState(false);
 
   // filters / search / pagination
   const [activeStatus, setActiveStatus] = useState<StatusKey>("all");
@@ -258,39 +261,62 @@ const VehicleRequests = () => {
   const completed = counts["completed"] || 0;
 
   // -------- export / import handlers --------
-  const exportCsv = () => {
-    if (filtered.length === 0) {
-      toast.info("Nothing to export with the current filter.");
-      return;
-    }
+  const buildExportRows = () => {
     const headers = [
       "request_number",
       "request_type",
       "status",
+      "priority",
       "requester_name",
       "departure_place",
       "destination",
       "pool_name",
       "needed_from",
-      "vehicle_plate",
-      "driver",
+      "needed_until",
+      "passengers",
+      "num_vehicles",
+      "vehicle_type",
       "trip_type",
+      "project_number",
+      "distance_estimate_km",
+      "vehicle_plate",
+      "vehicle_make_model",
+      "driver",
+      "purpose",
       "created_at",
     ];
     const rows = filtered.map((r: any) => [
       r.request_number,
       r.request_type,
       r.status,
+      r.priority,
       r.requester_name,
       r.departure_place,
       r.destination,
       r.pool_name,
       r.needed_from,
-      r.assigned_vehicle?.plate_number,
-      [r.assigned_driver?.first_name, r.assigned_driver?.last_name].filter(Boolean).join(" "),
+      r.needed_until,
+      r.passengers,
+      r.num_vehicles,
+      r.vehicle_type,
       r.trip_type,
+      r.project_number,
+      r.distance_estimate_km,
+      r.assigned_vehicle?.plate_number,
+      r.assigned_vehicle ? `${r.assigned_vehicle.make ?? ""} ${r.assigned_vehicle.model ?? ""}`.trim() : "",
+      [r.assigned_driver?.first_name, r.assigned_driver?.last_name].filter(Boolean).join(" "),
+      r.purpose,
       r.created_at,
     ]);
+    return { headers, rows };
+  };
+
+  const exportCsv = () => {
+    if (filtered.length === 0) {
+      toast.info("Nothing to export with the current filter.");
+      return;
+    }
+    const { headers, rows } = buildExportRows();
     const csv = [headers, ...rows]
       .map((row) =>
         row
@@ -309,15 +335,20 @@ const VehicleRequests = () => {
     a.download = `vehicle-requests-${format(new Date(), "yyyyMMdd-HHmm")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(`Exported ${filtered.length} requests`);
+    toast.success(`Exported ${filtered.length} requests as CSV`);
   };
 
-  const onImportClick = () => fileInputRef.current?.click();
-  const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    toast.info(`Selected "${file.name}". Use the "New Request" form to add records — bulk CSV import is coming soon.`);
-    e.target.value = "";
+  const exportXlsx = () => {
+    if (filtered.length === 0) {
+      toast.info("Nothing to export with the current filter.");
+      return;
+    }
+    const { headers, rows } = buildExportRows();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Vehicle Requests");
+    XLSX.writeFile(wb, `vehicle-requests-${format(new Date(), "yyyyMMdd-HHmm")}.xlsx`);
+    toast.success(`Exported ${filtered.length} requests as XLSX`);
   };
 
   const clearFilters = () => {
