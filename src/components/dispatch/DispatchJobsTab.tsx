@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { DateTimePicker, combineDateAndTime } from "@/components/ui/date-time-picker";
-import { 
+import {
   Plus, Search, Truck, MapPin, Clock, User, Phone, Package,
-  CheckCircle, Loader2, Navigation, Play, Square
+  CheckCircle, Loader2, Navigation, Play, Square, Eye
 } from "lucide-react";
 import { useDispatchJobs } from "@/hooks/useDispatchJobs";
 import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
@@ -20,6 +20,7 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 import SLAIndicator from "./SLAIndicator";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { DispatchJobDetailDialog } from "./DispatchJobDetailDialog";
 
 const ITEMS_PER_PAGE = 10;
 
