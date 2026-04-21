@@ -1140,9 +1140,11 @@ const VehicleRequests = () => {
             )}
           </CardContent>
         </Card>
+          </>
+        )}
 
         {/* Dialogs */}
-        {/* Inline form rendered in-page below — see "showCreate ? ..." panel */}
+        {/* Inline form rendered in-page above — see "showCreate ? ..." panel */}
 
         {showDetail && (
           <Dialog open={!!showDetail} onOpenChange={() => setShowDetail(null)}>
