@@ -1523,7 +1523,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground mt-1">Operational pool the trip will be served from.</p>
               </div>
               <div className="md:col-span-2">
                 <Label className="text-primary font-medium flex items-center gap-1">
@@ -1541,7 +1540,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   aria-invalid={!!getError("contact_phone")}
                 />
                 <FieldError field="contact_phone" />
-                <p className="text-[11px] text-muted-foreground mt-1">Optional. Helps dispatch reach the requester quickly if plans change.</p>
               </div>
             </div>
           </section>
@@ -1553,8 +1551,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <h3 className="text-sm font-semibold text-foreground">Purpose & Submit</h3>
             </div>
             <div>
-              <Label className="text-primary font-medium">
+              <Label className="text-primary font-medium flex items-center gap-1">
                 Business Purpose Category <span className="text-destructive">*</span>
+                <FieldHint>
+                  Fleet vehicles are for business use only. Personal or family trips are not permitted.
+                </FieldHint>
               </Label>
               <Select value={form.purpose_category} onValueChange={(v) => update("purpose_category", v)}>
                 <SelectTrigger className="h-10">
@@ -1602,16 +1603,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     </p>
                   );
                 }
-                return (
-                  <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-primary" />
-                    Fleet vehicles are for business use only. Personal or family trips are not permitted.
-                  </p>
-                );
+                return null;
               })()}
             </div>
             <div>
-              <Label className="text-primary font-medium">Department / Division</Label>
+              <Label className="text-primary font-medium flex items-center gap-1">
+                Department / Division
+                <FieldHint>
+                  The unit this trip is charged to / belongs to. Helps approval routing & reporting.
+                </FieldHint>
+              </Label>
               <Select
                 value={form.department_id || "__none__"}
                 onValueChange={(v) => update("department_id", v === "__none__" ? "" : v)}
