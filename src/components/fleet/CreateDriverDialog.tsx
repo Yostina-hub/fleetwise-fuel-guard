@@ -94,7 +94,19 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
   const canSubmit = useSubmitThrottle();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({ ...initialForm, ...(prefill ?? {}) });
+
+  // Per-org draft autosave — restores any in-progress registration on re-open.
+  // We disable persistence when the dialog is closed (key=null) so a closed
+  // dialog never silently overwrites a fresher draft from another tab.
+  const draftKey = open && organizationId ? `driver-registration:${organizationId}` : null;
+  const {
+    values: formData,
+    setValues: setFormData,
+    restoredAt: draftRestoredAt,
+    savedAt: draftSavedAt,
+    clear: clearDraft,
+  } = useFormDraft<typeof initialForm>(draftKey, { ...initialForm, ...(prefill ?? {}) });
+
   const [showPassword, setShowPassword] = useState(false);
   const validation = useDriverValidation();
   const fieldRefs = useRef<Partial<Record<DriverFieldName, HTMLElement | null>>>({});
@@ -213,6 +225,9 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
           : "Driver registered successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
+      // Successful submit → wipe the persisted draft so the next "Add driver"
+      // starts blank instead of restoring the just-submitted values.
+      clearDraft();
       setFormData({ ...initialForm, ...(prefill ?? {}) });
       setLicenseFrontFile(null); setLicenseBackFile(null);
       setNationalIdFile(null); setProfilePhotoFile(null);
