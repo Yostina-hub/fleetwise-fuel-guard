@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Sparkles } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { useDriverPassengerFeedback } from "@/hooks/useDriverPassengerFeedback";
 
 interface Props {
   driverId: string;
@@ -22,6 +24,7 @@ export const CreatePerformanceReviewDialog = ({ driverId, driverName, onCreated 
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { data: feedback } = useDriverPassengerFeedback(open ? driverId : null);
 
   const [form, setForm] = useState({
     review_type: "monthly",
@@ -36,6 +39,23 @@ export const CreatePerformanceReviewDialog = ({ driverId, driverName, onCreated 
     improvement_areas: "",
     manager_comments: "",
   });
+  const [prefilled, setPrefilled] = useState(false);
+
+  // Prefill Customer (from driver_rating) and Safety (from punctuality_rating) on first open with data
+  useEffect(() => {
+    if (!open || prefilled || !feedback || feedback.totalRated === 0) return;
+    const toTen = (v: number | null) => (v == null ? null : Math.round(v * 2 * 10) / 10); // 1-5 → 2-10
+    const customer = toTen(feedback.avgDriver90d ?? feedback.avgDriver);
+    const safety = toTen(feedback.avgPunctuality90d ?? feedback.avgPunctuality);
+    setForm(f => ({
+      ...f,
+      customer_score: customer ?? f.customer_score,
+      safety_score: safety ?? f.safety_score,
+    }));
+    setPrefilled(true);
+  }, [open, feedback, prefilled]);
+
+  useEffect(() => { if (!open) setPrefilled(false); }, [open]);
 
   const overall = ((form.safety_score + form.efficiency_score + form.compliance_score + form.customer_score) / 4);
 
@@ -120,6 +140,38 @@ export const CreatePerformanceReviewDialog = ({ driverId, driverName, onCreated 
               <Input type="date" className="h-8 text-xs" value={form.review_period_end} onChange={e => setForm(f => ({ ...f, review_period_end: e.target.value }))} />
             </div>
           </div>
+
+
+          {feedback && feedback.totalRated > 0 && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-primary" />
+                  <p className="text-[11px] font-medium">Passenger Feedback Reference (90d)</p>
+                </div>
+                <Badge variant="outline" className="text-[9px]">
+                  {feedback.totalRated} ratings · {feedback.responseRate}% response
+                </Badge>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded bg-card border p-1.5">
+                  <p className="text-[9px] text-muted-foreground">Driver</p>
+                  <p className="text-sm font-bold tabular-nums">{feedback.avgDriver90d?.toFixed(1) ?? "—"}<span className="text-[9px] text-muted-foreground">/5</span></p>
+                </div>
+                <div className="rounded bg-card border p-1.5">
+                  <p className="text-[9px] text-muted-foreground">Vehicle</p>
+                  <p className="text-sm font-bold tabular-nums">{feedback.avgVehicle90d?.toFixed(1) ?? "—"}<span className="text-[9px] text-muted-foreground">/5</span></p>
+                </div>
+                <div className="rounded bg-card border p-1.5">
+                  <p className="text-[9px] text-muted-foreground">Punctuality</p>
+                  <p className="text-sm font-bold tabular-nums">{feedback.avgPunctuality90d?.toFixed(1) ?? "—"}<span className="text-[9px] text-muted-foreground">/5</span></p>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground italic">
+                Customer & Safety scores were prefilled from passenger ratings — adjust as needed.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
             <p className="text-xs font-medium">Scoring (Overall: <span className="text-primary font-bold">{overall.toFixed(1)}/10</span>)</p>

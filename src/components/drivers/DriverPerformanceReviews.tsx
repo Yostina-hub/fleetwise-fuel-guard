@@ -6,6 +6,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { ClipboardCheck, Star, TrendingUp, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { CreatePerformanceReviewDialog } from "./CreatePerformanceReviewDialog";
+import { PassengerFeedbackSummaryCard } from "./PassengerFeedbackSummaryCard";
 
 interface Review {
   id: string;
@@ -29,9 +30,10 @@ interface Review {
 interface DriverPerformanceReviewsProps {
   driverId: string;
   driverName: string;
+  onViewFeedback?: () => void;
 }
 
-export const DriverPerformanceReviews = ({ driverId, driverName }: DriverPerformanceReviewsProps) => {
+export const DriverPerformanceReviews = ({ driverId, driverName, onViewFeedback }: DriverPerformanceReviewsProps) => {
   const { organizationId } = useOrganization();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +86,7 @@ export const DriverPerformanceReviews = ({ driverId, driverName }: DriverPerform
         <div />
         <CreatePerformanceReviewDialog driverId={driverId} driverName={driverName} onCreated={fetchReviews} />
       </div>
+      <PassengerFeedbackSummaryCard driverId={driverId} onViewDetails={onViewFeedback} />
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Card><CardContent className="p-3 text-center">
           <Star className="w-5 h-5 mx-auto mb-1 text-amber-400" />

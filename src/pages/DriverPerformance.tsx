@@ -7,18 +7,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  BarChart3, Star, Award, Brain, UserCircle, Search,
+  BarChart3, Star, Award, Brain, UserCircle, Search, MessageSquare,
 } from "lucide-react";
 
 import { DriverAnalyticsDashboard } from "@/components/drivers/DriverAnalyticsDashboard";
 import { DriverPerformanceReviews } from "@/components/drivers/DriverPerformanceReviews";
 import { DriverAchievementsPanel } from "@/components/drivers/DriverAchievementsPanel";
 import { DriverInsightsPanel } from "@/components/drivers/DriverInsightsPanel";
+import { DriverPassengerFeedback } from "@/components/drivers/DriverPassengerFeedback";
 
 import { useTranslation } from 'react-i18next';
 const tabs = [
   { key: "analytics", label: "Analytics", icon: BarChart3 },
   { key: "reviews", label: "Reviews", icon: Star, needsDriver: true },
+  { key: "feedback", label: "Passenger Feedback", icon: MessageSquare, needsDriver: true },
   { key: "achievements", label: "Achievements", icon: Award, needsDriver: true },
   { key: "insights", label: "AI Insights", icon: Brain, needsDriver: true },
 ];
@@ -61,7 +63,8 @@ const DriverPerformance = () => {
 
     const map: Record<string, JSX.Element> = {
       analytics: <DriverAnalyticsDashboard />,
-      reviews: <DriverPerformanceReviews driverId={selectedDriverId} driverName={driverName} />,
+      reviews: <DriverPerformanceReviews driverId={selectedDriverId} driverName={driverName} onViewFeedback={() => setActiveTab("feedback")} />,
+      feedback: <DriverPassengerFeedback driverId={selectedDriverId} driverName={driverName} />,
       achievements: <DriverAchievementsPanel driverId={selectedDriverId} driverName={driverName} />,
       insights: <DriverInsightsPanel driverId={selectedDriverId} />,
     };
