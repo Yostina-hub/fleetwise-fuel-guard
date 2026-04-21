@@ -39,6 +39,7 @@ export function MapLocationPickerDialog({
   const [lat, setLat] = useState(initialLat);
   const [lng, setLng] = useState(initialLng);
   const [locationName, setLocationName] = useState("");
+  const [isLocating, setIsLocating] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,14 +48,70 @@ export function MapLocationPickerDialog({
   const [searchError, setSearchError] = useState<string | null>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
 
+  /**
+   * Reverse-geocode (lat,lng) → human address via the existing Lemat proxy.
+   * Used to (a) auto-fill the requester's current address on open, and
+   * (b) refresh the address whenever the pin is dragged or the map is clicked
+   * — so the dialog never silently keeps a stale "Churchill Avenue" label.
+   */
+  const reverseGeocode = async (rLat: number, rLng: number): Promise<string | null> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-search-geocode?lat=${rLat}&lon=${rLng}&reverse=1`;
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "Accept-Language": "en",
+        },
+      });
+      if (!res.ok) return null;
+      const json = await res.json();
+      const display = json?.display_name || json?.address?.road || json?.results?.[0]?.display_name;
+      return display ? String(display).split(",").slice(0, 2).join(", ") : null;
+    } catch {
+      return null;
+    }
+  };
+
+  /**
+   * Try the browser's Geolocation API. If the requester grants permission
+   * we use *their* current position as the map center, otherwise we fall
+   * back to the supplied initialLat/initialLng (Addis Ababa center).
+   */
+  const requestCurrentLocation = (): Promise<{ lat: number; lng: number } | null> =>
+    new Promise((resolve) => {
+      if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
+      const timer = setTimeout(() => resolve(null), 6000);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+        () => { clearTimeout(timer); resolve(null); },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 60_000 },
+      );
+    });
+
   useEffect(() => {
     if (!open) return;
-    setLat(initialLat);
-    setLng(initialLng);
-    setLocationName("");
-    setSearchQuery("");
-    setSearchResults([]);
-    setSearchError(null);
+    let cancelled = false;
+    (async () => {
+      setIsLocating(true);
+      const here = await requestCurrentLocation();
+      if (cancelled) return;
+      const startLat = here?.lat ?? initialLat;
+      const startLng = here?.lng ?? initialLng;
+      setLat(startLat);
+      setLng(startLng);
+      setSearchQuery("");
+      setSearchResults([]);
+      setSearchError(null);
+      setIsLocating(false);
+      // Best-effort reverse geocode so the name field is descriptive
+      // (avoids the misleading "Churchill Avenue" street default).
+      const name = await reverseGeocode(startLat, startLng);
+      if (!cancelled) setLocationName(name ?? "");
+    })();
+    return () => { cancelled = true; };
   }, [open, initialLat, initialLng]);
 
   // Debounced search via Nominatim
@@ -115,9 +172,13 @@ export function MapLocationPickerDialog({
     };
   }, [searchQuery]);
 
-  // Map init
+  // Map init — re-runs when geolocation resolves so the map opens centered
+  // on the requester's actual position (or the Addis fallback).
   useEffect(() => {
     if (!open) return;
+
+    const startLat = lat;
+    const startLng = lng;
 
     const timer = setTimeout(() => {
       const container = mapContainer.current;
@@ -131,8 +192,8 @@ export function MapLocationPickerDialog({
       const map = new maplibregl.Map({
         container,
         style,
-        center: [initialLng, initialLat],
-        zoom: 12,
+        center: [startLng, startLat],
+        zoom: 14,
         attributionControl: false,
       });
 
@@ -140,21 +201,27 @@ export function MapLocationPickerDialog({
       map.addControl(new maplibregl.NavigationControl(), "top-right");
 
       const marker = new maplibregl.Marker({ color: "#ef4444", draggable: true })
-        .setLngLat([initialLng, initialLat])
+        .setLngLat([startLng, startLat])
         .addTo(map);
 
-      marker.on("dragend", () => {
+      marker.on("dragend", async () => {
         const pos = marker.getLngLat();
-        setLat(parseFloat(pos.lat.toFixed(6)));
-        setLng(parseFloat(pos.lng.toFixed(6)));
+        const newLat = parseFloat(pos.lat.toFixed(6));
+        const newLng = parseFloat(pos.lng.toFixed(6));
+        setLat(newLat);
+        setLng(newLng);
+        const name = await reverseGeocode(newLat, newLng);
+        if (name) setLocationName(name);
       });
 
-      map.on("click", (e) => {
+      map.on("click", async (e) => {
         const newLat = parseFloat(e.lngLat.lat.toFixed(6));
         const newLng = parseFloat(e.lngLat.lng.toFixed(6));
         setLat(newLat);
         setLng(newLng);
         marker.setLngLat([newLng, newLat]);
+        const name = await reverseGeocode(newLat, newLng);
+        if (name) setLocationName(name);
       });
 
       mapRef.current = map;
@@ -168,7 +235,8 @@ export function MapLocationPickerDialog({
       mapRef.current = null;
       markerRef.current = null;
     };
-  }, [open, initialLat, initialLng]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, lat === initialLat && lng === initialLng ? false : `${lat},${lng}`]);
 
   // Sync marker when lat/lng change
   useEffect(() => {

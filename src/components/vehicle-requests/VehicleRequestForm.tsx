@@ -172,6 +172,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     daily_operation: 0,
     project_operation: 7,
     field_operation: 30,
+    group_operation: 0,
   };
 
   // While impersonating, force the form to file the request as the impersonated
@@ -679,11 +680,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* TYPE TAB */}
           <TabsContent value="type" className="mt-5 space-y-4 animate-fade-in">
             <Label className="text-primary font-medium">Vehicle Request Type</Label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               {[
                 { v: "daily_operation", title: "Daily Operation", desc: "Single-day trip with start & end time", icon: Clock },
                 { v: "project_operation", title: "Project Operation", desc: "Multi-day, project-coded assignment", icon: Layers },
                 { v: "field_operation", title: "Field Operation", desc: "Extended off-base or field deployment", icon: Route },
+                { v: "group_operation", title: "Group Operation", desc: "Shared trip for a group of passengers", icon: Users },
               ].map(({ v, title, desc, icon: Icon }) => {
                 const active = form.request_type === v;
                 return (
