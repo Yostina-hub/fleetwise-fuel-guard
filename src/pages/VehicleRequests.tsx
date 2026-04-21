@@ -602,12 +602,29 @@ const VehicleRequests = () => {
         <VehicleRequestKPI requests={requests} />
 
         {/* Personal request summary — visible to every user, focuses on THEIR own requests */}
-        <MyVehicleRequestsSummary variant="full" />
+        <MyVehicleRequestsSummary
+          variant="full"
+          activeStatus={activeStatus === "cancelled" ? "all" : activeStatus}
+          onTileClick={(s) => {
+            setActiveStatus(s as StatusKey);
+            // Reset secondary filters so the table reliably reflects the chosen status
+            setTypeFilter("all");
+            setPoolFilter("all");
+            setSearch("");
+            // Smooth-scroll to the table for clear feedback
+            requestAnimationFrame(() => {
+              document.getElementById("vehicle-requests-table")?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            });
+          }}
+        />
 
         {organizationId && <PoolReviewPanel requests={requests} organizationId={organizationId} />}
 
         {/* ============== MAIN PANEL ============== */}
-        <Card className="overflow-hidden border-border/60 shadow-sm">
+        <Card id="vehicle-requests-table" className="overflow-hidden border-border/60 shadow-sm scroll-mt-20">
           <CardHeader className="pb-3 border-b bg-muted/30">
             <div className="flex flex-col gap-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
