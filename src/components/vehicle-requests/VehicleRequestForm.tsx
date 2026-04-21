@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Clock, Users, Car, Route, UserCog, X, MapPin, Layers, FileText, Sparkles, CalendarDays, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Moon, HelpCircle } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Clock, Users, Car, Route, UserCog, X, MapPin, Layers, FileText, Sparkles, CalendarDays, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Moon } from "lucide-react";
+import { FieldHint } from "@/components/ui/field-hint";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -118,30 +118,8 @@ const buildInitialForm = () => ({
 
 const initialForm = buildInitialForm();
 
-/** Compact info tooltip used next to field labels to keep the form clean. */
-const FieldHint = ({ children, tone = "muted" }: { children: React.ReactNode; tone?: "muted" | "warning" }) => (
-  <TooltipProvider delayDuration={150}>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label="More info"
-          className={
-            "inline-flex items-center justify-center rounded-full transition-colors " +
-            (tone === "warning"
-              ? "text-amber-600 hover:text-amber-700 dark:text-amber-400"
-              : "text-muted-foreground hover:text-foreground")
-          }
-        >
-          <HelpCircle className="w-3.5 h-3.5" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
-        {children}
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-);
+// FieldHint is imported from @/components/ui/field-hint so all forms share
+// the same (i)-on-hover tooltip styling and a11y semantics.
 
 
 export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
