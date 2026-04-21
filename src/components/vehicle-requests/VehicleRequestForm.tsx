@@ -556,10 +556,37 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     return null;
   }, [isDaily, form.date, form.start_time, form.end_time, form.start_date, form.end_date]);
 
+  // ── Resource-aware recommendation (demand-shaping) ────────────────────────
+  // Recompute whenever passengers or cargo change. Stays a pure derivation
+  // so the audit field `recommended_vehicle_type` always reflects what the
+  // user saw at the moment they submitted.
+  const recommendation = useMemo(() => {
+    return recommendVehicleClass({
+      passengers: parseInt(form.passengers) || 1,
+      cargo: form.cargo_load,
+    });
+  }, [form.passengers, form.cargo_load]);
+
+  // Auto-fill vehicle_type with the recommendation when the user hasn't
+  // touched it yet. Manual edits are preserved.
+  useEffect(() => {
+    if (!recommendation) return;
+    if (!form.vehicle_type) {
+      setForm((f) => ({ ...f, vehicle_type: recommendation.value }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recommendation?.value]);
+
+  // True when the user is asking for a more expensive class than recommended.
+  const isUpgrade = isUpgradeOverRecommendation(form.vehicle_type, recommendation?.value);
+  const chosenProfile = getVehicleClassProfile(form.vehicle_type);
+
   const canSubmit =
     !!form.purpose &&
+    !!form.purpose_category &&
     (isDaily ? !!form.date : !!form.start_date) &&
     (!isProject || !!form.project_number?.trim()) &&
+    (!isUpgrade || !!form.vehicle_type_justification?.trim()) &&
     errorCount === 0;
 
   const handleSubmit = () => {
