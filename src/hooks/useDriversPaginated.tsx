@@ -168,7 +168,12 @@ export const useDriversPaginated = (
     return q;
   }, [statusFilter, driverTypeFilter, employmentTypeFilter, assignmentFilter, searchQuery]);
 
-  const loadPage = useCallback(async (page: number) => {
+  // Cache so filter-only changes don't refetch counts/assignments (instant feel)
+  const assignedCacheRef = useRef<{ key: string; set: Set<string> } | null>(null);
+  const statusCountsCacheRef = useRef<{ key: string; counts: StatusCounts } | null>(null);
+  const categoryCountsCacheRef = useRef<{ key: string; counts: CategoryCounts } | null>(null);
+
+  const loadPage = useCallback(async (page: number, opts?: { forceCountsRefresh?: boolean }) => {
     if (!organizationId) {
       setDrivers([]);
       setLoading(false);
@@ -181,13 +186,33 @@ export const useDriversPaginated = (
       setLoading(true);
       setError(null);
 
-      const assignedSet = await fetchAssignedDriverIds();
+      // Counts/assignments only depend on the org — cache them so card clicks are instant.
+      const cacheKey = organizationId;
+      const force = opts?.forceCountsRefresh === true;
+
+      let assignedSet: Set<string>;
+      if (!force && assignedCacheRef.current?.key === cacheKey) {
+        assignedSet = assignedCacheRef.current.set;
+      } else {
+        assignedSet = await fetchAssignedDriverIds();
+        assignedCacheRef.current = { key: cacheKey, set: assignedSet };
+      }
       setAssignedDriverIds(assignedSet);
 
-      const [counts, catCounts] = await Promise.all([
-        fetchStatusCounts(),
-        fetchCategoryCounts(assignedSet),
-      ]);
+      const needCounts = force || statusCountsCacheRef.current?.key !== cacheKey || categoryCountsCacheRef.current?.key !== cacheKey;
+      let counts: StatusCounts;
+      let catCounts: CategoryCounts;
+      if (needCounts) {
+        [counts, catCounts] = await Promise.all([
+          fetchStatusCounts(),
+          fetchCategoryCounts(assignedSet),
+        ]);
+        statusCountsCacheRef.current = { key: cacheKey, counts };
+        categoryCountsCacheRef.current = { key: cacheKey, counts: catCounts };
+      } else {
+        counts = statusCountsCacheRef.current!.counts;
+        catCounts = categoryCountsCacheRef.current!.counts;
+      }
 
       // count query
       let countQ = supabase.from("drivers").select("*", { count: "exact", head: true }).eq("organization_id", organizationId);
@@ -257,25 +282,31 @@ export const useDriversPaginated = (
 
   const refetch = useCallback(() => {
     isFirstLoad.current = false;
-    loadPage(currentPage);
+    loadPage(currentPage, { forceCountsRefresh: true });
   }, [loadPage, currentPage]);
 
   // Only treat the very first mount per organization as "initial loading"
   // so filter/sort changes do NOT trigger the full-page skeleton (avoids reload feel).
   const hasMountedRef = useRef(false);
   useEffect(() => {
-    if (!hasMountedRef.current) {
+    const isFirst = !hasMountedRef.current;
+    if (isFirst) {
       isFirstLoad.current = true;
       hasMountedRef.current = true;
     } else {
       isFirstLoad.current = false;
     }
-    loadPage(1);
+    // First mount = full fetch (incl counts). Subsequent filter/sort changes
+    // reuse cached counts/assignments => no extra round-trips, instant feel.
+    loadPage(1, { forceCountsRefresh: isFirst });
   }, [organizationId, searchQuery, statusFilter, driverTypeFilter, employmentTypeFilter, assignmentFilter, sortBy, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset the mount flag when org changes so a new org gets a fresh initial load
+  // Reset the mount + caches when org changes so a new org gets a fresh load
   useEffect(() => {
     hasMountedRef.current = false;
+    assignedCacheRef.current = null;
+    statusCountsCacheRef.current = null;
+    categoryCountsCacheRef.current = null;
   }, [organizationId]);
 
   useEffect(() => {
@@ -287,7 +318,8 @@ export const useDriversPaginated = (
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
           isFirstLoad.current = false;
-          loadPage(currentPage);
+          // Real driver changes => invalidate counts cache so badges stay accurate
+          loadPage(currentPage, { forceCountsRefresh: true });
         }, 500);
       })
       .subscribe();
