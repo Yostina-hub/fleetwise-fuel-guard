@@ -336,11 +336,12 @@ const DispatchJobsTab = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 min-w-[150px]">
+                  <div className="flex flex-col gap-2 min-w-[150px]" onClick={(e) => e.stopPropagation()}>
                     {job.status === 'pending' && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => {
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedJob(job.id);
                           setShowAssignDialog(true);
                         }}
@@ -349,36 +350,43 @@ const DispatchJobsTab = () => {
                       </Button>
                     )}
                     {job.status === 'dispatched' && (
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         className="gap-1"
-                        onClick={() => handleStatusChange(job.id, 'en_route')}
+                        onClick={(e) => { e.stopPropagation(); handleStatusChange(job.id, 'en_route'); }}
                       >
                         <Play className="w-4 h-4" aria-hidden="true" />
                         Start Trip
                       </Button>
                     )}
                     {job.status === 'en_route' && (
-                      <Button 
+                      <Button
                         size="sm"
                         className="gap-1"
-                        onClick={() => handleStatusChange(job.id, 'arrived')}
+                        onClick={(e) => { e.stopPropagation(); handleStatusChange(job.id, 'arrived'); }}
                       >
                         <Navigation className="w-4 h-4" aria-hidden="true" />
                         Mark Arrived
                       </Button>
                     )}
                     {job.status === 'arrived' && (
-                      <Button 
+                      <Button
                         size="sm"
                         className="gap-1 bg-success hover:bg-success/90"
-                        onClick={() => handleStatusChange(job.id, 'completed')}
+                        onClick={(e) => { e.stopPropagation(); handleStatusChange(job.id, 'completed'); }}
                       >
                         <CheckCircle className="w-4 h-4" aria-hidden="true" />
                         Complete
                       </Button>
                     )}
-                    <Button size="sm" variant="outline">View Details</Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1"
+                      onClick={(e) => { e.stopPropagation(); setDetailJob(job); }}
+                    >
+                      <Eye className="w-4 h-4" /> View Details
+                    </Button>
                   </div>
                 </div>
               </CardContent>
