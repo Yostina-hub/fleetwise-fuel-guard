@@ -17,6 +17,8 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useDriverScope } from "@/hooks/useDriverScope";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
+import { subDays, startOfDay, endOfDay } from "date-fns";
 
 const statusColors: Record<string, string> = {
   pending: "secondary", approved: "default", assigned: "default",
@@ -53,6 +55,11 @@ export const VehicleRequestsPanel = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [poolFilter, setPoolFilter] = useState("all");
+  // Date-range filter — defaults to last 30 days of `needed_from`. Inclusive at both ends.
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({
+    start: startOfDay(subDays(new Date(), 30)),
+    end: endOfDay(new Date()),
+  });
 
   // Sorting — default newest first by needed_from to match operational expectations.
   const [sortKey, setSortKey] = useState<SortKey>("needed_from");
@@ -127,6 +134,14 @@ export const VehicleRequestsPanel = () => {
 
   const filteredRequests = useMemo(() => {
     let filtered = requests as any[];
+    // Date range filter — inclusive on `needed_from`. Skip rows without a date.
+    const startMs = startOfDay(dateRange.start).getTime();
+    const endMs = endOfDay(dateRange.end).getTime();
+    filtered = filtered.filter((r: any) => {
+      if (!r.needed_from) return false;
+      const t = new Date(r.needed_from).getTime();
+      return t >= startMs && t <= endMs;
+    });
     if (statusFilter !== "all") {
       filtered = filtered.filter((r: any) => r.status === statusFilter);
     }
@@ -150,7 +165,7 @@ export const VehicleRequestsPanel = () => {
       );
     }
     return filtered;
-  }, [requests, search, statusFilter, typeFilter, poolFilter]);
+  }, [requests, search, statusFilter, typeFilter, poolFilter, dateRange]);
 
   // Apply sorting on top of filtering. Comparator is column-aware — strings are
   // compared with locale, dates by epoch, numbers numerically.
@@ -228,23 +243,29 @@ export const VehicleRequestsPanel = () => {
 
   return (
     <div className="space-y-4">
-      {/* Quick Stats + Create */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-4 text-sm">
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-amber-500" />
-            <span className="font-semibold">{pending}</span>
-            <span className="text-muted-foreground">Pending</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Truck className="w-3.5 h-3.5 text-blue-500" />
-            <span className="font-semibold">{assigned}</span>
-            <span className="text-muted-foreground">Assigned</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-            <span className="font-semibold">{completed}</span>
-            <span className="text-muted-foreground">Completed</span>
+      {/* Date Filter (top) + Quick Stats + Create */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <DateRangeFilter
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+          />
+          <div className="flex gap-4 text-sm">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              <span className="font-semibold">{pending}</span>
+              <span className="text-muted-foreground">Pending</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Truck className="w-3.5 h-3.5 text-blue-500" />
+              <span className="font-semibold">{assigned}</span>
+              <span className="text-muted-foreground">Assigned</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+              <span className="font-semibold">{completed}</span>
+              <span className="text-muted-foreground">Completed</span>
+            </div>
           </div>
         </div>
         <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowCreate(true)}>
