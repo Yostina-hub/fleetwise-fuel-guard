@@ -1522,21 +1522,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Select>
               </div>
               <div className="md:col-span-2">
-                <Label className="text-primary font-medium flex items-center gap-1">
-                  Contact Phone (during trip)
-                  <FieldHint>Optional. Helps dispatch reach the requester quickly if plans change.</FieldHint>
-                </Label>
-                <Input
-                  type="tel"
-                  inputMode="tel"
-                  value={form.contact_phone}
-                  onChange={e => update("contact_phone", e.target.value)}
-                  onBlur={e => handleBlur("contact_phone", e.target.value, form as any)}
-                  placeholder="+251 9X XXX XXXX — reachable while the trip is active"
-                  className="h-10"
-                  aria-invalid={!!getError("contact_phone")}
-                />
-                <FieldError field="contact_phone" />
+                <VRField
+                  id="vr-contact-phone"
+                  label="Contact Phone (during trip)"
+                  error={getError("contact_phone")}
+                  tooltip="Optional. Helps dispatch reach the requester quickly if plans change."
+                >
+                  <Input
+                    type="tel"
+                    inputMode="tel"
+                    value={form.contact_phone}
+                    onChange={e => update("contact_phone", e.target.value)}
+                    onBlur={e => handleBlur("contact_phone", e.target.value, form as any)}
+                    placeholder="+251 9X XXX XXXX — reachable while the trip is active"
+                    className="h-10"
+                  />
+                </VRField>
               </div>
             </div>
           </section>
