@@ -263,6 +263,7 @@ const Vehicles = () => {
         isOverspeed: speed > 80,
         todayDistance: calculatedMetrics.todayDistance || 0,
         odometer: vehicleTelemetry?.odometer_km ?? 0,
+        createdAt: v.created_at,
       };
     });
   }, [dbVehicles, telemetry, isVehicleOnline, getMetrics]);
@@ -359,13 +360,19 @@ const Vehicles = () => {
     filtered = [...filtered].sort((a, b) => {
       let aVal: any, bVal: any;
       switch (sortColumn) {
+        case 'newest':
+          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          break;
         case 'plate': aVal = a.plate; bVal = b.plate; break;
         case 'speed': aVal = a.speed; bVal = b.speed; break;
         case 'fuel': aVal = a.fuel; bVal = b.fuel; break;
         case 'status': aVal = a.status; bVal = b.status; break;
         case 'driver': aVal = a.driverName || ''; bVal = b.driverName || ''; break;
         case 'distance': aVal = a.todayDistance; bVal = b.todayDistance; break;
-        default: aVal = a.plate; bVal = b.plate;
+        default:
+          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       }
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
