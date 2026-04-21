@@ -361,6 +361,38 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      // ── Final hardened validation + sanitization ─────────────────────────
+      // We re-sanitize and Zod-parse the form right before the network call.
+      // This prevents any payload that bypassed the per-field UI validators
+      // (e.g. through programmatic state mutation, devtools tampering, or a
+      // race with `handleSubmit`) from reaching the database. Failures throw
+      // a descriptive error which surfaces in the toast onError handler.
+      const sanitizedForm = sanitizeVehicleRequestForm(form as any);
+      const parsed = vehicleRequestZodSchema.safeParse({
+        request_type: sanitizedForm.request_type,
+        purpose: sanitizedForm.purpose,
+        purpose_category: (form as any).purpose_category,
+        project_number: sanitizedForm.project_number,
+        contact_phone: sanitizedForm.contact_phone,
+        departure_place: sanitizedForm.departure_place,
+        destination: sanitizedForm.destination,
+        num_vehicles: form.num_vehicles,
+        passengers: form.passengers,
+        vehicle_type: sanitizedForm.vehicle_type,
+        trip_type: sanitizedForm.trip_type,
+        pool_category: sanitizedForm.pool_category,
+        priority: sanitizedForm.priority,
+        cargo_load: (form as any).cargo_load,
+        vehicle_type_justification: (form as any).vehicle_type_justification,
+      });
+      if (!parsed.success) {
+        const first = parsed.error.errors[0];
+        throw new Error(
+          `Validation failed (${first.path.join(".") || "form"}): ${first.message}`,
+        );
+      }
+      const safe = parsed.data;
+
       // The JWT identity (always the real signed-in user — super_admin while
       // impersonating). Used only as a fallback when there's no impersonation
       // override in play.
@@ -389,7 +421,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       let neededFrom: string;
       let neededUntil: string | null = null;
 
-      const isDailyLike = form.request_type === "daily_operation" || form.request_type === "nighttime_operation";
+      const isDailyLike = safe.request_type === "daily_operation" || safe.request_type === "nighttime_operation";
       if (isDailyLike) {
         neededFrom = combineDateAndTime(form.date, form.start_time) || new Date().toISOString();
         neededUntil = combineDateAndTime(form.end_date || form.date, form.end_time) || null;
