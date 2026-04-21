@@ -1199,25 +1199,33 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
                   <SelectTrigger className="h-10"><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
                   <SelectContent>
-                    {VEHICLE_TYPES_OPTIONS.map(vt => {
-                      const profile = getVehicleClassProfile(vt.value);
-                      const isRec = recommendation?.value === vt.value;
-                      return (
-                        <SelectItem key={vt.value} value={vt.value}>
-                          <div className="flex items-center gap-2 w-full">
-                            <span className="text-sm">{vt.label}</span>
-                            {profile && (
-                              <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${COST_BAND_TONE[profile.costBand]}`}>
-                                {COST_BAND_LABELS[profile.costBand]}
-                              </Badge>
-                            )}
-                            {isRec && <span className="text-[10px] text-primary ml-auto">★ recommended</span>}
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
+                    {eligibleVehicleTypes.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        No vehicle class fits {form.passengers} passenger(s) with {form.cargo_load} cargo. Adjust the passenger count or cargo size, or contact dispatch.
+                      </div>
+                    ) : (
+                      eligibleVehicleTypes.map(({ vt, profile }) => {
+                        const isRec = recommendation?.value === vt.value;
+                        return (
+                          <SelectItem key={vt.value} value={vt.value}>
+                            <div className="flex items-center gap-2 w-full">
+                              <span className="text-sm">{vt.label}</span>
+                              {profile && (
+                                <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${COST_BAND_TONE[profile.costBand]}`}>
+                                  {COST_BAND_LABELS[profile.costBand]}
+                                </Badge>
+                              )}
+                              {isRec && <span className="text-[10px] text-primary ml-auto">★ recommended</span>}
+                            </div>
+                          </SelectItem>
+                        );
+                      })
+                    )}
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Suggestions filtered by {form.passengers} passenger(s) and {form.cargo_load} cargo.
+                </p>
                 {chosenProfile && (
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Capacity: {chosenProfile.capacity} · Cargo: {chosenProfile.cargo} · Tier: {COST_BAND_LABELS[chosenProfile.costBand]}
