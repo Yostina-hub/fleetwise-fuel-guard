@@ -158,19 +158,23 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
 
         {/* Body */}
         <div className="px-6 py-6 min-h-[260px] flex flex-col">
-          {step < 3 ? (
-            <div key={step} className="flex flex-col items-center text-center animate-in fade-in slide-in-from-right-4 duration-300">
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/30">
-                {React.createElement(STEPS[step].icon, { className: "h-7 w-7 text-primary" })}
+          {step < 3 ? (() => {
+            const s = STEPS[step as 0 | 1 | 2];
+            const Icon = s.icon;
+            return (
+              <div key={step} className="flex flex-col items-center text-center animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/30">
+                  <Icon className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold">{s.prompt}</h3>
+                <p className="text-sm text-muted-foreground mb-6">{s.help}</p>
+                <StarRating value={currentValue} onChange={setCurrent} size="lg" />
+                <p className="mt-6 text-xs text-muted-foreground">
+                  Step {step + 1} of {STEPS.length + 1}
+                </p>
               </div>
-              <h3 className="text-lg font-semibold">{STEPS[step].prompt}</h3>
-              <p className="text-sm text-muted-foreground mb-6">{STEPS[step].help}</p>
-              <StarRating value={currentValue} onChange={setCurrent} size="lg" />
-              <p className="mt-6 text-xs text-muted-foreground">
-                Step {step + 1} of {STEPS.length + 1}
-              </p>
-            </div>
-          ) : (
+            );
+          })() : (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-4">
               <div className="rounded-lg border border-border/60 bg-muted/30 p-4">
                 <div className="flex items-center justify-between mb-3">
