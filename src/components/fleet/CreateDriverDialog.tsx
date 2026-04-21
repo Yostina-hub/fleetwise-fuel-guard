@@ -123,7 +123,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
     { id: "personal",    label: "Personal",    icon: User,         fields: ["driver_type", "first_name", "middle_name", "last_name", "phone", "email", "date_of_birth"] },
     { id: "address",     label: "Address",     icon: MapPin,       fields: ["address_specific"] },
     { id: "legal",       label: "Legal & ID",  icon: CreditCard,   fields: ["govt_id_type", "license_number", "national_id", "license_issue_date", "license_expiry"] },
-    { id: "employment",  label: "Employment",  icon: Building2,    fields: ["status", "department", "joining_date", "experience_years"] },
+    { id: "employment",  label: "Employment",  icon: Building2,    fields: ["status", "department", "joining_date", "experience_years", "contract_end_date"] },
     { id: "emergency",   label: "Emergency",   icon: AlertCircle,  fields: ["emergency_contact_name", "emergency_contact_phone"] },
     { id: "credentials", label: "Account",     icon: Key,          fields: ["password"] },
   ];
@@ -577,14 +577,32 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
         <TabsContent value="employment" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<Building2 className="w-5 h-5 text-primary" />} title="Employment Details">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field label="Employment Status">
-                <Select value={formData.employment_type} onValueChange={v => set("employment_type", v)}>
+              <Field label="Employment Status" tooltip="Select the contract type. Contract drivers must have an end date.">
+                <Select value={formData.employment_type} onValueChange={v => { set("employment_type", v); if (v !== "contract") set("contract_end_date", ""); validation.validateField("contract_end_date" as DriverFieldName, formData.contract_end_date); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {EMPLOYMENT_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
+              {formData.employment_type === "contract" && (
+                <Field
+                  label="Contract End Date"
+                  required
+                  error={validation.getError("contract_end_date" as DriverFieldName)}
+                  fieldRef={registerRef("contract_end_date" as DriverFieldName)}
+                  tooltip="Date this contract expires. Must be in the future."
+                >
+                  <DatePickerField
+                    value={formData.contract_end_date}
+                    onChange={(v) => { set("contract_end_date", v); validation.validateField("contract_end_date" as DriverFieldName, v); }}
+                    onBlur={() => onBlur("contract_end_date" as DriverFieldName)}
+                    min={today()}
+                    placeholder="Select end date"
+                    ariaInvalid={!!validation.getError("contract_end_date" as DriverFieldName)}
+                  />
+                </Field>
+              )}
               <Field label="Driver Status" required error={validation.getError("status")}>
                 <Select value={formData.status} onValueChange={v => { set("status", v); validation.validateField("status", v); }}>
                   <SelectTrigger className={errClass("status")}><SelectValue /></SelectTrigger>
