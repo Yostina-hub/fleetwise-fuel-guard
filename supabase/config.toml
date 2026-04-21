@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.maintenance-auto-scheduler]
 verify_jwt = false
+
+[functions.idle-time-detector]
+verify_jwt = false
