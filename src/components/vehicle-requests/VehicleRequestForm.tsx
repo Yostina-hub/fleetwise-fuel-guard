@@ -1011,7 +1011,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <h3 className="text-base font-semibold text-foreground">Operation Type</h3>
             </div>
             <Label className="text-foreground font-medium text-sm">Vehicle Request Type</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {[
                 { v: "daily_operation", title: "Daily Operation", desc: "Single-day trip with start & end time", icon: Clock },
                 { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip (02:00 – 12:00 window)", icon: Moon },
@@ -1025,23 +1025,23 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     key={v}
                     type="button"
                     onClick={() => update("request_type", v)}
-                    className={`group relative text-left rounded-xl border p-3.5 transition-all ${
+                    className={`group relative text-left rounded-xl border p-4 transition-all ${
                       active
                         ? "border-primary/60 bg-primary/[0.04] shadow-sm ring-1 ring-primary/20"
                         : "border-border bg-card hover:border-border hover:bg-muted/30"
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 transition-colors ${
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 transition-colors ${
                         active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-5 h-5" />
                     </div>
                     <div className="font-medium text-sm text-foreground">{title}</div>
-                    <div className="text-[11px] text-muted-foreground mt-1 leading-snug">{desc}</div>
+                    <div className="text-xs text-muted-foreground mt-1 leading-snug">{desc}</div>
                     {active && (
-                      <CheckCircle2 className="absolute top-2.5 right-2.5 w-4 h-4 text-primary" />
+                      <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-primary" />
                     )}
                   </button>
                 );
