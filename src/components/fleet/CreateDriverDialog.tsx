@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CascadingLocationSelector } from "@/components/fleet/CascadingLocationSelector";
 import { useSubmitThrottle } from "@/hooks/useSubmitThrottle";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -30,6 +30,20 @@ import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
 import { useDriverValidation } from "./useDriverValidation";
 import type { DriverFieldName } from "./driverValidation";
+import { DatePickerField } from "@/components/shared/DatePickerField";
+import { useFormDraft } from "@/hooks/useFormDraft";
+import { DraftStatus } from "@/components/inbox/DraftStatus";
+
+/**
+ * Driver-of-birth must be at least 18 years ago. We compute this once at
+ * module-load time so the upper bound shifts naturally as time passes.
+ */
+const today = () => new Date().toISOString().split("T")[0];
+const MAX_DOB = (() => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  return d.toISOString().split("T")[0];
+})();
 
 const generatePassword = () => {
   const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
