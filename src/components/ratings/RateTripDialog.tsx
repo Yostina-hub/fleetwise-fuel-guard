@@ -139,22 +139,20 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
 
           {/* Step indicator */}
           <div className="relative mt-4 flex items-center gap-2">
-            {STEPS.map((s, i) => {
-              const done = i < step || (i <= 2 && [driver, vehicle, punctuality][i] > 0);
+            {[0, 1, 2, 3].map((i) => {
+              const ratings = [driver, vehicle, punctuality];
+              const done = i < step || (i <= 2 && ratings[i] > 0);
               const active = i === step;
               return (
-                <React.Fragment key={s.key}>
-                  <div className={cn(
+                <div
+                  key={i}
+                  className={cn(
                     "h-1.5 flex-1 rounded-full transition-all duration-300",
                     done ? "bg-primary" : active ? "bg-primary/40" : "bg-border",
-                  )} />
-                </React.Fragment>
+                  )}
+                />
               );
             })}
-            <div className={cn(
-              "h-1.5 flex-1 rounded-full transition-all duration-300",
-              step === 3 ? "bg-primary" : "bg-border",
-            )} />
           </div>
         </div>
 
