@@ -282,25 +282,31 @@ export const useDriversPaginated = (
 
   const refetch = useCallback(() => {
     isFirstLoad.current = false;
-    loadPage(currentPage);
+    loadPage(currentPage, { forceCountsRefresh: true });
   }, [loadPage, currentPage]);
 
   // Only treat the very first mount per organization as "initial loading"
   // so filter/sort changes do NOT trigger the full-page skeleton (avoids reload feel).
   const hasMountedRef = useRef(false);
   useEffect(() => {
-    if (!hasMountedRef.current) {
+    const isFirst = !hasMountedRef.current;
+    if (isFirst) {
       isFirstLoad.current = true;
       hasMountedRef.current = true;
     } else {
       isFirstLoad.current = false;
     }
-    loadPage(1);
+    // First mount = full fetch (incl counts). Subsequent filter/sort changes
+    // reuse cached counts/assignments => no extra round-trips, instant feel.
+    loadPage(1, { forceCountsRefresh: isFirst });
   }, [organizationId, searchQuery, statusFilter, driverTypeFilter, employmentTypeFilter, assignmentFilter, sortBy, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset the mount flag when org changes so a new org gets a fresh initial load
+  // Reset the mount + caches when org changes so a new org gets a fresh load
   useEffect(() => {
     hasMountedRef.current = false;
+    assignedCacheRef.current = null;
+    statusCountsCacheRef.current = null;
+    categoryCountsCacheRef.current = null;
   }, [organizationId]);
 
   useEffect(() => {
@@ -312,7 +318,8 @@ export const useDriversPaginated = (
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
           isFirstLoad.current = false;
-          loadPage(currentPage);
+          // Real driver changes => invalidate counts cache so badges stay accurate
+          loadPage(currentPage, { forceCountsRefresh: true });
         }, 500);
       })
       .subscribe();
