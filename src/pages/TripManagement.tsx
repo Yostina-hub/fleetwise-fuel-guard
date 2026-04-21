@@ -135,8 +135,9 @@ const TripManagement = () => {
   const [exportOpen, setExportOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
-  // Reject-reason prompt — approvers must explain why a request is rejected
-  // so the requester sees actionable feedback (no silent rejections).
+  // Reject prompt — approvers must explain the decision. Two outcomes:
+  //   • "revision" → bounce back to `pending` so the requester can edit & resubmit
+  //   • "final"    → permanent `rejected` (view-only thereafter)
   const [rejectTarget, setRejectTarget] = useState<{ tripId: string; requestNumber?: string } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
@@ -209,37 +210,53 @@ const TripManagement = () => {
     setRejectTarget({ tripId, requestNumber: req?.request_number });
   };
 
-  const submitReject = async () => {
+  const submitReject = async (mode: "revision" | "final") => {
     if (!rejectTarget) return;
     const reason = rejectReason.trim();
     if (!reason) {
-      toast.error("Rejection reason is required");
+      toast.error("Reason is required");
       return;
     }
     setRejectSubmitting(true);
     try {
-      const approval = pendingApprovals?.find(
-        (a: any) => a.trip_request_id === rejectTarget.tripId,
-      );
-      if (approval) {
-        await rejectRequest.mutateAsync({
-          approvalId: approval.id,
-          requestId: rejectTarget.tripId,
-          comment: reason,
-        });
+      if (mode === "final") {
+        // Permanent reject — also flip any open trip_approvals row so the
+        // legacy queue stays consistent.
+        const approval = pendingApprovals?.find(
+          (a: any) => a.trip_request_id === rejectTarget.tripId,
+        );
+        if (approval) {
+          await rejectRequest.mutateAsync({
+            approvalId: approval.id,
+            requestId: rejectTarget.tripId,
+            comment: reason,
+          });
+        } else {
+          const { error } = await (supabase as any)
+            .from("vehicle_requests")
+            .update({
+              status: "rejected",
+              approval_status: "rejected",
+              rejection_reason: reason,
+            })
+            .eq("id", rejectTarget.tripId);
+          if (error) throw error;
+          toast.success("Request rejected");
+        }
       } else {
-        // No legacy trip_approvals row — write rejection directly onto the
-        // unified vehicle_requests row so the requester sees the reason.
+        // Send back for revision — keep `status='pending'` so the requester's
+        // Edit/Delete actions remain enabled. Stash the reviewer note on
+        // rejection_reason so the requester sees what to fix.
         const { error } = await (supabase as any)
           .from("vehicle_requests")
           .update({
-            status: "rejected",
-            approval_status: "rejected",
+            status: "pending",
+            approval_status: "pending",
             rejection_reason: reason,
           })
           .eq("id", rejectTarget.tripId);
         if (error) throw error;
-        toast.success("Request rejected");
+        toast.success("Sent back to requester for revision");
       }
       setRejectTarget(null);
       setRejectReason("");
@@ -543,7 +560,10 @@ const TripManagement = () => {
   );
 };
 
-/* Small inline dialog component — kept here because it's only used by this page. */
+/* Two-mode reject dialog. The approver picks one of:
+   • "Send back for revision" — keeps the request pending and lets the
+     requester edit + resubmit. The reason becomes the reviewer note.
+   • "Reject permanently" — moves the request to terminal `rejected`. */
 function RejectReasonDialog({
   open, requestNumber, reason, onReasonChange, submitting, onCancel, onConfirm,
 }: {
@@ -553,39 +573,53 @@ function RejectReasonDialog({
   onReasonChange: (v: string) => void;
   submitting: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (mode: "revision" | "final") => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle>Reject vehicle request</DialogTitle>
           <DialogDescription>
             {requestNumber
-              ? <>Provide a reason for rejecting <span className="font-mono">{requestNumber}</span>. The requester will be notified.</>
-              : "Provide a reason — the requester will be notified."}
+              ? <>Choose how to reject <span className="font-mono">{requestNumber}</span>. The requester will see your reason.</>
+              : "Choose how to reject this request. The requester will see your reason."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          <Label htmlFor="rej-reason">Rejection reason *</Label>
+          <Label htmlFor="rej-reason">Reason *</Label>
           <Textarea
             id="rej-reason"
             value={reason}
             onChange={(e) => onReasonChange(e.target.value)}
-            placeholder="e.g. Vehicle not available on requested date"
+            placeholder="e.g. Wrong destination — please update and resubmit"
             rows={4}
             maxLength={500}
             autoFocus
           />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Send back for revision</span> lets the
+            requester edit and resubmit. <span className="font-medium text-foreground">Reject permanently</span> closes
+            the request — the requester can only view it.
+          </p>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel} disabled={submitting}>Cancel</Button>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="outline" onClick={onCancel} disabled={submitting}>
+            Cancel
+          </Button>
           <Button
-            variant="destructive"
-            onClick={onConfirm}
+            variant="secondary"
+            onClick={() => onConfirm("revision")}
             disabled={submitting || !reason.trim()}
           >
-            {submitting ? "Rejecting…" : "Confirm rejection"}
+            {submitting ? "Sending…" : "Send back for revision"}
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => onConfirm("final")}
+            disabled={submitting || !reason.trim()}
+          >
+            {submitting ? "Rejecting…" : "Reject permanently"}
           </Button>
         </DialogFooter>
       </DialogContent>
