@@ -131,9 +131,19 @@ export const VehicleListItem = ({
 
         {/* Plate Number + Make */}
         <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-foreground text-lg leading-tight">
-            {vehicle.plate}
-          </h4>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onProfile?.();
+            }}
+            className="text-left hover:text-primary transition-colors"
+            title="Open Vehicle Profile"
+          >
+            <h4 className="font-bold text-foreground text-lg leading-tight hover:text-primary">
+              {vehicle.plate}
+            </h4>
+          </button>
           <p className="text-xs text-muted-foreground truncate">
             {vehicle.make} {vehicle.model}
           </p>
