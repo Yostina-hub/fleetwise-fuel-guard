@@ -455,7 +455,7 @@ export const DriverViewRequestDialog = ({
 
                 <div className="rounded-lg border p-3 space-y-2">
                   <p className="text-sm font-medium flex items-center gap-1.5">
-                    <PlayCircle className="w-4 h-4 text-success" /> 2. Check In
+                    <PlayCircle className="w-4 h-4 text-success" /> Check In
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
