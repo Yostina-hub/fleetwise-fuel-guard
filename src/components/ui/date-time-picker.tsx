@@ -103,13 +103,15 @@ export function DateTimePicker({
             <Button
               variant="outline"
               disabled={disabled}
+              aria-invalid={error || undefined}
               className={cn(
                 "flex-1 justify-start text-left font-normal h-10",
                 !safeDate && "text-muted-foreground",
-                safeDate && "border-primary/40 bg-primary/5",
+                safeDate && !error && "border-primary/40 bg-primary/5",
+                error && "border-destructive ring-1 ring-destructive/30 focus-visible:ring-destructive/40",
               )}
             >
-              <CalendarIcon className={cn("mr-2 h-4 w-4 shrink-0", safeDate && "text-primary")} />
+              <CalendarIcon className={cn("mr-2 h-4 w-4 shrink-0", safeDate && !error && "text-primary", error && "text-destructive")} />
               <span className="truncate">
                 {safeDate ? smartLabel(safeDate) : placeholder}
               </span>
