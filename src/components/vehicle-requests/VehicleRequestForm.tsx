@@ -750,8 +750,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // user saw at the moment they submitted.
   const recommendation = useMemo(() => {
     if (!form.cargo_load) return null;
+    const raw = parseInt(form.passengers);
+    const pax = raw === NON_PASSENGER_SENTINEL ? 1 : (raw || 1);
     return recommendVehicleClass({
-      passengers: parseInt(form.passengers) || 1,
+      passengers: pax,
       cargo: form.cargo_load as CargoLoad,
     });
   }, [form.passengers, form.cargo_load]);
@@ -1168,13 +1170,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Layers className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Operation Type</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
               {[
                 { v: "daily_operation", title: "Daily Operation", desc: "Single-day trip with start & end time", icon: Clock },
                 { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip (02:00 – 12:00 window)", icon: Moon },
                 { v: "project_operation", title: "Project Operation", desc: "Multi-day, project-coded assignment", icon: Layers },
                 { v: "field_operation", title: "Field Operation", desc: "Extended off-base or field deployment", icon: Route },
                 { v: "group_operation", title: "Group Operation", desc: "Shared trip for a group of passengers", icon: Users },
+                { v: "delivery_operation", title: "Delivery", desc: "Motorcycle courier — packages & documents", icon: Bike },
               ].map(({ v, title, desc, icon: Icon }) => {
                 const active = form.request_type === v;
                 return (
