@@ -107,7 +107,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
 
   const currentValue = step === 0 ? driver : step === 1 ? vehicle : step === 2 ? punctuality : 0;
   const setCurrent = step === 0 ? setDriver : step === 1 ? setVehicle : setPunctuality;
-  const canProceed = step === 3 ? overall > 0 : currentValue > 0;
+  const canProceed = step === 3 ? overall > 0 : step === 4 ? true : currentValue > 0;
   const completedAt = trip.completed_at || trip.driver_checked_out_at;
 
   return (
@@ -142,7 +142,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
           <div className="relative mt-4 flex items-center gap-2">
             {[0, 1, 2, 3].map((i) => {
               const ratings = [driver, vehicle, punctuality];
-              const done = i < step || (i <= 2 && ratings[i] > 0);
+              const done = step === 4 || i < step || (i <= 2 && ratings[i] > 0);
               const active = i === step;
               return (
                 <div
