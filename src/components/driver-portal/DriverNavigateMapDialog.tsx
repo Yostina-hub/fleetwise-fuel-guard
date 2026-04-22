@@ -160,6 +160,10 @@ export const DriverNavigateMapDialog = ({
   // and a resize observer so the viewport stays correct inside the dialog.
   useEffect(() => {
     if (!open || !containerEl || map.current) return;
+    // Wait until the Lemat API key has been fetched — otherwise the style
+    // request will be made without authentication and the tiles won't load,
+    // leaving the dialog with a blank gray canvas.
+    if (!lematReady) return;
 
     let disposed = false;
     let resizeObserver: ResizeObserver | null = null;
@@ -174,7 +178,17 @@ export const DriverNavigateMapDialog = ({
     };
 
     const initMap = async () => {
-      const initialStyle = await fetchLematMapStyle(defaultMapStyle);
+      let initialStyle: any;
+      try {
+        initialStyle = await fetchLematMapStyle(defaultMapStyle);
+      } catch (err) {
+        console.error("[DriverNavigateMap] failed to load Lemat style", err);
+      }
+      // Fallback to a free public style so the dialog never shows a blank
+      // canvas if Lemat is unreachable.
+      if (!initialStyle) {
+        initialStyle = "https://demotiles.maplibre.org/style.json";
+      }
       if (disposed || !containerEl || map.current) return;
 
       const nextMap = new maplibregl.Map({
@@ -190,6 +204,9 @@ export const DriverNavigateMapDialog = ({
       nextMap.addControl(new maplibregl.FullscreenControl(), "top-right");
       nextMap.on("load", forceResize);
       nextMap.on("style.load", forceResize);
+      nextMap.on("error", (e) => {
+        console.error("[DriverNavigateMap] maplibre error", e?.error || e);
+      });
 
       resizeTimer = setTimeout(forceResize, 250);
 
@@ -212,7 +229,7 @@ export const DriverNavigateMapDialog = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [open, containerEl, defaultMapStyle, lematApiKey]);
+  }, [open, containerEl, defaultMapStyle, lematApiKey, lematReady]);
 
   // Poll the latest GPS position for the assigned vehicle every 10s
   useEffect(() => {
