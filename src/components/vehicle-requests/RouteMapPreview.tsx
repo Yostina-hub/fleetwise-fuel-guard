@@ -31,6 +31,45 @@ interface RouteMapPreviewProps {
   heightPx?: number;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function getPointLabel(point: RoutePoint & { kind: "departure" | "stop" | "destination"; index?: number }): string {
+  const trimmed = point.label?.trim();
+  if (trimmed) return trimmed;
+  if (point.kind === "departure") return "Departure";
+  if (point.kind === "destination") return "Destination";
+  return `Stop ${point.index}`;
+}
+
+function buildPopupHtml(label: string): string {
+  return `
+    <div
+      style="
+        min-width: 180px;
+        max-width: 280px;
+        padding: 10px 12px;
+        background: hsl(var(--popover));
+        color: hsl(var(--popover-foreground));
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.45;
+        white-space: normal;
+        word-break: break-word;
+      "
+    >
+      ${escapeHtml(label)}
+    </div>
+  `;
+}
+
 /** Haversine distance in km between two lat/lng points. */
 function haversineKm(a: RoutePoint, b: RoutePoint): number | null {
   if (a.lat == null || a.lng == null || b.lat == null || b.lng == null) return null;
@@ -182,6 +221,7 @@ export function RouteMapPreview({
     // Render markers
     orderedPoints.forEach((p) => {
       if (p.lat == null || p.lng == null) return;
+      const popupLabel = getPointLabel(p);
       const el = document.createElement("div");
       el.style.display = "flex";
       el.style.alignItems = "center";
@@ -207,8 +247,8 @@ export function RouteMapPreview({
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([p.lng, p.lat])
         .setPopup(
-          new maplibregl.Popup({ offset: 14, closeButton: false }).setText(
-            p.label || (p.kind === "departure" ? "Departure" : p.kind === "destination" ? "Destination" : `Stop ${p.index}`)
+          new maplibregl.Popup({ offset: 14, closeButton: false, maxWidth: "300px" }).setHTML(
+            buildPopupHtml(popupLabel)
           )
         )
         .addTo(map);
