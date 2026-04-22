@@ -56,6 +56,12 @@ export function RouteMapPreview({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const [ready, setReady] = useState(false);
+  // Real driving route (fetched from OSRM). null = not loaded / falls back to straight line.
+  const [routeGeometry, setRouteGeometry] = useState<[number, number][] | null>(null);
+  const [routeKm, setRouteKm] = useState<number | null>(null);
+  const [routeMin, setRouteMin] = useState<number | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [routeFailed, setRouteFailed] = useState(false);
 
   // Build the ordered list of valid points
   const orderedPoints: Array<RoutePoint & { kind: "departure" | "stop" | "destination"; index?: number }> = [];
@@ -71,12 +77,59 @@ export function RouteMapPreview({
     orderedPoints.push({ ...destination, kind: "destination" });
   }
 
-  // Total estimated distance (sum of leg straight-line distances)
+  // Total estimated straight-line distance (used as fallback when routing unavailable)
   const totalKm = orderedPoints.reduce((sum, _p, i) => {
     if (i === 0) return 0;
     const d = haversineKm(orderedPoints[i - 1], orderedPoints[i]);
     return d != null ? sum + d : sum;
   }, 0);
+
+  // Fetch the real driving route from OSRM whenever the ordered points change.
+  // OSRM public demo server: https://router.project-osrm.org
+  // Returns full geometry (geojson) so we can draw the actual road path.
+  useEffect(() => {
+    const valid = orderedPoints.filter((p) => p.lat != null && p.lng != null);
+    if (valid.length < 2) {
+      setRouteGeometry(null);
+      setRouteKm(null);
+      setRouteMin(null);
+      setRouteFailed(false);
+      return;
+    }
+    const coordsParam = valid.map((p) => `${p.lng},${p.lat}`).join(";");
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordsParam}?overview=full&geometries=geojson`;
+    const controller = new AbortController();
+    setRouteLoading(true);
+    setRouteFailed(false);
+    fetch(url, { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`OSRM ${r.status}`))))
+      .then((json) => {
+        const route = json?.routes?.[0];
+        const coords: [number, number][] | undefined = route?.geometry?.coordinates;
+        if (coords && coords.length >= 2) {
+          setRouteGeometry(coords);
+          setRouteKm(route.distance ? route.distance / 1000 : null);
+          setRouteMin(route.duration ? route.duration / 60 : null);
+        } else {
+          setRouteGeometry(null);
+          setRouteFailed(true);
+        }
+      })
+      .catch(() => {
+        setRouteGeometry(null);
+        setRouteFailed(true);
+      })
+      .finally(() => setRouteLoading(false));
+
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    departure?.lat,
+    departure?.lng,
+    destination?.lat,
+    destination?.lng,
+    JSON.stringify(stops?.map((s) => [s.lat, s.lng])),
+  ]);
 
   // Init map once
   useEffect(() => {
@@ -157,17 +210,20 @@ export function RouteMapPreview({
       markersRef.current.push(marker);
     });
 
-    // Render route line (dashed connector through all points in order)
-    const lineCoords = orderedPoints
+    // Render route line: prefer real driving geometry from OSRM, fall back to
+    // the dashed straight-line connector when routing isn't available yet.
+    const straightLineCoords = orderedPoints
       .filter((p) => p.lat != null && p.lng != null)
       .map((p) => [p.lng as number, p.lat as number] as [number, number]);
 
     const ROUTE_SOURCE = "vr-route-line";
     const ROUTE_LAYER = "vr-route-line-layer";
+    const ROUTE_CASING_LAYER = "vr-route-line-casing";
 
     const removeRouteLayer = () => {
       try {
         if (map.getLayer(ROUTE_LAYER)) map.removeLayer(ROUTE_LAYER);
+        if (map.getLayer(ROUTE_CASING_LAYER)) map.removeLayer(ROUTE_CASING_LAYER);
         if (map.getSource(ROUTE_SOURCE)) map.removeSource(ROUTE_SOURCE);
       } catch {
         /* noop */
@@ -175,38 +231,69 @@ export function RouteMapPreview({
     };
     removeRouteLayer();
 
-    if (lineCoords.length >= 2) {
+    const useRealRoute = !!(routeGeometry && routeGeometry.length >= 2);
+    const drawnCoords: [number, number][] | null = useRealRoute
+      ? routeGeometry
+      : straightLineCoords.length >= 2
+        ? straightLineCoords
+        : null;
+
+    if (drawnCoords) {
       map.addSource(ROUTE_SOURCE, {
         type: "geojson",
         data: {
           type: "Feature",
           properties: {},
-          geometry: { type: "LineString", coordinates: lineCoords },
+          geometry: { type: "LineString", coordinates: drawnCoords },
         },
       });
+      // Soft white casing under the real route for readability
+      if (useRealRoute) {
+        map.addLayer({
+          id: ROUTE_CASING_LAYER,
+          type: "line",
+          source: ROUTE_SOURCE,
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": "#ffffff",
+            "line-width": 7,
+            "line-opacity": 0.9,
+          },
+        });
+      }
       map.addLayer({
         id: ROUTE_LAYER,
         type: "line",
         source: ROUTE_SOURCE,
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": "hsl(217 91% 60%)",
-          "line-width": 4,
-          "line-opacity": 0.85,
-          "line-dasharray": [2, 1.5],
-        },
+        paint: useRealRoute
+          ? {
+              "line-color": "hsl(217 91% 55%)",
+              "line-width": 4.5,
+              "line-opacity": 0.95,
+            }
+          : {
+              "line-color": "hsl(217 91% 60%)",
+              "line-width": 4,
+              "line-opacity": 0.85,
+              "line-dasharray": [2, 1.5],
+            },
       });
     }
 
-    // Auto-fit bounds
-    if (orderedPoints.length === 1) {
+    // Auto-fit bounds — include the full route geometry if we have it so the
+    // entire driving path is visible, not just the markers.
+    if (orderedPoints.length === 1 && !useRealRoute) {
       const only = orderedPoints[0];
       map.flyTo({ center: [only.lng as number, only.lat as number], zoom: 13, essential: true });
-    } else if (orderedPoints.length >= 2) {
+    } else if (orderedPoints.length >= 2 || useRealRoute) {
       const bounds = new maplibregl.LngLatBounds();
       orderedPoints.forEach((p) => {
         if (p.lat != null && p.lng != null) bounds.extend([p.lng, p.lat]);
       });
+      if (useRealRoute) {
+        routeGeometry!.forEach((c) => bounds.extend(c));
+      }
       try {
         map.fitBounds(bounds, { padding: 48, maxZoom: 14, duration: 600 });
       } catch {
@@ -221,6 +308,7 @@ export function RouteMapPreview({
     destination?.lat,
     destination?.lng,
     JSON.stringify(stops?.map((s) => [s.lat, s.lng])),
+    routeGeometry,
   ]);
 
   const hasAny = orderedPoints.length > 0;
@@ -259,12 +347,26 @@ export function RouteMapPreview({
             <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white bg-destructive">B</span>
             <span className="text-muted-foreground">Destination</span>
           </div>
-          {totalKm > 0 && (
+          {routeKm != null ? (
+            <Badge variant="secondary" className="self-start gap-1 text-[11px] font-medium shadow-sm">
+              <Route className="w-3 h-3" />
+              {routeKm.toFixed(1)} km via roads
+              {routeMin != null && (
+                <span className="text-muted-foreground/80">· ~{Math.max(1, Math.round(routeMin))} min</span>
+              )}
+            </Badge>
+          ) : routeLoading ? (
+            <Badge variant="secondary" className="self-start gap-1 text-[11px] font-medium shadow-sm opacity-80">
+              <Route className="w-3 h-3 animate-pulse" />
+              Calculating road route…
+            </Badge>
+          ) : totalKm > 0 ? (
             <Badge variant="secondary" className="self-start gap-1 text-[11px] font-medium shadow-sm">
               <Ruler className="w-3 h-3" />
               ~{totalKm.toFixed(1)} km straight-line
+              {routeFailed && <span className="text-muted-foreground/70">· road route unavailable</span>}
             </Badge>
-          )}
+          ) : null}
         </div>
       )}
       {hasAny && (orderedPoints.length === 1) && (
