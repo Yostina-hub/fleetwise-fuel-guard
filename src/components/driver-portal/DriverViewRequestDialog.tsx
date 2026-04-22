@@ -291,7 +291,7 @@ export const DriverViewRequestDialog = ({
   const requesterName =
     requesterNameDirect || profileFullName(requesterInfo?.profile) || profileFullName(requesterInfo?.employee) || null;
   const requesterPhone =
-    requesterInfo?.profile?.phone || requesterInfo?.employee?.phone || parseEmbeddedContactPhone(request.purpose) || null;
+    requesterInfo?.profile?.phone || requesterInfo?.employee?.phone || parseEmbeddedContactPhone(request?.purpose) || null;
   const requesterEmail = requesterInfo?.profile?.email || requesterInfo?.employee?.email || null;
 
   const assignerName = profileFullName(assignerInfo?.profile) || profileFullName(assignerInfo?.employee);
