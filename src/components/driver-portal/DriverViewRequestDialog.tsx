@@ -17,7 +17,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import {
-  sanitizeNumeric,
   sanitizeWhileTyping,
   inputStatusClass,
 } from "@/components/fleet/formSanitizers";
