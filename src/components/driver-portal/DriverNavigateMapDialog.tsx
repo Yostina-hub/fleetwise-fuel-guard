@@ -160,10 +160,9 @@ export const DriverNavigateMapDialog = ({
   // and a resize observer so the viewport stays correct inside the dialog.
   useEffect(() => {
     if (!open || !containerEl || map.current) return;
-    // Wait until the Lemat API key has been fetched — otherwise the style
-    // request will be made without authentication and the tiles won't load,
-    // leaving the dialog with a blank gray canvas.
-    if (!lematReady) return;
+    // Do not block map creation on the Lemat key hook.
+    // In preview the key fetch can lag or fail, and waiting here leaves the
+    // dialog as a blank panel because MapLibre never mounts at all.
 
     let disposed = false;
     let resizeObserver: ResizeObserver | null = null;
@@ -178,41 +177,54 @@ export const DriverNavigateMapDialog = ({
     };
 
     const initMap = async () => {
-      let initialStyle: any;
       try {
-        initialStyle = await fetchLematMapStyle(defaultMapStyle);
+        const initialStyle = await fetchLematMapStyle(defaultMapStyle);
+        if (disposed || !containerEl || map.current) return;
+
+        const nextMap = new maplibregl.Map({
+          container: containerEl,
+          style: initialStyle,
+          center: [38.7578, 9.03],
+          zoom: 11,
+          transformRequest: createLematTransformRequest(lematApiKey),
+        });
+
+        let styleRecoveryTried = false;
+        nextMap.addControl(new maplibregl.NavigationControl(), "top-right");
+        nextMap.addControl(new maplibregl.FullscreenControl(), "top-right");
+        nextMap.on("load", forceResize);
+        nextMap.on("style.load", forceResize);
+        nextMap.on("error", (event) => {
+          const failedUrl = (event?.error as { url?: string } | undefined)?.url || "";
+          const isStyleFailure =
+            failedUrl.includes("/tiles/style") ||
+            failedUrl.includes("/tiles/") ||
+            failedUrl.includes("basemaps.cartocdn.com") ||
+            failedUrl.includes("tile.openstreetmap.org");
+
+          if (isStyleFailure && !styleRecoveryTried) {
+            styleRecoveryTried = true;
+            fetchLematMapStyle(defaultMapStyle)
+              .then((style) => {
+                try {
+                  nextMap.setStyle(style);
+                } catch {
+                  // keep existing style if the swap fails
+                }
+              })
+              .catch(() => {});
+          }
+          console.error("[DriverNavigateMap] maplibre error", event?.error || event);
+        });
+
+        resizeTimer = setTimeout(forceResize, 250);
+
+        if (typeof ResizeObserver !== "undefined") {
+          resizeObserver = new ResizeObserver(() => forceResize());
+          resizeObserver.observe(containerEl);
+        }
       } catch (err) {
-        console.error("[DriverNavigateMap] failed to load Lemat style", err);
-      }
-      // Fallback to a free public style so the dialog never shows a blank
-      // canvas if Lemat is unreachable.
-      if (!initialStyle) {
-        initialStyle = "https://demotiles.maplibre.org/style.json";
-      }
-      if (disposed || !containerEl || map.current) return;
-
-      const nextMap = new maplibregl.Map({
-        container: containerEl,
-        style: initialStyle,
-        center: [38.7578, 9.03],
-        zoom: 11,
-        transformRequest: createLematTransformRequest(lematApiKey),
-      });
-
-      map.current = nextMap;
-      nextMap.addControl(new maplibregl.NavigationControl(), "top-right");
-      nextMap.addControl(new maplibregl.FullscreenControl(), "top-right");
-      nextMap.on("load", forceResize);
-      nextMap.on("style.load", forceResize);
-      nextMap.on("error", (e) => {
-        console.error("[DriverNavigateMap] maplibre error", e?.error || e);
-      });
-
-      resizeTimer = setTimeout(forceResize, 250);
-
-      if (typeof ResizeObserver !== "undefined") {
-        resizeObserver = new ResizeObserver(() => forceResize());
-        resizeObserver.observe(containerEl);
+        console.error("[DriverNavigateMap] map initialization failed", err);
       }
     };
 
