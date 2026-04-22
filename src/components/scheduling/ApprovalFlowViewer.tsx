@@ -124,7 +124,7 @@ export const ApprovalFlowViewer = ({ requestId }: ApprovalFlowViewerProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Approval History</CardTitle>
+        <CardTitle className="text-base">Approved By</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
