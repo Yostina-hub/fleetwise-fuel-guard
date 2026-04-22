@@ -22,11 +22,9 @@ serve(async (req) => {
       return secureJsonResponse({ error: "Missing authorization header" }, req, 401);
     }
     const token = authHeader.replace("Bearer ", "");
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
-    if (authError || !claimsData?.claims?.sub) {
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: userData, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !userData?.user) {
       console.error("Auth verification failed:", authError);
       return secureJsonResponse({ error: "Unauthorized" }, req, 401);
     }
