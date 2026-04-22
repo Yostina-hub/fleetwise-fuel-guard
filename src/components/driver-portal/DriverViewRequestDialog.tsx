@@ -514,7 +514,7 @@ export const DriverViewRequestDialog = ({
 
             {stage === "in_trip" && (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Button
                     variant="outline"
                     className="justify-start gap-2"
@@ -528,9 +528,6 @@ export const DriverViewRequestDialog = ({
                   </Button>
                   <Button variant="outline" className="justify-start gap-2" onClick={onRequestFuel}>
                     <Fuel className="w-4 h-4" /> Request Fuel
-                  </Button>
-                  <Button variant="outline" className="justify-start gap-2" onClick={onPostTrip}>
-                    <ClipboardCheck className="w-4 h-4" /> Post-Trip
                   </Button>
                 </div>
 
