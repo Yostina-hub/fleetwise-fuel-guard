@@ -152,6 +152,7 @@ const buildInitialForm = () => ({
   // Resource-aware request fields (demand-shaping pattern).
   purpose_category: "" as string,                  // business taxonomy — required
   cargo_load: "" as CargoLoad | "",                // mandatory — drives recommendation engine
+  cargo_weight_kg: "" as string,                   // optional — total cargo weight (kg) checked against vehicle max payload
   vehicle_type_justification: "" as string,        // required when user upgrades over recommendation
 });
 
@@ -296,7 +297,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     project_operation: 7,
     field_operation: 1,
     group_operation: 0,
-    delivery_operation: 0,
+    messenger_service: 0,
+    delivery_operation: 0, // legacy alias — kept so old drafts still resolve
   };
 
   // While impersonating, force the form to file the request as the impersonated
@@ -463,6 +465,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         pool_category: sanitizedForm.pool_category,
         priority: sanitizedForm.priority,
         cargo_load: (form as any).cargo_load,
+        cargo_weight_kg: (form as any).cargo_weight_kg === "" ? null : (form as any).cargo_weight_kg,
         vehicle_type_justification: (form as any).vehicle_type_justification,
       });
       if (!parsed.success) {
@@ -566,6 +569,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         // Resource-aware request audit fields.
         purpose_category: safe.purpose_category || null,
         cargo_load: safe.cargo_load || null,
+        cargo_weight_kg:
+          (safe as any).cargo_weight_kg && Number((safe as any).cargo_weight_kg) > 0
+            ? Number((safe as any).cargo_weight_kg)
+            : null,
         recommended_vehicle_type: recommendation?.value || null,
         vehicle_type_justification:
           isUpgrade && safe.vehicle_type_justification?.trim()
@@ -698,7 +705,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // sections / fields render for the current request_type. Keeps JSX free
   // of inline boolean spaghetti and makes the rules unit-testable.
   const visibility = useMemo(() => deriveVisibility(form.request_type), [form.request_type]);
-  const { isNighttime, isDaily, isProject, isField, isDelivery, allowsMultipleVehicles } = visibility;
+  const { isNighttime, isDaily, isProject, isField, isMessenger, allowsMultipleVehicles } = visibility;
   useEffect(() => {
     if (!allowsMultipleVehicles && form.num_vehicles !== "1") {
       setForm((f) => ({ ...f, num_vehicles: "1" }));
@@ -706,12 +713,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowsMultipleVehicles]);
 
-  // Delivery operations are courier-style: motorcycle/scooter/bicycle only,
-  // no passengers (driver only). When the user picks Delivery we force the
+  // Messenger Service is courier-style: motorcycle/scooter/bicycle only,
+  // no passengers (driver only). When the user picks Messenger we force the
   // vehicle_type to motorbike (the operational default) and clear cargo to
   // "small" so the recommender can resolve.
   useEffect(() => {
-    if (!isDelivery) return;
+    if (!isMessenger) return;
     setForm((f) => ({
       ...f,
       vehicle_type: f.vehicle_type && ["motorbike", "scooter", "bicycle"].includes(f.vehicle_type)
@@ -722,7 +729,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       num_vehicles: "1",
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDelivery]);
+  }, [isMessenger]);
+
+  // Conversely, if the user switches AWAY from Messenger Service while the
+  // vehicle_type is still a courier-only class (motorbike/scooter/bicycle),
+  // clear it so the recommender can pick a regular passenger/cargo class.
+  useEffect(() => {
+    if (isMessenger) return;
+    if (form.vehicle_type && ["motorbike", "scooter", "bicycle"].includes(form.vehicle_type)) {
+      setForm((f) => ({ ...f, vehicle_type: "" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMessenger]);
 
   // Dynamic end-date: auto-derive from start_date + operation-type default.
   // Only fills when end_date is empty so a manual override is preserved.
@@ -761,9 +779,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   }, [isDaily, form.date, form.start_time, form.end_time, form.start_date, form.end_date]);
 
   // ── Resource-aware recommendation (demand-shaping) ────────────────────────
-  // Recompute whenever passengers or cargo change. Stays a pure derivation
-  // so the audit field `recommended_vehicle_type` always reflects what the
-  // user saw at the moment they submitted.
+  // Recompute whenever passengers, cargo, or weight change. Stays a pure
+  // derivation so the audit field `recommended_vehicle_type` always reflects
+  // what the user saw at the moment they submitted.
+  const cargoWeightKgNum = useMemo(() => {
+    const n = Number(form.cargo_weight_kg);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }, [form.cargo_weight_kg]);
+
   const recommendation = useMemo(() => {
     if (!form.cargo_load) return null;
     const raw = parseInt(form.passengers);
@@ -771,13 +794,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     return recommendVehicleClass({
       passengers: pax,
       cargo: form.cargo_load as CargoLoad,
+      cargoWeightKg: cargoWeightKgNum || null,
+      courierOnly: isMessenger,
     });
-  }, [form.passengers, form.cargo_load]);
+  }, [form.passengers, form.cargo_load, cargoWeightKgNum, isMessenger]);
 
-  // Eligible vehicle types — driven by passengers + cargo (the previously
-  // selected fields). Only types that can actually carry the requested load
-  // are surfaced so users can't pick something that won't fit. Recommended
-  // type floats to the top, then by cost-band rank.
+  // Eligible vehicle types — driven by passengers + cargo + weight + service
+  // type. Only types that can actually carry the requested load are surfaced
+  // so users can't pick something that won't fit. Recommended type floats
+  // to the top, then by cost-band rank. Motorbikes/scooters/bicycles are
+  // restricted to Messenger Service only.
   const eligibleVehicleTypes = useMemo(() => {
     const passengersRaw = parseInt(form.passengers);
     const passengers = passengersRaw === NON_PASSENGER_SENTINEL
@@ -790,32 +816,37 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       .filter(({ profile }) => {
         if (!profile) return false;
         if (profile.costBand === "specialised") return false; // dispatcher-only
+        // Courier-only classes (motorbike/scooter/bicycle) are restricted to
+        // Messenger Service. Conversely, Messenger Service shows ONLY courier
+        // classes — staff cannot order an SUV under "Messenger Service".
+        if (isMessenger) {
+          if (!profile.courierOnly) return false;
+        } else {
+          if (profile.courierOnly) return false;
+        }
         if (passengers > 0 && profile.capacity < passengers) return false;
         if (cargoOrder[profile.cargo] < cargoNeeded) return false;
+        if (cargoWeightKgNum > 0 && profile.maxPayloadKg < cargoWeightKgNum) return false;
         return true;
       });
-    // Delivery operations are restricted to courier-class vehicles only.
-    if (isDelivery) {
-      list = list.filter(({ vt }) => ["motorbike", "scooter", "bicycle"].includes(vt.value));
-    }
     return list.sort((a, b) => {
       const aRec = recommendation?.value === a.vt.value ? -1 : 0;
       const bRec = recommendation?.value === b.vt.value ? -1 : 0;
       if (aRec !== bRec) return aRec - bRec;
       return (a.profile!.rank) - (b.profile!.rank);
     });
-  }, [form.passengers, form.cargo_load, recommendation?.value, isDelivery]);
+  }, [form.passengers, form.cargo_load, cargoWeightKgNum, recommendation?.value, isMessenger]);
 
   // Auto-fill vehicle_type with the recommendation when the user hasn't
   // touched it yet. Manual edits are preserved.
   useEffect(() => {
     if (!recommendation) return;
-    if (isDelivery) return; // delivery uses its own forced default
+    if (isMessenger) return; // messenger service uses its own forced default
     if (!form.vehicle_type) {
       setForm((f) => ({ ...f, vehicle_type: recommendation.value }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recommendation?.value, isDelivery]);
+  }, [recommendation?.value, isMessenger]);
 
   // Keep `passengers` in sync with the chosen vehicle_type. Cargo / courier
   // classes (anything not in PASSENGER_VEHICLE_VALUES) store -1 to mean
@@ -1193,7 +1224,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 { v: "project_operation", title: "Project Operation", desc: "Multi-day, project-coded assignment", icon: Layers },
                 { v: "field_operation", title: "Field Operation", desc: "Extended off-base or field deployment", icon: Route },
                 { v: "group_operation", title: "Group Operation", desc: "Shared trip for a group of passengers", icon: Users },
-                { v: "delivery_operation", title: "Motorist (Messenger) Service", desc: "Motorcycle courier — packages & documents", icon: Bike },
+                { v: "messenger_service", title: "Messenger Service", desc: "Motorcycle courier — packages & documents", icon: Bike },
               ].map(({ v, title, desc, icon: Icon }) => {
                 const active = form.request_type === v;
                 return (
@@ -1417,6 +1448,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 iconColor="text-red-500"
               />
             </div>
+            {/* Combined route preview map — A → numbered stops → B */}
+            <RouteMapPreview
+              departure={{ lat: form.departure_lat, lng: form.departure_lng, label: form.departure_place }}
+              destination={{ lat: form.destination_lat, lng: form.destination_lng, label: form.destination }}
+              stops={form.stops.map((s) => ({ lat: s.lat, lng: s.lng, label: s.name }))}
+            />
             {/* Coordinate previews intentionally removed — the map picker
                 already auto-fills a human-readable place name, and showing
                 raw lat/lng under the route fields looked unprofessional. */}
@@ -1632,6 +1669,46 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 )}
               </div>
 
+              {/* Total cargo weight (kg) — validated against the chosen vehicle's max payload. */}
+              <div>
+                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
+                  Total Cargo Weight (kg)
+                  <FieldHint>
+                    Optional but recommended. The system blocks vehicles whose payload capacity is below this weight.
+                  </FieldHint>
+                </Label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={50000}
+                    step={1}
+                    value={form.cargo_weight_kg}
+                    onChange={(e) => update("cargo_weight_kg", e.target.value)}
+                    onBlur={(e) => handleBlur("vehicle_type", form.vehicle_type, { ...form, cargo_weight_kg: e.target.value } as any)}
+                    placeholder="e.g. 250"
+                    className="h-12 text-base pr-12"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                    kg
+                  </span>
+                </div>
+                {chosenProfile && cargoWeightKgNum > 0 && (
+                  <p
+                    className={`text-xs mt-1 ${
+                      chosenProfile.maxPayloadKg >= cargoWeightKgNum
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-destructive"
+                    }`}
+                  >
+                    {chosenProfile.maxPayloadKg >= cargoWeightKgNum
+                      ? `✓ ${chosenProfile.label} carries up to ${chosenProfile.maxPayloadKg.toLocaleString()} kg — within capacity.`
+                      : `✗ ${chosenProfile.label} max payload is ${chosenProfile.maxPayloadKg.toLocaleString()} kg. Pick a larger class.`}
+                  </p>
+                )}
+              </div>
+
               {/* Resource-aware recommendation banner — pure derivation from passengers + cargo */}
               {recommendation && (
                 <div className=" rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2 animate-fade-in">
@@ -1695,11 +1772,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     )}
                   </SelectContent>
                 </Select>
-                {chosenProfile && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Capacity: {chosenProfile.capacity} · Cargo: {chosenProfile.cargo} · Tier: {COST_BAND_LABELS[chosenProfile.costBand]}
-                  </p>
-                )}
+                {/* Capacity / Cargo / Tier info intentionally not duplicated here —
+                    the recommendation banner above already surfaces this for the
+                    selected class. */}
               </div>
 
               {/* Justification — only shown when over-spec'd */}
@@ -1929,14 +2004,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 maxLength={1000}
               />
             </VRField>
-            <div className="rounded-lg border border-border bg-gradient-to-br from-muted/50 to-muted/20 p-4 text-xs text-muted-foreground space-y-2">
-              <p className="font-medium text-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Approval Routing</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1">
-                <div className="rounded-md bg-background/60 border border-border/50 p-2"><span className="font-medium text-foreground">≤15 days</span> → Immediate Manager</div>
-                <div className="rounded-md bg-background/60 border border-border/50 p-2"><span className="font-medium text-foreground">&gt;15 days</span> → Director</div>
-                <div className="rounded-md bg-background/60 border border-border/50 p-2"><span className="font-medium text-foreground">Managers+</span> → Auto-approved</div>
-              </div>
-            </div>
+            {/* Approval Routing block intentionally removed — routing is handled
+                automatically server-side via route_vehicle_request_approval and
+                surfaced to approvers in their own queue. */}
           </section>
         </div>
       </div>
