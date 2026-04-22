@@ -526,7 +526,7 @@ export const DriverNavigateMapDialog = ({
         </div>
 
         <div className="relative flex-1 min-h-[420px] rounded-lg overflow-hidden border">
-          <div ref={mapContainer} className="absolute inset-0" />
+          <div ref={setContainerEl} className="absolute inset-0" />
           {(resolving || (!origin && !destination)) && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
               {resolving ? (
