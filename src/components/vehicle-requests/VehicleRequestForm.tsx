@@ -1552,17 +1552,36 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 label="No. Of Passengers"
                 icon={Users}
                 error={getError("passengers")}
-                tooltip="Enter passengers excluding the driver (i.e. seats needed minus 1)."
+                tooltip={
+                  isPassengerVehicleType(form.vehicle_type)
+                    ? "Enter passengers excluding the driver (i.e. seats needed minus 1)."
+                    : "Not applicable — this vehicle class is for cargo or courier use (driver only). Stored as -1."
+                }
               >
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={form.passengers}
-                  onChange={e => update("passengers", e.target.value)}
-                  onBlur={e => handleBlur("passengers", e.target.value, form as any)}
-                  className="h-12 text-base"
-                />
+                {isPassengerVehicleType(form.vehicle_type) ? (
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={form.passengers}
+                    onChange={e => update("passengers", e.target.value)}
+                    onBlur={e => handleBlur("passengers", e.target.value, form as any)}
+                    className="h-12 text-base"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="text"
+                      value="N/A (driver only)"
+                      readOnly
+                      disabled
+                      className="h-12 text-base bg-muted/40"
+                    />
+                    <Badge variant="outline" className="text-xs whitespace-nowrap">
+                      stored as -1
+                    </Badge>
+                  </div>
+                )}
               </VRField>
               <div>
                 <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
