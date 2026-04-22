@@ -263,38 +263,31 @@ export default function TripReviews() {
           </div>
         </div>
 
-        {/* KPI cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <KpiCard
-            label="Total reviews"
-            value={stats.total}
-            icon={MessageSquare}
+        {/* KPI cards — averages */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <AvgKpiCard
+            label="Avg Driver"
+            value={stats.avgDriver}
+            icon={UserRound}
+            tone="info"
+          />
+          <AvgKpiCard
+            label="Avg Vehicle"
+            value={stats.avgVehicle}
+            icon={Car}
             tone="muted"
           />
-          <KpiCard
-            label="Avg rating"
-            value={stats.avg ? stats.avg.toFixed(1) : "—"}
-            suffix={stats.avg ? "/ 5" : undefined}
-            icon={Star}
-            tone="amber"
-          />
-          <KpiCard
-            label="Positive (4-5★)"
-            value={stats.positive}
-            icon={ThumbsUp}
+          <AvgKpiCard
+            label="Avg Punctuality"
+            value={stats.avgPunctuality}
+            icon={Clock}
             tone="success"
           />
-          <KpiCard
-            label="Needs attention"
-            value={stats.negative}
-            icon={AlertTriangle}
-            tone={stats.negative > 0 ? "warning" : "muted"}
-          />
-          <KpiCard
-            label="Open disputes"
-            value={stats.disputes}
-            icon={AlertTriangle}
-            tone={stats.disputes > 0 ? "destructive" : "muted"}
+          <AvgKpiCard
+            label="Avg Overall"
+            value={stats.avgOverall}
+            icon={Star}
+            tone="amber"
           />
         </div>
 
@@ -302,13 +295,18 @@ export default function TripReviews() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <CardTitle className="text-base">Reviews</CardTitle>
+              <div>
+                <CardTitle className="text-base">Reviews</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {stats.total} total · {stats.positive} positive · {stats.negative} needs attention · {stats.disputes} open disputes
+                </p>
+              </div>
               <div className="relative w-full md:w-72">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search request, driver, vehicle, comment…"
+                  placeholder="Search user, driver, vehicle, comment…"
                   className="pl-8"
                 />
               </div>
@@ -326,11 +324,11 @@ export default function TripReviews() {
               </TabsList>
             </Tabs>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {isLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-24 w-full" />
+              <div className="space-y-3 p-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
             ) : filtered.length === 0 ? (
@@ -339,10 +337,28 @@ export default function TripReviews() {
                 <p className="text-sm">No reviews match your filter yet.</p>
               </div>
             ) : (
-              <div className="space-y-2.5">
-                {filtered.map((r) => (
-                  <ReviewItem key={r.id} review={r} onOpen={() => setActive(r)} />
-                ))}
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="font-semibold">User</TableHead>
+                    <TableHead className="font-semibold">Trip</TableHead>
+                    <TableHead className="font-semibold">Driver / Vehicle</TableHead>
+                    <TableHead className="font-semibold text-center">Driver</TableHead>
+                    <TableHead className="font-semibold text-center">Vehicle</TableHead>
+                    <TableHead className="font-semibold text-center">Punctuality</TableHead>
+                    <TableHead className="font-semibold text-center">Overall</TableHead>
+                    <TableHead className="font-semibold">Comment</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((r) => (
+                    <ReviewRowItem key={r.id} review={r} onOpen={() => setActive(r)} />
+                  ))}
+                </TableBody>
+              </Table>
+            )}
               </div>
             )}
           </CardContent>
