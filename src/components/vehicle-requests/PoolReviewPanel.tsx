@@ -857,5 +857,6 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         </DialogContent>
       </Dialog>
     </Card>
+    </div>
   );
 };
