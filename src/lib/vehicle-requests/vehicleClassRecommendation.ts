@@ -77,6 +77,32 @@ export function getVehicleClassProfile(value: string | null | undefined): Vehicl
 }
 
 /**
+ * Vehicle types that DO carry passengers as their primary purpose. Anything
+ * not in this set is a cargo/courier vehicle — the requester's "passenger
+ * count" doesn't apply (we store -1 to mean N/A in submissions).
+ *
+ * Driver always rides; "passengers" means *additional* people beyond the
+ * driver, so trucks, vans, motorbikes, scooters, bicycles → N/A.
+ */
+const PASSENGER_VEHICLE_VALUES = new Set<string>([
+  "sedan",
+  "double_cab",
+  "mini_van",
+  "mini_bus",
+  "midi_bus",
+  "suv",
+]);
+
+/** True when this vehicle class is intended to carry passengers (other than the driver). */
+export function isPassengerVehicleType(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return PASSENGER_VEHICLE_VALUES.has(value);
+}
+
+/** Sentinel value stored in `vehicle_requests.passengers` for non-passenger vehicles. */
+export const NON_PASSENGER_SENTINEL = -1;
+
+/**
  * Returns the smallest / cheapest vehicle class that satisfies the demand.
  * Falls back to the largest matching capacity row if no row in the
  * catalogue can carry the requested passenger count (caller should treat

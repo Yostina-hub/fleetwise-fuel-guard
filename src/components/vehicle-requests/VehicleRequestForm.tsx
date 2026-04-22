@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Clock, Users, Car, Route, UserCog, X, MapPin, Layers, FileText, Sparkles, CalendarDays, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Moon, Building2, Globe2 } from "lucide-react";
+import { Clock, Users, Car, Route, UserCog, X, MapPin, Layers, FileText, Sparkles, CalendarDays, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Moon, Building2, Globe2, Bike, Package } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { FieldHint } from "@/components/ui/field-hint";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -37,6 +37,8 @@ import {
   recommendVehicleClass,
   isUpgradeOverRecommendation,
   getVehicleClassProfile,
+  isPassengerVehicleType,
+  NON_PASSENGER_SENTINEL,
   COST_BAND_LABELS,
   COST_BAND_TONE,
   BUSINESS_PURPOSE_CATEGORIES,
@@ -293,6 +295,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     project_operation: 7,
     field_operation: 1,
     group_operation: 0,
+    delivery_operation: 0,
   };
 
   // While impersonating, force the form to file the request as the impersonated
@@ -679,13 +682,31 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // sections / fields render for the current request_type. Keeps JSX free
   // of inline boolean spaghetti and makes the rules unit-testable.
   const visibility = useMemo(() => deriveVisibility(form.request_type), [form.request_type]);
-  const { isNighttime, isDaily, isProject, isField, allowsMultipleVehicles } = visibility;
+  const { isNighttime, isDaily, isProject, isField, isDelivery, allowsMultipleVehicles } = visibility;
   useEffect(() => {
     if (!allowsMultipleVehicles && form.num_vehicles !== "1") {
       setForm((f) => ({ ...f, num_vehicles: "1" }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowsMultipleVehicles]);
+
+  // Delivery operations are courier-style: motorcycle/scooter/bicycle only,
+  // no passengers (driver only). When the user picks Delivery we force the
+  // vehicle_type to motorbike (the operational default) and clear cargo to
+  // "small" so the recommender can resolve.
+  useEffect(() => {
+    if (!isDelivery) return;
+    setForm((f) => ({
+      ...f,
+      vehicle_type: f.vehicle_type && ["motorbike", "scooter", "bicycle"].includes(f.vehicle_type)
+        ? f.vehicle_type
+        : "motorbike",
+      passengers: String(NON_PASSENGER_SENTINEL),
+      cargo_load: f.cargo_load || "small",
+      num_vehicles: "1",
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDelivery]);
 
   // Dynamic end-date: auto-derive from start_date + operation-type default.
   // Only fills when end_date is empty so a manual override is preserved.
@@ -729,8 +750,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // user saw at the moment they submitted.
   const recommendation = useMemo(() => {
     if (!form.cargo_load) return null;
+    const raw = parseInt(form.passengers);
+    const pax = raw === NON_PASSENGER_SENTINEL ? 1 : (raw || 1);
     return recommendVehicleClass({
-      passengers: parseInt(form.passengers) || 1,
+      passengers: pax,
       cargo: form.cargo_load as CargoLoad,
     });
   }, [form.passengers, form.cargo_load]);
@@ -740,35 +763,58 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // are surfaced so users can't pick something that won't fit. Recommended
   // type floats to the top, then by cost-band rank.
   const eligibleVehicleTypes = useMemo(() => {
-    const passengers = Math.max(1, parseInt(form.passengers) || 1);
+    const passengersRaw = parseInt(form.passengers);
+    const passengers = passengersRaw === NON_PASSENGER_SENTINEL
+      ? 0
+      : Math.max(1, passengersRaw || 1);
     const cargoOrder = { none: 0, small: 1, medium: 2, large: 3 } as const;
     const cargoNeeded = cargoOrder[(form.cargo_load || "none") as CargoLoad] ?? 0;
-    return VEHICLE_TYPES_OPTIONS
+    let list = VEHICLE_TYPES_OPTIONS
       .map((vt) => ({ vt, profile: getVehicleClassProfile(vt.value) }))
       .filter(({ profile }) => {
         if (!profile) return false;
         if (profile.costBand === "specialised") return false; // dispatcher-only
-        if (profile.capacity < passengers) return false;
+        if (passengers > 0 && profile.capacity < passengers) return false;
         if (cargoOrder[profile.cargo] < cargoNeeded) return false;
         return true;
-      })
-      .sort((a, b) => {
-        const aRec = recommendation?.value === a.vt.value ? -1 : 0;
-        const bRec = recommendation?.value === b.vt.value ? -1 : 0;
-        if (aRec !== bRec) return aRec - bRec;
-        return (a.profile!.rank) - (b.profile!.rank);
       });
-  }, [form.passengers, form.cargo_load, recommendation?.value]);
+    // Delivery operations are restricted to courier-class vehicles only.
+    if (isDelivery) {
+      list = list.filter(({ vt }) => ["motorbike", "scooter", "bicycle"].includes(vt.value));
+    }
+    return list.sort((a, b) => {
+      const aRec = recommendation?.value === a.vt.value ? -1 : 0;
+      const bRec = recommendation?.value === b.vt.value ? -1 : 0;
+      if (aRec !== bRec) return aRec - bRec;
+      return (a.profile!.rank) - (b.profile!.rank);
+    });
+  }, [form.passengers, form.cargo_load, recommendation?.value, isDelivery]);
 
   // Auto-fill vehicle_type with the recommendation when the user hasn't
   // touched it yet. Manual edits are preserved.
   useEffect(() => {
     if (!recommendation) return;
+    if (isDelivery) return; // delivery uses its own forced default
     if (!form.vehicle_type) {
       setForm((f) => ({ ...f, vehicle_type: recommendation.value }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recommendation?.value]);
+  }, [recommendation?.value, isDelivery]);
+
+  // Keep `passengers` in sync with the chosen vehicle_type. Cargo / courier
+  // classes (anything not in PASSENGER_VEHICLE_VALUES) store -1 to mean
+  // "not applicable" — driver only, no passenger seats requested.
+  useEffect(() => {
+    if (!form.vehicle_type) return;
+    const isPax = isPassengerVehicleType(form.vehicle_type);
+    const current = parseInt(form.passengers);
+    if (!isPax && current !== NON_PASSENGER_SENTINEL) {
+      setForm((f) => ({ ...f, passengers: String(NON_PASSENGER_SENTINEL) }));
+    } else if (isPax && current === NON_PASSENGER_SENTINEL) {
+      setForm((f) => ({ ...f, passengers: "1" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.vehicle_type]);
 
   // If the previously chosen vehicle type no longer fits the updated
   // passengers/cargo combo, snap back to the recommendation so the form
@@ -1124,13 +1170,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Layers className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Operation Type</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
               {[
                 { v: "daily_operation", title: "Daily Operation", desc: "Single-day trip with start & end time", icon: Clock },
                 { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip (02:00 – 12:00 window)", icon: Moon },
                 { v: "project_operation", title: "Project Operation", desc: "Multi-day, project-coded assignment", icon: Layers },
                 { v: "field_operation", title: "Field Operation", desc: "Extended off-base or field deployment", icon: Route },
                 { v: "group_operation", title: "Group Operation", desc: "Shared trip for a group of passengers", icon: Users },
+                { v: "delivery_operation", title: "Delivery", desc: "Motorcycle courier — packages & documents", icon: Bike },
               ].map(({ v, title, desc, icon: Icon }) => {
                 const active = form.request_type === v;
                 return (
@@ -1505,17 +1552,36 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 label="No. Of Passengers"
                 icon={Users}
                 error={getError("passengers")}
-                tooltip="Enter passengers excluding the driver (i.e. seats needed minus 1)."
+                tooltip={
+                  isPassengerVehicleType(form.vehicle_type)
+                    ? "Enter passengers excluding the driver (i.e. seats needed minus 1)."
+                    : "Not applicable — this vehicle class is for cargo or courier use (driver only). Stored as -1."
+                }
               >
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={form.passengers}
-                  onChange={e => update("passengers", e.target.value)}
-                  onBlur={e => handleBlur("passengers", e.target.value, form as any)}
-                  className="h-12 text-base"
-                />
+                {isPassengerVehicleType(form.vehicle_type) ? (
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={form.passengers}
+                    onChange={e => update("passengers", e.target.value)}
+                    onBlur={e => handleBlur("passengers", e.target.value, form as any)}
+                    className="h-12 text-base"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="text"
+                      value="N/A (driver only)"
+                      readOnly
+                      disabled
+                      className="h-12 text-base bg-muted/40"
+                    />
+                    <Badge variant="outline" className="text-xs whitespace-nowrap">
+                      stored as -1
+                    </Badge>
+                  </div>
+                )}
               </VRField>
               <div>
                 <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
