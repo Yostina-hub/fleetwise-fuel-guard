@@ -221,6 +221,23 @@ const VehicleRequests = () => {
     enabled: !!organizationId && !scopeLoading && !vrScope.loading,
   });
 
+  // Auto-open detail dialog when navigated with ?id=<request_id>
+  // (e.g. driver clicks "View Request" from the Trip Management hub).
+  useEffect(() => {
+    if (!requests || requests.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    if (!id) return;
+    const match = (requests as any[]).find((r) => r.id === id);
+    if (match) {
+      setShowDetail(match);
+      // Strip the param so reopening the page later doesn't re-trigger.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("id");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [requests]);
+
   const { data: approvals = [] } = useQuery({
     queryKey: ["vehicle-request-approvals", organizationId],
     queryFn: async () => {
