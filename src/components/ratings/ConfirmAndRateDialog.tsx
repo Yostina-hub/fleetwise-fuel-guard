@@ -223,12 +223,30 @@ export function ConfirmAndRateDialog({
           "Please describe the issue (at least a few words) before flagging it.",
         );
       }
+
+      const { data: requestRow, error: requestError } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          "id, organization_id, requester_id, assigned_driver_id, assigned_vehicle_id",
+        )
+        .eq("id", request.id)
+        .maybeSingle();
+
+      if (requestError) throw requestError;
+      if (!requestRow) throw new Error("Trip not found");
+      if (requestRow.requester_id !== user.id) {
+        throw new Error("You can only rate your own trip.");
+      }
+
+      const resolvedOrgId = requestRow.organization_id || orgId;
+      if (!resolvedOrgId) throw new Error("Missing organization for this trip");
+
       const payload = {
-        organization_id: orgId,
+        organization_id: resolvedOrgId,
         vehicle_request_id: request.id,
         rated_by: user.id,
-        driver_id: request.assigned_driver_id ?? null,
-        vehicle_id: request.assigned_vehicle_id ?? null,
+        driver_id: requestRow.assigned_driver_id ?? request.assigned_driver_id ?? null,
+        vehicle_id: requestRow.assigned_vehicle_id ?? request.assigned_vehicle_id ?? null,
         driver_score: scores.driver || null,
         vehicle_score: scores.vehicle || null,
         punctuality_score: scores.punctuality || null,
@@ -237,9 +255,24 @@ export function ConfirmAndRateDialog({
         dispute_flagged: disputeFlagged,
         dispute_reason: disputeFlagged ? disputeReason.trim() : null,
       };
-      const { error } = await (supabase as any)
+
+      const { data: existingRating, error: existingRatingError } = await (supabase as any)
         .from("vehicle_request_ratings")
-        .upsert(payload, { onConflict: "vehicle_request_id" });
+        .select("id")
+        .eq("vehicle_request_id", request.id)
+        .maybeSingle();
+
+      if (existingRatingError) throw existingRatingError;
+
+      const { error } = existingRating
+        ? await (supabase as any)
+            .from("vehicle_request_ratings")
+            .update(payload)
+            .eq("id", existingRating.id)
+        : await (supabase as any)
+            .from("vehicle_request_ratings")
+            .insert(payload);
+
       if (error) throw error;
       return { skipped: false } as const;
     },
