@@ -259,6 +259,9 @@ const RequesterPortalInner = () => {
           </div>
         </div>
 
+        {/* Page-level date range filter — drives the requests table & history */}
+        <PageDateRangeFilter hint="filters requests by needed-from date" />
+
         {/* KPI cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KPICard
