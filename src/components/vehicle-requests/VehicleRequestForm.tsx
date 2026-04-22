@@ -779,9 +779,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   }, [isDaily, form.date, form.start_time, form.end_time, form.start_date, form.end_date]);
 
   // ── Resource-aware recommendation (demand-shaping) ────────────────────────
-  // Recompute whenever passengers or cargo change. Stays a pure derivation
-  // so the audit field `recommended_vehicle_type` always reflects what the
-  // user saw at the moment they submitted.
+  // Recompute whenever passengers, cargo, or weight change. Stays a pure
+  // derivation so the audit field `recommended_vehicle_type` always reflects
+  // what the user saw at the moment they submitted.
+  const cargoWeightKgNum = useMemo(() => {
+    const n = Number(form.cargo_weight_kg);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }, [form.cargo_weight_kg]);
+
   const recommendation = useMemo(() => {
     if (!form.cargo_load) return null;
     const raw = parseInt(form.passengers);
@@ -789,13 +794,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     return recommendVehicleClass({
       passengers: pax,
       cargo: form.cargo_load as CargoLoad,
+      cargoWeightKg: cargoWeightKgNum || null,
+      courierOnly: isMessenger,
     });
-  }, [form.passengers, form.cargo_load]);
+  }, [form.passengers, form.cargo_load, cargoWeightKgNum, isMessenger]);
 
-  // Eligible vehicle types — driven by passengers + cargo (the previously
-  // selected fields). Only types that can actually carry the requested load
-  // are surfaced so users can't pick something that won't fit. Recommended
-  // type floats to the top, then by cost-band rank.
+  // Eligible vehicle types — driven by passengers + cargo + weight + service
+  // type. Only types that can actually carry the requested load are surfaced
+  // so users can't pick something that won't fit. Recommended type floats
+  // to the top, then by cost-band rank. Motorbikes/scooters/bicycles are
+  // restricted to Messenger Service only.
   const eligibleVehicleTypes = useMemo(() => {
     const passengersRaw = parseInt(form.passengers);
     const passengers = passengersRaw === NON_PASSENGER_SENTINEL
@@ -808,32 +816,37 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       .filter(({ profile }) => {
         if (!profile) return false;
         if (profile.costBand === "specialised") return false; // dispatcher-only
+        // Courier-only classes (motorbike/scooter/bicycle) are restricted to
+        // Messenger Service. Conversely, Messenger Service shows ONLY courier
+        // classes — staff cannot order an SUV under "Messenger Service".
+        if (isMessenger) {
+          if (!profile.courierOnly) return false;
+        } else {
+          if (profile.courierOnly) return false;
+        }
         if (passengers > 0 && profile.capacity < passengers) return false;
         if (cargoOrder[profile.cargo] < cargoNeeded) return false;
+        if (cargoWeightKgNum > 0 && profile.maxPayloadKg < cargoWeightKgNum) return false;
         return true;
       });
-    // Delivery operations are restricted to courier-class vehicles only.
-    if (isDelivery) {
-      list = list.filter(({ vt }) => ["motorbike", "scooter", "bicycle"].includes(vt.value));
-    }
     return list.sort((a, b) => {
       const aRec = recommendation?.value === a.vt.value ? -1 : 0;
       const bRec = recommendation?.value === b.vt.value ? -1 : 0;
       if (aRec !== bRec) return aRec - bRec;
       return (a.profile!.rank) - (b.profile!.rank);
     });
-  }, [form.passengers, form.cargo_load, recommendation?.value, isDelivery]);
+  }, [form.passengers, form.cargo_load, cargoWeightKgNum, recommendation?.value, isMessenger]);
 
   // Auto-fill vehicle_type with the recommendation when the user hasn't
   // touched it yet. Manual edits are preserved.
   useEffect(() => {
     if (!recommendation) return;
-    if (isDelivery) return; // delivery uses its own forced default
+    if (isMessenger) return; // messenger service uses its own forced default
     if (!form.vehicle_type) {
       setForm((f) => ({ ...f, vehicle_type: recommendation.value }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recommendation?.value, isDelivery]);
+  }, [recommendation?.value, isMessenger]);
 
   // Keep `passengers` in sync with the chosen vehicle_type. Cargo / courier
   // classes (anything not in PASSENGER_VEHICLE_VALUES) store -1 to mean
