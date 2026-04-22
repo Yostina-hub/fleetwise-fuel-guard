@@ -20,6 +20,8 @@ import { IncidentInsightsCard } from "@/components/incidents/IncidentInsightsCar
 import { IncidentTrendChart } from "@/components/incidents/IncidentTrendChart";
 import { RecentIncidentsCard } from "@/components/incidents/RecentIncidentsCard";
 import { useTranslation } from "react-i18next";
+import { PageDateRangeProvider } from "@/contexts/PageDateRangeContext";
+import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
 
 const Incidents = () => {
   const { t } = useTranslation();
@@ -44,6 +46,7 @@ const Incidents = () => {
 
   return (
     <Layout>
+      <PageDateRangeProvider>
       <div className="p-4 md:p-8 space-y-6 animate-fade-in">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-xl bg-destructive/10">
@@ -56,6 +59,9 @@ const Incidents = () => {
             </p>
           </div>
         </div>
+
+        {/* Page-level date range filter */}
+        <PageDateRangeFilter />
 
         <IncidentQuickStats />
 
@@ -138,6 +144,7 @@ const Incidents = () => {
           <TabsContent value="dashcam"><DashcamAlertsTab /></TabsContent>
         </Tabs>
       </div>
+      </PageDateRangeProvider>
     </Layout>
   );
 };
