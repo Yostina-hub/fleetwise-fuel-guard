@@ -35,7 +35,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
 import { useDefaultMapStyle } from "@/hooks/useDefaultMapStyle";
-import { createLematTransformRequest, fetchLematMapStyle } from "@/lib/lemat";
+import { createLematTransformRequest, getPreviewSafeMapStyle } from "@/lib/lemat";
 
 interface Props {
   open: boolean;
@@ -108,6 +108,7 @@ export const DriverNavigateMapDialog = ({
   const [insight, setInsight] = useState<string | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
   const [insightError, setInsightError] = useState<string | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   // Resolve coordinates when the dialog opens
   useEffect(() => {
@@ -167,6 +168,7 @@ export const DriverNavigateMapDialog = ({
     let disposed = false;
     let resizeObserver: ResizeObserver | null = null;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    let bootTimer: ReturnType<typeof setTimeout> | null = null;
 
     const forceResize = () => {
       try {
@@ -176,9 +178,26 @@ export const DriverNavigateMapDialog = ({
       }
     };
 
+    const waitForSizedContainer = async () => {
+      for (let i = 0; i < 12; i += 1) {
+        if (disposed) return false;
+        if (containerEl.clientWidth > 0 && containerEl.clientHeight > 0) {
+          return true;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 60));
+      }
+      return containerEl.clientWidth > 0 && containerEl.clientHeight > 0;
+    };
+
     const initMap = async () => {
       try {
-        const initialStyle = await fetchLematMapStyle(defaultMapStyle);
+        setMapError(null);
+        const hasSize = await waitForSizedContainer();
+        if (!hasSize) {
+          throw new Error("Map container did not become ready in time");
+        }
+
+        const initialStyle = getPreviewSafeMapStyle(defaultMapStyle);
         if (disposed || !containerEl || map.current) return;
 
         const nextMap = new maplibregl.Map({
@@ -186,34 +205,30 @@ export const DriverNavigateMapDialog = ({
           style: initialStyle,
           center: [38.7578, 9.03],
           zoom: 11,
+          attributionControl: false,
           transformRequest: createLematTransformRequest(lematApiKey),
         });
         map.current = nextMap;
 
-        let styleRecoveryTried = false;
         nextMap.addControl(new maplibregl.NavigationControl(), "top-right");
         nextMap.addControl(new maplibregl.FullscreenControl(), "top-right");
-        nextMap.on("load", forceResize);
-        nextMap.on("style.load", forceResize);
+        nextMap.on("load", () => {
+          setMapError(null);
+          forceResize();
+        });
+        nextMap.on("style.load", () => {
+          setMapError(null);
+          forceResize();
+        });
         nextMap.on("error", (event) => {
           const failedUrl = (event?.error as { url?: string } | undefined)?.url || "";
           const isStyleFailure =
-            failedUrl.includes("/tiles/style") ||
-            failedUrl.includes("/tiles/") ||
             failedUrl.includes("basemaps.cartocdn.com") ||
-            failedUrl.includes("tile.openstreetmap.org");
+            failedUrl.includes("tile.openstreetmap.org") ||
+            failedUrl.includes("arcgisonline.com");
 
-          if (isStyleFailure && !styleRecoveryTried) {
-            styleRecoveryTried = true;
-            fetchLematMapStyle(defaultMapStyle)
-              .then((style) => {
-                try {
-                  nextMap.setStyle(style);
-                } catch {
-                  // keep existing style if the swap fails
-                }
-              })
-              .catch(() => {});
+          if (isStyleFailure) {
+            setMapError("Map tiles failed to load.");
           }
           console.error("[DriverNavigateMap] maplibre error", event?.error || event);
         });
@@ -225,14 +240,18 @@ export const DriverNavigateMapDialog = ({
           resizeObserver.observe(containerEl);
         }
       } catch (err) {
+        setMapError("Could not initialize the map.");
         console.error("[DriverNavigateMap] map initialization failed", err);
       }
     };
 
-    initMap();
+    bootTimer = window.setTimeout(() => {
+      void initMap();
+    }, 120);
 
     return () => {
       disposed = true;
+      if (bootTimer) window.clearTimeout(bootTimer);
       if (resizeTimer) window.clearTimeout(resizeTimer);
       resizeObserver?.disconnect();
       markersRef.current.forEach((m) => m.remove());
@@ -594,6 +613,11 @@ export const DriverNavigateMapDialog = ({
 
         <div className="relative flex-1 min-h-[420px] rounded-lg overflow-hidden border">
           <div ref={setContainerEl} className="absolute inset-0" />
+          {mapError && !resolving && (
+            <div className="absolute left-3 right-3 top-3 z-10 rounded-md border border-destructive/40 bg-background/90 px-3 py-2 text-xs text-destructive shadow-sm backdrop-blur-sm">
+              {mapError}
+            </div>
+          )}
           {(resolving || (!origin && !destination)) && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
               {resolving ? (
