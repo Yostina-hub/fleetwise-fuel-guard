@@ -138,15 +138,62 @@ export const ReportTripIncidentDialog = ({
 
   const [reason, setReason] = useState<ReasonValue>("vehicle_technical");
   const [description, setDescription] = useState("");
+  const [kmReading, setKmReading] = useState("");
   const [files, setFiles] = useState<File[]>([]);
 
   useEffect(() => {
     if (!open) {
       setReason("vehicle_technical");
       setDescription("");
+      setKmReading("");
       setFiles([]);
     }
   }, [open]);
+
+  // Driver details (auto-filled like the work-request form)
+  const { data: driverInfo } = useQuery({
+    queryKey: ["incident-driver-info", driverId],
+    enabled: !!driverId && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("id, first_name, last_name, phone, employment_type, employee_id")
+        .eq("id", driverId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Vehicle details for the asset section
+  const { data: vehicleInfo } = useQuery({
+    queryKey: ["incident-vehicle-info", vehicleId],
+    enabled: !!vehicleId && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("id, plate_number, make, model, current_odometer")
+        .eq("id", vehicleId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Pre-fill KM reading with the vehicle's last known odometer (editable).
+  useEffect(() => {
+    if (open && vehicleInfo?.current_odometer != null && kmReading === "") {
+      setKmReading(String(vehicleInfo.current_odometer));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, vehicleInfo?.current_odometer]);
+
+  const driverFullName = driverInfo
+    ? `${driverInfo.first_name || ""} ${driverInfo.last_name || ""}`.trim()
+    : "";
+  const vehicleLabel = vehicleInfo
+    ? `${vehicleInfo.plate_number}${vehicleInfo.make ? ` · ${vehicleInfo.make}` : ""}${vehicleInfo.model ? ` ${vehicleInfo.model}` : ""}`
+    : "";
 
   const handleFiles = (fileList: FileList | null) => {
     if (!fileList) return;
