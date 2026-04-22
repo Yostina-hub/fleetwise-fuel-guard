@@ -371,9 +371,7 @@ export const DriverViewRequestDialog = ({
     },
     onSuccess: () => {
       toast.success("Checked out — trip completed");
-      setOdometer("");
       setNotes("");
-      setOdoError(null);
       setNotesError(null);
       refresh();
       onClose();
