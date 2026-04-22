@@ -57,11 +57,20 @@ const tryOsrm = async (coords: Coord[]) => {
   if (!geometry || geometry.length < 2) {
     return { ok: false as const, error: "osrm_no_geometry" };
   }
+  // Per-leg distance/duration so the client can label each segment
+  // (Departure → Stop 1, Stop 1 → Stop 2, …, Stop N → Destination).
+  const legs = Array.isArray(route?.legs)
+    ? route.legs.map((leg: any) => ({
+        distance_m: Number(leg?.distance) || 0,
+        duration_s: Number(leg?.duration) || 0,
+      }))
+    : [];
   return {
     ok: true as const,
     geometry,
     distance_m: Number(route.distance) || 0,
     duration_s: Number(route.duration) || 0,
+    legs,
   };
 };
 
@@ -103,6 +112,7 @@ serve(async (req) => {
           geometry: osrm.geometry,
           distance_m: osrm.distance_m,
           duration_s: osrm.duration_s,
+          legs: osrm.legs,
         },
         req,
       );
