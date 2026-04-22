@@ -231,6 +231,8 @@ export function validateVRField(
 
     case "passengers": {
       const n = Number(value);
+      // -1 is the sentinel for "not applicable" (cargo / courier vehicles).
+      if (n === -1) return;
       if (!Number.isFinite(n) || n < 1)
         return "Enter at least 1 passenger (the driver counts only if traveling).";
       if (!Number.isInteger(n))
@@ -257,8 +259,9 @@ export function validateVRField(
       if (profile.costBand === "specialised") {
         return `${profile.label} is dispatcher-assigned only. Pick a personnel-transport class or contact dispatch.`;
       }
-      const passengers = Math.max(1, Number(ctx.passengers) || 1);
-      if (profile.capacity < passengers) {
+      const passengersRaw = Number(ctx.passengers);
+      const passengers = passengersRaw === -1 ? 0 : Math.max(1, passengersRaw || 1);
+      if (passengers > 0 && profile.capacity < passengers) {
         return `${profile.label} seats ${profile.capacity} but you need ${passengers}. Pick a larger class or reduce passengers.`;
       }
       const cargo: CargoLoad = (ctx.cargo_load as CargoLoad) || "none";
@@ -433,7 +436,9 @@ export const vehicleRequestZodSchema = z.object({
   departure_place: z.string().trim().max(200).optional().or(z.literal("")),
   destination: z.string().trim().max(200).optional().or(z.literal("")),
   num_vehicles: z.coerce.number().int().min(1).max(50),
-  passengers: z.coerce.number().int().min(1).max(100),
+  passengers: z.coerce.number().int().refine((n) => n === -1 || (n >= 1 && n <= 100), {
+    message: "Passengers must be between 1 and 100, or -1 for non-passenger vehicles.",
+  }),
   vehicle_type: z
     .string()
     .trim()
