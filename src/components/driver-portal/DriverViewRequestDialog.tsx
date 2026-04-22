@@ -255,7 +255,7 @@ export const DriverViewRequestDialog = ({
         .from("vehicle_requests")
         .update({
           driver_checked_out_at: new Date().toISOString(),
-          checkout_odometer: odo,
+          driver_checkout_odometer: odo,
           status: "completed",
           completed_at: new Date().toISOString(),
         })
