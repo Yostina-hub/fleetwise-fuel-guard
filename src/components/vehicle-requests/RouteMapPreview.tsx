@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getPreviewSafeMapStyle } from "@/lib/lemat";
+import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Route, Ruler } from "lucide-react";
 
