@@ -113,18 +113,37 @@ export const DriverNavigateMapDialog = ({
   const [useFallbackMap, setUseFallbackMap] = useState(false);
 
   const fallbackMapUrl = (() => {
+    // Use OpenStreetMap's free, no-key, CSP-friendly embed.
+    // Format: https://www.openstreetmap.org/export/embed.html?bbox=minLng,minLat,maxLng,maxLat&layer=mapnik&marker=lat,lng
+    const buildOsmEmbed = (
+      bbox: [number, number, number, number],
+      marker?: { lat: number; lng: number },
+    ) => {
+      const params = new URLSearchParams({
+        bbox: bbox.join(","),
+        layer: "mapnik",
+      });
+      if (marker) {
+        params.set("marker", `${marker.lat},${marker.lng}`);
+      }
+      return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
+    };
+
     if (origin && destination) {
-      return `https://maps.google.com/maps?saddr=${origin.lat},${origin.lng}&daddr=${destination.lat},${destination.lng}&z=11&output=embed`;
+      const minLng = Math.min(origin.lng, destination.lng) - 0.05;
+      const maxLng = Math.max(origin.lng, destination.lng) + 0.05;
+      const minLat = Math.min(origin.lat, destination.lat) - 0.05;
+      const maxLat = Math.max(origin.lat, destination.lat) + 0.05;
+      return buildOsmEmbed([minLng, minLat, maxLng, maxLat], destination);
     }
 
     const point = destination || origin;
     if (point) {
-      return `https://maps.google.com/maps?q=${point.lat},${point.lng}&z=14&output=embed`;
-    }
-
-    const query = destinationPlace?.trim() || departurePlace?.trim();
-    if (query) {
-      return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=14&output=embed`;
+      const d = 0.05;
+      return buildOsmEmbed(
+        [point.lng - d, point.lat - d, point.lng + d, point.lat + d],
+        point,
+      );
     }
 
     return null;
