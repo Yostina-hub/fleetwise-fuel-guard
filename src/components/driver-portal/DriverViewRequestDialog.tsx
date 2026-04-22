@@ -435,41 +435,6 @@ export const DriverViewRequestDialog = ({
 
         <Separator />
 
-        {/* Stage progress */}
-        <div className="flex items-center justify-between text-xs">
-          {(["pre_trip", "in_trip", "post_trip", "done"] as const).map((s, i) => {
-            const order = ["pre_trip", "in_trip", "post_trip", "done"];
-            const currentIdx = order.indexOf(stage === "post_trip" ? "in_trip" : stage);
-            const active = order.indexOf(s) <= currentIdx;
-            const labels: Record<string, string> = {
-              pre_trip: "Pre-Trip",
-              in_trip: "On Trip",
-              post_trip: "Post-Trip",
-              done: "Completed",
-            };
-            return (
-              <div key={s} className="flex items-center gap-1 flex-1">
-                <div
-                  className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border",
-                    active
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted text-muted-foreground border-border",
-                  )}
-                >
-                  {i + 1}
-                </div>
-                <span className={cn("text-[11px]", active ? "text-foreground font-medium" : "text-muted-foreground")}>
-                  {labels[s]}
-                </span>
-                {i < 3 && <div className={cn("flex-1 h-px mx-1", active ? "bg-primary" : "bg-border")} />}
-              </div>
-            );
-          })}
-        </div>
-
-        <Separator />
-
         {/* Next-step actions — hidden for rejected/cancelled requests */}
         {stage !== "done" && request.status !== "rejected" && request.status !== "cancelled" && (
           <div className="space-y-3">
@@ -479,23 +444,18 @@ export const DriverViewRequestDialog = ({
 
             {stage === "pre_trip" && (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <Button variant="outline" className="justify-start gap-2" onClick={onPreTrip}>
-                    <Gauge className="w-4 h-4" /> 1. Pre-Trip Inspection
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="justify-start gap-2"
-                    onClick={() => navigateTo(request.destination)}
-                    disabled={!request.destination}
-                  >
-                    <Navigation className="w-4 h-4" /> Open in Maps
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => navigateTo(request.destination)}
+                  disabled={!request.destination}
+                >
+                  <Navigation className="w-4 h-4" /> Open in Maps
+                </Button>
 
                 <div className="rounded-lg border p-3 space-y-2">
                   <p className="text-sm font-medium flex items-center gap-1.5">
-                    <PlayCircle className="w-4 h-4 text-success" /> 2. Check In
+                    <PlayCircle className="w-4 h-4 text-success" /> Check In
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
@@ -554,7 +514,7 @@ export const DriverViewRequestDialog = ({
 
             {stage === "in_trip" && (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Button
                     variant="outline"
                     className="justify-start gap-2"
@@ -568,9 +528,6 @@ export const DriverViewRequestDialog = ({
                   </Button>
                   <Button variant="outline" className="justify-start gap-2" onClick={onRequestFuel}>
                     <Fuel className="w-4 h-4" /> Request Fuel
-                  </Button>
-                  <Button variant="outline" className="justify-start gap-2" onClick={onPostTrip}>
-                    <ClipboardCheck className="w-4 h-4" /> Post-Trip
                   </Button>
                 </div>
 
