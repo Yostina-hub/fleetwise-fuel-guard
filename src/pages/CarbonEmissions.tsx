@@ -17,25 +17,31 @@ import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { PageDateRangeProvider, usePageDateRange } from "@/contexts/PageDateRangeContext";
+import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))", "#6366f1", "#f59e0b", "#10b981"];
 
-const CarbonEmissions = () => {
+const CarbonEmissionsInner = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
+  const { startISO, endISO } = usePageDateRange();
   const qc = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState({ vehicle_id: "", co2_kg: 0, fuel_consumed_liters: 0, distance_km: 0, emission_source: "fuel_combustion", period_start: "", period_end: "", offset_credits: 0, notes: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Date-aware: KPI cards, charts, tables all reflect the selected range.
   const { data: emissions = [], isLoading } = useQuery({
-    queryKey: ["carbon-emissions", organizationId],
+    queryKey: ["carbon-emissions", organizationId, startISO, endISO],
     queryFn: async () => {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("carbon_emissions")
         .select("*, vehicles(plate_number, make, model)")
         .eq("organization_id", organizationId)
+        .gte("period_start", startISO)
+        .lte("period_start", endISO)
         .order("period_start", { ascending: false })
         .limit(500);
       if (error) throw error;
