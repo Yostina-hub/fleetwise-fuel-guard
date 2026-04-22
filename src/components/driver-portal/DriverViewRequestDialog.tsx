@@ -14,7 +14,7 @@
  * inlines a single-vehicle check-in/out path for the parent
  * vehicle_request when there are no per-vehicle assignment rows.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import {
   sanitizeNumeric,
