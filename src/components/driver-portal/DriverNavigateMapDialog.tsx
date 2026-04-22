@@ -189,7 +189,7 @@ export const DriverNavigateMapDialog = ({
           transformRequest: createLematTransformRequest(lematApiKey),
         });
 
-        map.current = nextMap;
+        let styleRecoveryTried = false;
         nextMap.addControl(new maplibregl.NavigationControl(), "top-right");
         nextMap.addControl(new maplibregl.FullscreenControl(), "top-right");
         nextMap.on("load", forceResize);
@@ -202,12 +202,17 @@ export const DriverNavigateMapDialog = ({
             failedUrl.includes("basemaps.cartocdn.com") ||
             failedUrl.includes("tile.openstreetmap.org");
 
-          if (isStyleFailure) {
-            try {
-              nextMap.setStyle(fetchLematMapStyle(defaultMapStyle));
-            } catch {
-              // keep existing style if the swap fails
-            }
+          if (isStyleFailure && !styleRecoveryTried) {
+            styleRecoveryTried = true;
+            fetchLematMapStyle(defaultMapStyle)
+              .then((style) => {
+                try {
+                  nextMap.setStyle(style);
+                } catch {
+                  // keep existing style if the swap fails
+                }
+              })
+              .catch(() => {});
           }
           console.error("[DriverNavigateMap] maplibre error", event?.error || event);
         });
