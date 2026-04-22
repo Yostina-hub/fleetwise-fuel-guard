@@ -133,6 +133,21 @@ export const DriverViewRequestDialog = ({
     queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
   };
 
+  // Approval history (chain of approvers + decisions/comments)
+  const { data: approvals = [] } = useQuery({
+    queryKey: ["driver-portal-request-approvals", request?.id],
+    enabled: !!request?.id && open,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("vehicle_request_approvals")
+        .select("id, approval_level, approver_name, status, comments, decision_at, created_at, delegated_from_name")
+        .eq("request_id", request!.id)
+        .order("created_at", { ascending: true });
+      if (error) return [];
+      return data || [];
+    },
+  });
+
   const checkIn = useMutation({
     mutationFn: async () => {
       if (!request) throw new Error("No request");
