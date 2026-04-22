@@ -45,6 +45,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { DriverNavigateMapDialog } from "./DriverNavigateMapDialog";
 
 interface ActiveRequest {
   id: string;
@@ -145,6 +146,7 @@ export const DriverViewRequestDialog = ({
   const [notes, setNotes] = useState("");
   const [odoError, setOdoError] = useState<string | null>(null);
   const [notesError, setNotesError] = useState<string | null>(null);
+  const [navMapOpen, setNavMapOpen] = useState(false);
 
   const checkedIn = !!request?.driver_checked_in_at;
   const checkedOut = !!request?.driver_checked_out_at;
@@ -565,10 +567,10 @@ export const DriverViewRequestDialog = ({
                   <Button
                     variant="outline"
                     className="justify-start gap-2"
-                    onClick={() => openMaps(buildMapsUrl(departurePlace, departureLat, departureLng))}
-                    disabled={!departurePlace && departureLat == null}
+                    onClick={() => setNavMapOpen(true)}
+                    disabled={!departurePlace && departureLat == null && !request.destination}
                   >
-                    <MapPin className="w-4 h-4" /> Departure in Maps
+                    <Navigation className="w-4 h-4" /> Show Route on Map
                   </Button>
                   <Button
                     variant="outline"
@@ -576,7 +578,7 @@ export const DriverViewRequestDialog = ({
                     onClick={() => openMaps(buildMapsUrl(request.destination, null, null))}
                     disabled={!request.destination}
                   >
-                    <Navigation className="w-4 h-4" /> Destination in Maps
+                    <MapPin className="w-4 h-4" /> Open in Google Maps
                   </Button>
                 </div>
 
@@ -645,8 +647,8 @@ export const DriverViewRequestDialog = ({
                   <Button
                     variant="outline"
                     className="justify-start gap-2"
-                    onClick={() => openMaps(buildMapsUrl(request.destination, null, null))}
-                    disabled={!request.destination}
+                    onClick={() => setNavMapOpen(true)}
+                    disabled={!request.destination && !departurePlace && departureLat == null}
                   >
                     <Navigation className="w-4 h-4" /> Navigate
                   </Button>
@@ -708,6 +710,15 @@ export const DriverViewRequestDialog = ({
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
+
+      <DriverNavigateMapDialog
+        open={navMapOpen}
+        onClose={() => setNavMapOpen(false)}
+        departurePlace={departurePlace}
+        departureLat={departureLat}
+        departureLng={departureLng}
+        destinationPlace={request.destination}
+      />
     </Dialog>
   );
 };
