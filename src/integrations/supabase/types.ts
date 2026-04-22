@@ -23698,6 +23698,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cargo_load: string | null
+          cargo_weight_kg: number | null
           check_in_at: string | null
           check_in_by: string | null
           completed_at: string | null
@@ -23793,6 +23794,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cargo_load?: string | null
+          cargo_weight_kg?: number | null
           check_in_at?: string | null
           check_in_by?: string | null
           completed_at?: string | null
@@ -23888,6 +23890,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cargo_load?: string | null
+          cargo_weight_kg?: number | null
           check_in_at?: string | null
           check_in_by?: string | null
           completed_at?: string | null
