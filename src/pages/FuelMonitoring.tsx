@@ -326,6 +326,7 @@ const FuelMonitoring = () => {
             </Tabs>
           </div>
         </div>
+        )}
         </PageDateRangeProvider>
       </Layout>
     </FuelPageContext.Provider>
