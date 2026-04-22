@@ -881,6 +881,28 @@ const DriverPortal = () => {
             }}
           />
         )}
+        <DriverViewRequestDialog
+          open={!!viewRequest}
+          onClose={() => setViewRequest(null)}
+          request={viewRequest}
+          driverId={driverId}
+          onPreTrip={() => {
+            setInspectionPrefillOverride({
+              vehicle_id: viewRequest?.assigned_vehicle?.id ?? vehicle?.id,
+              inspection_type: "pre_trip",
+            });
+            setShowInspection(true);
+          }}
+          onPostTrip={() => {
+            setInspectionPrefillOverride({
+              vehicle_id: viewRequest?.assigned_vehicle?.id ?? vehicle?.id,
+              inspection_type: "post_trip",
+            });
+            setShowInspection(true);
+          }}
+          onReportIssue={() => setShowMaintenance(true)}
+          onRequestFuel={() => setShowFuel(true)}
+        />
       </div>
     </Layout>
   );
