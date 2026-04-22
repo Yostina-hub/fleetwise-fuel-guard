@@ -161,13 +161,16 @@ export const DriverNavigateMapDialog = ({
     };
   }, [open, departurePlace, departureLat, departureLng, destinationPlace]);
 
-  // Initialize / tear down the map (style follows org default)
+  // Initialize / tear down the map. Uses a callback ref (`containerEl`) so
+  // we wait for the dialog to actually mount the map div before constructing
+  // the MapLibre instance — `useRef` was racing the dialog mount and the
+  // map sometimes never initialised, leaving an empty box.
   useEffect(() => {
     if (!open) return;
-    if (!mapContainer.current || map.current) return;
+    if (!containerEl || map.current) return;
 
     map.current = new maplibregl.Map({
-      container: mapContainer.current,
+      container: containerEl,
       style: STYLE_URL[defaultMapStyle] ?? STYLE_URL.streets,
       center: [38.7578, 9.03], // Addis Ababa default
       zoom: 11,
@@ -175,7 +178,14 @@ export const DriverNavigateMapDialog = ({
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
     map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
 
+    // After the dialog finishes its open animation, the container size may
+    // have changed. Force MapLibre to recompute its viewport.
+    const resizeTimer = window.setTimeout(() => {
+      try { map.current?.resize(); } catch { /* noop */ }
+    }, 250);
+
     return () => {
+      window.clearTimeout(resizeTimer);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       liveMarkerRef.current?.remove();
@@ -183,7 +193,7 @@ export const DriverNavigateMapDialog = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [open, defaultMapStyle]);
+  }, [open, defaultMapStyle, containerEl]);
 
   // Poll the latest GPS position for the assigned vehicle every 10s
   useEffect(() => {
