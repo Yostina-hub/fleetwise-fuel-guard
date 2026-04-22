@@ -567,10 +567,10 @@ export const DriverViewRequestDialog = ({
                   <Button
                     variant="outline"
                     className="justify-start gap-2"
-                    onClick={() => openMaps(buildMapsUrl(departurePlace, departureLat, departureLng))}
-                    disabled={!departurePlace && departureLat == null}
+                    onClick={() => setNavMapOpen(true)}
+                    disabled={!departurePlace && departureLat == null && !request.destination}
                   >
-                    <MapPin className="w-4 h-4" /> Departure in Maps
+                    <Navigation className="w-4 h-4" /> Show Route on Map
                   </Button>
                   <Button
                     variant="outline"
@@ -578,7 +578,7 @@ export const DriverViewRequestDialog = ({
                     onClick={() => openMaps(buildMapsUrl(request.destination, null, null))}
                     disabled={!request.destination}
                   >
-                    <Navigation className="w-4 h-4" /> Destination in Maps
+                    <MapPin className="w-4 h-4" /> Open in Google Maps
                   </Button>
                 </div>
 
