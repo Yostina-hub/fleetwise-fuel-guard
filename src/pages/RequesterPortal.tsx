@@ -89,6 +89,8 @@ const RequesterPortalInner = () => {
   const qc = useQueryClient();
   const { toast } = useToast();
 
+  const { startISO, endISO } = usePageDateRange();
+
   const [openNew, setOpenNew] = useState(false);
   const [activeTab, setActiveTab] = useState<"requests" | "history">("requests");
   const [search, setSearch] = useState("");
