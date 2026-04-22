@@ -376,45 +376,81 @@ export default function TripReviews() {
 
 // ─── sub-components ─────────────────────────────────────────────────────
 
-function KpiCard({
+function AvgKpiCard({
   label,
   value,
-  suffix,
   icon: Icon,
   tone,
 }: {
   label: string;
-  value: number | string;
-  suffix?: string;
+  value: number;
   icon: React.ComponentType<{ className?: string }>;
-  tone: "muted" | "amber" | "success" | "warning" | "destructive";
+  tone: "muted" | "amber" | "success" | "warning" | "destructive" | "info";
 }) {
   const toneCls = {
-    muted: "bg-muted/50 text-muted-foreground",
+    muted: "bg-muted/60 text-muted-foreground",
     amber: "bg-amber-400/15 text-amber-500",
     success: "bg-success/15 text-success",
     warning: "bg-warning/15 text-warning",
     destructive: "bg-destructive/15 text-destructive",
+    info: "bg-primary/10 text-primary",
   }[tone];
+  const display = value > 0 ? value.toFixed(1) : "—";
+  const pct = value > 0 ? Math.min(100, (value / 5) * 100) : 0;
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-muted-foreground">{label}</span>
-          <div className={cn("h-7 w-7 rounded-md flex items-center justify-center", toneCls)}>
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            {label}
+          </span>
+          <div className={cn("h-8 w-8 rounded-md flex items-center justify-center", toneCls)}>
             <Icon className="h-4 w-4" />
           </div>
         </div>
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-bold">{value}</span>
-          {suffix && <span className="text-xs text-muted-foreground">{suffix}</span>}
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-3xl font-bold tabular-nums">{display}</span>
+          {value > 0 && <span className="text-xs text-muted-foreground">/ 5.0</span>}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <Stars value={Math.round(value)} size={12} />
+          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all",
+                value >= 4 ? "bg-success" : value >= 3 ? "bg-warning" : value > 0 ? "bg-destructive" : "bg-muted",
+              )}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function ReviewItem({
+function ScorePill({ value }: { value: number | null }) {
+  if (!value) return <span className="text-xs text-muted-foreground">—</span>;
+  const tone =
+    value >= 4
+      ? "bg-success/15 text-success border-success/30"
+      : value >= 3
+        ? "bg-warning/15 text-warning border-warning/30"
+        : "bg-destructive/15 text-destructive border-destructive/30";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-semibold tabular-nums",
+        tone,
+      )}
+    >
+      <Star className="h-3 w-3 fill-current" />
+      {value.toFixed(1)}
+    </span>
+  );
+}
+
+function ReviewRowItem({
   review,
   onOpen,
 }: {
@@ -422,97 +458,102 @@ function ReviewItem({
   onOpen: () => void;
 }) {
   const isDispute = review.dispute_flagged && !review.dispute_resolved_at;
+  const isResolved = !!review.dispute_resolved_at;
   return (
-    <div
+    <TableRow
       className={cn(
-        "rounded-lg border p-3.5 hover:border-primary/40 hover:bg-muted/30 transition-colors cursor-pointer",
-        isDispute && "border-destructive/40 bg-destructive/5",
+        "cursor-pointer",
+        isDispute && "bg-destructive/5 hover:bg-destructive/10",
       )}
       onClick={onOpen}
     >
-      <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold ring-1 ring-primary/20 shrink-0">
-          {(review.rater_name ?? "?").slice(0, 2).toUpperCase()}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold truncate">{review.rater_name}</span>
-            {review.request_number && (
-              <Badge variant="outline" className="font-mono text-[10px]">
-                {review.request_number}
-              </Badge>
-            )}
-            {sentimentBadge(review.overall_score)}
-            {isDispute && (
-              <Badge className="bg-destructive text-destructive-foreground gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                Dispute
-              </Badge>
-            )}
-            {review.dispute_resolved_at && (
-              <Badge className="bg-success/15 text-success border-success/30 gap-1">
-                <CheckCircle2 className="h-3 w-3" />
-                Resolved
-              </Badge>
-            )}
+      <TableCell>
+        <div className="flex items-center gap-2.5 min-w-[160px]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold ring-1 ring-primary/20 shrink-0">
+            {(review.rater_name ?? "?").slice(0, 2).toUpperCase()}
           </div>
-
-          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            {review.driver_name && (
-              <span className="inline-flex items-center gap-1">
-                <UserRound className="h-3 w-3" />
-                {review.driver_name}
-              </span>
-            )}
-            {review.vehicle_label && (
-              <span className="inline-flex items-center gap-1">
-                <Car className="h-3 w-3" />
-                {review.vehicle_label}
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {format(new Date(review.created_at), "MMM d, yyyy h:mm a")}
-            </span>
-          </div>
-
-          {/* per-axis scores */}
-          <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
-            <ScoreLine label="Driver" value={review.driver_score} />
-            <ScoreLine label="Vehicle" value={review.vehicle_score} />
-            <ScoreLine label="Punctuality" value={review.punctuality_score} />
-            {review.overall_score && (
-              <span className="ml-auto inline-flex items-center gap-1.5 text-foreground">
-                <span className="text-base font-bold text-primary">{review.overall_score}</span>
-                <Stars value={review.overall_score} size={12} />
-              </span>
-            )}
-          </div>
-
-          {review.comment && (
-            <p className="mt-2 text-sm text-foreground/80 italic line-clamp-2">
-              "{review.comment}"
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{review.rater_name}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {format(new Date(review.created_at), "MMM d, yyyy")}
             </p>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>
+        {review.request_number ? (
+          <Badge variant="outline" className="font-mono text-[10px]">
+            {review.request_number}
+          </Badge>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      <TableCell>
+        <div className="text-xs space-y-0.5 min-w-[140px]">
+          {review.driver_name && (
+            <div className="inline-flex items-center gap-1">
+              <UserRound className="h-3 w-3 text-muted-foreground" />
+              <span className="truncate">{review.driver_name}</span>
+            </div>
           )}
-          {isDispute && review.dispute_reason && (
-            <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-              <span className="font-medium">Reported issue:</span> {review.dispute_reason}
+          {review.vehicle_label && (
+            <div className="inline-flex items-center gap-1 text-muted-foreground">
+              <Car className="h-3 w-3" />
+              <span className="truncate">{review.vehicle_label}</span>
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function ScoreLine({ label, value }: { label: string; value: number | null }) {
-  if (!value) return null;
-  return (
-    <span className="inline-flex items-center gap-1 text-muted-foreground">
-      <span>{label}</span>
-      <Stars value={value} size={11} />
-    </span>
+      </TableCell>
+      <TableCell className="text-center">
+        <ScorePill value={review.driver_score} />
+      </TableCell>
+      <TableCell className="text-center">
+        <ScorePill value={review.vehicle_score} />
+      </TableCell>
+      <TableCell className="text-center">
+        <ScorePill value={review.punctuality_score} />
+      </TableCell>
+      <TableCell className="text-center">
+        <ScorePill value={review.overall_score} />
+      </TableCell>
+      <TableCell className="max-w-[260px]">
+        {review.comment ? (
+          <p className="text-xs text-foreground/80 italic line-clamp-2">"{review.comment}"</p>
+        ) : (
+          <span className="text-xs text-muted-foreground">No comment</span>
+        )}
+      </TableCell>
+      <TableCell>
+        {isDispute ? (
+          <Badge className="bg-destructive text-destructive-foreground gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            Dispute
+          </Badge>
+        ) : isResolved ? (
+          <Badge className="bg-success/15 text-success border-success/30 gap-1">
+            <CheckCircle2 className="h-3 w-3" />
+            Resolved
+          </Badge>
+        ) : (
+          sentimentBadge(review.overall_score) ?? (
+            <span className="text-xs text-muted-foreground">—</span>
+          )
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen();
+          }}
+        >
+          View detail
+        </Button>
+      </TableCell>
+    </TableRow>
   );
 }
 
