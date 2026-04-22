@@ -191,7 +191,7 @@ export const DriverNavigateMapDialog = ({
       nextMap.on("load", forceResize);
       nextMap.on("style.load", forceResize);
 
-      resizeTimer = window.setTimeout(forceResize, 250);
+      resizeTimer = setTimeout(forceResize, 250);
 
       if (typeof ResizeObserver !== "undefined") {
         resizeObserver = new ResizeObserver(() => forceResize());
