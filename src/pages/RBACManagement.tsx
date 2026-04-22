@@ -49,6 +49,8 @@ import {
   ShieldPlus,
 } from "lucide-react";
 import { ManageCustomRolesDialog } from "@/components/rbac/ManageCustomRolesDialog";
+import { UserOverridesTab } from "@/components/rbac/UserOverridesTab";
+import { useNavigate } from "react-router-dom";
 
 interface Permission {
   id: string;
@@ -128,7 +130,10 @@ const ACCESS_LEVELS = [
 const RBACManagement = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { isSuperAdmin } = usePermissions();
+  const { isSuperAdmin, hasRole } = usePermissions();
+  const isOrgAdmin = hasRole("org_admin");
+  const canManage = isSuperAdmin || isOrgAdmin;
+  const navigate = useNavigate();
   const { organizationId } = useOrganization();
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [roleMappings, setRoleMappings] = useState<RolePermMapping[]>([]);
@@ -333,14 +338,14 @@ const RBACManagement = () => {
   const getRoleLabel = (roleVal: string) => ALL_ROLES.find((r) => r.value === roleVal)?.label || roleVal;
   const getRoleColor = (roleVal: string) => ALL_ROLES.find((r) => r.value === roleVal)?.color || "";
 
-  if (!isSuperAdmin) {
+  if (!canManage) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <Shield className="w-16 h-16 mx-auto mb-4 text-destructive" />
             <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-            <p className="text-muted-foreground">Only Super Admins can manage RBAC</p>
+            <p className="text-muted-foreground">Only Super Admins or Org Admins can manage RBAC</p>
           </div>
         </div>
       </Layout>
@@ -361,7 +366,10 @@ const RBACManagement = () => {
               <p className="text-muted-foreground mt-1 text-lg">Configure access control for all roles</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => navigate("/users")} className="gap-2">
+              <Users className="w-4 h-4" /> Manage Users & Roles
+            </Button>
             <Button variant="outline" onClick={() => setManageRolesOpen(true)} className="gap-2">
               <ShieldPlus className="w-4 h-4" /> Manage Roles
             </Button>
@@ -397,8 +405,9 @@ const RBACManagement = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-lg grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="matrix">Permission Matrix</TabsTrigger>
+            <TabsTrigger value="overrides" className="gap-1.5"><UserCog className="w-3.5 h-3.5" /> User Overrides</TabsTrigger>
             <TabsTrigger value="location" className="gap-1.5"><MapPin className="w-3.5 h-3.5" /> Location Access</TabsTrigger>
             <TabsTrigger value="roles">Role Details</TabsTrigger>
           </TabsList>
