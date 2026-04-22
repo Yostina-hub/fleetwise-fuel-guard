@@ -368,6 +368,64 @@ export const DriverViewRequestDialog = ({
     onError: (e: any) => toast.error(e.message || "Check-out failed"),
   });
 
+  // ---- Undo check-in (driver self-service, 5 min window) ----
+  const UNDO_WINDOW_MS = 5 * 60 * 1000;
+  const checkedInAtMs = request?.driver_checked_in_at
+    ? new Date(request.driver_checked_in_at).getTime()
+    : null;
+
+  // Tick once a second so the remaining-time label & disabled state stay live.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!checkedIn || checkedOut) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [checkedIn, checkedOut]);
+
+  const undoMsLeft =
+    checkedInAtMs != null ? Math.max(0, UNDO_WINDOW_MS - (now - checkedInAtMs)) : 0;
+  const canUndoCheckIn = checkedIn && !checkedOut && undoMsLeft > 0;
+  const undoSecondsLeft = Math.ceil(undoMsLeft / 1000);
+
+  const undoCheckIn = useMutation({
+    mutationFn: async () => {
+      if (!request) throw new Error("No request");
+      if (!canUndoCheckIn) throw new Error("Undo window has expired");
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update({
+          driver_checked_in_at: null,
+          driver_checkin_odometer: null,
+          driver_checkin_notes: null,
+          status: "assigned",
+        })
+        .eq("id", request.id);
+      if (error) throw error;
+
+      if (request.assigned_vehicle_id) {
+        await (supabase as any)
+          .from("vehicles")
+          .update({ status: "available", updated_at: new Date().toISOString() })
+          .eq("id", request.assigned_vehicle_id);
+      }
+      if (driverId) {
+        await (supabase as any)
+          .from("drivers")
+          .update({ status: "active", updated_at: new Date().toISOString() })
+          .eq("id", driverId);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Check-in undone");
+      setOdometer("");
+      setNotes("");
+      setOdoError(null);
+      setNotesError(null);
+      refresh();
+    },
+    onError: (e: any) => toast.error(e.message || "Could not undo check-in"),
+  });
+
   const buildMapsUrl = (
     place?: string | null,
     lat?: number | null,
