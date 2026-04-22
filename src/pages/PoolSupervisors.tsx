@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import Layout from "@/components/Layout";
 import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
+import { ConsolidationPanel } from "@/components/vehicle-requests/ConsolidationPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserCheck, Loader2, ClipboardList } from "lucide-react";
 
@@ -94,23 +95,29 @@ export default function PoolSupervisors() {
           </Card>
         ) : organizationId ? (
           approvedAwaiting === 0 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-primary" />
-                  Pool Supervisor Review
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-center py-12 text-muted-foreground">
-                <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No approved requests are waiting for pool review.</p>
-                <p className="text-xs mt-1 opacity-70">
-                  New approvals will appear here automatically.
-                </p>
-              </CardContent>
-            </Card>
+            <>
+              <ConsolidationPanel organizationId={organizationId} />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-primary" />
+                    Pool Supervisor Review
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center py-12 text-muted-foreground">
+                  <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No approved requests are waiting for pool review.</p>
+                  <p className="text-xs mt-1 opacity-70">
+                    New approvals will appear here automatically.
+                  </p>
+                </CardContent>
+              </Card>
+            </>
           ) : (
-            <PoolReviewPanel requests={requests} organizationId={organizationId} />
+            <>
+              <ConsolidationPanel organizationId={organizationId} />
+              <PoolReviewPanel requests={requests} organizationId={organizationId} />
+            </>
           )
         ) : null}
       </div>

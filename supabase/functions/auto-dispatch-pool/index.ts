@@ -62,6 +62,47 @@ const dayKey = (iso: string) => {
 const norm = (s: string | null | undefined) =>
   (s || "").toLowerCase().trim().replace(/\s+/g, " ");
 
+interface Geofence {
+  id: string;
+  name: string;
+  geometry_type: string;
+  center_lat: number | null;
+  center_lng: number | null;
+  radius_meters: number | null;
+  polygon_points: Array<{ lat: number; lng: number }> | null;
+}
+
+const pointInPolygon = (
+  pt: { lat: number; lng: number },
+  poly: Array<{ lat: number; lng: number }>,
+): boolean => {
+  if (!poly || poly.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].lng, yi = poly[i].lat;
+    const xj = poly[j].lng, yj = poly[j].lat;
+    const intersect =
+      yi > pt.lat !== yj > pt.lat &&
+      pt.lng < ((xj - xi) * (pt.lat - yi)) / (yj - yi || 1e-12) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+};
+
+const insideFence = (
+  pt: { lat: number; lng: number },
+  f: Geofence,
+): boolean => {
+  if (f.geometry_type === "circle" && f.center_lat != null && f.center_lng != null && f.radius_meters) {
+    const km = haversineKm(pt.lat, pt.lng, Number(f.center_lat), Number(f.center_lng));
+    return km * 1000 <= f.radius_meters;
+  }
+  if (f.geometry_type === "polygon" && Array.isArray(f.polygon_points)) {
+    return pointInPolygon(pt, f.polygon_points);
+  }
+  return false;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -235,6 +276,17 @@ Deno.serve(async (req) => {
       }),
     );
 
+    // Active geofences for the org (used to boost vehicles whose live position
+    // is inside the same geofence that contains the request's pickup point).
+    const { data: fenceRows } = await supabase
+      .from("geofences")
+      .select(
+        "id, name, geometry_type, center_lat, center_lng, radius_meters, polygon_points",
+      )
+      .eq("organization_id", organization_id)
+      .eq("is_active", true);
+    const fences: Geofence[] = (fenceRows || []) as any;
+
     // Track local locks within this run so two groups don't grab the same vehicle.
     const runLocked = new Set<string>(lockedIds);
 
@@ -251,6 +303,18 @@ Deno.serve(async (req) => {
       const pickupLng = withCoords?.departure_lng ?? null;
       const totalPassengers = reqs.reduce((s, r) => s + (r.passengers || 1), 0);
 
+      // Find the geofence that contains the pickup (if any) — used to boost
+      // vehicles whose live position is inside the same fence.
+      let pickupFence: Geofence | null = null;
+      if (pickupLat != null && pickupLng != null) {
+        for (const f of fences) {
+          if (insideFence({ lat: pickupLat, lng: pickupLng }, f)) {
+            pickupFence = f;
+            break;
+          }
+        }
+      }
+
       // Candidate vehicles: not already locked, fits passenger count if known.
       const candidates = poolVehicles
         .filter((v) => !runLocked.has(v.id))
@@ -264,12 +328,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Score candidates by distance to pickup (smaller is better).
-      // Vehicles with no telemetry get a large but finite penalty so they're still pickable.
+      // Score: in-pickup-geofence vehicles win, then closest GPS, then no-GPS roster.
       const ranked = candidates
         .map((v) => {
           const t = teleByVehicle.get(v.id);
           let distance = 9999;
+          let inGeofence = false;
           if (
             pickupLat != null &&
             pickupLng != null &&
@@ -277,10 +341,19 @@ Deno.serve(async (req) => {
             t?.longitude != null
           ) {
             distance = haversineKm(pickupLat, pickupLng, t.latitude, t.longitude);
+            if (pickupFence) {
+              inGeofence = insideFence(
+                { lat: Number(t.latitude), lng: Number(t.longitude) },
+                pickupFence,
+              );
+            }
           }
-          return { v, distance };
+          return { v, distance, inGeofence };
         })
-        .sort((a, b) => a.distance - b.distance);
+        .sort((a, b) => {
+          if (a.inGeofence !== b.inGeofence) return a.inGeofence ? -1 : 1;
+          return a.distance - b.distance;
+        });
 
       const picked = ranked[0];
       const vehicle = picked.v;
@@ -291,6 +364,8 @@ Deno.serve(async (req) => {
           requests: reqs.map((r) => r.request_number),
           chosen_vehicle: vehicle.plate_number,
           distance_km: Math.round(picked.distance * 10) / 10,
+          in_pickup_geofence: picked.inGeofence,
+          pickup_geofence: pickupFence?.name || null,
           passengers: totalPassengers,
         });
         continue;

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck, LogIn, Send, Shuffle, UserCheck } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck, LogIn, Send, Shuffle, UserCheck, Sparkles, MapPin } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -42,6 +42,7 @@ import {
   isUpgradeOverRecommendation,
   COST_BAND_LABELS,
 } from "@/lib/vehicle-requests/vehicleClassRecommendation";
+import { useSuggestedVehicles } from "@/hooks/useSuggestedVehicles";
 
 interface Props {
   request: any;
@@ -84,6 +85,16 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       if (error) throw error;
       return data || [];
     },
+  });
+
+  // Suggested vehicles (closest GPS, geofence-aware, fallback pool roster)
+  const { data: suggested = [] } = useSuggestedVehicles({
+    organizationId: request.organization_id,
+    poolName: request.pool_name,
+    pickupLat: request.departure_lat,
+    pickupLng: request.departure_lng,
+    passengers: request.passengers,
+    enabled: request.status === "approved" && canManageAll,
   });
 
   // Issue #41 — pull the requester's full profile so the detail view can show
@@ -712,15 +723,72 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         )}
         {request.status === "approved" && canManageAll && (
           <div className="space-y-2 w-full">
+            {/* Smart suggestions */}
+            {suggested.length > 0 && (
+              <div className="rounded-md border bg-muted/30 p-2 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-primary" />
+                    Suggested vehicles
+                  </span>
+                  <span>Closest GPS · pool roster fallback</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {suggested.slice(0, 3).map((s) => {
+                    const isSel = selectedVehicleId === s.id;
+                    return (
+                      <button
+                        type="button"
+                        key={s.id}
+                        onClick={() => {
+                          setSelectedVehicleId(s.id);
+                          if (s.assigned_driver_id) setSelectedDriver(s.assigned_driver_id);
+                        }}
+                        className={`text-[11px] rounded border px-2 py-1 flex items-center gap-1.5 transition ${
+                          isSel
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-background hover:bg-accent"
+                        }`}
+                      >
+                        {s.is_top_pick && <Sparkles className="w-3 h-3 text-primary" />}
+                        {s.in_geofence && <MapPin className="w-3 h-3 text-success" />}
+                        <span className="font-medium">{s.plate_number}</span>
+                        <span className="text-muted-foreground">
+                          {s.distance_km != null ? `${s.distance_km} km` : "no GPS"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-xs flex items-center gap-1 mb-1"><Truck className="w-3 h-3" /> Vehicle</Label>
                 <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select vehicle..." /></SelectTrigger>
                   <SelectContent>
-                    {available.slice(0, 30).map((v) => (
-                      <SelectItem key={v.id} value={v.id} className="text-xs">{v.plate_number} - {v.make} {v.model}</SelectItem>
+                    {/* Top suggestions first, then the rest */}
+                    {suggested.slice(0, 5).map((s) => (
+                      <SelectItem key={`sug-${s.id}`} value={s.id} className="text-xs">
+                        <span className="flex items-center gap-1">
+                          {s.is_top_pick && <Sparkles className="w-3 h-3 text-primary" />}
+                          {s.in_geofence && <MapPin className="w-3 h-3 text-success" />}
+                          {s.plate_number} - {s.make} {s.model}
+                          {s.distance_km != null && (
+                            <span className="text-muted-foreground ml-1">· {s.distance_km} km</span>
+                          )}
+                        </span>
+                      </SelectItem>
                     ))}
+                    {available
+                      .filter((v) => !suggested.slice(0, 5).some((s) => s.id === v.id))
+                      .slice(0, 30)
+                      .map((v) => (
+                        <SelectItem key={v.id} value={v.id} className="text-xs">
+                          {v.plate_number} - {v.make} {v.model}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
