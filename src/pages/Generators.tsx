@@ -33,6 +33,8 @@ import { Plus, Search, Power, Edit, Trash2, Loader2 } from "lucide-react";
 import { useGenerators, type Generator } from "@/hooks/useGenerators";
 import { GeneratorRegistrationDialog } from "@/components/generators/GeneratorRegistrationDialog";
 import { format } from "date-fns";
+import { PageDateRangeProvider } from "@/contexts/PageDateRangeContext";
+import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
 
 const STATUS_BADGE: Record<string, string> = {
   CREATED: "bg-muted text-muted-foreground border-muted-foreground/20",
@@ -89,6 +91,7 @@ const Generators = () => {
 
   return (
     <Layout>
+      <PageDateRangeProvider>
       <div className="p-4 md:p-6 space-y-4">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -110,6 +113,9 @@ const Generators = () => {
             <Plus className="h-4 w-4" /> Define Generator
           </Button>
         </div>
+
+        {/* Page-level date range filter */}
+        <PageDateRangeFilter />
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
