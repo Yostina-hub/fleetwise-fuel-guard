@@ -24,6 +24,7 @@ import {
   Users,
   HelpCircle,
   Paperclip,
+  Camera,
   X,
   Loader2,
 } from "lucide-react";
@@ -332,24 +333,49 @@ export const ReportTripIncidentDialog = ({
           {/* Attachments */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Attachments (optional)</Label>
-            <label
-              htmlFor="incident-files"
-              className="flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-            >
-              <Paperclip className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
-              <span className="text-sm font-medium">Tap to add photos or documents</span>
-              <span className="text-xs text-muted-foreground">
-                Up to {MAX_FILES} files · max {MAX_FILE_SIZE_MB}MB each
-              </span>
-              <input
-                id="incident-files"
-                type="file"
-                multiple
-                accept="image/*,application/pdf"
-                className="hidden"
-                onChange={(e) => handleFiles(e.target.files)}
-              />
-            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <label
+                htmlFor="incident-camera"
+                className="flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <Camera className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+                <span className="text-sm font-medium">Take Photo</span>
+                <span className="text-xs text-muted-foreground">Use camera</span>
+                <input
+                  id="incident-camera"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    handleFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              <label
+                htmlFor="incident-files"
+                className="flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <Paperclip className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+                <span className="text-sm font-medium">Upload Files</span>
+                <span className="text-xs text-muted-foreground">Photos or PDFs</span>
+                <input
+                  id="incident-files"
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    handleFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Up to {MAX_FILES} files · max {MAX_FILE_SIZE_MB}MB each
+            </p>
 
             {files.length > 0 && (
               <ul className="space-y-1.5">
