@@ -58,10 +58,17 @@ interface ActiveRequest {
   assigned_at?: string | null;
   driver_checked_in_at?: string | null;
   driver_checked_out_at?: string | null;
+  driver_checkin_odometer?: number | null;
+  driver_checkout_odometer?: number | null;
+  driver_checkin_notes?: string | null;
   assigned_vehicle_id?: string | null;
   rejection_reason?: string | null;
   rejected_at?: string | null;
   organization_id?: string | null;
+  requester_id?: string | null;
+  requester_name?: string | null;
+  passengers_count?: number | null;
+  number_of_passengers?: number | null;
   assigned_vehicle?: {
     id: string;
     plate_number: string;
