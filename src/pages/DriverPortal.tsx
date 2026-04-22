@@ -593,22 +593,40 @@ const DriverPortal = () => {
                               {r?.destination ? ` → ${r.destination}` : ""}
                             </p>
                           </div>
-                          <Button
-                            size="sm"
-                            variant={checkedIn ? "outline" : "default"}
-                            className="gap-1 shrink-0"
-                            onClick={() => setActiveAssignment({ request: r, assignment: a })}
-                          >
-                            {checkedIn ? (
-                              <>
-                                <StopCircle className="w-4 h-4" aria-hidden="true" /> Check Out
-                              </>
-                            ) : (
-                              <>
-                                <PlayCircle className="w-4 h-4" aria-hidden="true" /> Check In
-                              </>
-                            )}
-                          </Button>
+                          <div className="flex flex-col gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              variant={checkedIn ? "outline" : "default"}
+                              className="gap-1"
+                              onClick={() => setActiveAssignment({ request: r, assignment: a })}
+                            >
+                              {checkedIn ? (
+                                <>
+                                  <StopCircle className="w-4 h-4" aria-hidden="true" /> Check Out
+                                </>
+                              ) : (
+                                <>
+                                  <PlayCircle className="w-4 h-4" aria-hidden="true" /> Check In
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="gap-1"
+                              onClick={() =>
+                                setViewRequest({
+                                  ...r,
+                                  assigned_vehicle: v,
+                                  assigned_vehicle_id: v?.id,
+                                  driver_checked_in_at: a.driver_checked_in_at,
+                                  driver_checked_out_at: a.driver_checked_out_at,
+                                })
+                              }
+                            >
+                              <FileText className="w-4 h-4" aria-hidden="true" /> View
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     );
