@@ -301,9 +301,17 @@ export function RouteMapPreview({
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    // Render markers
+    // Render markers — but draw STOPS LAST (on top) so they remain visible
+    // when a stop is placed near/under the Departure or Destination pin.
     const haveLegs = routeLegs.length === Math.max(0, orderedPoints.length - 1) && routeLegs.length > 0;
-    orderedPoints.forEach((p, idx) => {
+    const renderOrder = orderedPoints
+      .map((p, idx) => ({ p, idx }))
+      .sort((a, b) => {
+        const rank = (k: string) => (k === "stop" ? 2 : 1); // stops drawn last
+        return rank(a.p.kind) - rank(b.p.kind);
+      });
+
+    renderOrder.forEach(({ p, idx }) => {
       if (p.lat == null || p.lng == null) return;
       const popupLabel = getPointLabel(p);
       const popupInfo: PopupSegmentInfo = haveLegs
@@ -317,22 +325,36 @@ export function RouteMapPreview({
       el.style.display = "flex";
       el.style.alignItems = "center";
       el.style.justifyContent = "center";
-      el.style.width = "26px";
-      el.style.height = "26px";
       el.style.borderRadius = "50%";
-      el.style.fontSize = "11px";
       el.style.fontWeight = "700";
       el.style.color = "#fff";
-      el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
+      el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.35)";
       el.style.border = "2px solid #fff";
+      el.style.cursor = "pointer";
       if (p.kind === "departure") {
+        el.style.width = "26px";
+        el.style.height = "26px";
+        el.style.fontSize = "11px";
         el.style.background = "hsl(142 71% 45%)"; // emerald
+        el.style.zIndex = "2";
         el.textContent = "A";
       } else if (p.kind === "destination") {
+        el.style.width = "26px";
+        el.style.height = "26px";
+        el.style.fontSize = "11px";
         el.style.background = "hsl(0 84% 60%)"; // red
+        el.style.zIndex = "2";
         el.textContent = "B";
       } else {
+        // Stops: slightly bigger + on top so they're visible even when
+        // overlapping the Departure/Destination pin.
+        el.style.width = "30px";
+        el.style.height = "30px";
+        el.style.fontSize = "12px";
         el.style.background = "hsl(38 92% 50%)"; // amber
+        el.style.border = "3px solid #fff";
+        el.style.boxShadow = "0 3px 10px rgba(0,0,0,0.45)";
+        el.style.zIndex = "10";
         el.textContent = String(p.index ?? "·");
       }
       const marker = new maplibregl.Marker({ element: el })
