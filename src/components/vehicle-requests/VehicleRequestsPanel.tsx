@@ -189,6 +189,7 @@ export const VehicleRequestsPanel = () => {
         case "requester_name": return (r.requester_name || "").toLowerCase();
         case "route": return ((r.departure_place || "") + " " + (r.destination || "")).toLowerCase();
         case "needed_from": return r.needed_from ? new Date(r.needed_from).getTime() : 0;
+        case "created_at": return r.created_at ? new Date(r.created_at).getTime() : 0;
         case "vehicle": return (r.assigned_vehicle?.plate_number || "").toLowerCase();
         case "status": return (r.status || "").toLowerCase();
         default: return 0;
