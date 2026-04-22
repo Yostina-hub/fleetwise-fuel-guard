@@ -339,7 +339,7 @@ export function validateVRField(
       if (raw.replace(/[^\d+\s\-()]/g, "").length !== raw.length)
         return "Phone number contains invalid characters. Only digits, spaces, dashes, parentheses, and a leading + are allowed.";
       if (!PHONE_RE.test(v))
-        return "Phone number looks invalid. Use Ethiopian local format starting with 09 or 07 (e.g. 0911 234 567), or international format (e.g. +251 911 234 567).";
+        return "Phone number looks invalid. Use Ethiopian local format starting with 09 (e.g. 0911 234 567), or international format (e.g. +251 911 234 567).";
       const digitsOnly = v.replace(/\D/g, "");
       // Reject a leading + followed by no digits, or multiple + signs.
       if ((v.match(/\+/g) || []).length > 1)
@@ -347,18 +347,18 @@ export function validateVRField(
       if (v.includes("+") && !v.startsWith("+"))
         return "The + sign must appear only at the start of the phone number.";
       const hasPlus = v.startsWith("+");
-      // Ethiopian local format: must start with 09 or 07 and be exactly 10 digits.
-      if (!hasPlus && (digitsOnly.startsWith("09") || digitsOnly.startsWith("07"))) {
+      // Ethiopian local format: must start with 09 and be exactly 10 digits.
+      if (!hasPlus && digitsOnly.startsWith("09")) {
         if (digitsOnly.length !== 10)
-          return `Ethiopian mobile numbers must be exactly 10 digits starting with 09 or 07 (you entered ${digitsOnly.length} digits).`;
+          return `Ethiopian mobile numbers must be exactly 10 digits starting with 09 (you entered ${digitsOnly.length} digits).`;
         return;
       }
       // Ethiopian local format requirement: if no + sign, the number must
-      // start with 0 (and specifically 09 or 07 for mobile).
-      if (!hasPlus && digitsOnly.startsWith("0") && !digitsOnly.startsWith("09") && !digitsOnly.startsWith("07"))
-        return "Local Ethiopian numbers must start with 09 or 07 (e.g. 0911 234 567).";
+      // start with 09 for mobile.
+      if (!hasPlus && digitsOnly.startsWith("0") && !digitsOnly.startsWith("09"))
+        return "Local Ethiopian numbers must start with 09 (e.g. 0911 234 567).";
       if (!hasPlus && !digitsOnly.startsWith("0"))
-        return "Phone number must start with 09 / 07 (local) or + (international, e.g. +251 911 234 567).";
+        return "Phone number must start with 09 (local) or + (international, e.g. +251 911 234 567).";
       // International format checks.
       if (digitsOnly.length < 7)
         return `Phone number is too short (${digitsOnly.length} digits). It must contain at least 7 digits.`;
