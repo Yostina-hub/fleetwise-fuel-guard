@@ -172,7 +172,7 @@ export const ReportTripIncidentDialog = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicles")
-        .select("id, plate_number, make, model, current_odometer")
+        .select("id, plate_number, make, model, odometer_km")
         .eq("id", vehicleId!)
         .maybeSingle();
       if (error) throw error;
@@ -182,11 +182,11 @@ export const ReportTripIncidentDialog = ({
 
   // Pre-fill KM reading with the vehicle's last known odometer (editable).
   useEffect(() => {
-    if (open && vehicleInfo?.current_odometer != null && kmReading === "") {
-      setKmReading(String(vehicleInfo.current_odometer));
+    if (open && vehicleInfo?.odometer_km != null && kmReading === "") {
+      setKmReading(String(vehicleInfo.odometer_km));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, vehicleInfo?.current_odometer]);
+  }, [open, vehicleInfo?.odometer_km]);
 
   const driverFullName = driverInfo
     ? `${driverInfo.first_name || ""} ${driverInfo.last_name || ""}`.trim()
