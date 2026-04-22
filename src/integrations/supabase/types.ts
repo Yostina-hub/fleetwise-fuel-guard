@@ -26568,6 +26568,14 @@ export type Database = {
         Returns: number
       }
       can_manage_forms: { Args: { _user_id: string }; Returns: boolean }
+      can_submit_vehicle_request_rating: {
+        Args: {
+          _organization_id: string
+          _user_id: string
+          _vehicle_request_id: string
+        }
+        Returns: boolean
+      }
       check_account_lockout: {
         Args: { p_email: string }
         Returns: {
