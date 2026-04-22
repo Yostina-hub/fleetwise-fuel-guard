@@ -31,6 +31,10 @@ interface RouteMapPreviewProps {
   heightPx?: number;
 }
 
+type RoutePointKind = "departure" | "stop" | "destination";
+
+type RoutePointWithKind = RoutePoint & { kind: RoutePointKind; index?: number };
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -40,12 +44,30 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function getPointLabel(point: RoutePoint & { kind: "departure" | "stop" | "destination"; index?: number }): string {
+function getPointLabel(point: RoutePointWithKind): string {
   const trimmed = point.label?.trim();
   if (trimmed) return trimmed;
   if (point.kind === "departure") return "Departure";
   if (point.kind === "destination") return "Destination";
   return `Stop ${point.index}`;
+}
+
+function isPlaceholderPointLabel(point: RoutePointWithKind): boolean {
+  const trimmed = point.label?.trim();
+  if (!trimmed) return true;
+  if (/^pinned location$/i.test(trimmed)) return true;
+  if (point.kind === "stop" && new RegExp(`^stop\\s+${point.index}$`, "i").test(trimmed)) return true;
+  return false;
+}
+
+function getPointKey(point: RoutePointWithKind): string {
+  return `${point.kind}:${point.index ?? 0}:${point.lat?.toFixed(6) ?? "na"}:${point.lng?.toFixed(6) ?? "na"}`;
+}
+
+function getDisplayPointLabel(point: RoutePointWithKind, resolvedLabels: Record<string, string>): string {
+  const resolved = resolvedLabels[getPointKey(point)]?.trim();
+  if (resolved) return resolved;
+  return getPointLabel(point);
 }
 
 interface PopupSegmentInfo {
@@ -175,9 +197,10 @@ export function RouteMapPreview({
   // Per-leg distance/duration returned by the routing engine. legs[i] is the
   // segment FROM orderedPoints[i] TO orderedPoints[i+1].
   const [routeLegs, setRouteLegs] = useState<{ distance_m: number; duration_s: number }[]>([]);
+  const [resolvedLabels, setResolvedLabels] = useState<Record<string, string>>({});
 
   // Build the ordered list of valid points
-  const orderedPoints: Array<RoutePoint & { kind: "departure" | "stop" | "destination"; index?: number }> = [];
+  const orderedPoints: RoutePointWithKind[] = [];
   if (departure?.lat != null && departure?.lng != null) {
     orderedPoints.push({ ...departure, kind: "departure" });
   }
@@ -196,6 +219,84 @@ export function RouteMapPreview({
     const d = haversineKm(orderedPoints[i - 1], orderedPoints[i]);
     return d != null ? sum + d : sum;
   }, 0);
+
+  useEffect(() => {
+    const pointsNeedingLabels = orderedPoints.filter(
+      (point) =>
+        point.lat != null &&
+        point.lng != null &&
+        isPlaceholderPointLabel(point) &&
+        !resolvedLabels[getPointKey(point)],
+    );
+
+    if (pointsNeedingLabels.length === 0) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session || cancelled) return;
+
+        const nextEntries = await Promise.all(
+          pointsNeedingLabels.map(async (point) => {
+            const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-reverse-geocode?lat=${point.lat!.toFixed(6)}&lon=${point.lng!.toFixed(6)}`;
+            try {
+              const res = await fetch(url, {
+                headers: {
+                  Authorization: `Bearer ${session.access_token}`,
+                  apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                  "Accept-Language": "en",
+                },
+              });
+              if (!res.ok) return null;
+
+              const json = await res.json();
+              const addr = json?.address || {};
+              const derived =
+                json?.display_name ||
+                json?.name ||
+                [
+                  addr.road || addr.pedestrian,
+                  addr.neighbourhood || addr.suburb,
+                  addr.city || addr.town || addr.village,
+                ]
+                  .filter(Boolean)
+                  .join(", ");
+
+              const label = typeof derived === "string" ? derived.trim() : "";
+              if (!label) return null;
+              return [getPointKey(point), label] as const;
+            } catch {
+              return null;
+            }
+          }),
+        );
+
+        if (cancelled) return;
+
+        const validEntries = nextEntries.filter((entry): entry is readonly [string, string] => Boolean(entry));
+        if (validEntries.length === 0) return;
+
+        setResolvedLabels((prev) => {
+          const next = { ...prev };
+          validEntries.forEach(([key, value]) => {
+            next[key] = value;
+          });
+          return next;
+        });
+      } catch {
+        // Non-blocking: popups will fall back to the provided labels.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [orderedPoints, resolvedLabels]);
 
   // Fetch the real driving route via the `route-directions` edge function.
   // The function proxies OSRM server-side so we avoid browser CORS / mixed-content
@@ -329,7 +430,7 @@ export function RouteMapPreview({
 
     renderOrder.forEach(({ p, idx }) => {
       if (p.lat == null || p.lng == null) return;
-      const popupLabel = getPointLabel(p);
+      const popupLabel = getDisplayPointLabel(p, resolvedLabels);
       const popupInfo: PopupSegmentInfo = haveLegs
         ? {
             arriveKm: idx > 0 ? routeLegs[idx - 1].distance_m / 1000 : null,
@@ -501,6 +602,7 @@ export function RouteMapPreview({
     JSON.stringify(stops?.map((s) => [s.lat, s.lng])),
     routeGeometry,
     routeLegs,
+    resolvedLabels,
   ]);
 
   const hasAny = orderedPoints.length > 0;
