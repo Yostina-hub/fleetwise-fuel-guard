@@ -200,9 +200,16 @@ const RequesterPortalInner = () => {
         .eq("id", rateId)
         .eq("requester_id", user.id)
         .maybeSingle();
+
+      const { data: existingRating } = await (supabase as any)
+        .from("vehicle_request_ratings")
+        .select("id")
+        .eq("vehicle_request_id", rateId)
+        .eq("rated_by", user.id)
+        .maybeSingle();
+
       if (cancelled) return;
-      if (error || !data || data.rated_at) {
-        // Already rated or unavailable — just clear the param.
+      if (error || !data || data.rated_at || existingRating) {
         const next = new URLSearchParams(searchParams);
         next.delete("rate");
         setSearchParams(next, { replace: true });

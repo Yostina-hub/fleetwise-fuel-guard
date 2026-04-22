@@ -76,17 +76,69 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
   const submit = useMutation({
     mutationFn: async () => {
       if (!trip) throw new Error("No trip selected");
-      const { error } = await supabase
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: requestRow, error: requestError } = await (supabase as any)
+        .from("vehicle_requests")
+        .select("id, organization_id, requester_id, assigned_driver_id, assigned_vehicle_id")
+        .eq("id", trip.id)
+        .maybeSingle();
+
+      if (requestError) throw requestError;
+      if (!requestRow) throw new Error("Trip not found");
+      if (requestRow.requester_id !== user.id) {
+        throw new Error("You can only rate your own trip.");
+      }
+
+      const payload = {
+        organization_id: requestRow.organization_id,
+        vehicle_request_id: trip.id,
+        rated_by: user.id,
+        driver_id: requestRow.assigned_driver_id ?? trip.assigned_driver_id ?? null,
+        vehicle_id: requestRow.assigned_vehicle_id ?? trip.assigned_vehicle_id ?? null,
+        driver_score: driver,
+        vehicle_score: vehicle,
+        punctuality_score: punctuality,
+        overall_score: overall || null,
+        comment: comment.trim() || null,
+        dispute_flagged: false,
+        dispute_reason: null,
+      };
+
+      const { data: existingRating, error: existingRatingError } = await (supabase as any)
+        .from("vehicle_request_ratings")
+        .select("id")
+        .eq("vehicle_request_id", trip.id)
+        .eq("rated_by", user.id)
+        .maybeSingle();
+
+      if (existingRatingError) throw existingRatingError;
+
+      const { error } = existingRating
+        ? await (supabase as any)
+            .from("vehicle_request_ratings")
+            .update(payload)
+            .eq("id", existingRating.id)
+            .eq("rated_by", user.id)
+        : await (supabase as any)
+            .from("vehicle_request_ratings")
+            .insert(payload);
+
+      if (error) throw error;
+
+      const { error: requestUpdateError } = await (supabase as any)
         .from("vehicle_requests")
         .update({
-          driver_rating: driver,
-          vehicle_rating: vehicle,
-          punctuality_rating: punctuality,
-          rating_comment: comment.trim() || null,
+          rated_at: new Date().toISOString(),
           requester_feedback: comment.trim() || null,
         })
-        .eq("id", trip.id);
-      if (error) throw error;
+        .eq("id", trip.id)
+        .eq("requester_id", user.id);
+
+      if (requestUpdateError) throw requestUpdateError;
     },
     onSuccess: () => {
       toast.success("Thanks for your feedback! 🎉", {
@@ -95,6 +147,8 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
       qc.invalidateQueries({ queryKey: ["pending-ratings"] });
       qc.invalidateQueries({ queryKey: ["vehicle-requests"] });
       qc.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
+      qc.invalidateQueries({ queryKey: ["my-vehicle-requests"] });
+      qc.invalidateQueries({ queryKey: ["vehicle-request-ratings"] });
       onRated?.();
       setStep(4); // show confirmation/thank-you screen instead of closing
     },
