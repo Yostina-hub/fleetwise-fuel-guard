@@ -3,9 +3,9 @@
  * -------------------
  * Returns a ranked list of drivers suggested for a vehicle request.
  *
- * Ranking strategy:
+ * Ranking strategy (never filters — only ranks, so supervisors can cross-pool):
  *   1. Drivers whose `assigned_vehicle.specific_pool` matches the request pool.
- *   2. Drivers whose `pool` field matches the request pool (if column exists).
+ *   2. Drivers whose `assigned_pool` matches the request pool.
  *   3. Active, free drivers (status = 'active', not on a trip).
  *   4. Fallback: all active drivers in the org.
  *
@@ -45,41 +45,45 @@ export const useSuggestedDrivers = ({
     enabled: enabled && !!organizationId,
     staleTime: 30_000,
     queryFn: async (): Promise<SuggestedDriver[]> => {
+      // NOTE: drivers table uses `assigned_pool`, not `pool`.
       const { data: drivers, error } = await (supabase as any)
         .from("drivers")
         .select(
-          "id, first_name, last_name, phone, status, pool, assigned_vehicle_id",
+          "id, first_name, last_name, phone, status, assigned_pool",
         )
         .eq("organization_id", organizationId!)
         .order("first_name")
-        .limit(200);
+        .limit(500);
       if (error) throw error;
       const list = (drivers || []) as any[];
       if (list.length === 0) return [];
 
-      // Resolve each assigned vehicle's pool so we can match by vehicle pool.
-      const vehicleIds = Array.from(
-        new Set(list.map((d) => d.assigned_vehicle_id).filter(Boolean)),
-      );
-      const vehiclePoolMap = new Map<string, string | null>();
-      if (vehicleIds.length) {
-        const { data: vehicles } = await (supabase as any)
-          .from("vehicles")
-          .select("id, specific_pool")
-          .in("id", vehicleIds);
-        (vehicles || []).forEach((v: any) => {
-          vehiclePoolMap.set(v.id, v.specific_pool || null);
-        });
-      }
+      // Resolve which vehicle each driver is currently assigned to (reverse lookup
+      // — drivers.assigned_vehicle_id doesn't exist; vehicles.assigned_driver_id does).
+      const driverIds = list.map((d) => d.id);
+      const { data: vehicles } = await (supabase as any)
+        .from("vehicles")
+        .select("id, specific_pool, assigned_driver_id")
+        .in("assigned_driver_id", driverIds);
+      const driverVehicleMap = new Map<
+        string,
+        { vehicleId: string; pool: string | null }
+      >();
+      (vehicles || []).forEach((v: any) => {
+        if (v.assigned_driver_id) {
+          driverVehicleMap.set(v.assigned_driver_id, {
+            vehicleId: v.id,
+            pool: v.specific_pool || null,
+          });
+        }
+      });
 
       const scored: SuggestedDriver[] = list.map((d) => {
-        const vehiclePool = d.assigned_vehicle_id
-          ? vehiclePoolMap.get(d.assigned_vehicle_id) ?? null
-          : null;
-        const driverPool = d.pool || null;
+        const veh = driverVehicleMap.get(d.id);
+        const driverPool = d.assigned_pool || null;
         const inPool =
           !!poolName &&
-          ((vehiclePool && vehiclePool === poolName) ||
+          ((veh?.pool && veh.pool === poolName) ||
             (driverPool && driverPool === poolName));
         const isBusy = d.status === "on_trip" || d.status === "off_duty";
         return {
@@ -89,8 +93,8 @@ export const useSuggestedDrivers = ({
           phone: d.phone,
           status: d.status,
           pool: driverPool,
-          assigned_vehicle_id: d.assigned_vehicle_id,
-          assigned_vehicle_pool: vehiclePool,
+          assigned_vehicle_id: veh?.vehicleId || null,
+          assigned_vehicle_pool: veh?.pool || null,
           in_pool: !!inPool,
           is_busy: !!isBusy,
           is_top_pick: false,
