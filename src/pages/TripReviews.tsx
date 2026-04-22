@@ -43,7 +43,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -119,7 +119,7 @@ type EnrichedReview = ReviewRow & {
 // ─── page ───────────────────────────────────────────────────────────────
 
 export default function TripReviews() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
 
