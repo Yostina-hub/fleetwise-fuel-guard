@@ -609,50 +609,130 @@ function DisputeReviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-2 border-b">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
-            Review · {review.request_number ?? "Trip"}
+            Review Detail
+            {review.request_number && (
+              <Badge variant="outline" className="font-mono text-[11px] ml-1">
+                {review.request_number}
+              </Badge>
+            )}
+            {alreadyResolved && (
+              <Badge className="bg-success/15 text-success border-success/30 gap-1 ml-auto">
+                <CheckCircle2 className="h-3 w-3" />
+                Resolved
+              </Badge>
+            )}
+            {review.dispute_flagged && !alreadyResolved && (
+              <Badge className="bg-destructive text-destructive-foreground gap-1 ml-auto">
+                <AlertTriangle className="h-3 w-3" />
+                Open dispute
+              </Badge>
+            )}
           </DialogTitle>
-          <DialogDescription>
-            Submitted by {review.rater_name} on{" "}
-            {format(new Date(review.created_at), "MMM d, yyyy 'at' h:mm a")}
+          <DialogDescription className="sr-only">
+            Trip review submitted by {review.rater_name}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Score summary */}
-        <div className="rounded-lg border bg-muted/30 p-4 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Overall</span>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-primary">
-                {review.overall_score ?? "—"}
-              </span>
-              <Stars value={review.overall_score} size={16} />
+        {/* Submitted by + meta */}
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="rounded-lg border bg-card p-3">
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wide mb-1.5">
+              Submitted by
+            </p>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold ring-1 ring-primary/20 shrink-0">
+                {(review.rater_name ?? "?").slice(0, 2).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate">{review.rater_name}</p>
+                <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {format(new Date(review.created_at), "MMM d, yyyy 'at' h:mm a")}
+                </p>
+              </div>
             </div>
           </div>
-          {[
-            { label: "Driver", value: review.driver_score, icon: UserRound },
-            { label: "Vehicle", value: review.vehicle_score, icon: Car },
-            { label: "Punctuality", value: review.punctuality_score, icon: Clock },
-          ].map((row) => (
-            <div key={row.label} className="flex items-center justify-between text-sm">
-              <span className="inline-flex items-center gap-2 text-muted-foreground">
-                <row.icon className="h-3.5 w-3.5" />
-                {row.label}
-              </span>
-              <Stars value={row.value} size={13} />
+          <div className="rounded-lg border bg-card p-3">
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wide mb-1.5">
+              Trip context
+            </p>
+            <div className="space-y-1 text-xs">
+              {review.driver_name && (
+                <div className="inline-flex items-center gap-1.5">
+                  <UserRound className="h-3 w-3 text-muted-foreground" />
+                  <span className="font-medium">{review.driver_name}</span>
+                </div>
+              )}
+              {review.vehicle_label && (
+                <div className="inline-flex items-center gap-1.5">
+                  <Car className="h-3 w-3 text-muted-foreground" />
+                  <span>{review.vehicle_label}</span>
+                </div>
+              )}
+              {review.purpose && (
+                <p className="text-muted-foreground truncate">{review.purpose}</p>
+              )}
             </div>
-          ))}
+          </div>
         </div>
 
-        {review.comment && (
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1">Requester comment</p>
-            <p className="text-sm italic">"{review.comment}"</p>
+        {/* Score breakdown */}
+        <div className="rounded-lg border bg-gradient-to-br from-muted/40 to-muted/10 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-semibold">Rating Breakdown</span>
+            <div className="flex items-center gap-2">
+              <span className="text-3xl font-bold text-primary tabular-nums">
+                {review.overall_score?.toFixed(1) ?? "—"}
+              </span>
+              <div>
+                <Stars value={review.overall_score} size={16} />
+                <p className="text-[10px] text-muted-foreground text-right">Overall</p>
+              </div>
+            </div>
           </div>
-        )}
+          <Separator className="my-3" />
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Driver", value: review.driver_score, icon: UserRound },
+              { label: "Vehicle", value: review.vehicle_score, icon: Car },
+              { label: "Punctuality", value: review.punctuality_score, icon: Clock },
+            ].map((row) => (
+              <div key={row.label} className="rounded-md border bg-background p-2.5 text-center">
+                <row.icon className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                <p className="text-[10px] uppercase text-muted-foreground font-medium">
+                  {row.label}
+                </p>
+                <p className="text-lg font-bold tabular-nums mt-0.5">
+                  {row.value?.toFixed(1) ?? "—"}
+                </p>
+                <Stars value={row.value} size={11} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Comment */}
+        <div className="rounded-lg border p-3">
+          <div className="flex items-center gap-2 mb-1.5">
+            <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-xs font-semibold uppercase text-muted-foreground tracking-wide">
+              User comment
+            </p>
+          </div>
+          {review.comment ? (
+            <p className="text-sm italic text-foreground/90 leading-relaxed">
+              "{review.comment}"
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">
+              No comment was provided by the requester.
+            </p>
+          )}
+        </div>
 
         {review.dispute_flagged && (
           <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
