@@ -309,15 +309,12 @@ export const DriverViewRequestDialog = ({
   const checkIn = useMutation({
     mutationFn: async () => {
       if (!request) throw new Error("No request");
-      const odo = validateOdometer(odometer, "in");
       const cleanedNotes = validateNotes(notes);
-      if (odo == null) throw new Error("Please enter a valid odometer reading");
       if (notes && cleanedNotes == null) throw new Error("Please fix the notes field");
       const { error } = await (supabase as any)
         .from("vehicle_requests")
         .update({
           driver_checked_in_at: new Date().toISOString(),
-          driver_checkin_odometer: odo,
           driver_checkin_notes: cleanedNotes || null,
           status: "in_progress",
         })
@@ -339,9 +336,7 @@ export const DriverViewRequestDialog = ({
     },
     onSuccess: () => {
       toast.success("Checked in — drive safely!");
-      setOdometer("");
       setNotes("");
-      setOdoError(null);
       setNotesError(null);
       refresh();
     },
@@ -351,13 +346,10 @@ export const DriverViewRequestDialog = ({
   const checkOut = useMutation({
     mutationFn: async () => {
       if (!request) throw new Error("No request");
-      const odo = validateOdometer(odometer, "out");
-      if (odo == null) throw new Error(odoError || "Please enter a valid final odometer");
       const { error } = await (supabase as any)
         .from("vehicle_requests")
         .update({
           driver_checked_out_at: new Date().toISOString(),
-          driver_checkout_odometer: odo,
           status: "completed",
           completed_at: new Date().toISOString(),
         })
