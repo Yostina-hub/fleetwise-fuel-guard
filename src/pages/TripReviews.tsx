@@ -352,7 +352,7 @@ function TripReviewsInner() {
         {scoreFilter && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Badge variant="secondary" className="gap-1">
-              Filtering by low {scoreFilter} ratings (&lt; 4★)
+              Filtering by {scoreFilter} rating · sorted lowest first
             </Badge>
             <Button
               variant="ghost"
