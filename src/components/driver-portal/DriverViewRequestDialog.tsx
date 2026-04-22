@@ -45,6 +45,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { DriverNavigateMapDialog } from "./DriverNavigateMapDialog";
 
 interface ActiveRequest {
   id: string;
