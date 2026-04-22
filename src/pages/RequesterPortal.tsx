@@ -15,6 +15,7 @@
  * (enforced server-side by `is_basic_user_only` policy).
  */
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,6 +64,8 @@ import {
   type RequestDetail,
 } from "@/components/requester-portal/RequestDetailDrawer";
 import { EditRequestDialog } from "@/components/requester-portal/EditRequestDialog";
+import { RateTripDialog } from "@/components/ratings/RateTripDialog";
+import type { PendingRatingTrip } from "@/hooks/usePendingRatings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -101,6 +104,9 @@ const RequesterPortalInner = () => {
   // requester can only view / cancel via the detail drawer.
   const [editing, setEditing] = useState<RequestDetail | null>(null);
   const [deleting, setDeleting] = useState<RequestDetail | null>(null);
+  // Trip rating dialog (opened via notification deep-link `?rate=<id>`)
+  const [ratingTrip, setRatingTrip] = useState<PendingRatingTrip | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const deleteRequest = useMutation({
     mutationFn: async (r: RequestDetail) => {
@@ -172,6 +178,42 @@ const RequesterPortalInner = () => {
       supabase.removeChannel(ch);
     };
   }, [user, qc]);
+
+  // Deep-link from notifications: `/my-requests?rate=<request-id>` opens the
+  // RateTripDialog for that completed trip. We fetch the row so the dialog
+  // works even if the request isn't in the current date-range filter.
+  useEffect(() => {
+    const rateId = searchParams.get("rate");
+    if (!rateId || !user || !organizationId) return;
+
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          `id, request_number, purpose, destination, departure_place,
+           needed_from, completed_at, driver_checked_out_at,
+           assigned_vehicle_id, assigned_driver_id, rated_at,
+           vehicles:assigned_vehicle_id ( plate_number, make, model ),
+           drivers:assigned_driver_id ( full_name )`,
+        )
+        .eq("id", rateId)
+        .eq("requester_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error || !data || data.rated_at) {
+        // Already rated or unavailable — just clear the param.
+        const next = new URLSearchParams(searchParams);
+        next.delete("rate");
+        setSearchParams(next, { replace: true });
+        return;
+      }
+      setRatingTrip(data as PendingRatingTrip);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, user, organizationId, setSearchParams]);
 
   // KPIs
   const kpis = useMemo(() => {
@@ -367,6 +409,22 @@ const RequesterPortalInner = () => {
         request={editing}
         open={!!editing}
         onOpenChange={(o) => !o && setEditing(null)}
+      />
+      <RateTripDialog
+        trip={ratingTrip}
+        open={!!ratingTrip}
+        onOpenChange={(o) => {
+          if (!o) {
+            setRatingTrip(null);
+            // Strip the `rate` query param so refreshes don't re-open the dialog.
+            const next = new URLSearchParams(searchParams);
+            if (next.has("rate")) {
+              next.delete("rate");
+              setSearchParams(next, { replace: true });
+            }
+          }
+        }}
+        onRated={() => qc.invalidateQueries({ queryKey: ["my-vehicle-requests"] })}
       />
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
