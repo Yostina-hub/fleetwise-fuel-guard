@@ -634,6 +634,8 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   );
 
   return (
+    <div className="space-y-3">
+      {AutoDispatchBar}
     <Card>
       <CardHeader>
         <CardTitle className="text-sm font-semibold flex items-center justify-between">
