@@ -543,6 +543,14 @@ export const DriverViewRequestDialog = ({
                       {assignerRole}
                     </span>
                   )}
+                  {assignerInfo?.profile?.phone && (
+                    <a
+                      href={`tel:${assignerInfo.profile.phone}`}
+                      className="block text-xs text-primary hover:underline"
+                    >
+                      📞 {assignerInfo.profile.phone}
+                    </a>
+                  )}
                   {assignedAt && (
                     <span className="block text-[11px] text-muted-foreground">
                       {format(new Date(assignedAt), "MMM dd, yyyy HH:mm")}
@@ -801,6 +809,13 @@ export const DriverViewRequestDialog = ({
         departureLat={departureLat}
         departureLng={departureLng}
         destinationPlace={request.destination}
+        vehicleId={request.assigned_vehicle_id || request.assigned_vehicle?.id || null}
+        vehicleLabel={
+          request.assigned_vehicle
+            ? `${request.assigned_vehicle.plate_number}${request.assigned_vehicle.make ? ` · ${request.assigned_vehicle.make} ${request.assigned_vehicle.model || ""}` : ""}`
+            : null
+        }
+        departureTime={request.needed_from}
       />
     </Dialog>
   );
