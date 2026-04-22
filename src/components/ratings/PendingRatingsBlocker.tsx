@@ -6,8 +6,9 @@
  * this with a trigger; this UI gives immediate, friendly feedback.
  */
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { format } from "date-fns";
-import { AlertTriangle, Star } from "lucide-react";
+import { AlertTriangle, ArrowRight, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
