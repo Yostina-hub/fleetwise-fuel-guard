@@ -68,14 +68,16 @@ serve(async (req) => {
       return secureJsonResponse({ error: "Missing authorization header" }, req, 401);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const token = authHeader.replace("Bearer ", "");
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? supabaseServiceKey;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
 
-    if (authError || !user) {
+    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
+
+    if (authError || !claimsData?.claims?.sub) {
+      console.error("Auth verification failed:", authError);
       return secureJsonResponse({ error: "Unauthorized" }, req, 401);
     }
 
