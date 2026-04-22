@@ -32,10 +32,10 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Car, MapPin, Calendar, Users, FileText, AlertTriangle,
   Gauge, Wrench, Fuel, Navigation, PlayCircle, StopCircle,
-  Clock, Hash, Building2, ClipboardCheck,
+  Clock, Hash, Building2, ClipboardCheck, CheckCircle2, XCircle, UserCheck,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -53,6 +53,9 @@ interface ActiveRequest {
   driver_checked_in_at?: string | null;
   driver_checked_out_at?: string | null;
   assigned_vehicle_id?: string | null;
+  rejection_reason?: string | null;
+  rejected_at?: string | null;
+  organization_id?: string | null;
   assigned_vehicle?: {
     id: string;
     plate_number: string;
@@ -129,6 +132,21 @@ export const DriverViewRequestDialog = ({
     queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] });
     queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
   };
+
+  // Approval history (chain of approvers + decisions/comments)
+  const { data: approvals = [] } = useQuery({
+    queryKey: ["driver-portal-request-approvals", request?.id],
+    enabled: !!request?.id && open,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("vehicle_request_approvals")
+        .select("id, approval_level, approver_name, status, comments, decision_at, created_at, delegated_from_name")
+        .eq("request_id", request!.id)
+        .order("created_at", { ascending: true });
+      if (error) return [];
+      return data || [];
+    },
+  });
 
   const checkIn = useMutation({
     mutationFn: async () => {
@@ -293,6 +311,72 @@ export const DriverViewRequestDialog = ({
 
         <Separator />
 
+        {/* Rejection banner */}
+        {(request.status === "rejected" || request.approval_status === "rejected") && request.rejection_reason && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 flex items-start gap-2">
+            <XCircle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-destructive">Request Rejected</p>
+              <p className="text-sm mt-0.5">{request.rejection_reason}</p>
+              {request.rejected_at && (
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  {format(new Date(request.rejected_at), "MMM dd, yyyy HH:mm")}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Approval chain */}
+        {approvals.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+              <UserCheck className="w-3.5 h-3.5" /> Approval History
+            </p>
+            <div className="space-y-1.5">
+              {approvals.map((a: any) => {
+                const decided = a.status === "approved" || a.status === "rejected";
+                const Icon = a.status === "approved" ? CheckCircle2 : a.status === "rejected" ? XCircle : Clock;
+                const tone =
+                  a.status === "approved" ? "text-success border-success/30 bg-success/5"
+                  : a.status === "rejected" ? "text-destructive border-destructive/30 bg-destructive/5"
+                  : "text-muted-foreground border-border bg-muted/30";
+                return (
+                  <div key={a.id} className={cn("rounded-lg border p-2 flex items-start gap-2", tone)}>
+                    <Icon className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-foreground">{a.approver_name}</span>
+                        {a.approval_level != null && (
+                          <Badge variant="outline" className="text-[10px]">L{a.approval_level}</Badge>
+                        )}
+                        <Badge variant="outline" className={cn("text-[10px] capitalize", tone)}>
+                          {a.status || "pending"}
+                        </Badge>
+                        {a.delegated_from_name && (
+                          <span className="text-[10px] text-muted-foreground">
+                            (delegated from {a.delegated_from_name})
+                          </span>
+                        )}
+                        {decided && a.decision_at && (
+                          <span className="text-[10px] text-muted-foreground ml-auto">
+                            {format(new Date(a.decision_at), "MMM dd HH:mm")}
+                          </span>
+                        )}
+                      </div>
+                      {a.comments && (
+                        <p className="text-xs text-foreground/80 mt-1 break-words">{a.comments}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <Separator />
+
         {/* Stage progress */}
         <div className="flex items-center justify-between text-xs">
           {(["pre_trip", "in_trip", "post_trip", "done"] as const).map((s, i) => {
@@ -328,8 +412,8 @@ export const DriverViewRequestDialog = ({
 
         <Separator />
 
-        {/* Next-step actions */}
-        {stage !== "done" && (
+        {/* Next-step actions — hidden for rejected/cancelled requests */}
+        {stage !== "done" && request.status !== "rejected" && request.status !== "cancelled" && (
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Next Steps
