@@ -585,10 +585,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       if (error) throw error;
 
       // ── Persist ordered intermediate stops (waypoints) ──
-      // Stored in `vehicle_request_stops` with sequence = 1..N. Skip blank rows.
+      // Stored in `vehicle_request_stops` with sequence = 1..N. Keep any row
+      // that has either a name OR coordinates — coords-only stops still
+      // matter for routing. We auto-generate a placeholder name in that case.
       const cleanStops = (form.stops || [])
-        .map((s) => ({ ...s, name: (s.name || "").trim() }))
-        .filter((s) => s.name.length > 0);
+        .map((s, i) => {
+          const trimmedName = (s.name || "").trim();
+          const hasCoords = s.lat != null && s.lng != null;
+          return {
+            name: trimmedName || (hasCoords ? `Stop ${i + 1}` : ""),
+            lat: s.lat ?? null,
+            lng: s.lng ?? null,
+            hasCoords,
+            hasName: trimmedName.length > 0,
+          };
+        })
+        .filter((s) => s.hasName || s.hasCoords);
       if (cleanStops.length > 0) {
         const stopRows = cleanStops.map((s, i) => ({
           vehicle_request_id: data.id,
