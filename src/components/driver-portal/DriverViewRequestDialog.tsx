@@ -206,7 +206,7 @@ export const DriverViewRequestDialog = ({
       const { data } = await (supabase as any)
         .from("vehicle_requests")
         .select(
-          "id, requester_id, requester_name, passengers, departure_place, departure_lat, departure_lng, department_name, pool_location, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes",
+          "id, requester_id, requester_name, passengers, departure_place, departure_lat, departure_lng, department_name, pool_location, assigned_by, assigned_at, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes",
         )
         .eq("id", request!.id)
         .maybeSingle();
@@ -222,24 +222,66 @@ export const DriverViewRequestDialog = ({
   const departureLng = hydrated?.departure_lng ?? request?.departure_lng ?? null;
   const departmentName = hydrated?.department_name ?? request?.department_name ?? null;
   const poolLocation = hydrated?.pool_location ?? request?.pool_location ?? null;
+  const assignedById = hydrated?.assigned_by ?? null;
+  const assignedAt = hydrated?.assigned_at ?? request?.assigned_at ?? null;
 
-  // Resolve the requester display name from profiles when only an id is stored.
+  // Always fetch requester profile so the driver gets full name + phone + email.
   const { data: requesterProfile } = useQuery({
     queryKey: ["driver-portal-requester-profile", requesterId],
-    enabled: !!requesterId && !requesterNameDirect && open,
+    enabled: !!requesterId && open,
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("profiles")
-        .select("full_name, email, phone")
+        .select("full_name, first_name, last_name, email, phone, job_title")
         .eq("id", requesterId)
         .maybeSingle();
       return data || null;
     },
   });
 
+  // Dispatcher / assigner profile + role from user_roles.
+  const { data: assignerInfo } = useQuery({
+    queryKey: ["driver-portal-assigner-info", assignedById],
+    enabled: !!assignedById && open,
+    queryFn: async () => {
+      const [{ data: profile }, { data: roleRows }] = await Promise.all([
+        (supabase as any)
+          .from("profiles")
+          .select("full_name, first_name, last_name, email, phone, job_title")
+          .eq("id", assignedById)
+          .maybeSingle(),
+        (supabase as any)
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", assignedById),
+      ]);
+      const roles = Array.isArray(roleRows)
+        ? roleRows.map((r: any) => String(r.role)).filter(Boolean)
+        : [];
+      return { profile: profile || null, roles };
+    },
+  });
+
+  const profileFullName = (p: any) =>
+    p?.full_name ||
+    [p?.first_name, p?.last_name].filter(Boolean).join(" ").trim() ||
+    p?.email ||
+    null;
+
   const requesterName =
-    requesterNameDirect || requesterProfile?.full_name || requesterProfile?.email || null;
-  const requesterContact = requesterProfile?.phone || requesterProfile?.email || null;
+    requesterNameDirect || profileFullName(requesterProfile) || null;
+  const requesterPhone = requesterProfile?.phone || null;
+  const requesterEmail = requesterProfile?.email || null;
+
+  const assignerName = profileFullName(assignerInfo?.profile);
+  const assignerRole = (() => {
+    const roles = assignerInfo?.roles ?? [];
+    if (!roles.length) return assignerInfo?.profile?.job_title || null;
+    const pretty = roles
+      .map((r) => r.replace(/_/g, " "))
+      .map((r) => r.replace(/\b\w/g, (m) => m.toUpperCase()));
+    return pretty.join(", ");
+  })();
 
   const checkIn = useMutation({
     mutationFn: async () => {
@@ -406,11 +448,48 @@ export const DriverViewRequestDialog = ({
             icon={UserCheck}
             label="Requester"
             value={
-              requesterName
-                ? requesterContact
-                  ? `${requesterName} · ${requesterContact}`
-                  : requesterName
-                : null
+              requesterName ? (
+                <span className="space-y-0.5 inline-block align-top">
+                  <span className="block">{requesterName}</span>
+                  {requesterPhone && (
+                    <a
+                      href={`tel:${requesterPhone}`}
+                      className="block text-xs text-primary hover:underline"
+                    >
+                      📞 {requesterPhone}
+                    </a>
+                  )}
+                  {requesterEmail && (
+                    <a
+                      href={`mailto:${requesterEmail}`}
+                      className="block text-xs text-muted-foreground hover:underline break-all"
+                    >
+                      ✉️ {requesterEmail}
+                    </a>
+                  )}
+                </span>
+              ) : null
+            }
+          />
+          <Field
+            icon={UserCheck}
+            label="Assigned By"
+            value={
+              assignerName ? (
+                <span className="space-y-0.5 inline-block align-top">
+                  <span className="block">{assignerName}</span>
+                  {assignerRole && (
+                    <span className="block text-xs text-muted-foreground capitalize">
+                      {assignerRole}
+                    </span>
+                  )}
+                  {assignedAt && (
+                    <span className="block text-[11px] text-muted-foreground">
+                      {format(new Date(assignedAt), "MMM dd, yyyy HH:mm")}
+                    </span>
+                  )}
+                </span>
+              ) : null
             }
           />
           <Field
