@@ -446,11 +446,15 @@ function AvgKpiCard({
   value,
   icon: Icon,
   tone,
+  active = false,
+  onClick,
 }: {
   label: string;
   value: number;
   icon: React.ComponentType<{ className?: string }>;
   tone: "muted" | "amber" | "success" | "warning" | "destructive" | "info";
+  active?: boolean;
+  onClick?: () => void;
 }) {
   const toneCls = {
     muted: "bg-muted/60 text-muted-foreground",
@@ -462,8 +466,26 @@ function AvgKpiCard({
   }[tone];
   const display = value > 0 ? value.toFixed(1) : "—";
   const pct = value > 0 ? Math.min(100, (value / 5) * 100) : 0;
+  const clickable = !!onClick;
   return (
-    <Card className="overflow-hidden">
+    <Card
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (!clickable) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      className={cn(
+        "overflow-hidden transition-all",
+        clickable && "cursor-pointer hover:shadow-md hover:-translate-y-0.5",
+        active && "ring-2 ring-primary border-primary",
+      )}
+      aria-pressed={clickable ? active : undefined}
+    >
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -489,6 +511,11 @@ function AvgKpiCard({
             />
           </div>
         </div>
+        {clickable && (
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            {active ? "Click to clear filter" : "Click to view low ratings"}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
