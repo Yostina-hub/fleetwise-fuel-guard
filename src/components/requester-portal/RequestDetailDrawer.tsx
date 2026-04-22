@@ -11,7 +11,18 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Car, Hash, FileText, Ban, type LucideIcon } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  Users,
+  Car,
+  Hash,
+  FileText,
+  Ban,
+  CheckCircle2,
+  Star,
+  type LucideIcon,
+} from "lucide-react";
 import { format } from "date-fns";
 import { RequestStatusBadge } from "./RequestStatusBadge";
 import { RequestTimeline, type TimelineRequest } from "./RequestTimeline";
@@ -19,6 +30,8 @@ import { RequestCommentsThread } from "./RequestCommentsThread";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { ConfirmAndRateDialog } from "@/components/ratings/ConfirmAndRateDialog";
 
 export interface RequestDetail extends TimelineRequest {
   id: string;
