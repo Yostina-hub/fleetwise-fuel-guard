@@ -47,6 +47,7 @@ import {
   Plus,
   Trash2,
   ShieldPlus,
+  UserCog,
 } from "lucide-react";
 import { ManageCustomRolesDialog } from "@/components/rbac/ManageCustomRolesDialog";
 import { UserOverridesTab } from "@/components/rbac/UserOverridesTab";
