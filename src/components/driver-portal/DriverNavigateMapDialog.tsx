@@ -178,7 +178,17 @@ export const DriverNavigateMapDialog = ({
     };
 
     const initMap = async () => {
-      const initialStyle = await fetchLematMapStyle(defaultMapStyle);
+      let initialStyle: any;
+      try {
+        initialStyle = await fetchLematMapStyle(defaultMapStyle);
+      } catch (err) {
+        console.error("[DriverNavigateMap] failed to load Lemat style", err);
+      }
+      // Fallback to a free public style so the dialog never shows a blank
+      // canvas if Lemat is unreachable.
+      if (!initialStyle) {
+        initialStyle = "https://demotiles.maplibre.org/style.json";
+      }
       if (disposed || !containerEl || map.current) return;
 
       const nextMap = new maplibregl.Map({
@@ -194,6 +204,9 @@ export const DriverNavigateMapDialog = ({
       nextMap.addControl(new maplibregl.FullscreenControl(), "top-right");
       nextMap.on("load", forceResize);
       nextMap.on("style.load", forceResize);
+      nextMap.on("error", (e) => {
+        console.error("[DriverNavigateMap] maplibre error", e?.error || e);
+      });
 
       resizeTimer = setTimeout(forceResize, 250);
 
