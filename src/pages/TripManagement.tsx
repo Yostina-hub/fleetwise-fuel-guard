@@ -34,7 +34,7 @@ import { VehicleRequestPipelineBoard } from "@/components/vehicle-requests/Vehic
 import { VehicleRequestCard } from "@/components/vehicle-requests/VehicleRequestCard";
 import { ActiveAssignments } from "@/components/scheduling/ActiveAssignments";
 import { CreateAssignmentDialog } from "@/components/scheduling/CreateAssignmentDialog";
-import { ApprovalHistory } from "@/components/scheduling/ApprovalHistory";
+
 import { CalendarView } from "@/components/scheduling/CalendarView";
 import { TimelineView } from "@/components/scheduling/TimelineView";
 import { UtilizationAnalytics } from "@/components/scheduling/UtilizationAnalytics";
@@ -582,7 +582,6 @@ const TripManagement = () => {
           {canApprove && (
             <TabsContent value="approvals" className="mt-4 space-y-4">
               <PendingApprovalsPanel />
-              <ApprovalHistory />
             </TabsContent>
           )}
 
