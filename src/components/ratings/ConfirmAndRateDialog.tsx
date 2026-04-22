@@ -222,6 +222,11 @@ export function ConfirmAndRateDialog({
   const rateMutation = useMutation({
     mutationFn: async () => {
       if (!request || !orgId) throw new Error("Missing context");
+      if (isImpersonating) {
+        throw new Error(
+          "Impersonation mode is read-only for ratings. Stop impersonating to rate this trip as the requester.",
+        );
+      }
       const {
         data: { user: authUser },
       } = await supabase.auth.getUser();
@@ -249,7 +254,9 @@ export function ConfirmAndRateDialog({
       if (requestError) throw requestError;
       if (!requestRow) throw new Error("Trip not found");
       if (requestRow.requester_id !== authUser.id) {
-        throw new Error("You can only rate your own trip.");
+        throw new Error(
+          "You can only rate your own trip. Ratings must be submitted by the original requester.",
+        );
       }
 
       const resolvedOrgId = requestRow.organization_id || orgId;
