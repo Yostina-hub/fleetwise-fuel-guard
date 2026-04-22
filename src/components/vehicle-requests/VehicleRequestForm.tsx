@@ -761,35 +761,58 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // are surfaced so users can't pick something that won't fit. Recommended
   // type floats to the top, then by cost-band rank.
   const eligibleVehicleTypes = useMemo(() => {
-    const passengers = Math.max(1, parseInt(form.passengers) || 1);
+    const passengersRaw = parseInt(form.passengers);
+    const passengers = passengersRaw === NON_PASSENGER_SENTINEL
+      ? 0
+      : Math.max(1, passengersRaw || 1);
     const cargoOrder = { none: 0, small: 1, medium: 2, large: 3 } as const;
     const cargoNeeded = cargoOrder[(form.cargo_load || "none") as CargoLoad] ?? 0;
-    return VEHICLE_TYPES_OPTIONS
+    let list = VEHICLE_TYPES_OPTIONS
       .map((vt) => ({ vt, profile: getVehicleClassProfile(vt.value) }))
       .filter(({ profile }) => {
         if (!profile) return false;
         if (profile.costBand === "specialised") return false; // dispatcher-only
-        if (profile.capacity < passengers) return false;
+        if (passengers > 0 && profile.capacity < passengers) return false;
         if (cargoOrder[profile.cargo] < cargoNeeded) return false;
         return true;
-      })
-      .sort((a, b) => {
-        const aRec = recommendation?.value === a.vt.value ? -1 : 0;
-        const bRec = recommendation?.value === b.vt.value ? -1 : 0;
-        if (aRec !== bRec) return aRec - bRec;
-        return (a.profile!.rank) - (b.profile!.rank);
       });
-  }, [form.passengers, form.cargo_load, recommendation?.value]);
+    // Delivery operations are restricted to courier-class vehicles only.
+    if (isDelivery) {
+      list = list.filter(({ vt }) => ["motorbike", "scooter", "bicycle"].includes(vt.value));
+    }
+    return list.sort((a, b) => {
+      const aRec = recommendation?.value === a.vt.value ? -1 : 0;
+      const bRec = recommendation?.value === b.vt.value ? -1 : 0;
+      if (aRec !== bRec) return aRec - bRec;
+      return (a.profile!.rank) - (b.profile!.rank);
+    });
+  }, [form.passengers, form.cargo_load, recommendation?.value, isDelivery]);
 
   // Auto-fill vehicle_type with the recommendation when the user hasn't
   // touched it yet. Manual edits are preserved.
   useEffect(() => {
     if (!recommendation) return;
+    if (isDelivery) return; // delivery uses its own forced default
     if (!form.vehicle_type) {
       setForm((f) => ({ ...f, vehicle_type: recommendation.value }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recommendation?.value]);
+  }, [recommendation?.value, isDelivery]);
+
+  // Keep `passengers` in sync with the chosen vehicle_type. Cargo / courier
+  // classes (anything not in PASSENGER_VEHICLE_VALUES) store -1 to mean
+  // "not applicable" — driver only, no passenger seats requested.
+  useEffect(() => {
+    if (!form.vehicle_type) return;
+    const isPax = isPassengerVehicleType(form.vehicle_type);
+    const current = parseInt(form.passengers);
+    if (!isPax && current !== NON_PASSENGER_SENTINEL) {
+      setForm((f) => ({ ...f, passengers: String(NON_PASSENGER_SENTINEL) }));
+    } else if (isPax && current === NON_PASSENGER_SENTINEL) {
+      setForm((f) => ({ ...f, passengers: "1" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.vehicle_type]);
 
   // If the previously chosen vehicle type no longer fits the updated
   // passengers/cargo combo, snap back to the recommendation so the form
