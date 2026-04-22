@@ -313,8 +313,8 @@ const DriverTripHistory = ({ driverId }: DriverTripHistoryProps) => {
                           <div className="flex items-center gap-1 text-xs">
                             <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
                             <span className="truncate">
-                              {t.start_location || "—"} →{" "}
-                              {t.end_location || "—"}
+                              {formatTripLocation(t.start_location)} →{" "}
+                              {formatTripLocation(t.end_location)}
                             </span>
                           </div>
                         </TableCell>

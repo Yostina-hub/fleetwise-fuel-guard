@@ -756,7 +756,7 @@ const DriverPortal = () => {
                           </div>
                           <p className="text-sm mt-1 truncate flex items-center gap-1">
                             <MapPin className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
-                            {t.start_location || "—"} → {t.end_location || "—"}
+                            {formatTripLocation(t.start_location)} → {formatTripLocation(t.end_location)}
                           </p>
                           {t.start_time && t.end_time && (
                             <p className="text-[11px] text-muted-foreground mt-0.5">
