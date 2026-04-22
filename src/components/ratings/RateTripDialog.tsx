@@ -43,7 +43,7 @@ interface RateTripDialogProps {
   onRated?: () => void;
 }
 
-type Step = 0 | 1 | 2 | 3; // 0=driver, 1=vehicle, 2=punctuality, 3=review
+type Step = 0 | 1 | 2 | 3 | 4; // 0=driver, 1=vehicle, 2=punctuality, 3=review, 4=thank-you
 
 const STEPS = [
   { key: "driver", label: "Driver", icon: UserRound, prompt: "How was your driver?", help: "Courtesy, safety, professionalism" },
@@ -94,8 +94,9 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
       });
       qc.invalidateQueries({ queryKey: ["pending-ratings"] });
       qc.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      qc.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onRated?.();
-      onOpenChange(false);
+      setStep(4); // show confirmation/thank-you screen instead of closing
     },
     onError: (e: any) => {
       toast.error("Could not save rating", { description: e.message });
@@ -106,7 +107,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
 
   const currentValue = step === 0 ? driver : step === 1 ? vehicle : step === 2 ? punctuality : 0;
   const setCurrent = step === 0 ? setDriver : step === 1 ? setVehicle : setPunctuality;
-  const canProceed = step === 3 ? overall > 0 : currentValue > 0;
+  const canProceed = step === 3 ? overall > 0 : step === 4 ? true : currentValue > 0;
   const completedAt = trip.completed_at || trip.driver_checked_out_at;
 
   return (
@@ -141,7 +142,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
           <div className="relative mt-4 flex items-center gap-2">
             {[0, 1, 2, 3].map((i) => {
               const ratings = [driver, vehicle, punctuality];
-              const done = i < step || (i <= 2 && ratings[i] > 0);
+              const done = step === 4 || i < step || (i <= 2 && ratings[i] > 0);
               const active = i === step;
               return (
                 <div
@@ -174,7 +175,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
                 </p>
               </div>
             );
-          })() : (
+          })() : step === 3 ? (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-4">
               <div className="rounded-lg border border-border/60 bg-muted/30 p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -216,51 +217,115 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
                 </div>
               </div>
             </div>
+          ) : (
+            // Step 4: Thank-you / submitted review confirmation
+            <div className="animate-in fade-in zoom-in-95 duration-300 flex flex-col items-center text-center py-2">
+              <div className="relative mb-4">
+                <div className="absolute inset-0 animate-ping rounded-full bg-success/30 opacity-75" />
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-success to-success/70 ring-4 ring-success/20">
+                  <CheckCircle2 className="h-9 w-9 text-success-foreground" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold">Review submitted</h3>
+              <p className="text-sm text-muted-foreground mb-5 max-w-xs">
+                Thanks for taking the time. Your feedback helps us improve every trip.
+              </p>
+
+              <div className="w-full rounded-lg border border-border/60 bg-muted/30 p-4 text-left">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your review</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-2xl font-bold text-primary">{overall}</span>
+                    <span className="text-xs text-muted-foreground">/ 5</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { label: "Driver", value: driver, icon: UserRound },
+                    { label: "Vehicle", value: vehicle, icon: Car },
+                    { label: "Punctuality", value: punctuality, icon: Clock },
+                  ].map((row) => (
+                    <div key={row.label} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <row.icon className="h-3.5 w-3.5" />
+                        {row.label}
+                      </div>
+                      <StarRating value={row.value} onChange={() => {}} size="sm" disabled showLabel={false} />
+                    </div>
+                  ))}
+                </div>
+                {comment.trim() && (
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Your comment</p>
+                    <p className="text-sm italic text-foreground/90">"{comment.trim()}"</p>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-2 px-6 py-4 border-t border-border/50 bg-muted/20">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={step === 0 || submit.isPending}
-            onClick={() => setStep((s) => (s > 0 ? ((s - 1) as Step) : s))}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          {step < 3 ? (
-            <Button
-              type="button"
-              size="sm"
-              disabled={!canProceed}
-              onClick={() => setStep((s) => ((s + 1) as Step))}
-            >
-              Continue
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
+          {step === 4 ? (
+            <>
+              <span className="text-xs text-muted-foreground">
+                You can update this rating any time from this trip's details.
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="min-w-[100px]"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Done
+              </Button>
+            </>
           ) : (
-            <Button
-              type="button"
-              size="sm"
-              disabled={submit.isPending || !canProceed}
-              onClick={() => submit.mutate()}
-              className="min-w-[140px]"
-            >
-              {submit.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Submitting…
-                </>
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={step === 0 || submit.isPending}
+                onClick={() => setStep((s) => (s > 0 ? ((s - 1) as Step) : s))}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+              {step < 3 ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!canProceed}
+                  onClick={() => setStep((s) => ((s + 1) as Step))}
+                >
+                  Continue
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Submit rating
-                </>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={submit.isPending || !canProceed}
+                  onClick={() => submit.mutate()}
+                  className="min-w-[140px]"
+                >
+                  {submit.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Submitting…
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Submit rating
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
+            </>
           )}
         </div>
       </DialogContent>
