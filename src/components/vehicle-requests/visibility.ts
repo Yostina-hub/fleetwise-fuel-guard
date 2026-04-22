@@ -16,10 +16,12 @@ export type RequestType =
   | "project_operation"
   | "field_operation"
   | "group_operation"
+  | "messenger_service"
+  // legacy alias — old records may still use this
   | "delivery_operation";
 
 export interface VRVisibility {
-  /** Single-day layout (date + start/end time). True for Daily and Nighttime. */
+  /** Single-day layout (date + start/end time). True for Daily, Nighttime, and Messenger. */
   isDaily: boolean;
   /** Nighttime variant of Daily — adds the 02:00–12:00 window banner. */
   isNighttime: boolean;
@@ -29,7 +31,9 @@ export interface VRVisibility {
   isField: boolean;
   /** Group / shared trip — multi-day layout. */
   isGroup: boolean;
-  /** Delivery — motorcycle-based courier trip; passengers field is N/A. */
+  /** Messenger Service — motorcycle-based courier trip; passengers field is N/A. */
+  isMessenger: boolean;
+  /** Legacy alias for Messenger Service — kept for old payloads. */
   isDelivery: boolean;
 
   /** Show the Project Number field. */
@@ -45,10 +49,11 @@ export interface VRVisibility {
 }
 
 export function deriveVisibility(requestType: string | undefined): VRVisibility {
-  const isDelivery = requestType === "delivery_operation";
+  // Treat the legacy "delivery_operation" the same as the new "messenger_service".
+  const isMessenger = requestType === "messenger_service" || requestType === "delivery_operation";
   const isNighttime = requestType === "nighttime_operation";
-  // Delivery uses the same single-day layout as Daily (date + start/end time).
-  const isDaily = requestType === "daily_operation" || isNighttime || isDelivery;
+  // Messenger uses the same single-day layout as Daily (date + start/end time).
+  const isDaily = requestType === "daily_operation" || isNighttime || isMessenger;
   const isProject = requestType === "project_operation";
   const isField = requestType === "field_operation";
   const isGroup = requestType === "group_operation";
@@ -59,7 +64,8 @@ export function deriveVisibility(requestType: string | undefined): VRVisibility 
     isProject,
     isField,
     isGroup,
-    isDelivery,
+    isMessenger,
+    isDelivery: isMessenger,
     showProjectNumber: isProject,
     allowsMultipleVehicles: isProject,
     showWorkingHoursBanner: isProject,
