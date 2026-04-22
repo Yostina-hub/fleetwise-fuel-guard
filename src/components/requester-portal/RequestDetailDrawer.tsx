@@ -99,9 +99,19 @@ export function RequestDetailDrawer({ request, open, onOpenChange, canCancel }: 
       }),
   });
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   if (!request) return null;
   const cancellable =
     canCancel && ["pending", "approved"].includes(request.status) && !request.cancelled_at;
+  // The trip is "delivered" once the driver checks out OR the back-office
+  // marks the request as completed. Confirmation by the requester is the
+  // last step that fully closes the loop.
+  const tripDelivered =
+    request.status === "completed" ||
+    !!request.driver_checked_out_at ||
+    !!request.completed_at;
+  const needsConfirmation = tripDelivered && !request.requester_confirmed_at;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
