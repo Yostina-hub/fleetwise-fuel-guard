@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TablePagination } from "@/components/reports/TablePagination";
+import { formatTripLocation } from "@/lib/formatTripLocation";
 import {
   Clock,
   MapPin,

@@ -36,6 +36,7 @@ import { AssignmentCheckInDialog } from "@/components/vehicle-requests/Assignmen
 import DriverViewRequestDialog from "@/components/driver-portal/DriverViewRequestDialog";
 import ReportTripIncidentDialog from "@/components/driver-portal/ReportTripIncidentDialog";
 import { IdCard } from "lucide-react";
+import { formatTripLocation } from "@/lib/formatTripLocation";
 
 const DriverPortal = () => {
   const navigate = useNavigate();
