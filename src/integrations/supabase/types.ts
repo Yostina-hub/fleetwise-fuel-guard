@@ -22359,6 +22359,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permission_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effect: string
+          id: string
+          organization_id: string | null
+          permission_id: string
+          reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effect: string
+          id?: string
+          organization_id?: string | null
+          permission_id: string
+          reason?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effect?: string
+          id?: string
+          organization_id?: string | null
+          permission_id?: string
+          reason?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permission_overrides_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permission_overrides_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           business_unit_id: string | null
@@ -26558,6 +26609,13 @@ export type Database = {
           schedule_id: string
           service_type: string
           vehicle_id: string
+        }[]
+      }
+      get_effective_permissions: {
+        Args: { _user_id: string }
+        Returns: {
+          permission_name: string
+          source: string
         }[]
       }
       get_my_pending_emoney_approvals: {
