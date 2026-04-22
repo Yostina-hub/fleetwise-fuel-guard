@@ -215,8 +215,8 @@ export const DriverViewRequestDialog = ({
         .from("vehicle_requests")
         .update({
           driver_checked_in_at: new Date().toISOString(),
-          checkin_odometer: odo,
-          checkin_notes: cleanedNotes || null,
+          driver_checkin_odometer: odo,
+          driver_checkin_notes: cleanedNotes || null,
           status: "in_progress",
         })
         .eq("id", request.id);
