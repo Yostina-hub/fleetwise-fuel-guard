@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
@@ -101,6 +103,11 @@ const formSchema = z.object({
     .trim()
     .min(5, "Please describe what happened (min 5 characters)")
     .max(1000, "Description must be under 1000 characters"),
+  km_reading: z
+    .number({ invalid_type_error: "KM reading must be a number" })
+    .min(0, "KM reading cannot be negative")
+    .max(10_000_000, "KM reading is too large")
+    .optional(),
 });
 
 interface ReportTripIncidentDialogProps {
@@ -131,15 +138,62 @@ export const ReportTripIncidentDialog = ({
 
   const [reason, setReason] = useState<ReasonValue>("vehicle_technical");
   const [description, setDescription] = useState("");
+  const [kmReading, setKmReading] = useState("");
   const [files, setFiles] = useState<File[]>([]);
 
   useEffect(() => {
     if (!open) {
       setReason("vehicle_technical");
       setDescription("");
+      setKmReading("");
       setFiles([]);
     }
   }, [open]);
+
+  // Driver details (auto-filled like the work-request form)
+  const { data: driverInfo } = useQuery({
+    queryKey: ["incident-driver-info", driverId],
+    enabled: !!driverId && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("id, first_name, last_name, phone, employment_type, employee_id")
+        .eq("id", driverId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Vehicle details for the asset section
+  const { data: vehicleInfo } = useQuery({
+    queryKey: ["incident-vehicle-info", vehicleId],
+    enabled: !!vehicleId && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("id, plate_number, make, model, odometer_km")
+        .eq("id", vehicleId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Pre-fill KM reading with the vehicle's last known odometer (editable).
+  useEffect(() => {
+    if (open && vehicleInfo?.odometer_km != null && kmReading === "") {
+      setKmReading(String(vehicleInfo.odometer_km));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, vehicleInfo?.odometer_km]);
+
+  const driverFullName = driverInfo
+    ? `${driverInfo.first_name || ""} ${driverInfo.last_name || ""}`.trim()
+    : "";
+  const vehicleLabel = vehicleInfo
+    ? `${vehicleInfo.plate_number}${vehicleInfo.make ? ` · ${vehicleInfo.make}` : ""}${vehicleInfo.model ? ` ${vehicleInfo.model}` : ""}`
+    : "";
 
   const handleFiles = (fileList: FileList | null) => {
     if (!fileList) return;
@@ -174,7 +228,12 @@ export const ReportTripIncidentDialog = ({
     mutationFn: async () => {
       if (!organizationId) throw new Error("Missing organization context");
 
-      const parsed = formSchema.parse({ reason, description });
+      const kmNum = kmReading.trim() === "" ? undefined : Number(kmReading);
+      const parsed = formSchema.parse({
+        reason,
+        description,
+        km_reading: kmNum,
+      });
       const meta = REASONS.find((r) => r.value === parsed.reason)!;
       const incidentNumber = `INC-${Date.now().toString().slice(-8)}`;
 
@@ -191,6 +250,7 @@ export const ReportTripIncidentDialog = ({
           severity: meta.severity,
           reason: parsed.reason,
           description: parsed.description,
+          km_reading: parsed.km_reading ?? null,
           location: location || null,
           incident_time: new Date().toISOString(),
           status: "open",
@@ -253,7 +313,7 @@ export const ReportTripIncidentDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-destructive" aria-hidden="true" />
@@ -265,6 +325,79 @@ export const ReportTripIncidentDialog = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Driver & Vehicle Information (auto-filled from your active trip) */}
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-foreground">
+                Driver &amp; Vehicle Information
+              </h3>
+              <Separator />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Driver Name</Label>
+                <Input
+                  value={driverFullName}
+                  readOnly
+                  placeholder={driverId ? "Loading…" : "—"}
+                  className="bg-muted/40"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Driver Phone</Label>
+                <Input
+                  value={driverInfo?.phone || ""}
+                  readOnly
+                  placeholder="—"
+                  className="bg-muted/40"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Employee ID</Label>
+                <Input
+                  value={driverInfo?.employee_id || ""}
+                  readOnly
+                  placeholder="—"
+                  className="bg-muted/40"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Driver Type</Label>
+                <Input
+                  value={driverInfo?.employment_type || ""}
+                  readOnly
+                  placeholder="—"
+                  className="bg-muted/40"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Vehicle</Label>
+                <Input
+                  value={vehicleLabel}
+                  readOnly
+                  placeholder={vehicleId ? "Loading…" : "—"}
+                  className="bg-muted/40"
+                />
+              </div>
+              <div>
+                <Label htmlFor="incident-km" className="text-xs text-muted-foreground">
+                  KM Reading
+                </Label>
+                <Input
+                  id="incident-km"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step="1"
+                  value={kmReading}
+                  onChange={(e) => setKmReading(e.target.value)}
+                  placeholder="Current odometer (km)"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Reason selector */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Reason</Label>
