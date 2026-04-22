@@ -6,6 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -16,23 +24,23 @@ import {
 import {
   CheckCircle,
   XCircle,
-  Truck,
   Users,
-  Send,
   UserCheck,
   Layers,
-  User,
   FileSignature,
   RotateCcw,
   ScrollText,
   Zap,
   Loader2,
+  ChevronDown,
+  ChevronRight,
+  MapPin,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { PoolAssignmentPicker } from "./PoolAssignmentPicker";
 
 const sendAssignmentSMS = async (request: any, vehicleId: string, driverId?: string) => {
   try {
@@ -128,10 +136,7 @@ type ContractDecision = "approved" | "rejected" | "changes_requested";
 
 export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   const queryClient = useQueryClient();
-  const { available } = useAvailableVehicles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [selectedVehicle, setSelectedVehicle] = useState("");
-  const [selectedDriver, setSelectedDriver] = useState("");
   const [showConsolidated, setShowConsolidated] = useState(true);
 
   // Contract-style decision dialog state
@@ -151,22 +156,6 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     setContractConditions("");
     setContractNotes("");
   };
-
-  // Available drivers for assignment
-  const { data: availableDrivers = [] } = useQuery({
-    queryKey: ["available-drivers", organizationId],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("drivers")
-        .select("id, first_name, last_name, phone")
-        .eq("organization_id", organizationId)
-        .eq("status", "active")
-        .order("first_name");
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!organizationId,
-  });
 
   // Requests that are approved and need pool review/assignment
   const approvedRequests = requests.filter(
@@ -334,8 +323,6 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       setExpandedId(null);
-      setSelectedVehicle("");
-      setSelectedDriver("");
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -389,8 +376,6 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       setExpandedId(null);
-      setSelectedVehicle("");
-      setSelectedDriver("");
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -485,278 +470,300 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     );
   }
 
-  const renderRequestRow = (r: any) => (
-    <div key={r.id} className="border rounded-lg p-3 space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-sm">{r.request_number}</span>
-          <Badge variant="outline" className="text-[10px]">
-            {r.request_type === "daily_operation" ? "Daily" : r.request_type === "project_operation" ? "Project" : "Field"}
-          </Badge>
-          {r.pool_name && <Badge variant="secondary" className="text-[10px]">{r.pool_name}</Badge>}
-        </div>
-        <Button size="sm" variant="ghost" onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}>
-          {expandedId === r.id ? "Collapse" : "Review"}
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-        <span>Requester: {r.requester_name}</span>
-        <span>From: {format(new Date(r.needed_from), "MMM dd, HH:mm")}</span>
-        <span>Route: {r.departure_place || "—"} → {r.destination || "—"}</span>
-      </div>
-
-      {r.project_number && (
-        <div className="text-xs text-muted-foreground">Project: {r.project_number}</div>
-      )}
-
-      {/* Contract decision summary — visible once supervisor has signed off */}
+  // Inline expanded panel content for a single request
+  const renderExpandedContent = (r: any) => (
+    <div className="space-y-3 p-3 bg-muted/30 border-l-4 border-primary">
       {r.pool_review_decision && (
-        <div className={`rounded-md border px-2.5 py-2 text-xs space-y-1 ${
-          r.pool_review_decision === "approved"
-            ? "border-emerald-500/30 bg-emerald-500/5"
-            : r.pool_review_decision === "rejected"
-            ? "border-rose-500/30 bg-rose-500/5"
-            : "border-amber-500/30 bg-amber-500/5"
-        }`}>
+        <div
+          className={`rounded-md border px-2.5 py-2 text-xs space-y-1 ${
+            r.pool_review_decision === "approved"
+              ? "border-emerald-500/30 bg-emerald-500/5"
+              : r.pool_review_decision === "rejected"
+              ? "border-rose-500/30 bg-rose-500/5"
+              : "border-amber-500/30 bg-amber-500/5"
+          }`}
+        >
           <div className="flex items-center gap-1.5 font-medium">
             <FileSignature className="w-3 h-3" />
-            Pool contract: <span className="capitalize">{r.pool_review_decision.replace("_", " ")}</span>
+            Pool contract:{" "}
+            <span className="capitalize">{r.pool_review_decision.replace("_", " ")}</span>
             {r.pool_reviewed_at && (
-              <span className="text-muted-foreground font-normal">· {format(new Date(r.pool_reviewed_at), "MMM dd, HH:mm")}</span>
+              <span className="text-muted-foreground font-normal">
+                · {format(new Date(r.pool_reviewed_at), "MMM dd, HH:mm")}
+              </span>
             )}
           </div>
           {r.pool_review_conditions && (
-            <div><span className="text-muted-foreground">Conditions:</span> {r.pool_review_conditions}</div>
+            <div>
+              <span className="text-muted-foreground">Conditions:</span>{" "}
+              {r.pool_review_conditions}
+            </div>
           )}
           {r.pool_review_notes && (
-            <div><span className="text-muted-foreground">Notes:</span> {r.pool_review_notes}</div>
+            <div>
+              <span className="text-muted-foreground">Notes:</span> {r.pool_review_notes}
+            </div>
           )}
         </div>
       )}
 
-      {expandedId === r.id && (
-        <div className="border-t pt-3 space-y-3">
-          {/* === Contract decision (gate before vehicle assignment) === */}
-          <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5 space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold">
-              <FileSignature className="w-3.5 h-3.5 text-primary" />
-              Pool Supervisor Contract Decision
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Approve with conditions, reject, or send back for changes. Decision is recorded with your name & timestamp.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                className="text-xs gap-1"
-                onClick={() => openContractDialog(r, "approved")}
-              >
-                <CheckCircle className="w-3 h-3" /> Approve with Conditions
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-xs gap-1"
-                onClick={() => openContractDialog(r, "changes_requested")}
-              >
-                <RotateCcw className="w-3 h-3" /> Request Changes
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-xs gap-1 text-destructive hover:text-destructive"
-                onClick={() => openContractDialog(r, "rejected")}
-              >
-                <XCircle className="w-3 h-3" /> Reject
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-xs flex items-center gap-1 mb-1">
-              <Truck className="w-3 h-3" /> Available Vehicles ({available.length})
-            </Label>
-            <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Select available vehicle..." />
-              </SelectTrigger>
-              <SelectContent>
-                {available.slice(0, 30).map((v) => (
-                  <SelectItem key={v.id} value={v.id} className="text-xs">
-                    {v.plate_number} — {v.make} {v.model}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs flex items-center gap-1 mb-1">
-              <User className="w-3 h-3" /> Driver ({availableDrivers.length} active)
-            </Label>
-            <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Select driver (optional, sends SMS if set)..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableDrivers.slice(0, 50).map((d: any) => (
-                  <SelectItem key={d.id} value={d.id} className="text-xs">
-                    {d.first_name} {d.last_name} {d.phone ? `— ${d.phone}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-xs"
-              disabled={!selectedVehicle || assignMutation.isPending}
-              onClick={() => assignMutation.mutate({ requestId: r.id, vehicleId: selectedVehicle, driverId: selectedDriver || undefined })}
-            >
-              <CheckCircle className="w-3 h-3 mr-1" />
-              {assignMutation.isPending ? "Assigning..." : "Assign & Approve"}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs"
-              onClick={() => reviewMutation.mutate({ requestId: r.id, action: "unavailable" })}
-            >
-              <XCircle className="w-3 h-3 mr-1" /> No Vehicles Available
-            </Button>
-          </div>
+      {/* Contract decision strip */}
+      <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5 space-y-2">
+        <div className="flex items-center gap-1.5 text-xs font-semibold">
+          <FileSignature className="w-3.5 h-3.5 text-primary" />
+          Pool Supervisor Contract Decision
         </div>
-      )}
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" className="text-xs gap-1" onClick={() => openContractDialog(r, "approved")}>
+            <CheckCircle className="w-3 h-3" /> Approve with Conditions
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs gap-1"
+            onClick={() => openContractDialog(r, "changes_requested")}
+          >
+            <RotateCcw className="w-3 h-3" /> Request Changes
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs gap-1 text-destructive hover:text-destructive"
+            onClick={() => openContractDialog(r, "rejected")}
+          >
+            <XCircle className="w-3 h-3" /> Reject
+          </Button>
+        </div>
+      </div>
+
+      {/* Smart pool-aware assignment picker */}
+      <PoolAssignmentPicker
+        request={r}
+        organizationId={organizationId}
+        isAssigning={assignMutation.isPending}
+        onAssign={(vehicleId, driverId) =>
+          assignMutation.mutate({ requestId: r.id, vehicleId, driverId })
+        }
+        onUnavailable={() => reviewMutation.mutate({ requestId: r.id, action: "unavailable" })}
+      />
     </div>
   );
+
+  // ── Table row for a single request ──
+  const renderTableRow = (r: any) => {
+    const isOpen = expandedId === r.id;
+    return (
+      <>
+        <TableRow
+          key={r.id}
+          className="cursor-pointer hover:bg-muted/40"
+          onClick={() => setExpandedId(isOpen ? null : r.id)}
+        >
+          <TableCell className="w-8 text-muted-foreground">
+            {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          </TableCell>
+          <TableCell className="font-mono text-xs font-semibold">{r.request_number}</TableCell>
+          <TableCell>
+            <div className="text-xs font-medium">{r.requester_name}</div>
+            <div className="text-[10px] text-muted-foreground">
+              {format(new Date(r.created_at), "MMM dd, HH:mm")}
+            </div>
+          </TableCell>
+          <TableCell>
+            <div className="flex items-center gap-1 text-xs">
+              <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+              <span className="truncate max-w-[180px]" title={`${r.departure_place} → ${r.destination}`}>
+                {r.departure_place || "—"} → {r.destination || "—"}
+              </span>
+            </div>
+          </TableCell>
+          <TableCell className="text-xs">
+            {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
+          </TableCell>
+          <TableCell className="text-center text-xs">
+            <Badge variant="outline" className="text-[10px]">
+              <Users className="w-2.5 h-2.5 mr-0.5" />
+              {r.passengers || 1}
+            </Badge>
+          </TableCell>
+          <TableCell>
+            {r.pool_name ? (
+              <Badge variant="secondary" className="text-[10px] font-mono">
+                {r.pool_name}
+              </Badge>
+            ) : (
+              <span className="text-[10px] text-muted-foreground">—</span>
+            )}
+          </TableCell>
+          <TableCell>
+            <Badge variant="outline" className="text-[10px]">
+              {r.request_type === "daily_operation"
+                ? "Daily"
+                : r.request_type === "project_operation"
+                ? "Project"
+                : "Field"}
+            </Badge>
+          </TableCell>
+          <TableCell className="text-right">
+            <Button
+              size="sm"
+              variant={isOpen ? "secondary" : "default"}
+              className="text-xs h-7"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpandedId(isOpen ? null : r.id);
+              }}
+            >
+              {isOpen ? "Close" : "Assign"}
+            </Button>
+          </TableCell>
+        </TableRow>
+        {isOpen && (
+          <TableRow key={`${r.id}-expanded`} className="bg-transparent hover:bg-transparent">
+            <TableCell colSpan={9} className="p-0">
+              {renderExpandedContent(r)}
+            </TableCell>
+          </TableRow>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="space-y-3">
       {AutoDispatchBar}
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-semibold flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-primary" />
-            Pool Supervisor Review ({approvedRequests.length})
-          </span>
-          {groups.length > 0 && (
-            <Button
-              size="sm"
-              variant={showConsolidated ? "default" : "outline"}
-              className="text-xs h-7"
-              onClick={() => setShowConsolidated(!showConsolidated)}
-            >
-              <Layers className="w-3 h-3 mr-1" />
-              {showConsolidated ? "Showing Consolidated" : "Show Consolidated"} ({groups.length})
-            </Button>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Consolidated groups */}
-        {showConsolidated && groups.map((group) => (
-          <div key={group.key} className="border-2 border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-sm">Consolidated Trip</span>
-                <Badge variant="default" className="text-[10px]">{group.requests.length} requests</Badge>
-                <Badge variant="outline" className="text-[10px]">
-                  <Users className="w-2.5 h-2.5 mr-0.5" /> {group.totalPassengers} pax
-                </Badge>
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-primary" />
+              Pool Supervisor Review ({approvedRequests.length})
+            </span>
+            {groups.length > 0 && (
               <Button
                 size="sm"
-                variant="ghost"
-                onClick={() => setExpandedId(expandedId === group.key ? null : group.key)}
+                variant={showConsolidated ? "default" : "outline"}
+                className="text-xs h-7"
+                onClick={() => setShowConsolidated(!showConsolidated)}
               >
-                {expandedId === group.key ? "Collapse" : "Review"}
+                <Layers className="w-3 h-3 mr-1" />
+                {showConsolidated ? "Showing Consolidated" : "Show Consolidated"} ({groups.length})
               </Button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-              <span>Route: {group.departure} → {group.destination}</span>
-              <span>Date: {format(new Date(group.date), "MMM dd, yyyy")}</span>
-              <span>Requesters: {group.requests.map((r: any) => r.requester_name).join(", ")}</span>
-            </div>
-
-            {expandedId === group.key && (
-              <div className="border-t pt-3 space-y-3">
-                {/* Individual requests in group */}
-                <div className="space-y-1">
-                  {group.requests.map((r: any) => (
-                    <div key={r.id} className="text-xs bg-background rounded px-2 py-1.5 flex justify-between items-center">
-                      <span>{r.request_number} — {r.requester_name} ({r.passengers || 1} pax)</span>
-                      <span className="text-muted-foreground">{format(new Date(r.needed_from), "HH:mm")}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div>
-                  <Label className="text-xs flex items-center gap-1 mb-1">
-                    <Truck className="w-3 h-3" /> Assign Single Vehicle to All ({available.length} available)
-                  </Label>
-                  <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Select vehicle for consolidated trip..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {available.slice(0, 30).map((v) => (
-                        <SelectItem key={v.id} value={v.id} className="text-xs">
-                          {v.plate_number} — {v.make} {v.model}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-xs flex items-center gap-1 mb-1">
-                    <User className="w-3 h-3" /> Driver ({availableDrivers.length} active)
-                  </Label>
-                  <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Select driver (optional)..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableDrivers.slice(0, 50).map((d: any) => (
-                        <SelectItem key={d.id} value={d.id} className="text-xs">
-                          {d.first_name} {d.last_name} {d.phone ? `— ${d.phone}` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-xs"
-                    disabled={!selectedVehicle || batchAssignMutation.isPending}
-                    onClick={() =>
-                      batchAssignMutation.mutate({
-                        requestIds: group.requests.map((r: any) => r.id),
-                        vehicleId: selectedVehicle,
-                        driverId: selectedDriver || undefined,
-                      })
-                    }
-                  >
-                    <Layers className="w-3 h-3 mr-1" />
-                    {batchAssignMutation.isPending ? "Assigning..." : `Assign to All ${group.requests.length} Requests`}
-                  </Button>
-                </div>
-              </div>
             )}
-          </div>
-        ))}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Consolidated trips */}
+          {showConsolidated && groups.length > 0 && (
+            <div className="space-y-3">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-primary" />
+                Consolidated Trips ({groups.length})
+              </div>
+              {groups.map((group) => {
+                const isOpen = expandedId === group.key;
+                // Use the first request as the "template" for pool / pickup data
+                const lead = group.requests[0];
+                return (
+                  <div
+                    key={group.key}
+                    className="border-2 border-primary/30 rounded-lg bg-primary/5"
+                  >
+                    <div
+                      className="p-3 flex items-center justify-between cursor-pointer"
+                      onClick={() => setExpandedId(isOpen ? null : group.key)}
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Layers className="w-4 h-4 text-primary" />
+                        <span className="font-semibold text-sm">Consolidated Trip</span>
+                        <Badge variant="default" className="text-[10px]">
+                          {group.requests.length} requests
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px]">
+                          <Users className="w-2.5 h-2.5 mr-0.5" /> {group.totalPassengers} pax
+                        </Badge>
+                        {lead.pool_name && (
+                          <Badge variant="secondary" className="text-[10px] font-mono">
+                            {lead.pool_name}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground ml-1">
+                          {group.departure} → {group.destination} ·{" "}
+                          {format(new Date(group.date), "MMM dd, yyyy")}
+                        </span>
+                      </div>
+                      <Button size="sm" variant="ghost" className="text-xs h-7">
+                        {isOpen ? "Collapse" : "Review"}
+                      </Button>
+                    </div>
+                    {isOpen && (
+                      <div className="border-t border-primary/20 p-3 space-y-3">
+                        <div className="grid sm:grid-cols-2 gap-1">
+                          {group.requests.map((r: any) => (
+                            <div
+                              key={r.id}
+                              className="text-xs bg-background rounded px-2 py-1.5 flex justify-between items-center border"
+                            >
+                              <span className="font-mono">
+                                {r.request_number}
+                                <span className="font-sans text-muted-foreground ml-2">
+                                  {r.requester_name} · {r.passengers || 1} pax
+                                </span>
+                              </span>
+                              <span className="text-muted-foreground">
+                                {format(new Date(r.needed_from), "HH:mm")}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <PoolAssignmentPicker
+                          request={lead}
+                          organizationId={organizationId}
+                          isAssigning={batchAssignMutation.isPending}
+                          primaryLabel={`Assign to all ${group.requests.length} requests`}
+                          onAssign={(vehicleId, driverId) =>
+                            batchAssignMutation.mutate({
+                              requestIds: group.requests.map((r: any) => r.id),
+                              vehicleId,
+                              driverId,
+                            })
+                          }
+                          onUnavailable={() =>
+                            group.requests.forEach((r: any) =>
+                              reviewMutation.mutate({ requestId: r.id, action: "unavailable" }),
+                            )
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-        {/* Ungrouped individual requests */}
-        {ungrouped.map(renderRequestRow)}
-      </CardContent>
+          {/* Ungrouped requests — professional table */}
+          {ungrouped.length > 0 && (
+            <div className="rounded-md border overflow-hidden">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    <TableHead className="w-8" />
+                    <TableHead>Request #</TableHead>
+                    <TableHead>Requester</TableHead>
+                    <TableHead>Route</TableHead>
+                    <TableHead>Needed From</TableHead>
+                    <TableHead className="text-center">Pax</TableHead>
+                    <TableHead>Pool</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>{ungrouped.map(renderTableRow)}</TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
 
       {/* === Contract decision dialog === */}
       <Dialog open={!!contractTarget} onOpenChange={(v) => !v && closeContractDialog()}>
