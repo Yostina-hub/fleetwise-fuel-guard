@@ -67,6 +67,73 @@ export function LocationPickerField({
   const cleanValue = isRawCoords ? "" : value;
   const isGeofenceMatch = geofences?.some((g) => g.name === cleanValue);
 
+  // Auto-resolve a real place name when we have coordinates but the visible
+  // name is empty / a placeholder ("Stop 1", "Pinned location", raw coords).
+  // Uses the lemat-reverse-geocode edge function so the field shows the same
+  // human-readable address that appears in the route map preview popup.
+  useEffect(() => {
+    if (lat == null || lng == null) return;
+    const trimmed = (value || "").trim();
+    const isPlaceholder =
+      !trimmed || isRawCoords || PLACEHOLDER_NAME_RE.test(trimmed);
+    if (!isPlaceholder) return;
+    // If a saved geofence already covers this exact spot, prefer its name
+    // instead of calling the geocoder.
+    const nearGeofence = geofences?.find(
+      (g) =>
+        g.center_lat != null &&
+        g.center_lng != null &&
+        Math.abs(Number(g.center_lat) - lat) < 0.0001 &&
+        Math.abs(Number(g.center_lng) - lng) < 0.0001,
+    );
+    if (nearGeofence) {
+      onChange(nearGeofence.name);
+      return;
+    }
+    const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+    if (resolvedKeysRef.current.has(key)) return;
+    resolvedKeysRef.current.add(key);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || cancelled) return;
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-reverse-geocode?lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}`;
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Accept-Language": "en",
+          },
+        });
+        if (!res.ok || cancelled) return;
+        const json = await res.json();
+        const addr = json?.address || {};
+        const derived =
+          json?.display_name ||
+          json?.name ||
+          [
+            addr.road || addr.pedestrian,
+            addr.neighbourhood || addr.suburb,
+            addr.city || addr.town || addr.village,
+          ]
+            .filter(Boolean)
+            .join(", ");
+        const resolved = typeof derived === "string" ? derived.trim() : "";
+        if (!resolved || cancelled) return;
+        onChange(resolved);
+      } catch {
+        // Silent — field stays as-is.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lat, lng, value, isRawCoords, geofences]);
+
   /**
    * Persist a freshly picked map point as a reusable "custom" geofence so it
    * shows up in the saved-locations dropdown next time. Failures are silent
