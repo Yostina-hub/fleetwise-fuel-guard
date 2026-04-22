@@ -6,8 +6,9 @@
  * this with a trigger; this UI gives immediate, friendly feedback.
  */
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { format } from "date-fns";
-import { AlertTriangle, Star } from "lucide-react";
+import { AlertTriangle, ArrowRight, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,13 @@ export function PendingRatingsBlocker({ className, onAllRated }: Props) {
               <Badge variant="outline" className="border-warning/50 bg-warning/10 text-warning text-[10px]">
                 {pending.length} pending
               </Badge>
+              <Link
+                to="/trip-reviews"
+                className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
+                View all reviews
+                <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               You must rate all completed trips before submitting a new vehicle request.
