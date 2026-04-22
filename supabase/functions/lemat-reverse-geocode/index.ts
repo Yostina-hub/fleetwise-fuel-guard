@@ -70,13 +70,11 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? supabaseServiceKey;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
+    const { data: userData, error: authError } = await supabase.auth.getUser(token);
 
-    if (authError || !claimsData?.claims?.sub) {
+    if (authError || !userData?.user) {
       console.error("Auth verification failed:", authError);
       return secureJsonResponse({ error: "Unauthorized" }, req, 401);
     }
