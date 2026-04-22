@@ -247,21 +247,36 @@ export const PoolAssignmentPicker = ({
                       ))}
                     </CommandGroup>
                   )}
-                  {otherVehicles.length > 0 && (
-                    <CommandGroup heading={`Other available (${otherVehicles.length})`}>
-                      {otherVehicles.slice(0, 30).map((v) => (
-                        <VehicleRow
-                          key={v.id}
-                          v={v}
-                          selected={vehicleId === v.id}
-                          onSelect={() => {
-                            setVehicleId(v.id);
-                            setVehicleOpen(false);
-                          }}
-                        />
-                      ))}
-                    </CommandGroup>
-                  )}
+                  {otherVehicles.length > 0 && (() => {
+                    // Group by pool so supervisor can cross-check pools/zones
+                    const groups = new Map<string, typeof otherVehicles>();
+                    otherVehicles.forEach((v) => {
+                      const k = v.specific_pool || "Unassigned pool";
+                      if (!groups.has(k)) groups.set(k, []);
+                      groups.get(k)!.push(v);
+                    });
+                    return Array.from(groups.entries()).map(([poolKey, items]) => {
+                      const idleCount = items.filter((x) => x.is_idle).length;
+                      return (
+                        <CommandGroup
+                          key={poolKey}
+                          heading={`${poolKey} — ${idleCount} idle / ${items.length}`}
+                        >
+                          {items.slice(0, 30).map((v) => (
+                            <VehicleRow
+                              key={v.id}
+                              v={v}
+                              selected={vehicleId === v.id}
+                              onSelect={() => {
+                                setVehicleId(v.id);
+                                setVehicleOpen(false);
+                              }}
+                            />
+                          ))}
+                        </CommandGroup>
+                      );
+                    });
+                  })()}
                 </CommandList>
               </Command>
             </PopoverContent>
