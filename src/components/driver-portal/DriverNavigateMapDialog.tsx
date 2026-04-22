@@ -167,8 +167,8 @@ export const DriverNavigateMapDialog = ({
 
     let disposed = false;
     let resizeObserver: ResizeObserver | null = null;
-    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
-    let bootTimer: ReturnType<typeof setTimeout> | null = null;
+    let resizeTimer: ReturnType<typeof window.setTimeout> | null = null;
+    let bootTimer: ReturnType<typeof window.setTimeout> | null = null;
 
     const forceResize = () => {
       try {
