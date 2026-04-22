@@ -37,6 +37,8 @@ import {
   recommendVehicleClass,
   isUpgradeOverRecommendation,
   getVehicleClassProfile,
+  isPassengerVehicleType,
+  NON_PASSENGER_SENTINEL,
   COST_BAND_LABELS,
   COST_BAND_TONE,
   BUSINESS_PURPOSE_CATEGORIES,
@@ -293,6 +295,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     project_operation: 7,
     field_operation: 1,
     group_operation: 0,
+    delivery_operation: 0,
   };
 
   // While impersonating, force the form to file the request as the impersonated
