@@ -87,6 +87,16 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     },
   });
 
+  // Suggested vehicles (closest GPS, geofence-aware, fallback pool roster)
+  const { data: suggested = [] } = useSuggestedVehicles({
+    organizationId: request.organization_id,
+    poolName: request.pool_name,
+    pickupLat: request.departure_lat,
+    pickupLng: request.departure_lng,
+    passengers: request.passengers,
+    enabled: request.status === "approved" && canManageAll,
+  });
+
   // Issue #41 — pull the requester's full profile so the detail view can show
   // department, job title (used as section), employee code and contact info.
   const { data: requesterProfile } = useQuery({
