@@ -32,10 +32,10 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Car, MapPin, Calendar, Users, FileText, AlertTriangle,
   Gauge, Wrench, Fuel, Navigation, PlayCircle, StopCircle,
-  Clock, Hash, Building2, ClipboardCheck,
+  Clock, Hash, Building2, ClipboardCheck, CheckCircle2, XCircle, UserCheck,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -53,6 +53,9 @@ interface ActiveRequest {
   driver_checked_in_at?: string | null;
   driver_checked_out_at?: string | null;
   assigned_vehicle_id?: string | null;
+  rejection_reason?: string | null;
+  rejected_at?: string | null;
+  organization_id?: string | null;
   assigned_vehicle?: {
     id: string;
     plate_number: string;
