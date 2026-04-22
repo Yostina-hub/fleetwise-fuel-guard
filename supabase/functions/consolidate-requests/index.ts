@@ -1,0 +1,176 @@
+// Consolidate Vehicle Requests
+// =============================
+// Returns merge-preview groups for approved+unassigned vehicle requests using
+// THREE strategies (the supervisor picks which to apply):
+//   1. exact_route   — same pool + departure + destination + day
+//   2. dest_window   — same destination + ±30 min needed_from
+//   3. geofence_pair — pickup geofence + drop geofence + ±30 min
+//
+// This endpoint is read-only — it just returns suggestions. Confirming a
+// merge is done by calling auto-dispatch-pool with the chosen pool_name OR
+// by allowing the supervisor to manually consolidate from the panel.
+
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const norm = (s: string | null | undefined) =>
+  (s || "").toLowerCase().trim().replace(/\s+/g, " ");
+const dayKey = (iso: string) => {
+  try { return new Date(iso).toISOString().slice(0, 10); } catch { return "x"; }
+};
+const haversineKm = (a: number, b: number, c: number, d: number) => {
+  const R = 6371;
+  const dLat = ((c - a) * Math.PI) / 180;
+  const dLng = ((d - b) * Math.PI) / 180;
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a * Math.PI) / 180) * Math.cos((c * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+};
+const pointInPolygon = (
+  pt: { lat: number; lng: number },
+  poly: Array<{ lat: number; lng: number }>,
+) => {
+  if (!poly || poly.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].lng, yi = poly[i].lat;
+    const xj = poly[j].lng, yj = poly[j].lat;
+    const intersect =
+      yi > pt.lat !== yj > pt.lat &&
+      pt.lng < ((xj - xi) * (pt.lat - yi)) / (yj - yi || 1e-12) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+};
+const insideFence = (pt: { lat: number; lng: number }, f: any) => {
+  if (f.geometry_type === "circle" && f.center_lat != null && f.radius_meters) {
+    return haversineKm(pt.lat, pt.lng, Number(f.center_lat), Number(f.center_lng)) * 1000 <= f.radius_meters;
+  }
+  if (f.geometry_type === "polygon" && Array.isArray(f.polygon_points)) {
+    return pointInPolygon(pt, f.polygon_points);
+  }
+  return false;
+};
+const findFence = (lat: number | null, lng: number | null, fences: any[]) => {
+  if (lat == null || lng == null) return null;
+  for (const f of fences) if (insideFence({ lat, lng }, f)) return f;
+  return null;
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  try {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+    const { organization_id } = await req.json().catch(() => ({}));
+    if (!organization_id) {
+      return new Response(JSON.stringify({ ok: false, error: "organization_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const { data: reqs, error } = await supabase
+      .from("vehicle_requests")
+      .select("id, request_number, pool_name, departure_place, destination, departure_lat, departure_lng, destination_lat, destination_lng, needed_from, passengers, status, assigned_vehicle_id, deleted_at")
+      .eq("organization_id", organization_id)
+      .eq("status", "approved")
+      .is("assigned_vehicle_id", null)
+      .is("deleted_at", null)
+      .limit(500);
+    if (error) throw error;
+    const list = reqs || [];
+
+    const { data: fenceRows } = await supabase
+      .from("geofences")
+      .select("id, name, geometry_type, center_lat, center_lng, radius_meters, polygon_points")
+      .eq("organization_id", organization_id)
+      .eq("is_active", true);
+    const fences = fenceRows || [];
+
+    // 1. exact_route
+    const exact = new Map<string, any[]>();
+    for (const r of list) {
+      const k = [norm(r.pool_name), norm(r.departure_place), norm(r.destination), dayKey(r.needed_from)].join("|");
+      const arr = exact.get(k) || []; arr.push(r); exact.set(k, arr);
+    }
+    const exactGroups = [...exact.entries()]
+      .filter(([, v]) => v.length > 1)
+      .map(([k, v]) => ({ strategy: "exact_route", key: k, count: v.length, requests: v }));
+
+    // 2. dest_window (same destination text + ±30 min)
+    const destWindow: any[] = [];
+    const usedDest = new Set<string>();
+    for (let i = 0; i < list.length; i++) {
+      if (usedDest.has(list[i].id)) continue;
+      const a = list[i];
+      const grp = [a];
+      for (let j = i + 1; j < list.length; j++) {
+        const b = list[j];
+        if (usedDest.has(b.id)) continue;
+        if (norm(a.destination) !== norm(b.destination)) continue;
+        const da = new Date(a.needed_from).getTime();
+        const db = new Date(b.needed_from).getTime();
+        if (Math.abs(da - db) <= 30 * 60_000) grp.push(b);
+      }
+      if (grp.length > 1) {
+        grp.forEach((g) => usedDest.add(g.id));
+        destWindow.push({ strategy: "dest_window", key: `dest:${norm(a.destination)}`, count: grp.length, requests: grp });
+      }
+    }
+
+    // 3. geofence_pair (pickup fence + drop fence + ±30 min)
+    const geoPair: any[] = [];
+    const usedGeo = new Set<string>();
+    const fenceFor = (r: any) => ({
+      pickup: findFence(r.departure_lat, r.departure_lng, fences),
+      drop: findFence(r.destination_lat, r.destination_lng, fences),
+    });
+    for (let i = 0; i < list.length; i++) {
+      if (usedGeo.has(list[i].id)) continue;
+      const a = list[i];
+      const fa = fenceFor(a);
+      if (!fa.pickup || !fa.drop) continue;
+      const grp = [a];
+      for (let j = i + 1; j < list.length; j++) {
+        const b = list[j];
+        if (usedGeo.has(b.id)) continue;
+        const fb = fenceFor(b);
+        if (fb.pickup?.id !== fa.pickup.id || fb.drop?.id !== fa.drop.id) continue;
+        const da = new Date(a.needed_from).getTime();
+        const db = new Date(b.needed_from).getTime();
+        if (Math.abs(da - db) <= 30 * 60_000) grp.push(b);
+      }
+      if (grp.length > 1) {
+        grp.forEach((g) => usedGeo.add(g.id));
+        geoPair.push({
+          strategy: "geofence_pair",
+          key: `geo:${fa.pickup.id}->${fa.drop.id}`,
+          count: grp.length,
+          pickup_geofence: fa.pickup.name,
+          drop_geofence: fa.drop.name,
+          requests: grp,
+        });
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        total_requests: list.length,
+        groups: { exact_route: exactGroups, dest_window: destWindow, geofence_pair: geoPair },
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  } catch (err: any) {
+    console.error("consolidate-requests error:", err);
+    return new Response(JSON.stringify({ ok: false, error: err?.message || String(err) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+});
