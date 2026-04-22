@@ -395,14 +395,93 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     onError: (err: any) => toast.error(err.message),
   });
 
+  // ── Auto-Dispatch (server-side route merge + closest-vehicle assignment) ──
+  const autoDispatchMutation = useMutation({
+    mutationFn: async ({ dryRun }: { dryRun: boolean }) => {
+      const { data, error } = await supabase.functions.invoke("auto-dispatch-pool", {
+        body: { organization_id: organizationId, dry_run: dryRun },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Auto-dispatch failed");
+      return data as {
+        groups: number;
+        assigned: number;
+        skipped: number;
+        dry_run: boolean;
+        details: any[];
+      };
+    },
+    onSuccess: (data) => {
+      if (data.dry_run) {
+        const wouldAssign = data.details.filter((d: any) => d.chosen_vehicle).length;
+        toast.info(`Preview: ${data.groups} route group(s), would assign ${wouldAssign}`);
+      } else if (data.assigned === 0) {
+        toast.warning(
+          data.skipped > 0
+            ? `No assignments — ${data.skipped} request(s) skipped (no free pool vehicle)`
+            : "Nothing eligible to dispatch",
+        );
+      } else {
+        toast.success(
+          `Auto-dispatched ${data.assigned} request(s) across ${data.groups} consolidated trip(s)`,
+        );
+      }
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
+      queryClient.invalidateQueries({ queryKey: ["pool-supervisors-queue", organizationId] });
+    },
+    onError: (err: any) => toast.error(err?.message || "Auto-dispatch failed"),
+  });
+
+  const AutoDispatchBar = (
+    <Card className="border-primary/30 bg-primary/5">
+      <CardContent className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-start sm:items-center gap-2 text-sm">
+          <Zap className="w-4 h-4 text-primary mt-0.5 sm:mt-0 shrink-0" />
+          <div>
+            <div className="font-medium">Auto-Dispatch Pool</div>
+            <div className="text-xs text-muted-foreground">
+              Merges same-route requests and assigns the closest available pool vehicle by live GPS.
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => autoDispatchMutation.mutate({ dryRun: true })}
+            disabled={autoDispatchMutation.isPending}
+          >
+            Preview
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => autoDispatchMutation.mutate({ dryRun: false })}
+            disabled={autoDispatchMutation.isPending}
+          >
+            {autoDispatchMutation.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Zap className="w-3.5 h-3.5 mr-1.5" />
+            )}
+            Run Auto-Dispatch
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   if (approvedRequests.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          <UserCheck className="w-10 h-10 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">No requests pending pool review</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-3">
+        {AutoDispatchBar}
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            <UserCheck className="w-10 h-10 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">No requests pending pool review</p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
