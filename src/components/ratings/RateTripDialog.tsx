@@ -175,7 +175,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
                 </p>
               </div>
             );
-          })() : (
+          })() : step === 3 ? (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-4">
               <div className="rounded-lg border border-border/60 bg-muted/30 p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -215,6 +215,51 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
                 <div className="text-right text-[10px] text-muted-foreground mt-1">
                   {comment.length}/500
                 </div>
+              </div>
+            </div>
+          ) : (
+            // Step 4: Thank-you / submitted review confirmation
+            <div className="animate-in fade-in zoom-in-95 duration-300 flex flex-col items-center text-center py-2">
+              <div className="relative mb-4">
+                <div className="absolute inset-0 animate-ping rounded-full bg-success/30 opacity-75" />
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-success to-success/70 ring-4 ring-success/20">
+                  <CheckCircle2 className="h-9 w-9 text-success-foreground" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold">Review submitted</h3>
+              <p className="text-sm text-muted-foreground mb-5 max-w-xs">
+                Thanks for taking the time. Your feedback helps us improve every trip.
+              </p>
+
+              <div className="w-full rounded-lg border border-border/60 bg-muted/30 p-4 text-left">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your review</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-2xl font-bold text-primary">{overall}</span>
+                    <span className="text-xs text-muted-foreground">/ 5</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { label: "Driver", value: driver, icon: UserRound },
+                    { label: "Vehicle", value: vehicle, icon: Car },
+                    { label: "Punctuality", value: punctuality, icon: Clock },
+                  ].map((row) => (
+                    <div key={row.label} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <row.icon className="h-3.5 w-3.5" />
+                        {row.label}
+                      </div>
+                      <StarRating value={row.value} onChange={() => {}} size="sm" disabled showLabel={false} />
+                    </div>
+                  ))}
+                </div>
+                {comment.trim() && (
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Your comment</p>
+                    <p className="text-sm italic text-foreground/90">"{comment.trim()}"</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
