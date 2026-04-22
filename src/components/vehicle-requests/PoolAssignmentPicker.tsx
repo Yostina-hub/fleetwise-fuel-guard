@@ -128,19 +128,64 @@ export const PoolAssignmentPicker = ({
 
   return (
     <div className="space-y-3">
-      {/* Pool context */}
-      {request.pool_name && (
-        <div className="text-xs flex items-center gap-2 text-muted-foreground">
+      {/* Pool context + cross-pool resource visibility */}
+      <div className="rounded-md border border-border/40 bg-muted/30 p-2.5 space-y-2">
+        <div className="text-xs flex flex-wrap items-center gap-2">
           <Crosshair className="w-3 h-3 text-primary" />
-          Suggestions ranked for pool
-          <Badge variant="secondary" className="text-[10px] font-mono">
-            {request.pool_name}
-          </Badge>
-          <span className="opacity-70">
-            • {inPoolVehicles.length} pool vehicle(s) • {inPoolDrivers.length} pool driver(s)
+          {request.pool_name ? (
+            <>
+              <span className="text-muted-foreground">Requested pool</span>
+              <Badge variant="secondary" className="text-[10px] font-mono">
+                {request.pool_name}
+              </Badge>
+            </>
+          ) : (
+            <span className="text-muted-foreground">No pool specified — choose any vehicle</span>
+          )}
+          <span className="text-muted-foreground/80">
+            • {inPoolVehicles.length} in-pool / {totalIdle} idle of {vehicles.length} active vehicles
+            • {inPoolDrivers.length} pool drivers / {drivers.length} total
           </span>
         </div>
-      )}
+
+        {/* Cross-pool resource matrix — helps cross-checking other pools/zones */}
+        {vehiclesByPool.length > 1 && (
+          <div className="flex flex-wrap gap-1.5 pt-1 border-t border-border/30">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 self-center mr-1">
+              Resources by pool:
+            </span>
+            {vehiclesByPool.map(([pool, stats]) => {
+              const isRequested = pool === request.pool_name;
+              const exhausted = stats.idle === 0;
+              return (
+                <div
+                  key={pool}
+                  className={cn(
+                    "flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px]",
+                    isRequested
+                      ? "border-primary/50 bg-primary/10"
+                      : exhausted
+                        ? "border-border/30 bg-muted/40 opacity-70"
+                        : "border-border/40 bg-background",
+                  )}
+                  title={`${stats.idle} idle / ${stats.busy} busy / ${stats.total} total`}
+                >
+                  <span className="font-mono font-semibold">{pool}</span>
+                  <span
+                    className={cn(
+                      "font-medium",
+                      exhausted ? "text-muted-foreground" : "text-emerald-600",
+                    )}
+                  >
+                    {stats.idle}
+                  </span>
+                  <span className="text-muted-foreground">/{stats.total}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       <div className="grid sm:grid-cols-2 gap-3">
         {/* ───── Vehicle ───── */}
