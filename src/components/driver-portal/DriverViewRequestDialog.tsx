@@ -146,6 +146,7 @@ export const DriverViewRequestDialog = ({
   const [notes, setNotes] = useState("");
   const [odoError, setOdoError] = useState<string | null>(null);
   const [notesError, setNotesError] = useState<string | null>(null);
+  const [navMapOpen, setNavMapOpen] = useState(false);
 
   const checkedIn = !!request?.driver_checked_in_at;
   const checkedOut = !!request?.driver_checked_out_at;
