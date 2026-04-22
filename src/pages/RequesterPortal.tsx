@@ -15,6 +15,7 @@
  * (enforced server-side by `is_basic_user_only` policy).
  */
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,6 +64,8 @@ import {
   type RequestDetail,
 } from "@/components/requester-portal/RequestDetailDrawer";
 import { EditRequestDialog } from "@/components/requester-portal/EditRequestDialog";
+import { RateTripDialog } from "@/components/ratings/RateTripDialog";
+import type { PendingRatingTrip } from "@/hooks/usePendingRatings";
 import {
   AlertDialog,
   AlertDialogAction,
