@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { useAuth } from "@/hooks/useAuth";
 import { History } from "lucide-react";
@@ -276,6 +276,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   }, [onBehalfOf, onBehalfDraftKey]);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
+  const fieldAnchors = useRef<Partial<Record<"date" | "start_time" | "end_time" | "start_date" | "end_date" | "project_number", HTMLDivElement | null>>>({});
 
   // Mandatory rating gate — block new requests until prior completed trips are rated.
   // The DB also enforces this with a trigger; the UI gives immediate feedback.
@@ -935,6 +936,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       };
       const target = tabForField[firstField];
       if (target) setActiveTab(target);
+      requestAnimationFrame(() => {
+        const anchor = fieldAnchors.current[firstField as keyof typeof fieldAnchors.current];
+        anchor?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       return;
     }
 
@@ -1009,7 +1014,41 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     { id: "details", label: "Details", icon: FileText, hint: "Purpose & Submit" },
   ] as const;
   const tabIndex = TABS.findIndex(t => t.id === activeTab);
-  const goNext = () => setActiveTab(TABS[Math.min(tabIndex + 1, TABS.length - 1)].id as any);
+  const goNext = () => {
+    if (activeTab === "schedule") {
+      const ctx = form as any;
+      const scheduleChecks = isDaily
+        ? ([
+            ["date", form.date],
+            ["start_time", form.start_time],
+            ["end_time", form.end_time],
+          ] as const)
+        : ([
+            ["start_date", form.start_date],
+            ["end_date", form.end_date],
+            ...(isProject ? ([["project_number", form.project_number]] as const) : []),
+          ] as const);
+
+      const firstInvalid = scheduleChecks.find(([field, value]) => {
+        const msg = validation.validateField(field as any, value, ctx);
+        if (msg) handleBlur(field as any, value, ctx);
+        return !!msg;
+      });
+
+      if (firstInvalid) {
+        const [field, value] = firstInvalid;
+        const msg = validation.validateField(field as any, value, ctx);
+        toast.error(msg || "Please complete the schedule fields.");
+        requestAnimationFrame(() => {
+          const anchor = fieldAnchors.current[field as keyof typeof fieldAnchors.current];
+          anchor?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+        return;
+      }
+    }
+
+    setActiveTab(TABS[Math.min(tabIndex + 1, TABS.length - 1)].id as any);
+  };
   const goPrev = () => setActiveTab(TABS[Math.max(tabIndex - 1, 0)].id as any);
 
   // Per-tab completion indicators
@@ -1306,11 +1345,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             {isDaily ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  <div className="">
+                  <div className="" ref={(node) => { fieldAnchors.current.date = node; }}>
                     <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }} required minDate={new Date()} hideTime error={!!getError("date")} />
                     <FieldError field="date" />
                   </div>
-                  <div>
+                  <div ref={(node) => { fieldAnchors.current.start_time = node; }}>
                     <Label className="text-primary font-medium text-sm mb-1.5 block">Start Time <span className="text-destructive">*</span></Label>
                     <TimePicker
                       value={form.start_time}
@@ -1320,7 +1359,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     />
                     <FieldError field="start_time" />
                   </div>
-                  <div>
+                  <div ref={(node) => { fieldAnchors.current.end_time = node; }}>
                     <Label className="text-primary font-medium text-sm mb-1.5 block">End Time <span className="text-destructive">*</span></Label>
                     <TimePicker
                       value={form.end_time}
@@ -1388,30 +1427,32 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </>
             ) : (
               <div className={`grid grid-cols-1 gap-5`}>
-                <div>
+                <div ref={(node) => { fieldAnchors.current.start_date = node; }}>
                   <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime error={!!getError("start_date")} />
                   <FieldError field="start_date" />
                 </div>
-                <div>
+                <div ref={(node) => { fieldAnchors.current.end_date = node; }}>
                   <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => { update("end_date", d); handleBlur("end_date", d, form as any); }} required={isProject} minDate={form.start_date} hideTime error={!!getError("end_date")} />
                   <FieldError field="end_date" />
                 </div>
                 {visibility.showProjectNumber && (
-                  <VRField
-                    id="vr-project-number"
-                    label="Project Number"
-                    required
-                    error={getError("project_number")}
-                    tooltip="Project code this trip is charged to (e.g. PRJ-2026-001). Letters, digits and dashes."
-                  >
-                    <Input
-                      value={form.project_number}
-                      onChange={e => update("project_number", e.target.value)}
-                      onBlur={e => handleBlur("project_number", e.target.value, form as any)}
-                      placeholder="e.g. PRJ-2026-001"
-                      className="h-12 text-base"
-                    />
-                  </VRField>
+                  <div ref={(node) => { fieldAnchors.current.project_number = node; }}>
+                    <VRField
+                      id="vr-project-number"
+                      label="Project Number"
+                      required
+                      error={getError("project_number")}
+                      tooltip="Project code this trip is charged to (e.g. PRJ-2026-001). Letters, digits and dashes."
+                    >
+                      <Input
+                        value={form.project_number}
+                        onChange={e => update("project_number", e.target.value)}
+                        onBlur={e => handleBlur("project_number", e.target.value, form as any)}
+                        placeholder="e.g. PRJ-2026-001"
+                        className="h-12 text-base"
+                      />
+                    </VRField>
+                  </div>
                 )}
               </div>
             )}
