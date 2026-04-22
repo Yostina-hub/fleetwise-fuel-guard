@@ -14,6 +14,7 @@ import FuelEventsTab from "@/components/fuel/FuelEventsTab";
 import FuelTheftCasesTab from "@/components/fuel/FuelTheftCasesTab";
 import FuelDepotsTab from "@/components/fuel/FuelDepotsTab";
 import FuelConsumptionAlertsCard from "@/components/fuel/FuelConsumptionAlertsCard";
+import FuelAlertsSummaryCard from "@/components/fuel/FuelAlertsSummaryCard";
 import ApprovedFuelStationsTab from "@/components/fuel/ApprovedFuelStationsTab";
 import FuelQuickStats from "@/components/fuel/FuelQuickStats";
 import FuelInsightsCard from "@/components/fuel/FuelInsightsCard";
