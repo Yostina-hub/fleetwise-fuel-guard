@@ -104,6 +104,9 @@ const RequesterPortalInner = () => {
   // requester can only view / cancel via the detail drawer.
   const [editing, setEditing] = useState<RequestDetail | null>(null);
   const [deleting, setDeleting] = useState<RequestDetail | null>(null);
+  // Trip rating dialog (opened via notification deep-link `?rate=<id>`)
+  const [ratingTrip, setRatingTrip] = useState<PendingRatingTrip | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const deleteRequest = useMutation({
     mutationFn: async (r: RequestDetail) => {
