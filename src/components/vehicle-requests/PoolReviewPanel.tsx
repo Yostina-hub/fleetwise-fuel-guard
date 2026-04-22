@@ -6,6 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -16,23 +24,23 @@ import {
 import {
   CheckCircle,
   XCircle,
-  Truck,
   Users,
-  Send,
   UserCheck,
   Layers,
-  User,
   FileSignature,
   RotateCcw,
   ScrollText,
   Zap,
   Loader2,
+  ChevronDown,
+  ChevronRight,
+  MapPin,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { PoolAssignmentPicker } from "./PoolAssignmentPicker";
 
 const sendAssignmentSMS = async (request: any, vehicleId: string, driverId?: string) => {
   try {
