@@ -77,7 +77,13 @@ import { useToast } from "@/hooks/use-toast";
 
 type StatusFilter = "all" | (typeof REQUEST_STATUSES)[number];
 
-const RequesterPortal = () => {
+const RequesterPortal = () => (
+  <PageDateRangeProvider>
+    <RequesterPortalInner />
+  </PageDateRangeProvider>
+);
+
+const RequesterPortalInner = () => {
   const { user } = useAuth();
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
