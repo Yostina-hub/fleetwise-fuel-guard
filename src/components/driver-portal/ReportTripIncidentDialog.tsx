@@ -313,7 +313,7 @@ export const ReportTripIncidentDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-destructive" aria-hidden="true" />
@@ -325,6 +325,79 @@ export const ReportTripIncidentDialog = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Driver & Vehicle Information (auto-filled from your active trip) */}
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-foreground">
+                Driver &amp; Vehicle Information
+              </h3>
+              <Separator />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Driver Name</Label>
+                <Input
+                  value={driverFullName}
+                  readOnly
+                  placeholder={driverId ? "Loading…" : "—"}
+                  className="bg-muted/40"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Driver Phone</Label>
+                <Input
+                  value={driverInfo?.phone || ""}
+                  readOnly
+                  placeholder="—"
+                  className="bg-muted/40"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Employee ID</Label>
+                <Input
+                  value={driverInfo?.employee_id || ""}
+                  readOnly
+                  placeholder="—"
+                  className="bg-muted/40"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Driver Type</Label>
+                <Input
+                  value={driverInfo?.employment_type || ""}
+                  readOnly
+                  placeholder="—"
+                  className="bg-muted/40"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Vehicle</Label>
+                <Input
+                  value={vehicleLabel}
+                  readOnly
+                  placeholder={vehicleId ? "Loading…" : "—"}
+                  className="bg-muted/40"
+                />
+              </div>
+              <div>
+                <Label htmlFor="incident-km" className="text-xs text-muted-foreground">
+                  KM Reading
+                </Label>
+                <Input
+                  id="incident-km"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step="1"
+                  value={kmReading}
+                  onChange={(e) => setKmReading(e.target.value)}
+                  placeholder="Current odometer (km)"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Reason selector */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Reason</Label>
