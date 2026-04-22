@@ -376,8 +376,6 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       setExpandedId(null);
-      setSelectedVehicle("");
-      setSelectedDriver("");
     },
     onError: (err: any) => toast.error(err.message),
   });
