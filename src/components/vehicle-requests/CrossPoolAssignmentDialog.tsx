@@ -9,7 +9,7 @@ import { AlertTriangle, ArrowLeft, ArrowRight, Truck } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useVehicles } from "@/hooks/useVehicles";
+
 import { toast } from "sonner";
 
 interface Props {
