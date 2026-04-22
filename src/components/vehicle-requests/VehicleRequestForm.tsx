@@ -1664,9 +1664,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <div className="">
                 <VRField
                   id="vr-contact-phone"
-                  label="Contact Phone (during trip)"
+                  label="Contact Phone (during trip) *"
                   error={getError("contact_phone")}
-                  tooltip="Optional. Helps dispatch reach the requester quickly if plans change."
+                  tooltip="Required. Dispatch needs to reach you while the trip is active."
                 >
                   <Input
                     type="tel"
