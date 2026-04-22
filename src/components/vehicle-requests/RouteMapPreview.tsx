@@ -301,15 +301,31 @@ export function RouteMapPreview({
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    // Render markers — but draw STOPS LAST (on top) so they remain visible
-    // when a stop is placed near/under the Departure or Destination pin.
+    // Detect overlapping coordinates so we can spread markers apart visually.
+    // Two points are "overlapping" if their lat/lng differ by < ~10 m (~0.0001°).
+    const OVERLAP_DEG = 0.0001;
+    const overlapKey = (lat: number, lng: number) =>
+      `${lat.toFixed(4)},${lng.toFixed(4)}`;
+    const overlapGroups = new Map<string, number>();
+    orderedPoints.forEach((p) => {
+      if (p.lat == null || p.lng == null) return;
+      const key = overlapKey(p.lat, p.lng);
+      overlapGroups.set(key, (overlapGroups.get(key) ?? 0) + 1);
+    });
+
+    // Render markers — draw Departure/Destination first, STOPS on top so they
+    // remain visible when placed near another pin.
     const haveLegs = routeLegs.length === Math.max(0, orderedPoints.length - 1) && routeLegs.length > 0;
     const renderOrder = orderedPoints
       .map((p, idx) => ({ p, idx }))
       .sort((a, b) => {
-        const rank = (k: string) => (k === "stop" ? 2 : 1); // stops drawn last
+        const rank = (k: string) => (k === "stop" ? 2 : 1);
         return rank(a.p.kind) - rank(b.p.kind);
       });
+
+    // Track per-overlap-group placement counter so multiple coincident pins
+    // get fanned out around the shared point in a small circle.
+    const overlapCursor = new Map<string, number>();
 
     renderOrder.forEach(({ p, idx }) => {
       if (p.lat == null || p.lng == null) return;
@@ -321,6 +337,24 @@ export function RouteMapPreview({
             departKm: idx < routeLegs.length ? routeLegs[idx].distance_m / 1000 : null,
           }
         : { arriveKm: null, arriveMin: null, departKm: null };
+
+      // If this point overlaps with another, fan it out by a small pixel offset
+      // (kept on the marker DOM element so the underlying coordinate stays exact).
+      const key = overlapKey(p.lat, p.lng);
+      const groupSize = overlapGroups.get(key) ?? 1;
+      const cursor = overlapCursor.get(key) ?? 0;
+      overlapCursor.set(key, cursor + 1);
+      const needsFan = groupSize > 1;
+      let pxX = 0;
+      let pxY = 0;
+      if (needsFan) {
+        // Spread up to 6 markers around a 22px radius circle.
+        const angle = (cursor / Math.max(groupSize, 1)) * Math.PI * 2 - Math.PI / 2;
+        const radius = 22;
+        pxX = Math.cos(angle) * radius;
+        pxY = Math.sin(angle) * radius;
+      }
+
       const el = document.createElement("div");
       el.style.display = "flex";
       el.style.alignItems = "center";
@@ -331,33 +365,32 @@ export function RouteMapPreview({
       el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.35)";
       el.style.border = "2px solid #fff";
       el.style.cursor = "pointer";
+      el.style.transition = "transform 120ms ease";
       if (p.kind === "departure") {
         el.style.width = "26px";
         el.style.height = "26px";
         el.style.fontSize = "11px";
-        el.style.background = "hsl(142 71% 45%)"; // emerald
+        el.style.background = "hsl(142 71% 45%)";
         el.style.zIndex = "2";
         el.textContent = "A";
       } else if (p.kind === "destination") {
         el.style.width = "26px";
         el.style.height = "26px";
         el.style.fontSize = "11px";
-        el.style.background = "hsl(0 84% 60%)"; // red
-        el.style.zIndex = "2";
+        el.style.background = "hsl(0 84% 60%)";
+        el.style.zIndex = "3";
         el.textContent = "B";
       } else {
-        // Stops: slightly bigger + on top so they're visible even when
-        // overlapping the Departure/Destination pin.
-        el.style.width = "30px";
-        el.style.height = "30px";
-        el.style.fontSize = "12px";
-        el.style.background = "hsl(38 92% 50%)"; // amber
-        el.style.border = "3px solid #fff";
-        el.style.boxShadow = "0 3px 10px rgba(0,0,0,0.45)";
+        el.style.width = "28px";
+        el.style.height = "28px";
+        el.style.fontSize = "11px";
+        el.style.background = "hsl(38 92% 50%)";
+        el.style.border = "2.5px solid #fff";
+        el.style.boxShadow = "0 3px 8px rgba(0,0,0,0.4)";
         el.style.zIndex = "10";
         el.textContent = String(p.index ?? "·");
       }
-      const marker = new maplibregl.Marker({ element: el })
+      const marker = new maplibregl.Marker({ element: el, offset: [pxX, pxY] })
         .setLngLat([p.lng, p.lat])
         .setPopup(
           new maplibregl.Popup({ offset: 14, closeButton: false, maxWidth: "300px" }).setHTML(
@@ -471,6 +504,46 @@ export function RouteMapPreview({
   ]);
 
   const hasAny = orderedPoints.length > 0;
+  const hasStops = stops.some((s) => s.lat != null && s.lng != null);
+
+  // Detect stops that overlap (within ~10m) another waypoint — flag for the
+  // user so they understand why a marker may look "missing" on the map.
+  const overlapWarnings: string[] = [];
+  stops.forEach((s, i) => {
+    if (s.lat == null || s.lng == null) return;
+    const matches: string[] = [];
+    if (departure?.lat != null && departure?.lng != null &&
+        Math.abs(departure.lat - s.lat) < 0.0001 && Math.abs(departure.lng - s.lng) < 0.0001) {
+      matches.push("Departure");
+    }
+    if (destination?.lat != null && destination?.lng != null &&
+        Math.abs(destination.lat - s.lat) < 0.0001 && Math.abs(destination.lng - s.lng) < 0.0001) {
+      matches.push("Destination");
+    }
+    stops.forEach((other, j) => {
+      if (j <= i || other.lat == null || other.lng == null) return;
+      if (Math.abs(other.lat - s.lat) < 0.0001 && Math.abs(other.lng - s.lng) < 0.0001) {
+        matches.push(`Stop ${j + 1}`);
+      }
+    });
+    if (matches.length > 0) {
+      overlapWarnings.push(`Stop ${i + 1} is at the same location as ${matches.join(" & ")}`);
+    }
+  });
+
+  // Distance summary string for the compact top-left pill.
+  let distanceLabel: string | null = null;
+  let distanceTone: "road" | "loading" | "straight" | null = null;
+  if (routeKm != null) {
+    distanceLabel = `${routeKm.toFixed(1)} km${routeMin != null ? ` · ~${Math.max(1, Math.round(routeMin))} min` : ""}`;
+    distanceTone = "road";
+  } else if (routeLoading) {
+    distanceLabel = "Calculating route…";
+    distanceTone = "loading";
+  } else if (totalKm > 0) {
+    distanceLabel = `~${totalKm.toFixed(1)} km straight-line`;
+    distanceTone = "straight";
+  }
 
   return (
     <div className="relative rounded-lg border border-border bg-muted/20 overflow-hidden">
@@ -480,6 +553,8 @@ export function RouteMapPreview({
         className="w-full bg-muted/40"
         aria-label="Trip route preview map"
       />
+
+      {/* Empty state */}
       {!hasAny && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="rounded-md bg-background/85 backdrop-blur px-3 py-2 text-xs text-muted-foreground border flex items-center gap-1.5 shadow-sm">
@@ -489,46 +564,33 @@ export function RouteMapPreview({
         </div>
       )}
 
-      {/* Legend + distance overlay */}
+      {/* Compact top toolbar — legend + distance combined into one pill */}
       {hasAny && (
-        <div className="absolute top-2 left-2 flex flex-col gap-1.5">
-          <div className="flex items-center gap-1.5 rounded-md bg-background/90 backdrop-blur px-2 py-1 text-[11px] border shadow-sm">
-            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white bg-emerald-500">A</span>
-            <span className="text-muted-foreground">Departure</span>
-            {stops.some((s) => s.lat != null) && (
+        <div className="absolute top-2 left-2 right-2 flex items-start justify-between gap-2 pointer-events-none">
+          <div className="flex flex-wrap items-center gap-1.5 rounded-full bg-background/90 backdrop-blur px-2.5 py-1 text-[11px] border shadow-sm pointer-events-auto">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white" style={{ background: "hsl(142 71% 45%)" }}>A</span>
+            {hasStops && (
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white" style={{ background: "hsl(38 92% 50%)" }}>#</span>
+            )}
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white" style={{ background: "hsl(0 84% 60%)" }}>B</span>
+            {distanceLabel && (
               <>
-                <span className="mx-1 text-muted-foreground/40">·</span>
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white bg-amber-500">#</span>
-                <span className="text-muted-foreground">Stops</span>
+                <span className="mx-0.5 text-muted-foreground/40">·</span>
+                {distanceTone === "road" && <Route className="w-3 h-3 text-primary" />}
+                {distanceTone === "loading" && <Route className="w-3 h-3 text-muted-foreground animate-pulse" />}
+                {distanceTone === "straight" && <Ruler className="w-3 h-3 text-muted-foreground" />}
+                <span className="text-foreground font-medium">{distanceLabel}</span>
+                {distanceTone === "straight" && routeFailed && (
+                  <span className="text-muted-foreground/70">· road route unavailable</span>
+                )}
               </>
             )}
-            <span className="mx-1 text-muted-foreground/40">·</span>
-            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white bg-destructive">B</span>
-            <span className="text-muted-foreground">Destination</span>
           </div>
-          {routeKm != null ? (
-            <Badge variant="secondary" className="self-start gap-1 text-[11px] font-medium shadow-sm">
-              <Route className="w-3 h-3" />
-              {routeKm.toFixed(1)} km via roads
-              {routeMin != null && (
-                <span className="text-muted-foreground/80">· ~{Math.max(1, Math.round(routeMin))} min</span>
-              )}
-            </Badge>
-          ) : routeLoading ? (
-            <Badge variant="secondary" className="self-start gap-1 text-[11px] font-medium shadow-sm opacity-80">
-              <Route className="w-3 h-3 animate-pulse" />
-              Calculating road route…
-            </Badge>
-          ) : totalKm > 0 ? (
-            <Badge variant="secondary" className="self-start gap-1 text-[11px] font-medium shadow-sm">
-              <Ruler className="w-3 h-3" />
-              ~{totalKm.toFixed(1)} km straight-line
-              {routeFailed && <span className="text-muted-foreground/70">· road route unavailable</span>}
-            </Badge>
-          ) : null}
         </div>
       )}
-      {hasAny && (orderedPoints.length === 1) && (
+
+      {/* Single-point hint */}
+      {hasAny && orderedPoints.length === 1 && (
         <div className="absolute bottom-2 right-2">
           <Badge variant="outline" className="bg-background/85 backdrop-blur text-[10px] gap-1">
             <MapPin className="w-3 h-3" />
@@ -537,37 +599,54 @@ export function RouteMapPreview({
         </div>
       )}
 
-      {/* Per-segment breakdown — appears whenever the routing engine returned
-          more than one leg (i.e., at least one intermediate stop). */}
-      {hasAny && routeLegs.length >= 2 && routeLegs.length === orderedPoints.length - 1 && (
-        <div className="absolute bottom-2 left-2 max-w-[60%]">
-          <div className="rounded-md border bg-background/90 backdrop-blur shadow-sm px-2.5 py-1.5 text-[11px] space-y-1">
-            <div className="font-semibold text-foreground flex items-center gap-1">
-              <Route className="w-3 h-3 text-primary" /> Segments
-            </div>
+      {/* Overlap warning — friendly hint when a stop sits on top of another waypoint */}
+      {overlapWarnings.length > 0 && (
+        <div className="absolute bottom-2 right-2 max-w-[55%]">
+          <div className="rounded-md border border-warning/40 bg-warning/10 backdrop-blur px-2.5 py-1.5 text-[11px] shadow-sm flex items-start gap-1.5">
+            <MapPin className="w-3 h-3 text-warning shrink-0 mt-0.5" />
             <div className="space-y-0.5">
-              {routeLegs.map((leg, i) => {
-                const from = getPointLabel(orderedPoints[i]);
-                const to = getPointLabel(orderedPoints[i + 1]);
-                const km = formatKm(leg.distance_m / 1000);
-                const min = formatMin(leg.duration_s / 60);
-                return (
-                  <div key={i} className="flex items-center gap-1.5 text-muted-foreground">
-                    <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold text-white bg-primary/80 shrink-0">
-                      {i + 1}
-                    </span>
-                    <span className="truncate text-foreground/90" title={`${from} → ${to}`}>
-                      {from} → {to}
-                    </span>
-                    <span className="ml-auto pl-2 font-medium text-foreground whitespace-nowrap">
-                      {km}{min ? ` · ${min}` : ""}
-                    </span>
-                  </div>
-                );
-              })}
+              {overlapWarnings.slice(0, 2).map((msg, i) => (
+                <div key={i} className="text-foreground/90 leading-tight">{msg}</div>
+              ))}
+              {overlapWarnings.length > 2 && (
+                <div className="text-muted-foreground">+{overlapWarnings.length - 2} more</div>
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Collapsible per-segment breakdown — bottom-left, opens on click */}
+      {hasAny && routeLegs.length >= 2 && routeLegs.length === orderedPoints.length - 1 && (
+        <details className="absolute bottom-2 left-2 max-w-[55%] group">
+          <summary className="list-none cursor-pointer rounded-full bg-background/90 backdrop-blur px-2.5 py-1 text-[11px] border shadow-sm flex items-center gap-1.5 select-none hover:bg-background">
+            <Route className="w-3 h-3 text-primary" />
+            <span className="font-medium text-foreground">{routeLegs.length} segments</span>
+            <span className="text-muted-foreground group-open:hidden">· tap to expand</span>
+            <span className="text-muted-foreground hidden group-open:inline">· tap to hide</span>
+          </summary>
+          <div className="mt-1.5 rounded-md border bg-background/95 backdrop-blur shadow-md px-2.5 py-2 text-[11px] space-y-1 max-h-44 overflow-auto">
+            {routeLegs.map((leg, i) => {
+              const from = getPointLabel(orderedPoints[i]);
+              const to = getPointLabel(orderedPoints[i + 1]);
+              const km = formatKm(leg.distance_m / 1000);
+              const min = formatMin(leg.duration_s / 60);
+              return (
+                <div key={i} className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold text-white shrink-0" style={{ background: "hsl(217 91% 55%)" }}>
+                    {i + 1}
+                  </span>
+                  <span className="truncate text-foreground/90" title={`${from} → ${to}`}>
+                    {from} → {to}
+                  </span>
+                  <span className="ml-auto pl-2 font-medium text-foreground whitespace-nowrap">
+                    {km}{min ? ` · ${min}` : ""}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </details>
       )}
     </div>
   );
