@@ -276,6 +276,17 @@ Deno.serve(async (req) => {
       }),
     );
 
+    // Active geofences for the org (used to boost vehicles whose live position
+    // is inside the same geofence that contains the request's pickup point).
+    const { data: fenceRows } = await supabase
+      .from("geofences")
+      .select(
+        "id, name, geometry_type, center_lat, center_lng, radius_meters, polygon_points",
+      )
+      .eq("organization_id", organization_id)
+      .eq("is_active", true);
+    const fences: Geofence[] = (fenceRows || []) as any;
+
     // Track local locks within this run so two groups don't grab the same vehicle.
     const runLocked = new Set<string>(lockedIds);
 
@@ -292,6 +303,18 @@ Deno.serve(async (req) => {
       const pickupLng = withCoords?.departure_lng ?? null;
       const totalPassengers = reqs.reduce((s, r) => s + (r.passengers || 1), 0);
 
+      // Find the geofence that contains the pickup (if any) — used to boost
+      // vehicles whose live position is inside the same fence.
+      let pickupFence: Geofence | null = null;
+      if (pickupLat != null && pickupLng != null) {
+        for (const f of fences) {
+          if (insideFence({ lat: pickupLat, lng: pickupLng }, f)) {
+            pickupFence = f;
+            break;
+          }
+        }
+      }
+
       // Candidate vehicles: not already locked, fits passenger count if known.
       const candidates = poolVehicles
         .filter((v) => !runLocked.has(v.id))
@@ -305,12 +328,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Score candidates by distance to pickup (smaller is better).
-      // Vehicles with no telemetry get a large but finite penalty so they're still pickable.
+      // Score: in-pickup-geofence vehicles win, then closest GPS, then no-GPS roster.
       const ranked = candidates
         .map((v) => {
           const t = teleByVehicle.get(v.id);
           let distance = 9999;
+          let inGeofence = false;
           if (
             pickupLat != null &&
             pickupLng != null &&
@@ -318,10 +341,19 @@ Deno.serve(async (req) => {
             t?.longitude != null
           ) {
             distance = haversineKm(pickupLat, pickupLng, t.latitude, t.longitude);
+            if (pickupFence) {
+              inGeofence = insideFence(
+                { lat: Number(t.latitude), lng: Number(t.longitude) },
+                pickupFence,
+              );
+            }
           }
-          return { v, distance };
+          return { v, distance, inGeofence };
         })
-        .sort((a, b) => a.distance - b.distance);
+        .sort((a, b) => {
+          if (a.inGeofence !== b.inGeofence) return a.inGeofence ? -1 : 1;
+          return a.distance - b.distance;
+        });
 
       const picked = ranked[0];
       const vehicle = picked.v;
