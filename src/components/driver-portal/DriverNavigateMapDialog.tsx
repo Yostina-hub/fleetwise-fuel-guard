@@ -424,21 +424,39 @@ export const DriverNavigateMapDialog = ({
   };
 
   const openInGoogleMaps = () => {
-    if (!destination && !origin) return;
-    let url: string;
+    // Prefer resolved coordinates; fall back to free-text places so the
+    // button still works while geocoding is in flight or failed.
+    let url: string | null = null;
     if (origin && destination) {
       url = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
-    } else {
+    } else if (origin || destination) {
       const p = (destination || origin)!;
       url = `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
+    } else if (departurePlace?.trim() || destinationPlace?.trim()) {
+      const dest = destinationPlace?.trim();
+      const orig = departurePlace?.trim();
+      if (dest && orig) {
+        url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(orig)}&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+      } else {
+        url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((dest || orig)!)}`;
+      }
     }
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    if (!url) return;
+    try {
+      const w = (window.top || window).open(url, "_blank", "noopener,noreferrer");
+      if (w) return;
+    } catch { /* fall through */ }
+    try {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      try { window.top!.location.href = url; } catch { window.location.href = url; }
+    }
   };
 
   return (
