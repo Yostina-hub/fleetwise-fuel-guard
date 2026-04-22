@@ -406,7 +406,6 @@ export const DriverViewRequestDialog = ({
         .from("vehicle_requests")
         .update({
           driver_checked_in_at: null,
-          driver_checkin_odometer: null,
           driver_checkin_notes: null,
           status: "assigned",
         })
