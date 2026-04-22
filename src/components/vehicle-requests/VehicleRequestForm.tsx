@@ -29,6 +29,7 @@ import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm, vehicleRequestZodSchema, validateVehicleRequestForm } from "./vehicleRequestValidation";
 import { VRField } from "./VRField";
 import { deriveVisibility } from "./visibility";
+import { RouteMapPreview } from "./RouteMapPreview";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
 
