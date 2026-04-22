@@ -65,6 +65,7 @@ export function DateTimePicker({
   disabled,
   minDate,
   hideTime,
+  error,
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
   // Defensive: callers occasionally pass an ISO string instead of a Date.
