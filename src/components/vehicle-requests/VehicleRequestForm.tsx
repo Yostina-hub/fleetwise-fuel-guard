@@ -1832,8 +1832,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Button
                   size="sm"
                   onClick={handleSubmit}
-                  disabled={!canSubmit || createMutation.isPending || hasPendingRatings}
-                  title={hasPendingRatings ? "Rate your previous trips before submitting" : undefined}
+                  // Only hard-disable for in-flight submit or the rating gate.
+                  // Field-level issues are surfaced via the toast in handleSubmit
+                  // so the user always gets actionable feedback instead of a
+                  // silently disabled button.
+                  disabled={createMutation.isPending || hasPendingRatings}
+                  title={
+                    hasPendingRatings
+                      ? "Rate your previous trips before submitting"
+                      : !canSubmit
+                        ? "Some required fields are missing — click to see what's needed"
+                        : undefined
+                  }
                   className="gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
