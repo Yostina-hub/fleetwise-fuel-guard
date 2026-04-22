@@ -506,6 +506,7 @@ type SortKey =
   | "purpose"
   | "route"
   | "needed_from"
+  | "needed_until"
   | "vehicle"
   | "status";
 
@@ -526,27 +527,31 @@ function RequestList({
   emptyTitle: string;
   emptyHint: string;
 }) {
-  // Sort defaults to most-recent trip first; clicking same column toggles direction.
+  // Default to newest first by needed_from; date columns flip to desc on first
+  // click so users see "latest day first" without an extra toggle.
   const [sortKey, setSortKey] = useState<SortKey>("needed_from");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const isDateKey = (k: SortKey) => k === "needed_from" || k === "needed_until";
   const toggleSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
       setSortKey(k);
-      setSortDir(k === "needed_from" ? "desc" : "asc");
+      setSortDir(isDateKey(k) ? "desc" : "asc");
     }
   };
 
   const sorted = useMemo(() => {
     const arr = [...items];
     const dir = sortDir === "asc" ? 1 : -1;
+    const tsOrZero = (v: any) => (v ? new Date(v).getTime() : 0);
     const getVal = (r: RequestDetail): string | number => {
       switch (sortKey) {
         case "request_number": return (r.request_number || "").toLowerCase();
         case "request_type":   return ((r as any).request_type || "").toLowerCase();
         case "purpose":        return (r.purpose || "").toLowerCase();
         case "route":          return (((r as any).departure_place || "") + " " + (r.destination || "")).toLowerCase();
-        case "needed_from":    return r.needed_from ? new Date(r.needed_from).getTime() : 0;
+        case "needed_from":    return tsOrZero(r.needed_from);
+        case "needed_until":   return tsOrZero((r as any).needed_until);
         case "vehicle":        return (r.assigned_vehicle?.plate_number || "").toLowerCase();
         case "status":         return (r.status || "").toLowerCase();
         default: return 0;
@@ -556,7 +561,9 @@ function RequestList({
       const av = getVal(a), bv = getVal(b);
       if (av < bv) return -1 * dir;
       if (av > bv) return 1 * dir;
-      return 0;
+      // Stable tiebreaker: newest created_at first so freshly-submitted
+      // requests always surface at the top of any equal/empty-date group.
+      return tsOrZero((b as any).created_at) - tsOrZero((a as any).created_at);
     });
     return arr;
   }, [items, sortKey, sortDir]);
@@ -617,13 +624,14 @@ function RequestList({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-xs">
-                <SortHeader label="Request #"   field="request_number" />
-                <SortHeader label="Type"        field="request_type" />
-                <SortHeader label="Purpose"     field="purpose" />
-                <SortHeader label="Route"       field="route" />
-                <SortHeader label="Needed From" field="needed_from" />
-                <SortHeader label="Vehicle"     field="vehicle" />
-                <SortHeader label="Status"      field="status" align="center" />
+                <SortHeader label="Request #"    field="request_number" />
+                <SortHeader label="Type"         field="request_type" />
+                <SortHeader label="Purpose"      field="purpose" />
+                <SortHeader label="Route"        field="route" />
+                <SortHeader label="Needed From"  field="needed_from" />
+                <SortHeader label="Needed Until" field="needed_until" />
+                <SortHeader label="Vehicle"      field="vehicle" />
+                <SortHeader label="Status"       field="status" align="center" />
                 <th className="text-center py-2 px-3 text-muted-foreground">Actions</th>
               </tr>
             </thead>
@@ -645,8 +653,11 @@ function RequestList({
                     <td className="py-2 px-3 text-muted-foreground text-xs max-w-[180px] truncate" title={route}>
                       {route}
                     </td>
-                    <td className="py-2 px-3 text-muted-foreground text-xs">
+                    <td className="py-2 px-3 text-muted-foreground text-xs whitespace-nowrap">
                       {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
+                    </td>
+                    <td className="py-2 px-3 text-muted-foreground text-xs whitespace-nowrap">
+                      {(r as any).needed_until ? format(new Date((r as any).needed_until), "MMM dd, HH:mm") : "—"}
                     </td>
                     <td className="py-2 px-3 text-muted-foreground text-xs">
                       {r.assigned_vehicle?.plate_number || "—"}
