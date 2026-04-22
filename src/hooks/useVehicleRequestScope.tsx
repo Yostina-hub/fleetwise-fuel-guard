@@ -136,12 +136,14 @@ export function applyVRScope<T>(query: T, scope: VRScope): T {
     case "all":
       return q as T;
     case "operator":
-      // Operators see anything that's been routed into the pool review/
-      // assignment workflow, plus anything they personally filed.
-      if (!scope.userId) return q.eq("requester_id", "__never__") as T;
-      return q.or(
-        `requester_id.eq.${scope.userId},pool_review_status.not.is.null,assigned_vehicle_id.not.is.null,status.in.(pending,approved,assigned)`,
-      ) as T;
+      // Operators (Fleet Operators) need to see the full org request queue
+      // so that approved requests reach them for vehicle/driver assignment.
+      // RLS on vehicle_requests already restricts visibility to the same org,
+      // so no additional filter is required here. Previously we used a
+      // narrow .or(...) filter that excluded approved requests in some
+      // PostgREST parsing edge cases, causing approved requests to never
+      // reach operators after the approval step.
+      return q as T;
     case "driver": {
       if (!scope.userId) return q.eq("requester_id", "__never__") as T;
       const orParts: string[] = [`requester_id.eq.${scope.userId}`];
