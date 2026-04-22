@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,10 @@ import { MapLocationPickerDialog } from "./MapLocationPickerDialog";
 interface LocationPickerFieldProps {
   label: string;
   value: string;
+  /** Optional companion coordinates so we can auto-resolve a place name when
+   * the field is empty/placeholder but a map point already exists. */
+  lat?: number | null;
+  lng?: number | null;
   onChange: (value: string) => void;
   onCoordsChange?: (lat: number, lng: number) => void;
   placeholder?: string;
@@ -20,9 +24,14 @@ interface LocationPickerFieldProps {
   required?: boolean;
 }
 
+/** Names we treat as "not a real place" — we'll auto-resolve over them. */
+const PLACEHOLDER_NAME_RE = /^(pinned location|stop\s*\d+|departure|destination)$/i;
+
 export function LocationPickerField({
   label,
   value,
+  lat,
+  lng,
   onChange,
   onCoordsChange,
   placeholder = "Enter address",
@@ -33,6 +42,9 @@ export function LocationPickerField({
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
+  // Track which coordinate pairs we've already reverse-geocoded so we don't
+  // re-fetch on every render or overwrite a real name the user typed.
+  const resolvedKeysRef = useRef<Set<string>>(new Set());
 
   const { data: geofences } = useQuery({
     queryKey: ["geofences-location-picker", organizationId],
