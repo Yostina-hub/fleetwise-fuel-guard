@@ -183,7 +183,8 @@ export const DriverPassengerFeedback = ({ driverId, driverName }: Props) => {
                 <div key={r.id} className="border-l-2 border-primary/40 pl-3 py-1 space-y-1">
                   <div className="flex items-center justify-between flex-wrap gap-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium">{r.requester_name || "Passenger"}</span>
+                      {/* Anonymous — passenger identity is intentionally hidden from drivers */}
+                      <span className="text-xs font-medium text-muted-foreground">Anonymous passenger</span>
                       <StarsRow value={r.driver_rating} />
                     </div>
                     <span className="text-[10px] text-muted-foreground">
