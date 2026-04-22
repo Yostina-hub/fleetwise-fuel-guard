@@ -23523,6 +23523,98 @@ export type Database = {
           },
         ]
       }
+      vehicle_request_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          dispute_flagged: boolean
+          dispute_reason: string | null
+          dispute_resolution_notes: string | null
+          dispute_resolved_at: string | null
+          dispute_resolved_by: string | null
+          driver_id: string | null
+          driver_score: number | null
+          id: string
+          organization_id: string
+          overall_score: number | null
+          punctuality_score: number | null
+          rated_by: string
+          updated_at: string
+          vehicle_id: string | null
+          vehicle_request_id: string
+          vehicle_score: number | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          dispute_flagged?: boolean
+          dispute_reason?: string | null
+          dispute_resolution_notes?: string | null
+          dispute_resolved_at?: string | null
+          dispute_resolved_by?: string | null
+          driver_id?: string | null
+          driver_score?: number | null
+          id?: string
+          organization_id: string
+          overall_score?: number | null
+          punctuality_score?: number | null
+          rated_by: string
+          updated_at?: string
+          vehicle_id?: string | null
+          vehicle_request_id: string
+          vehicle_score?: number | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          dispute_flagged?: boolean
+          dispute_reason?: string | null
+          dispute_resolution_notes?: string | null
+          dispute_resolved_at?: string | null
+          dispute_resolved_by?: string | null
+          driver_id?: string | null
+          driver_score?: number | null
+          id?: string
+          organization_id?: string
+          overall_score?: number | null
+          punctuality_score?: number | null
+          rated_by?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          vehicle_request_id?: string
+          vehicle_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_request_ratings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_request_ratings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_request_ratings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_request_ratings_vehicle_request_id_fkey"
+            columns: ["vehicle_request_id"]
+            isOneToOne: true
+            referencedRelation: "vehicle_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_request_stops: {
         Row: {
           created_at: string
@@ -23654,6 +23746,9 @@ export type Database = {
           rejection_reason: string | null
           request_number: string
           request_type: string | null
+          requester_confirmation_notes: string | null
+          requester_confirmed_at: string | null
+          requester_confirmed_by: string | null
           requester_feedback: string | null
           requester_id: string
           requester_name: string
@@ -23746,6 +23841,9 @@ export type Database = {
           rejection_reason?: string | null
           request_number: string
           request_type?: string | null
+          requester_confirmation_notes?: string | null
+          requester_confirmed_at?: string | null
+          requester_confirmed_by?: string | null
           requester_feedback?: string | null
           requester_id: string
           requester_name: string
@@ -23838,6 +23936,9 @@ export type Database = {
           rejection_reason?: string | null
           request_number?: string
           request_type?: string | null
+          requester_confirmation_notes?: string | null
+          requester_confirmed_at?: string | null
+          requester_confirmed_by?: string | null
           requester_feedback?: string | null
           requester_id?: string
           requester_name?: string
