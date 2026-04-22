@@ -1186,6 +1186,11 @@ const VehicleRequests = () => {
             request={showCrossPool}
             open={!!showCrossPool}
             onClose={() => setShowCrossPool(null)}
+            onBack={() => {
+              const req = showCrossPool;
+              setShowCrossPool(null);
+              setShowDetail(req);
+            }}
           />
         )}
         {showDeallocate && (
