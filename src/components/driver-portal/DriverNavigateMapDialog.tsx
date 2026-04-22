@@ -34,7 +34,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { useDefaultMapStyle, type MapStyleKey } from "@/hooks/useDefaultMapStyle";
+import { useDefaultMapStyle } from "@/hooks/useDefaultMapStyle";
+import { createLematTransformRequest, fetchLematMapStyle } from "@/lib/lemat";
 
 interface Props {
   open: boolean;
@@ -53,12 +54,6 @@ interface ResolvedPoint {
   lng: number;
   label: string;
 }
-
-const STYLE_URL: Record<MapStyleKey, string> = {
-  streets: "https://lemat.goffice.et/api/v1/tiles/style?theme=light",
-  satellite: "https://lemat.goffice.et/api/v1/tiles/style?theme=satellite",
-  dark: "https://lemat.goffice.et/api/v1/tiles/style?theme=dark",
-};
 
 // Forward-geocode a free-text place via the existing lemat-search-geocode edge
 // function. Returns the first hit or null.
@@ -101,7 +96,7 @@ export const DriverNavigateMapDialog = ({
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const liveMarkerRef = useRef<maplibregl.Marker | null>(null);
-  const { ready: lematReady } = useLematApiKey();
+  const { ready: lematReady, apiKey: lematApiKey } = useLematApiKey();
   const defaultMapStyle = useDefaultMapStyle();
 
   const [resolving, setResolving] = useState(false);
@@ -161,31 +156,55 @@ export const DriverNavigateMapDialog = ({
     };
   }, [open, departurePlace, departureLat, departureLng, destinationPlace]);
 
-  // Initialize / tear down the map. Uses a callback ref (`containerEl`) so
-  // we wait for the dialog to actually mount the map div before constructing
-  // the MapLibre instance — `useRef` was racing the dialog mount and the
-  // map sometimes never initialised, leaving an empty box.
+  // Initialize / tear down the map using the hardened preview-safe style loader
+  // and a resize observer so the viewport stays correct inside the dialog.
   useEffect(() => {
-    if (!open) return;
-    if (!containerEl || map.current) return;
+    if (!open || !containerEl || map.current) return;
 
-    map.current = new maplibregl.Map({
-      container: containerEl,
-      style: STYLE_URL[defaultMapStyle] ?? STYLE_URL.streets,
-      center: [38.7578, 9.03], // Addis Ababa default
-      zoom: 11,
-    });
-    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
-    map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
+    let disposed = false;
+    let resizeObserver: ResizeObserver | null = null;
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // After the dialog finishes its open animation, the container size may
-    // have changed. Force MapLibre to recompute its viewport.
-    const resizeTimer = window.setTimeout(() => {
-      try { map.current?.resize(); } catch { /* noop */ }
-    }, 250);
+    const forceResize = () => {
+      try {
+        map.current?.resize();
+      } catch {
+        // noop
+      }
+    };
+
+    const initMap = async () => {
+      const initialStyle = await fetchLematMapStyle(defaultMapStyle);
+      if (disposed || !containerEl || map.current) return;
+
+      const nextMap = new maplibregl.Map({
+        container: containerEl,
+        style: initialStyle,
+        center: [38.7578, 9.03],
+        zoom: 11,
+        transformRequest: createLematTransformRequest(lematApiKey),
+      });
+
+      map.current = nextMap;
+      nextMap.addControl(new maplibregl.NavigationControl(), "top-right");
+      nextMap.addControl(new maplibregl.FullscreenControl(), "top-right");
+      nextMap.on("load", forceResize);
+      nextMap.on("style.load", forceResize);
+
+      resizeTimer = window.setTimeout(forceResize, 250);
+
+      if (typeof ResizeObserver !== "undefined") {
+        resizeObserver = new ResizeObserver(() => forceResize());
+        resizeObserver.observe(containerEl);
+      }
+    };
+
+    initMap();
 
     return () => {
-      window.clearTimeout(resizeTimer);
+      disposed = true;
+      if (resizeTimer) window.clearTimeout(resizeTimer);
+      resizeObserver?.disconnect();
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       liveMarkerRef.current?.remove();
@@ -193,7 +212,7 @@ export const DriverNavigateMapDialog = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [open, defaultMapStyle, containerEl]);
+  }, [open, containerEl, defaultMapStyle, lematApiKey]);
 
   // Poll the latest GPS position for the assigned vehicle every 10s
   useEffect(() => {
