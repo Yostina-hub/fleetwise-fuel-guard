@@ -15,6 +15,12 @@
  * vehicle_request when there are no per-vehicle assignment rows.
  */
 import { useMemo, useState } from "react";
+import { z } from "zod";
+import {
+  sanitizeNumeric,
+  sanitizeWhileTyping,
+  inputStatusClass,
+} from "@/components/fleet/formSanitizers";
 import {
   Dialog,
   DialogContent,
