@@ -204,6 +204,47 @@ export const DriverViewRequestDialog = ({
     },
   });
 
+  // Hydrate latest request fields (requester, odometers, notes) so the
+  // dialog always reflects the DB regardless of what the caller passed in.
+  const { data: hydrated } = useQuery({
+    queryKey: ["driver-portal-request-hydrate", request?.id],
+    enabled: !!request?.id && open,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          "id, requester_id, requester_name, passengers_count, number_of_passengers, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes",
+        )
+        .eq("id", request!.id)
+        .maybeSingle();
+      return data || null;
+    },
+  });
+
+  const requesterId = hydrated?.requester_id ?? request?.requester_id ?? null;
+  const requesterNameDirect = hydrated?.requester_name ?? request?.requester_name ?? null;
+  const passengers =
+    hydrated?.passengers_count ?? hydrated?.number_of_passengers ??
+    request?.passengers_count ?? request?.number_of_passengers ?? null;
+
+  // Resolve the requester display name from profiles when only an id is stored.
+  const { data: requesterProfile } = useQuery({
+    queryKey: ["driver-portal-requester-profile", requesterId],
+    enabled: !!requesterId && !requesterNameDirect && open,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("full_name, email, phone")
+        .eq("id", requesterId)
+        .maybeSingle();
+      return data || null;
+    },
+  });
+
+  const requesterName =
+    requesterNameDirect || requesterProfile?.full_name || requesterProfile?.email || null;
+  const requesterContact = requesterProfile?.phone || requesterProfile?.email || null;
+
   const checkIn = useMutation({
     mutationFn: async () => {
       if (!request) throw new Error("No request");
