@@ -50,6 +50,13 @@ export interface RequestDetail extends TimelineRequest {
   assigned_vehicle?: { plate_number?: string; make?: string; model?: string } | null;
   assigned_driver?: { first_name?: string; last_name?: string } | null;
   requester_id: string;
+  organization_id?: string | null;
+  assigned_driver_id?: string | null;
+  assigned_vehicle_id?: string | null;
+  driver_checked_out_at?: string | null;
+  completed_at?: string | null;
+  requester_confirmed_at?: string | null;
+  departure_place?: string | null;
 }
 
 interface Props {
