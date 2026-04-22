@@ -465,6 +465,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         pool_category: sanitizedForm.pool_category,
         priority: sanitizedForm.priority,
         cargo_load: (form as any).cargo_load,
+        cargo_weight_kg: (form as any).cargo_weight_kg === "" ? null : (form as any).cargo_weight_kg,
         vehicle_type_justification: (form as any).vehicle_type_justification,
       });
       if (!parsed.success) {
@@ -568,6 +569,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         // Resource-aware request audit fields.
         purpose_category: safe.purpose_category || null,
         cargo_load: safe.cargo_load || null,
+        cargo_weight_kg:
+          (safe as any).cargo_weight_kg && Number((safe as any).cargo_weight_kg) > 0
+            ? Number((safe as any).cargo_weight_kg)
+            : null,
         recommended_vehicle_type: recommendation?.value || null,
         vehicle_type_justification:
           isUpgrade && safe.vehicle_type_justification?.trim()
@@ -700,7 +705,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // sections / fields render for the current request_type. Keeps JSX free
   // of inline boolean spaghetti and makes the rules unit-testable.
   const visibility = useMemo(() => deriveVisibility(form.request_type), [form.request_type]);
-  const { isNighttime, isDaily, isProject, isField, isDelivery, allowsMultipleVehicles } = visibility;
+  const { isNighttime, isDaily, isProject, isField, isMessenger, allowsMultipleVehicles } = visibility;
   useEffect(() => {
     if (!allowsMultipleVehicles && form.num_vehicles !== "1") {
       setForm((f) => ({ ...f, num_vehicles: "1" }));
@@ -708,12 +713,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowsMultipleVehicles]);
 
-  // Delivery operations are courier-style: motorcycle/scooter/bicycle only,
-  // no passengers (driver only). When the user picks Delivery we force the
+  // Messenger Service is courier-style: motorcycle/scooter/bicycle only,
+  // no passengers (driver only). When the user picks Messenger we force the
   // vehicle_type to motorbike (the operational default) and clear cargo to
   // "small" so the recommender can resolve.
   useEffect(() => {
-    if (!isDelivery) return;
+    if (!isMessenger) return;
     setForm((f) => ({
       ...f,
       vehicle_type: f.vehicle_type && ["motorbike", "scooter", "bicycle"].includes(f.vehicle_type)
@@ -724,7 +729,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       num_vehicles: "1",
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDelivery]);
+  }, [isMessenger]);
+
+  // Conversely, if the user switches AWAY from Messenger Service while the
+  // vehicle_type is still a courier-only class (motorbike/scooter/bicycle),
+  // clear it so the recommender can pick a regular passenger/cargo class.
+  useEffect(() => {
+    if (isMessenger) return;
+    if (form.vehicle_type && ["motorbike", "scooter", "bicycle"].includes(form.vehicle_type)) {
+      setForm((f) => ({ ...f, vehicle_type: "" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMessenger]);
 
   // Dynamic end-date: auto-derive from start_date + operation-type default.
   // Only fills when end_date is empty so a manual override is preserved.
