@@ -271,6 +271,13 @@ export function validateVRField(
       if (CARGO_ORDER[profile.cargo] < cargoNeeded) {
         return `${profile.label} can't carry ${cargo} cargo. Pick a class with at least ${cargo} cargo capacity.`;
       }
+      // Cargo weight: ensure the chosen vehicle's max payload covers the
+      // requested kilograms. We tolerate up to 0 weight (passengers only).
+      const weightRaw = Number(ctx.cargo_weight_kg);
+      const weight = Number.isFinite(weightRaw) && weightRaw > 0 ? weightRaw : 0;
+      if (weight > 0 && profile.maxPayloadKg < weight) {
+        return `${profile.label} carries up to ${profile.maxPayloadKg.toLocaleString()} kg but you need ${weight.toLocaleString()} kg. Pick a class with greater payload capacity.`;
+      }
       return;
     }
 
