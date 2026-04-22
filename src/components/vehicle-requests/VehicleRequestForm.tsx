@@ -682,13 +682,31 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // sections / fields render for the current request_type. Keeps JSX free
   // of inline boolean spaghetti and makes the rules unit-testable.
   const visibility = useMemo(() => deriveVisibility(form.request_type), [form.request_type]);
-  const { isNighttime, isDaily, isProject, isField, allowsMultipleVehicles } = visibility;
+  const { isNighttime, isDaily, isProject, isField, isDelivery, allowsMultipleVehicles } = visibility;
   useEffect(() => {
     if (!allowsMultipleVehicles && form.num_vehicles !== "1") {
       setForm((f) => ({ ...f, num_vehicles: "1" }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowsMultipleVehicles]);
+
+  // Delivery operations are courier-style: motorcycle/scooter/bicycle only,
+  // no passengers (driver only). When the user picks Delivery we force the
+  // vehicle_type to motorbike (the operational default) and clear cargo to
+  // "small" so the recommender can resolve.
+  useEffect(() => {
+    if (!isDelivery) return;
+    setForm((f) => ({
+      ...f,
+      vehicle_type: f.vehicle_type && ["motorbike", "scooter", "bicycle"].includes(f.vehicle_type)
+        ? f.vehicle_type
+        : "motorbike",
+      passengers: String(NON_PASSENGER_SENTINEL),
+      cargo_load: f.cargo_load || "small",
+      num_vehicles: "1",
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDelivery]);
 
   // Dynamic end-date: auto-derive from start_date + operation-type default.
   // Only fills when end_date is empty so a manual override is preserved.
