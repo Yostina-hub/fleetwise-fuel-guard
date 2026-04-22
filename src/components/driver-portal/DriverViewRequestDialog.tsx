@@ -647,8 +647,8 @@ export const DriverViewRequestDialog = ({
                   <Button
                     variant="outline"
                     className="justify-start gap-2"
-                    onClick={() => openMaps(buildMapsUrl(request.destination, null, null))}
-                    disabled={!request.destination}
+                    onClick={() => setNavMapOpen(true)}
+                    disabled={!request.destination && !departurePlace && departureLat == null}
                   >
                     <Navigation className="w-4 h-4" /> Navigate
                   </Button>
