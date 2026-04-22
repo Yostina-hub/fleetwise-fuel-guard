@@ -216,7 +216,7 @@ export const DriverNavigateMapDialog = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [open, containerEl, defaultMapStyle, lematApiKey]);
+  }, [open, containerEl, defaultMapStyle, lematApiKey, lematReady]);
 
   // Poll the latest GPS position for the assigned vehicle every 10s
   useEffect(() => {
