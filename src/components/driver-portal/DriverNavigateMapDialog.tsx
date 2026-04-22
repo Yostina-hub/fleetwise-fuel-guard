@@ -566,7 +566,7 @@ export const DriverNavigateMapDialog = ({
           <Button
             variant="outline"
             onClick={openInGoogleMaps}
-            disabled={!origin && !destination}
+            disabled={!origin && !destination && !departurePlace?.trim() && !destinationPlace?.trim()}
             className="gap-2"
           >
             <ExternalLink className="w-4 h-4" /> Open in Google Maps
