@@ -183,12 +183,17 @@ export function ConfirmAndRateDialog({
   // Step 1: confirm trip completion
   const confirmMutation = useMutation({
     mutationFn: async () => {
-      if (!request || !user) throw new Error("Missing request or user");
+      if (!request) throw new Error("Missing request");
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+      if (!authUser) throw new Error("Not authenticated");
+
       const { error } = await supabase
         .from("vehicle_requests")
         .update({
           requester_confirmed_at: new Date().toISOString(),
-          requester_confirmed_by: user.id,
+          requester_confirmed_by: authUser.id,
           requester_confirmation_notes: confirmNotes.trim() || null,
         })
         .eq("id", request.id);
@@ -211,11 +216,15 @@ export function ConfirmAndRateDialog({
   // Step 2: optional rating
   const rateMutation = useMutation({
     mutationFn: async () => {
-      if (!request || !user || !orgId) throw new Error("Missing context");
+      if (!request || !orgId) throw new Error("Missing context");
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+      if (!authUser) throw new Error("Not authenticated");
+
       const anyScore =
         scores.driver || scores.vehicle || scores.punctuality || scores.overall;
       if (!anyScore && !disputeFlagged) {
-        // Nothing to send — user chose to skip.
         return { skipped: true } as const;
       }
       if (disputeFlagged && disputeReason.trim().length < 5) {
@@ -234,7 +243,7 @@ export function ConfirmAndRateDialog({
 
       if (requestError) throw requestError;
       if (!requestRow) throw new Error("Trip not found");
-      if (requestRow.requester_id !== user.id) {
+      if (requestRow.requester_id !== authUser.id) {
         throw new Error("You can only rate your own trip.");
       }
 
@@ -244,7 +253,7 @@ export function ConfirmAndRateDialog({
       const payload = {
         organization_id: resolvedOrgId,
         vehicle_request_id: request.id,
-        rated_by: user.id,
+        rated_by: authUser.id,
         driver_id: requestRow.assigned_driver_id ?? request.assigned_driver_id ?? null,
         vehicle_id: requestRow.assigned_vehicle_id ?? request.assigned_vehicle_id ?? null,
         driver_score: scores.driver || null,
@@ -260,7 +269,7 @@ export function ConfirmAndRateDialog({
         .from("vehicle_request_ratings")
         .select("id")
         .eq("vehicle_request_id", request.id)
-        .eq("rated_by", user.id)
+        .eq("rated_by", authUser.id)
         .maybeSingle();
 
       if (existingRatingError) throw existingRatingError;
@@ -270,12 +279,23 @@ export function ConfirmAndRateDialog({
             .from("vehicle_request_ratings")
             .update(payload)
             .eq("id", existingRating.id)
-            .eq("rated_by", user.id)
+            .eq("rated_by", authUser.id)
         : await (supabase as any)
             .from("vehicle_request_ratings")
             .insert(payload);
 
       if (error) throw error;
+
+      const { error: requestUpdateError } = await (supabase as any)
+        .from("vehicle_requests")
+        .update({
+          rated_at: new Date().toISOString(),
+          requester_feedback: comment.trim() || null,
+        })
+        .eq("id", request.id)
+        .eq("requester_id", authUser.id);
+
+      if (requestUpdateError) throw requestUpdateError;
       return { skipped: false } as const;
     },
     onSuccess: (res) => {
@@ -292,6 +312,7 @@ export function ConfirmAndRateDialog({
       }
       qc.invalidateQueries({ queryKey: ["vehicle-request-ratings"] });
       qc.invalidateQueries({ queryKey: ["my-vehicle-requests"] });
+      qc.invalidateQueries({ queryKey: ["pending-ratings"] });
       onOpenChange(false);
     },
     onError: (e: any) =>
