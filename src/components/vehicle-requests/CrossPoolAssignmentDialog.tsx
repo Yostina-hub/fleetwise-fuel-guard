@@ -9,7 +9,6 @@ import { AlertTriangle, ArrowLeft, ArrowRight, Truck } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-
 import { toast } from "sonner";
 
 interface Props {
@@ -21,7 +20,7 @@ interface Props {
 
 export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Props) => {
   const { organizationId } = useOrganization();
-  const { vehicles } = useVehicles();
+  
   const queryClient = useQueryClient();
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [selectedDriver, setSelectedDriver] = useState("");
