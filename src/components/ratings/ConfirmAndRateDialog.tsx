@@ -146,7 +146,7 @@ export function ConfirmAndRateDialog({
   onOpenChange,
   onConfirmed,
 }: Props) {
-  const { user } = useAuth();
+  const { user, isImpersonating } = useAuth();
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
 
