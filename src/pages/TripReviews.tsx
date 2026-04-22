@@ -211,14 +211,19 @@ export default function TripReviews() {
 
   const stats = React.useMemo(() => {
     const total = reviews.length;
-    const scored = reviews.filter((r) => r.overall_score);
-    const avg = scored.length
-      ? scored.reduce((a, r) => a + (r.overall_score ?? 0), 0) / scored.length
-      : 0;
+    const avgOf = (key: keyof EnrichedReview) => {
+      const scored = reviews.filter((r) => typeof r[key] === "number" && (r[key] as number) > 0);
+      if (!scored.length) return 0;
+      return scored.reduce((a, r) => a + (r[key] as number), 0) / scored.length;
+    };
+    const avgDriver = avgOf("driver_score");
+    const avgVehicle = avgOf("vehicle_score");
+    const avgPunctuality = avgOf("punctuality_score");
+    const avgOverall = avgOf("overall_score");
     const disputes = reviews.filter((r) => r.dispute_flagged && !r.dispute_resolved_at).length;
     const positive = reviews.filter((r) => (r.overall_score ?? 0) >= 4).length;
     const negative = reviews.filter((r) => r.overall_score && r.overall_score < 3).length;
-    return { total, avg, disputes, positive, negative };
+    return { total, avgDriver, avgVehicle, avgPunctuality, avgOverall, disputes, positive, negative };
   }, [reviews]);
 
   const filtered = React.useMemo(() => {
