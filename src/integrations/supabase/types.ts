@@ -14493,6 +14493,7 @@ export type Database = {
           custom_domain: string | null
           date_format: string | null
           default_language: string | null
+          default_map_style: string
           default_timezone: string | null
           depreciation_rate_percent: number
           distance_unit: string | null
@@ -14540,6 +14541,7 @@ export type Database = {
           custom_domain?: string | null
           date_format?: string | null
           default_language?: string | null
+          default_map_style?: string
           default_timezone?: string | null
           depreciation_rate_percent?: number
           distance_unit?: string | null
@@ -14587,6 +14589,7 @@ export type Database = {
           custom_domain?: string | null
           date_format?: string | null
           default_language?: string | null
+          default_map_style?: string
           default_timezone?: string | null
           depreciation_rate_percent?: number
           distance_unit?: string | null
