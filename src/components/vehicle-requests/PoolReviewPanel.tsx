@@ -25,6 +25,8 @@ import {
   FileSignature,
   RotateCcw,
   ScrollText,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
