@@ -694,53 +694,30 @@ export const DriverViewRequestDialog = ({
                   <p className="text-sm font-medium flex items-center gap-1.5">
                     <PlayCircle className="w-4 h-4 text-success" /> Check In
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs">Odometer (km)</Label>
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        value={odometer}
-                        onChange={(e) => {
-                          const v = sanitizeNumeric(e.target.value);
-                          setOdometer(v);
-                          if (v) validateOdometer(v, "in");
-                          else setOdoError(null);
-                        }}
-                        onBlur={() => odometer && validateOdometer(odometer, "in")}
-                        placeholder="e.g. 45200"
-                        aria-invalid={!!odoError}
-                        className={inputStatusClass(odoError ? "error" : odometer ? "success" : "neutral")}
-                      />
-                      {odoError && (
-                        <p className="text-xs text-destructive mt-1">{odoError}</p>
-                      )}
-                    </div>
-                    <div>
-                      <Label className="text-xs">Notes (optional)</Label>
-                      <Textarea
-                        value={notes}
-                        onChange={(e) => {
-                          const v = sanitizeWhileTyping(e.target.value).slice(0, 500);
-                          setNotes(v);
-                          if (v) validateNotes(v);
-                          else setNotesError(null);
-                        }}
-                        rows={1}
-                        maxLength={500}
-                        placeholder="Vehicle condition…"
-                        aria-invalid={!!notesError}
-                        className={inputStatusClass(notesError ? "error" : "neutral")}
-                      />
-                      {notesError && (
-                        <p className="text-xs text-destructive mt-1">{notesError}</p>
-                      )}
-                    </div>
+                  <div>
+                    <Label className="text-xs">Notes (optional)</Label>
+                    <Textarea
+                      value={notes}
+                      onChange={(e) => {
+                        const v = sanitizeWhileTyping(e.target.value).slice(0, 500);
+                        setNotes(v);
+                        if (v) validateNotes(v);
+                        else setNotesError(null);
+                      }}
+                      rows={2}
+                      maxLength={500}
+                      placeholder="Vehicle condition…"
+                      aria-invalid={!!notesError}
+                      className={inputStatusClass(notesError ? "error" : "neutral")}
+                    />
+                    {notesError && (
+                      <p className="text-xs text-destructive mt-1">{notesError}</p>
+                    )}
                   </div>
                   <Button
                     className="w-full gap-2"
                     onClick={() => checkIn.mutate()}
-                    disabled={checkIn.isPending || !!odoError || !!notesError || !odometer}
+                    disabled={checkIn.isPending || !!notesError}
                   >
                     <PlayCircle className="w-4 h-4" />
                     {checkIn.isPending ? "Checking in…" : "Check In Now"}
