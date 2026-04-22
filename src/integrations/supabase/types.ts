@@ -26576,6 +26576,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_submit_vehicle_request_rating_for_requester: {
+        Args: {
+          _organization_id: string
+          _requester_id: string
+          _vehicle_request_id: string
+        }
+        Returns: boolean
+      }
       check_account_lockout: {
         Args: { p_email: string }
         Returns: {
