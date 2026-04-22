@@ -436,6 +436,11 @@ const VehicleRow = ({
               <MapPin className="w-2.5 h-2.5 mr-0.5" /> in zone
             </Badge>
           )}
+          {v.is_idle === false && (
+            <Badge variant="outline" className="text-[9px] py-0 h-4 text-amber-600 border-amber-500/30">
+              busy
+            </Badge>
+          )}
         </div>
         <div className="text-[11px] text-muted-foreground truncate">
           {v.make} {v.model}
