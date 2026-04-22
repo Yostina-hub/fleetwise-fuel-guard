@@ -421,6 +421,7 @@ export const vehicleRequestZodSchema = z.object({
     "project_operation",
     "field_operation",
     "group_operation",
+    "messenger_service",
   ]),
   purpose: z
     .string()
