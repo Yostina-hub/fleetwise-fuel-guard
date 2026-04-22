@@ -220,6 +220,15 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
 
         {/* Body */}
         <div className="px-6 py-6 min-h-[260px] flex flex-col">
+          {isImpersonating && step !== 4 && (
+            <div className="mb-4 rounded-md border border-warning/40 bg-warning/10 p-3 flex items-start gap-2 text-xs text-warning-foreground">
+              <Sparkles className="h-3.5 w-3.5 mt-0.5 shrink-0 text-warning" />
+              <span>
+                You are impersonating this user. Ratings can only be submitted
+                by the original requester — stop impersonating to rate this trip.
+              </span>
+            </div>
+          )}
           {step < 3 ? (() => {
             const s = STEPS[step as 0 | 1 | 2];
             const Icon = s.icon;
@@ -369,7 +378,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
                 <Button
                   type="button"
                   size="sm"
-                  disabled={submit.isPending || !canProceed}
+                  disabled={submit.isPending || !canProceed || isImpersonating}
                   onClick={() => submit.mutate()}
                   className="min-w-[140px]"
                 >
