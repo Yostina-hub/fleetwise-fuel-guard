@@ -577,20 +577,20 @@ export const DriverViewRequestDialog = ({
                       {assignerRole}
                     </span>
                   )}
-                  {assignerInfo?.profile?.phone && (
+                  {assignerPhone && (
                     <a
-                      href={`tel:${assignerInfo.profile.phone}`}
+                      href={`tel:${assignerPhone}`}
                       className="block text-xs text-primary hover:underline"
                     >
-                      📞 {assignerInfo.profile.phone}
+                      📞 {assignerPhone}
                     </a>
                   )}
-                  {assignerInfo?.profile?.email && (
+                  {assignerEmail && (
                     <a
-                      href={`mailto:${assignerInfo.profile.email}`}
+                      href={`mailto:${assignerEmail}`}
                       className="block text-xs text-muted-foreground hover:underline break-all"
                     >
-                      ✉️ {assignerInfo.profile.email}
+                      ✉️ {assignerEmail}
                     </a>
                   )}
                   {assignedAt && (
