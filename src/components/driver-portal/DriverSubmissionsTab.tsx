@@ -12,6 +12,7 @@ interface Props {
   driverId?: string;
   organizationId?: string | null;
   userId?: string;
+  onViewVehicleRequest?: (request: any) => void;
 }
 
 const statusVariant = (s: string): "default" | "destructive" | "outline" | "secondary" => {
@@ -20,7 +21,7 @@ const statusVariant = (s: string): "default" | "destructive" | "outline" | "seco
   return "outline";
 };
 
-const DriverSubmissionsTab = ({ driverId, organizationId, userId }: Props) => {
+const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleRequest }: Props) => {
   const queryClient = useQueryClient();
 
   const { data: maintenance, isLoading: lm } = useQuery({
@@ -59,7 +60,7 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId }: Props) => {
       if (!userId || !organizationId) return [];
       const { data } = await (supabase as any)
         .from("vehicle_requests")
-        .select("id, request_number, purpose, request_type, priority, status, approval_status, needed_from, created_at, destination")
+        .select("id, request_number, purpose, request_type, priority, status, approval_status, needed_from, needed_until, created_at, destination, rejection_reason, rejected_at, assigned_vehicle_id, driver_checked_in_at, driver_checked_out_at, organization_id, assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model, year, fuel_type, status)")
         .eq("organization_id", organizationId)
         .eq("requester_id", userId)
         .order("created_at", { ascending: false })
@@ -185,7 +186,11 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId }: Props) => {
               </TableHeader>
               <TableBody>
                 {vehicles.map((r: any) => (
-                  <TableRow key={r.id}>
+                  <TableRow
+                    key={r.id}
+                    className={onViewVehicleRequest ? "cursor-pointer hover:bg-muted/40" : undefined}
+                    onClick={onViewVehicleRequest ? () => onViewVehicleRequest(r) : undefined}
+                  >
                     <TableCell className="font-mono text-xs">{r.request_number}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{r.purpose}</TableCell>
                     <TableCell>

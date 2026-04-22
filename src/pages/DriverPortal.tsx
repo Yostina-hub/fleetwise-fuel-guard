@@ -704,7 +704,12 @@ const DriverPortal = () => {
           </TabsContent>
 
           <TabsContent value="submissions">
-            <DriverSubmissionsTab driverId={driverId} organizationId={organizationId} userId={userId} />
+            <DriverSubmissionsTab
+              driverId={driverId}
+              organizationId={organizationId}
+              userId={userId}
+              onViewVehicleRequest={(r) => setViewRequest(r)}
+            />
           </TabsContent>
 
           <TabsContent value="requests">
