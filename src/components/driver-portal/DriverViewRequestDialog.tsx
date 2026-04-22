@@ -129,9 +129,52 @@ export const DriverViewRequestDialog = ({
   const queryClient = useQueryClient();
   const [odometer, setOdometer] = useState("");
   const [notes, setNotes] = useState("");
+  const [odoError, setOdoError] = useState<string | null>(null);
+  const [notesError, setNotesError] = useState<string | null>(null);
 
   const checkedIn = !!request?.driver_checked_in_at;
   const checkedOut = !!request?.driver_checked_out_at;
+
+  // ---- Validation schemas ----
+  // Odometer: required positive integer up to 9,999,999 km. Notes: optional, max 500.
+  const odometerSchema = z
+    .string()
+    .trim()
+    .min(1, "Odometer reading is required")
+    .regex(/^\d+(\.\d{1,2})?$/, "Enter a valid number (e.g. 45200 or 45200.5)")
+    .refine((v) => Number(v) > 0, "Odometer must be greater than 0")
+    .refine((v) => Number(v) <= 9_999_999, "Odometer seems too high");
+  const notesSchema = z.string().trim().max(500, "Notes must be 500 characters or less");
+
+  const validateOdometer = (val: string, kind: "in" | "out"): number | null => {
+    const parsed = odometerSchema.safeParse(val);
+    if (!parsed.success) {
+      setOdoError(parsed.error.issues[0]?.message ?? "Invalid odometer");
+      return null;
+    }
+    const num = Number(parsed.data);
+    // For check-out, ensure final reading is greater than the recorded check-in.
+    if (kind === "out") {
+      const startRaw = (request as any)?.checkin_odometer;
+      const start = startRaw != null ? Number(startRaw) : null;
+      if (start != null && Number.isFinite(start) && num <= start) {
+        setOdoError(`Final odometer must be greater than starting (${start})`);
+        return null;
+      }
+    }
+    setOdoError(null);
+    return num;
+  };
+
+  const validateNotes = (val: string): string | null => {
+    const parsed = notesSchema.safeParse(val);
+    if (!parsed.success) {
+      setNotesError(parsed.error.issues[0]?.message ?? "Invalid notes");
+      return null;
+    }
+    setNotesError(null);
+    return parsed.data;
+  };
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["driver-portal-self"] });
