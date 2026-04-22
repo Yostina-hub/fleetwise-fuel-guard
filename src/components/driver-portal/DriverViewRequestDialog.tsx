@@ -412,8 +412,8 @@ export const DriverViewRequestDialog = ({
 
         <Separator />
 
-        {/* Next-step actions */}
-        {stage !== "done" && (
+        {/* Next-step actions — hidden for rejected/cancelled requests */}
+        {stage !== "done" && request.status !== "rejected" && request.status !== "cancelled" && (
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Next Steps
