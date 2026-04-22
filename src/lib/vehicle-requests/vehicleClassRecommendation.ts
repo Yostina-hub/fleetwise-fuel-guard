@@ -118,16 +118,25 @@ export const NON_PASSENGER_SENTINEL = -1;
 export function recommendVehicleClass(input: {
   passengers: number;
   cargo: CargoLoad;
+  /** Optional cargo weight in kg — only classes with maxPayloadKg ≥ this value qualify. */
+  cargoWeightKg?: number | null;
+  /** When true, restrict the candidate pool to courier-only vehicles (Messenger Service). */
+  courierOnly?: boolean;
 }): VehicleClassProfile | null {
   const passengers = Math.max(1, input.passengers || 1);
   const cargoNeeded = CARGO_ORDER[input.cargo] ?? 0;
+  const weightNeeded = Math.max(0, input.cargoWeightKg ?? 0);
 
   // Only personnel-transport rows are recommendable. Cargo trucks and
-  // specialised gear are reserved for dispatcher routing.
+  // specialised gear are reserved for dispatcher routing. Courier-only
+  // classes are excluded from regular operation recommendations and
+  // explicitly required for Messenger Service.
   const eligible = VEHICLE_CLASS_CATALOG
     .filter((v) => v.costBand !== "specialised")
+    .filter((v) => (input.courierOnly ? v.courierOnly === true : v.courierOnly !== true))
     .filter((v) => v.capacity >= passengers)
     .filter((v) => CARGO_ORDER[v.cargo] >= cargoNeeded)
+    .filter((v) => v.maxPayloadKg >= weightNeeded)
     .sort((a, b) => a.rank - b.rank);
 
   return eligible[0] ?? null;
