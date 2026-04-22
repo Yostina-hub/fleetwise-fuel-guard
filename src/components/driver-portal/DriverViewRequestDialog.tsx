@@ -220,7 +220,7 @@ export const DriverViewRequestDialog = ({
       const { data } = await (supabase as any)
         .from("vehicle_requests")
         .select(
-          "id, requester_id, requester_name, requester_phone, passengers, passengers_count, number_of_passengers, departure_place, departure_lat, departure_lng, department_name, pool_location, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes",
+          "id, requester_id, requester_name, passengers, departure_place, departure_lat, departure_lng, department_name, pool_location, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes",
         )
         .eq("id", request!.id)
         .maybeSingle();
@@ -230,10 +230,7 @@ export const DriverViewRequestDialog = ({
 
   const requesterId = hydrated?.requester_id ?? request?.requester_id ?? null;
   const requesterNameDirect = hydrated?.requester_name ?? request?.requester_name ?? null;
-  const requesterPhoneDirect = hydrated?.requester_phone ?? request?.requester_phone ?? null;
-  const passengers =
-    hydrated?.passengers ?? hydrated?.passengers_count ?? hydrated?.number_of_passengers ??
-    request?.passengers ?? request?.passengers_count ?? request?.number_of_passengers ?? null;
+  const passengers = hydrated?.passengers ?? request?.passengers ?? null;
   const departurePlace = hydrated?.departure_place ?? request?.departure_place ?? null;
   const departureLat = hydrated?.departure_lat ?? request?.departure_lat ?? null;
   const departureLng = hydrated?.departure_lng ?? request?.departure_lng ?? null;
@@ -256,8 +253,7 @@ export const DriverViewRequestDialog = ({
 
   const requesterName =
     requesterNameDirect || requesterProfile?.full_name || requesterProfile?.email || null;
-  const requesterContact =
-    requesterPhoneDirect || requesterProfile?.phone || requesterProfile?.email || null;
+  const requesterContact = requesterProfile?.phone || requesterProfile?.email || null;
 
   const checkIn = useMutation({
     mutationFn: async () => {
