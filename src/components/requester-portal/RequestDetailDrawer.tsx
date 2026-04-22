@@ -32,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { ConfirmAndRateDialog } from "@/components/ratings/ConfirmAndRateDialog";
+import { cn } from "@/lib/utils";
 
 export interface RequestDetail extends TimelineRequest {
   id: string;
