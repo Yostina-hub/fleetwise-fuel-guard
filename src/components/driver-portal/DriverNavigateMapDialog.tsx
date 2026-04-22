@@ -2,17 +2,15 @@
  * DriverNavigateMapDialog
  * -----------------------
  * In-app navigation map for the driver. Shows the trip's departure point
- * (green pin) and destination (red pin) on a Lemat MapLibre map and draws
- * a driving route between them when both endpoints can be resolved.
+ * (green pin), destination (red pin), and — when GPS data is available —
+ * the live position of the assigned vehicle (blue pulsing dot, polled
+ * every 10s). Draws a driving route between origin and destination via
+ * Lemat directions and (optionally) summarises the trip with an AI
+ * briefing produced by the `trip-route-ai-insight` edge function.
  *
- * Resolution rules:
- *   - Departure: prefer departure_lat/lng; otherwise forward-geocode
- *     `departure_place` via the `lemat-search-geocode` edge function.
- *   - Destination: free-text `destination` is forward-geocoded the same way.
- *
- * Falls back gracefully:
- *   - If only one endpoint resolves, we still center & pin that endpoint.
- *   - If neither resolves, an empty-state message is shown.
+ * Map style follows the organization-wide default
+ * (`organization_settings.default_map_style`) so super-admins can pick
+ * "streets" / "satellite" / "dark" once and have it applied everywhere.
  */
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
@@ -26,9 +24,17 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, Loader2, ExternalLink } from "lucide-react";
+import {
+  MapPin,
+  Navigation,
+  Loader2,
+  ExternalLink,
+  Sparkles,
+  Radio,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
+import { useDefaultMapStyle, type MapStyleKey } from "@/hooks/useDefaultMapStyle";
 
 interface Props {
   open: boolean;
@@ -37,6 +43,9 @@ interface Props {
   departureLat?: number | null;
   departureLng?: number | null;
   destinationPlace?: string | null;
+  vehicleId?: string | null;
+  vehicleLabel?: string | null;
+  departureTime?: string | null;
 }
 
 interface ResolvedPoint {
@@ -44,6 +53,12 @@ interface ResolvedPoint {
   lng: number;
   label: string;
 }
+
+const STYLE_URL: Record<MapStyleKey, string> = {
+  streets: "https://lemat.goffice.et/api/v1/tiles/style?theme=light",
+  satellite: "https://lemat.goffice.et/api/v1/tiles/style?theme=satellite",
+  dark: "https://lemat.goffice.et/api/v1/tiles/style?theme=dark",
+};
 
 // Forward-geocode a free-text place via the existing lemat-search-geocode edge
 // function. Returns the first hit or null.
@@ -78,17 +93,26 @@ export const DriverNavigateMapDialog = ({
   departureLat,
   departureLng,
   destinationPlace,
+  vehicleId,
+  vehicleLabel,
+  departureTime,
 }: Props) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const liveMarkerRef = useRef<maplibregl.Marker | null>(null);
   const { ready: lematReady } = useLematApiKey();
+  const defaultMapStyle = useDefaultMapStyle();
 
   const [resolving, setResolving] = useState(false);
   const [origin, setOrigin] = useState<ResolvedPoint | null>(null);
   const [destination, setDestination] = useState<ResolvedPoint | null>(null);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [durationMin, setDurationMin] = useState<number | null>(null);
+  const [livePos, setLivePos] = useState<{ lat: number; lng: number } | null>(null);
+  const [insight, setInsight] = useState<string | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [insightError, setInsightError] = useState<string | null>(null);
 
   // Resolve coordinates when the dialog opens
   useEffect(() => {
@@ -100,6 +124,8 @@ export const DriverNavigateMapDialog = ({
       setDestination(null);
       setDistanceKm(null);
       setDurationMin(null);
+      setInsight(null);
+      setInsightError(null);
 
       // Origin
       let resolvedOrigin: ResolvedPoint | null = null;
@@ -135,14 +161,14 @@ export const DriverNavigateMapDialog = ({
     };
   }, [open, departurePlace, departureLat, departureLng, destinationPlace]);
 
-  // Initialize / tear down the map
+  // Initialize / tear down the map (style follows org default)
   useEffect(() => {
     if (!open) return;
     if (!mapContainer.current || map.current) return;
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: "https://lemat.goffice.et/api/v1/tiles/style?theme=light",
+      style: STYLE_URL[defaultMapStyle] ?? STYLE_URL.streets,
       center: [38.7578, 9.03], // Addis Ababa default
       zoom: 11,
     });
@@ -152,10 +178,40 @@ export const DriverNavigateMapDialog = ({
     return () => {
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
+      liveMarkerRef.current?.remove();
+      liveMarkerRef.current = null;
       map.current?.remove();
       map.current = null;
     };
-  }, [open]);
+  }, [open, defaultMapStyle]);
+
+  // Poll the latest GPS position for the assigned vehicle every 10s
+  useEffect(() => {
+    if (!open || !vehicleId) {
+      setLivePos(null);
+      return;
+    }
+    let cancelled = false;
+    const fetchPos = async () => {
+      const { data } = await (supabase as any)
+        .from("vehicle_telemetry")
+        .select("latitude, longitude, updated_at")
+        .eq("vehicle_id", vehicleId)
+        .maybeSingle();
+      if (cancelled) return;
+      const lat = Number(data?.latitude);
+      const lng = Number(data?.longitude);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        setLivePos({ lat, lng });
+      }
+    };
+    fetchPos();
+    const t = setInterval(fetchPos, 10_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [open, vehicleId]);
 
   // Render markers + route whenever resolved points change
   useEffect(() => {
@@ -286,6 +342,77 @@ export const DriverNavigateMapDialog = ({
     }
   }, [open, origin, destination, lematReady]);
 
+  // Render / move the live vehicle marker whenever a new GPS sample arrives
+  useEffect(() => {
+    if (!open || !map.current || !livePos) return;
+    const apply = () => {
+      if (!map.current) return;
+      if (!liveMarkerRef.current) {
+        const el = document.createElement("div");
+        el.className = "live-vehicle-pulse";
+        el.style.cssText = [
+          "width:16px",
+          "height:16px",
+          "border-radius:9999px",
+          "background:hsl(217, 91%, 55%)",
+          "border:3px solid white",
+          "box-shadow:0 0 0 0 hsla(217, 91%, 55%, 0.7)",
+          "animation: live-vehicle-pulse 1.6s ease-out infinite",
+        ].join(";");
+        liveMarkerRef.current = new maplibregl.Marker({ element: el })
+          .setLngLat([livePos.lng, livePos.lat])
+          .setPopup(
+            new maplibregl.Popup({ offset: 14 }).setHTML(
+              `<strong>Live position</strong><br/>${vehicleLabel || "Vehicle"}`,
+            ),
+          )
+          .addTo(map.current);
+      } else {
+        liveMarkerRef.current.setLngLat([livePos.lng, livePos.lat]);
+      }
+    };
+    if (map.current.isStyleLoaded()) apply();
+    else map.current.once("load", apply);
+  }, [open, livePos, vehicleLabel]);
+
+  const requestInsight = async () => {
+    if (!origin || !destination) return;
+    setInsightLoading(true);
+    setInsightError(null);
+    setInsight(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not signed in");
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trip-route-ai-insight`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          origin,
+          destination,
+          current: livePos,
+          routeDistanceKm: distanceKm,
+          routeDurationMin: durationMin,
+          vehicleLabel,
+          departureTime,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json?.error || `AI request failed (${res.status})`);
+      }
+      setInsight(json.insight || "No insight returned.");
+    } catch (e: any) {
+      setInsightError(e?.message || "Could not generate AI insight");
+    } finally {
+      setInsightLoading(false);
+    }
+  };
+
   const openInGoogleMaps = () => {
     if (!destination && !origin) return;
     let url: string;
@@ -313,7 +440,7 @@ export const DriverNavigateMapDialog = ({
             Trip Navigation
           </DialogTitle>
           <DialogDescription>
-            Start point and destination on the map.
+            Start point, destination, and live vehicle position on the map.
           </DialogDescription>
         </DialogHeader>
 
@@ -338,12 +465,55 @@ export const DriverNavigateMapDialog = ({
           </div>
         </div>
 
-        {(distanceKm != null || durationMin != null) && (
-          <div className="text-xs text-muted-foreground flex gap-4">
-            {distanceKm != null && <span>Distance: <strong className="text-foreground">{distanceKm} km</strong></span>}
-            {durationMin != null && <span>ETA: <strong className="text-foreground">~{durationMin} min</strong></span>}
+        {(distanceKm != null || durationMin != null || livePos) && (
+          <div className="text-xs text-muted-foreground flex flex-wrap gap-4">
+            {distanceKm != null && (
+              <span>Distance: <strong className="text-foreground">{distanceKm} km</strong></span>
+            )}
+            {durationMin != null && (
+              <span>ETA: <strong className="text-foreground">~{durationMin} min</strong></span>
+            )}
+            {livePos && (
+              <span className="inline-flex items-center gap-1 text-primary">
+                <Radio className="w-3 h-3 animate-pulse" /> Live GPS connected
+              </span>
+            )}
           </div>
         )}
+
+        {/* AI insight panel */}
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-sm font-medium flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-primary" /> AI Route Insight
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={requestInsight}
+              disabled={insightLoading || !origin || !destination}
+              className="h-7 text-xs"
+            >
+              {insightLoading ? (
+                <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Thinking…</>
+              ) : insight ? "Regenerate" : "Generate briefing"}
+            </Button>
+          </div>
+          {insightError && (
+            <p className="text-xs text-destructive">{insightError}</p>
+          )}
+          {insight ? (
+            <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-line">
+              {insight}
+            </p>
+          ) : !insightError ? (
+            <p className="text-xs text-muted-foreground">
+              Generate a professional travel briefing — typical traffic, road
+              conditions, and refined ETA — based on the routed path
+              {livePos ? " and live vehicle position." : "."}
+            </p>
+          ) : null}
+        </div>
 
         <div className="relative flex-1 min-h-[420px] rounded-lg overflow-hidden border">
           <div ref={mapContainer} className="absolute inset-0" />
@@ -375,6 +545,15 @@ export const DriverNavigateMapDialog = ({
           </Button>
           <Button onClick={onClose}>Close</Button>
         </DialogFooter>
+
+        {/* Live vehicle pulse animation keyframes (scoped via tag) */}
+        <style>{`
+          @keyframes live-vehicle-pulse {
+            0%   { box-shadow: 0 0 0 0 hsla(217, 91%, 55%, 0.55); }
+            70%  { box-shadow: 0 0 0 14px hsla(217, 91%, 55%, 0); }
+            100% { box-shadow: 0 0 0 0 hsla(217, 91%, 55%, 0); }
+          }
+        `}</style>
       </DialogContent>
     </Dialog>
   );
