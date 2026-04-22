@@ -136,10 +136,7 @@ type ContractDecision = "approved" | "rejected" | "changes_requested";
 
 export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   const queryClient = useQueryClient();
-  const { available } = useAvailableVehicles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [selectedVehicle, setSelectedVehicle] = useState("");
-  const [selectedDriver, setSelectedDriver] = useState("");
   const [showConsolidated, setShowConsolidated] = useState(true);
 
   // Contract-style decision dialog state
@@ -159,22 +156,6 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     setContractConditions("");
     setContractNotes("");
   };
-
-  // Available drivers for assignment
-  const { data: availableDrivers = [] } = useQuery({
-    queryKey: ["available-drivers", organizationId],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("drivers")
-        .select("id, first_name, last_name, phone")
-        .eq("organization_id", organizationId)
-        .eq("status", "active")
-        .order("first_name");
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!organizationId,
-  });
 
   // Requests that are approved and need pool review/assignment
   const approvedRequests = requests.filter(
