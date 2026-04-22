@@ -92,6 +92,22 @@ export const usePermissions = () => {
           return;
         }
 
+        // Prefer the SECURITY DEFINER RPC that already merges per-user
+        // overrides (granted/revoked) on top of the role-based matrix.
+        const { data: effective, error: effError } = await supabase.rpc(
+          "get_effective_permissions",
+          { _user_id: user!.id },
+        );
+
+        if (!effError && Array.isArray(effective)) {
+          const names = effective
+            .map((row: any) => row?.permission_name)
+            .filter(Boolean);
+          setPermissions([...new Set(names)]);
+          return;
+        }
+
+        // Fallback: role-only mapping (legacy path).
         const { data: rolePermissions, error: permsError } = await supabase
           .from("role_permissions")
           .select(`
