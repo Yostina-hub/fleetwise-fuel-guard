@@ -359,8 +359,6 @@ export default function TripReviews() {
                 </TableBody>
               </Table>
             )}
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
