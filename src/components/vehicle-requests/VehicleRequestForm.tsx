@@ -1198,32 +1198,88 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
             )}
             {isDaily ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <div className="">
-                  <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }} required minDate={new Date()} hideTime />
-                  <FieldError field="date" />
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className="">
+                    <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }} required minDate={new Date()} hideTime />
+                    <FieldError field="date" />
+                  </div>
+                  <div>
+                    <Label className="text-primary font-medium text-sm mb-1.5 block">Start Time <span className="text-destructive">*</span></Label>
+                    <TimePicker
+                      value={form.start_time}
+                      onChange={v => update("start_time", v)}
+                      onBlur={() => handleBlur("start_time", form.start_time, form as any)}
+                      ariaInvalid={!!getError("start_time")}
+                    />
+                    <FieldError field="start_time" />
+                  </div>
+                  <div>
+                    <Label className="text-primary font-medium text-sm mb-1.5 block">End Time <span className="text-destructive">*</span></Label>
+                    <TimePicker
+                      value={form.end_time}
+                      onChange={v => update("end_time", v)}
+                      onBlur={() => handleBlur("end_time", form.end_time, form as any)}
+                      ariaInvalid={!!getError("end_time")}
+                    />
+                    <FieldError field="end_time" />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-primary font-medium text-sm mb-1.5 block">Start Time <span className="text-destructive">*</span></Label>
-                  <TimePicker
-                    value={form.start_time}
-                    onChange={v => update("start_time", v)}
-                    onBlur={() => handleBlur("start_time", form.start_time, form as any)}
-                    ariaInvalid={!!getError("start_time")}
-                  />
-                  <FieldError field="start_time" />
-                </div>
-                <div>
-                  <Label className="text-primary font-medium text-sm mb-1.5 block">End Time <span className="text-destructive">*</span></Label>
-                  <TimePicker
-                    value={form.end_time}
-                    onChange={v => update("end_time", v)}
-                    onBlur={() => handleBlur("end_time", form.end_time, form as any)}
-                    ariaInvalid={!!getError("end_time")}
-                  />
-                  <FieldError field="end_time" />
-                </div>
-              </div>
+                {/* Day vs Night classification banner */}
+                {(() => {
+                  const toMin = (t: string) => {
+                    if (!t) return null;
+                    const [h, m] = t.split(":").map(Number);
+                    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+                    return h * 60 + m;
+                  };
+                  const startMin = toMin(form.start_time);
+                  const endMin = toMin(form.end_time);
+                  const NIGHT_THRESHOLD = 11 * 60 + 30; // 11:30
+                  if (startMin == null && endMin == null) return null;
+
+                  const isNightByEnd = endMin != null && endMin > NIGHT_THRESHOLD;
+                  const isNightByStart = startMin != null && startMin > NIGHT_THRESHOLD;
+                  const isNight = isNightByStart || isNightByEnd;
+
+                  if (!isNight) {
+                    return (
+                      <div className="rounded-lg border border-success/30 bg-success/5 p-3 text-xs flex items-start gap-2">
+                        <Clock className="w-4 h-4 text-success shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground">
+                          <span className="font-medium text-foreground">Day Operation:</span>{" "}
+                          End time before <span className="font-medium">11:30</span> qualifies this trip for normal day-time dispatch.
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs flex items-start gap-2">
+                      <Moon className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+                      <div className="text-muted-foreground space-y-1.5 flex-1">
+                        <div>
+                          <span className="font-medium text-foreground">Night Operation:</span>{" "}
+                          {isNightByStart
+                            ? <>Start time is after <span className="font-medium">11:30</span>, so this trip will be categorized as a <span className="font-medium text-foreground">Night Operation</span>.</>
+                            : <>End time is after <span className="font-medium">11:30</span>, so this trip will be categorized as a <span className="font-medium text-foreground">Night Operation</span>.</>}
+                        </div>
+                        <div>
+                          The dispatch team will manage this request <span className="font-medium text-foreground">after 8:00 PM</span>.
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => update("request_type", "nighttime_operation")}
+                          className="inline-flex items-center gap-1 text-warning underline-offset-2 hover:underline font-medium"
+                        >
+                          <Moon className="w-3 h-3" />
+                          Switch request type to Nighttime Operation
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
             ) : (
               <div className={`grid grid-cols-1 gap-5`}>
                 <div>
