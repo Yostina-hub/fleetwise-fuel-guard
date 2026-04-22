@@ -444,19 +444,14 @@ export const DriverViewRequestDialog = ({
 
             {stage === "pre_trip" && (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <Button variant="outline" className="justify-start gap-2" onClick={onPreTrip}>
-                    <Gauge className="w-4 h-4" /> 1. Pre-Trip Inspection
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="justify-start gap-2"
-                    onClick={() => navigateTo(request.destination)}
-                    disabled={!request.destination}
-                  >
-                    <Navigation className="w-4 h-4" /> Open in Maps
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => navigateTo(request.destination)}
+                  disabled={!request.destination}
+                >
+                  <Navigation className="w-4 h-4" /> Open in Maps
+                </Button>
 
                 <div className="rounded-lg border p-3 space-y-2">
                   <p className="text-sm font-medium flex items-center gap-1.5">
