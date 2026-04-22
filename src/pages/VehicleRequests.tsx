@@ -60,7 +60,7 @@ import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckIn
 import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
 // PoolReviewPanel moved to its own page at /pool-supervisors
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
-import { MyVehicleRequestsSummary } from "@/components/vehicle-requests/MyVehicleRequestsSummary";
+
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
 import { DeleteRequestDialog } from "@/components/vehicle-requests/DeleteRequestDialog";
 import { EditRequestDialog } from "@/components/vehicle-requests/EditRequestDialog";
@@ -679,25 +679,6 @@ const VehicleRequests = () => {
 
         <VehicleRequestKPI requests={requests} />
 
-        {/* Personal request summary — visible to every user, focuses on THEIR own requests */}
-        <MyVehicleRequestsSummary
-          variant="full"
-          activeStatus={activeStatus === "cancelled" ? "all" : activeStatus}
-          onTileClick={(s) => {
-            setActiveStatus(s as StatusKey);
-            // Reset secondary filters so the table reliably reflects the chosen status
-            setTypeFilter("all");
-            setPoolFilter("all");
-            setSearch("");
-            // Smooth-scroll to the table for clear feedback
-            requestAnimationFrame(() => {
-              document.getElementById("vehicle-requests-table")?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              });
-            });
-          }}
-        />
 
         {/* Pool Supervisor Review now lives at /pool-supervisors */}
 
