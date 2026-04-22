@@ -11641,6 +11641,7 @@ export type Database = {
           incident_number: string
           incident_time: string
           incident_type: string
+          km_reading: number | null
           location: string | null
           organization_id: string
           reason: string | null
@@ -11668,6 +11669,7 @@ export type Database = {
           incident_number: string
           incident_time: string
           incident_type: string
+          km_reading?: number | null
           location?: string | null
           organization_id: string
           reason?: string | null
@@ -11695,6 +11697,7 @@ export type Database = {
           incident_number?: string
           incident_time?: string
           incident_type?: string
+          km_reading?: number | null
           location?: string | null
           organization_id?: string
           reason?: string | null
