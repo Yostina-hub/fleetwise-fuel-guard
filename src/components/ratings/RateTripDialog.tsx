@@ -43,7 +43,7 @@ interface RateTripDialogProps {
   onRated?: () => void;
 }
 
-type Step = 0 | 1 | 2 | 3; // 0=driver, 1=vehicle, 2=punctuality, 3=review
+type Step = 0 | 1 | 2 | 3 | 4; // 0=driver, 1=vehicle, 2=punctuality, 3=review, 4=thank-you
 
 const STEPS = [
   { key: "driver", label: "Driver", icon: UserRound, prompt: "How was your driver?", help: "Courtesy, safety, professionalism" },
@@ -94,8 +94,9 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
       });
       qc.invalidateQueries({ queryKey: ["pending-ratings"] });
       qc.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      qc.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onRated?.();
-      onOpenChange(false);
+      setStep(4); // show confirmation/thank-you screen instead of closing
     },
     onError: (e: any) => {
       toast.error("Could not save rating", { description: e.message });
