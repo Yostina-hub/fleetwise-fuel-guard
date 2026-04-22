@@ -92,6 +92,8 @@ export interface VRFormValues {
   contact_phone?: string;
   /** Drives passenger+cargo fitness check on vehicle_type. */
   cargo_load?: CargoLoad;
+  /** Optional cargo total weight (kg) — validated against vehicle max payload. */
+  cargo_weight_kg?: string | number | null;
 }
 
 /* --------------------------------------------------------------------------
@@ -127,8 +129,8 @@ export function validateVRField(
   switch (field) {
     case "request_type": {
       const v = sanitizeText(value);
-      if (!v) return "Please choose a request type (Daily, Nighttime, Project, Field, or Group operation).";
-      if (!["daily_operation", "nighttime_operation", "project_operation", "field_operation", "group_operation"].includes(v))
+      if (!v) return "Please choose a request type (Daily, Nighttime, Project, Field, Group, or Messenger Service).";
+      if (!["daily_operation", "nighttime_operation", "project_operation", "field_operation", "group_operation", "messenger_service"].includes(v))
         return "Invalid request type. Pick one of the operation cards above.";
       return;
     }
@@ -268,6 +270,13 @@ export function validateVRField(
       const cargoNeeded = CARGO_ORDER[cargo] ?? 0;
       if (CARGO_ORDER[profile.cargo] < cargoNeeded) {
         return `${profile.label} can't carry ${cargo} cargo. Pick a class with at least ${cargo} cargo capacity.`;
+      }
+      // Cargo weight: ensure the chosen vehicle's max payload covers the
+      // requested kilograms. We tolerate up to 0 weight (passengers only).
+      const weightRaw = Number(ctx.cargo_weight_kg);
+      const weight = Number.isFinite(weightRaw) && weightRaw > 0 ? weightRaw : 0;
+      if (weight > 0 && profile.maxPayloadKg < weight) {
+        return `${profile.label} carries up to ${profile.maxPayloadKg.toLocaleString()} kg but you need ${weight.toLocaleString()} kg. Pick a class with greater payload capacity.`;
       }
       return;
     }
@@ -412,6 +421,7 @@ export const vehicleRequestZodSchema = z.object({
     "project_operation",
     "field_operation",
     "group_operation",
+    "messenger_service",
   ]),
   purpose: z
     .string()
@@ -458,6 +468,9 @@ export const vehicleRequestZodSchema = z.object({
     .optional()
     .or(z.literal("")),
   cargo_load: z.enum(["none", "small", "medium", "large"]).optional(),
+  cargo_weight_kg: z
+    .union([z.coerce.number().min(0).max(50000), z.literal(""), z.null()])
+    .optional(),
   vehicle_type_justification: z
     .string()
     .trim()
