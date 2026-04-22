@@ -196,20 +196,6 @@ export const DriverViewRequestDialog = ({
     queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
   };
 
-  // Approval history (chain of approvers + decisions/comments)
-  const { data: approvals = [] } = useQuery({
-    queryKey: ["driver-portal-request-approvals", request?.id],
-    enabled: !!request?.id && open,
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("vehicle_request_approvals")
-        .select("id, approval_level, approver_name, status, comments, decision_at, created_at, delegated_from_name")
-        .eq("request_id", request!.id)
-        .order("created_at", { ascending: true });
-      if (error) return [];
-      return data || [];
-    },
-  });
 
   // Hydrate latest request fields (requester, odometers, notes) so the
   // dialog always reflects the DB regardless of what the caller passed in.
@@ -452,16 +438,6 @@ export const DriverViewRequestDialog = ({
             label="Needed Until"
             value={request.needed_until ? format(new Date(request.needed_until), "MMM dd, yyyy HH:mm") : null}
           />
-          {request.assigned_at && (
-            <Field
-              icon={Clock}
-              label="Assigned At"
-              value={format(new Date(request.assigned_at), "MMM dd, HH:mm")}
-            />
-          )}
-          {request.approval_status && (
-            <Field icon={ClipboardCheck} label="Approval" value={request.approval_status.replace(/_/g, " ")} />
-          )}
           {request.driver_checked_in_at && (
             <Field
               icon={PlayCircle}
@@ -496,55 +472,6 @@ export const DriverViewRequestDialog = ({
           </div>
         )}
 
-        {/* Approval chain */}
-        {approvals.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-              <UserCheck className="w-3.5 h-3.5" /> Approval History
-            </p>
-            <div className="space-y-1.5">
-              {approvals.map((a: any) => {
-                const decided = a.status === "approved" || a.status === "rejected";
-                const Icon = a.status === "approved" ? CheckCircle2 : a.status === "rejected" ? XCircle : Clock;
-                const tone =
-                  a.status === "approved" ? "text-success border-success/30 bg-success/5"
-                  : a.status === "rejected" ? "text-destructive border-destructive/30 bg-destructive/5"
-                  : "text-muted-foreground border-border bg-muted/30";
-                return (
-                  <div key={a.id} className={cn("rounded-lg border p-2 flex items-start gap-2", tone)}>
-                    <Icon className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-foreground">{a.approver_name}</span>
-                        {a.approval_level != null && (
-                          <Badge variant="outline" className="text-[10px]">L{a.approval_level}</Badge>
-                        )}
-                        <Badge variant="outline" className={cn("text-[10px] capitalize", tone)}>
-                          {a.status || "pending"}
-                        </Badge>
-                        {a.delegated_from_name && (
-                          <span className="text-[10px] text-muted-foreground">
-                            (delegated from {a.delegated_from_name})
-                          </span>
-                        )}
-                        {decided && a.decision_at && (
-                          <span className="text-[10px] text-muted-foreground ml-auto">
-                            {format(new Date(a.decision_at), "MMM dd HH:mm")}
-                          </span>
-                        )}
-                      </div>
-                      {a.comments && (
-                        <p className="text-xs text-foreground/80 mt-1 break-words">{a.comments}</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <Separator />
 
         {/* Next-step actions — hidden for rejected/cancelled requests */}
         {stage !== "done" && request.status !== "rejected" && request.status !== "cancelled" && (
