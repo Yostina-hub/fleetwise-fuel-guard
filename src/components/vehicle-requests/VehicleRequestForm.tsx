@@ -1036,8 +1036,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       });
 
       if (firstInvalid) {
-        const [field] = firstInvalid;
-        toast.error(validation.getError(field as any) || "Please complete the schedule fields.");
+        const [field, value] = firstInvalid;
+        const msg = validation.validateField(field as any, value, ctx);
+        toast.error(msg || "Please complete the schedule fields.");
         requestAnimationFrame(() => {
           const anchor = fieldAnchors.current[field as keyof typeof fieldAnchors.current];
           anchor?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1344,11 +1345,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             {isDaily ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  <div className="">
+                  <div className="" ref={(node) => { fieldAnchors.current.date = node; }}>
                     <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }} required minDate={new Date()} hideTime error={!!getError("date")} />
                     <FieldError field="date" />
                   </div>
-                  <div>
+                  <div ref={(node) => { fieldAnchors.current.start_time = node; }}>
                     <Label className="text-primary font-medium text-sm mb-1.5 block">Start Time <span className="text-destructive">*</span></Label>
                     <TimePicker
                       value={form.start_time}
@@ -1358,7 +1359,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     />
                     <FieldError field="start_time" />
                   </div>
-                  <div>
+                  <div ref={(node) => { fieldAnchors.current.end_time = node; }}>
                     <Label className="text-primary font-medium text-sm mb-1.5 block">End Time <span className="text-destructive">*</span></Label>
                     <TimePicker
                       value={form.end_time}
@@ -1426,30 +1427,32 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </>
             ) : (
               <div className={`grid grid-cols-1 gap-5`}>
-                <div>
+                <div ref={(node) => { fieldAnchors.current.start_date = node; }}>
                   <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime error={!!getError("start_date")} />
                   <FieldError field="start_date" />
                 </div>
-                <div>
+                <div ref={(node) => { fieldAnchors.current.end_date = node; }}>
                   <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => { update("end_date", d); handleBlur("end_date", d, form as any); }} required={isProject} minDate={form.start_date} hideTime error={!!getError("end_date")} />
                   <FieldError field="end_date" />
                 </div>
                 {visibility.showProjectNumber && (
-                  <VRField
-                    id="vr-project-number"
-                    label="Project Number"
-                    required
-                    error={getError("project_number")}
-                    tooltip="Project code this trip is charged to (e.g. PRJ-2026-001). Letters, digits and dashes."
-                  >
-                    <Input
-                      value={form.project_number}
-                      onChange={e => update("project_number", e.target.value)}
-                      onBlur={e => handleBlur("project_number", e.target.value, form as any)}
-                      placeholder="e.g. PRJ-2026-001"
-                      className="h-12 text-base"
-                    />
-                  </VRField>
+                  <div ref={(node) => { fieldAnchors.current.project_number = node; }}>
+                    <VRField
+                      id="vr-project-number"
+                      label="Project Number"
+                      required
+                      error={getError("project_number")}
+                      tooltip="Project code this trip is charged to (e.g. PRJ-2026-001). Letters, digits and dashes."
+                    >
+                      <Input
+                        value={form.project_number}
+                        onChange={e => update("project_number", e.target.value)}
+                        onBlur={e => handleBlur("project_number", e.target.value, form as any)}
+                        placeholder="e.g. PRJ-2026-001"
+                        className="h-12 text-base"
+                      />
+                    </VRField>
+                  </div>
                 )}
               </div>
             )}
