@@ -129,8 +129,8 @@ export function validateVRField(
   switch (field) {
     case "request_type": {
       const v = sanitizeText(value);
-      if (!v) return "Please choose a request type (Daily, Nighttime, Project, Field, or Group operation).";
-      if (!["daily_operation", "nighttime_operation", "project_operation", "field_operation", "group_operation"].includes(v))
+      if (!v) return "Please choose a request type (Daily, Nighttime, Project, Field, Group, or Messenger Service).";
+      if (!["daily_operation", "nighttime_operation", "project_operation", "field_operation", "group_operation", "messenger_service"].includes(v))
         return "Invalid request type. Pick one of the operation cards above.";
       return;
     }
