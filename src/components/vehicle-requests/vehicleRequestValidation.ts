@@ -428,9 +428,8 @@ export const vehicleRequestZodSchema = z.object({
   contact_phone: z
     .string()
     .trim()
-    .max(20, "Phone number must be 20 characters or fewer.")
-    .optional()
-    .or(z.literal("")),
+    .min(1, "Contact phone is required so dispatch can reach you during the trip.")
+    .max(20, "Phone number must be 20 characters or fewer."),
   departure_place: z.string().trim().max(200).optional().or(z.literal("")),
   destination: z.string().trim().max(200).optional().or(z.literal("")),
   num_vehicles: z.coerce.number().int().min(1).max(50),
