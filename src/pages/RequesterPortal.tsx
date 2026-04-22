@@ -56,6 +56,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 import { REQUEST_STATUSES } from "@/components/requester-portal/RequestStatusBadge";
+import { PageDateRangeProvider, usePageDateRange } from "@/contexts/PageDateRangeContext";
+import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
 import {
   RequestDetailDrawer,
   type RequestDetail,
@@ -75,11 +77,19 @@ import { useToast } from "@/hooks/use-toast";
 
 type StatusFilter = "all" | (typeof REQUEST_STATUSES)[number];
 
-const RequesterPortal = () => {
+const RequesterPortal = () => (
+  <PageDateRangeProvider>
+    <RequesterPortalInner />
+  </PageDateRangeProvider>
+);
+
+const RequesterPortalInner = () => {
   const { user } = useAuth();
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
   const { toast } = useToast();
+
+  const { startISO, endISO } = usePageDateRange();
 
   const [openNew, setOpenNew] = useState(false);
   const [activeTab, setActiveTab] = useState<"requests" | "history">("requests");
@@ -116,9 +126,12 @@ const RequesterPortal = () => {
       }),
   });
 
-  // Fetch this user's requests
+  // Fetch this user's requests in the selected page-level date range.
+  // We filter on `needed_from` (the trip start) so the table reflects the
+  // same "from / until" window the user picks at the top of the page. Rows
+  // without `needed_from` (e.g. drafts) are matched on `created_at` instead.
   const { data: requests = [], isLoading, refetch } = useQuery({
-    queryKey: ["my-vehicle-requests", organizationId, user?.id],
+    queryKey: ["my-vehicle-requests", organizationId, user?.id, startISO, endISO],
     queryFn: async () => {
       if (!user || !organizationId) return [];
       const { data, error } = await (supabase as any)
@@ -128,6 +141,10 @@ const RequesterPortal = () => {
         )
         .eq("organization_id", organizationId)
         .eq("requester_id", user.id)
+        .or(
+          `and(needed_from.gte.${startISO},needed_from.lte.${endISO}),` +
+            `and(needed_from.is.null,created_at.gte.${startISO},created_at.lte.${endISO})`,
+        )
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as RequestDetail[];
@@ -241,6 +258,9 @@ const RequesterPortal = () => {
             </div>
           </div>
         </div>
+
+        {/* Page-level date range filter — drives the requests table & history */}
+        <PageDateRangeFilter hint="filters requests by needed-from date" />
 
         {/* KPI cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
