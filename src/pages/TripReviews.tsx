@@ -32,6 +32,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageDateRangeProvider, usePageDateRange } from "@/contexts/PageDateRangeContext";
+import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
 import {
   Table,
   TableBody,
@@ -127,23 +129,39 @@ type EnrichedReview = ReviewRow & {
 
 // ─── page ───────────────────────────────────────────────────────────────
 
+type ScoreFilter = "driver" | "vehicle" | "punctuality" | "overall" | null;
+
 export default function TripReviews() {
+  return (
+    <Layout>
+      <PageDateRangeProvider>
+        <TripReviewsInner />
+      </PageDateRangeProvider>
+    </Layout>
+  );
+}
+
+function TripReviewsInner() {
   const { user } = useAuthContext();
   const { organizationId } = useOrganization();
+  const { startISO, endISO } = usePageDateRange();
   const qc = useQueryClient();
 
   const [search, setSearch] = React.useState("");
   const [tab, setTab] = React.useState<"all" | "disputes" | "positive" | "needs_attention">("all");
+  const [scoreFilter, setScoreFilter] = React.useState<ScoreFilter>(null);
   const [active, setActive] = React.useState<EnrichedReview | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["fleet-trip-reviews", organizationId],
+    queryKey: ["fleet-trip-reviews", organizationId, startISO, endISO],
     enabled: !!organizationId,
     queryFn: async (): Promise<EnrichedReview[]> => {
       const { data: rows, error } = await (supabase as any)
         .from("vehicle_request_ratings")
         .select("*")
         .eq("organization_id", organizationId)
+        .gte("created_at", startISO)
+        .lte("created_at", endISO)
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -232,6 +250,23 @@ export default function TripReviews() {
     if (tab === "positive") list = list.filter((r) => (r.overall_score ?? 0) >= 4);
     if (tab === "needs_attention")
       list = list.filter((r) => r.overall_score && r.overall_score < 3);
+
+    // KPI card filter — show reviews where the selected metric is below 4 (i.e. dragging the avg down)
+    if (scoreFilter) {
+      const key =
+        scoreFilter === "driver"
+          ? "driver_score"
+          : scoreFilter === "vehicle"
+            ? "vehicle_score"
+            : scoreFilter === "punctuality"
+              ? "punctuality_score"
+              : "overall_score";
+      list = list.filter((r) => {
+        const v = r[key as keyof EnrichedReview] as number | null;
+        return typeof v === "number" && v > 0 && v < 4;
+      });
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -245,10 +280,13 @@ export default function TripReviews() {
       );
     }
     return list;
-  }, [reviews, tab, search]);
+  }, [reviews, tab, search, scoreFilter]);
+
+  const toggleScoreFilter = (key: Exclude<ScoreFilter, null>) =>
+    setScoreFilter((curr) => (curr === key ? null : key));
 
   return (
-    <Layout>
+    <>
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -263,33 +301,60 @@ export default function TripReviews() {
           </div>
         </div>
 
-        {/* KPI cards — averages */}
+        {/* Page-level date range filter — drives KPIs and table */}
+        <PageDateRangeFilter hint="filters reviews, KPIs and disputes by submission date" />
+
+        {/* KPI cards — averages (clickable to filter table to low-rated reviews) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <AvgKpiCard
             label="Avg Driver"
             value={stats.avgDriver}
             icon={UserRound}
             tone="info"
+            active={scoreFilter === "driver"}
+            onClick={() => toggleScoreFilter("driver")}
           />
           <AvgKpiCard
             label="Avg Vehicle"
             value={stats.avgVehicle}
             icon={Car}
             tone="muted"
+            active={scoreFilter === "vehicle"}
+            onClick={() => toggleScoreFilter("vehicle")}
           />
           <AvgKpiCard
             label="Avg Punctuality"
             value={stats.avgPunctuality}
             icon={Clock}
             tone="success"
+            active={scoreFilter === "punctuality"}
+            onClick={() => toggleScoreFilter("punctuality")}
           />
           <AvgKpiCard
             label="Avg Overall"
             value={stats.avgOverall}
             icon={Star}
             tone="amber"
+            active={scoreFilter === "overall"}
+            onClick={() => toggleScoreFilter("overall")}
           />
         </div>
+
+        {scoreFilter && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Badge variant="secondary" className="gap-1">
+              Filtering by low {scoreFilter} ratings (&lt; 4★)
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => setScoreFilter(null)}
+            >
+              Clear
+            </Button>
+          </div>
+        )}
 
         {/* Filters */}
         <Card>
@@ -370,7 +435,7 @@ export default function TripReviews() {
         currentUserId={user?.id}
         onResolved={() => qc.invalidateQueries({ queryKey: ["fleet-trip-reviews"] })}
       />
-    </Layout>
+    </>
   );
 }
 
@@ -381,11 +446,15 @@ function AvgKpiCard({
   value,
   icon: Icon,
   tone,
+  active = false,
+  onClick,
 }: {
   label: string;
   value: number;
   icon: React.ComponentType<{ className?: string }>;
   tone: "muted" | "amber" | "success" | "warning" | "destructive" | "info";
+  active?: boolean;
+  onClick?: () => void;
 }) {
   const toneCls = {
     muted: "bg-muted/60 text-muted-foreground",
@@ -397,8 +466,26 @@ function AvgKpiCard({
   }[tone];
   const display = value > 0 ? value.toFixed(1) : "—";
   const pct = value > 0 ? Math.min(100, (value / 5) * 100) : 0;
+  const clickable = !!onClick;
   return (
-    <Card className="overflow-hidden">
+    <Card
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (!clickable) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      className={cn(
+        "overflow-hidden transition-all",
+        clickable && "cursor-pointer hover:shadow-md hover:-translate-y-0.5",
+        active && "ring-2 ring-primary border-primary",
+      )}
+      aria-pressed={clickable ? active : undefined}
+    >
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -424,6 +511,11 @@ function AvgKpiCard({
             />
           </div>
         </div>
+        {clickable && (
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            {active ? "Click to clear filter" : "Click to view low ratings"}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
