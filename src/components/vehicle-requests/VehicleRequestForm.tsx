@@ -1508,6 +1508,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <LocationPickerField
                     label={`Stop ${idx + 1}`}
                     value={stop.name}
+                    lat={stop.lat}
+                    lng={stop.lng}
                     onChange={(v) => {
                       const next = [...form.stops];
                       next[idx] = { ...next[idx], name: v };
