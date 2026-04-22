@@ -126,9 +126,12 @@ const RequesterPortalInner = () => {
       }),
   });
 
-  // Fetch this user's requests
+  // Fetch this user's requests in the selected page-level date range.
+  // We filter on `needed_from` (the trip start) so the table reflects the
+  // same "from / until" window the user picks at the top of the page. Rows
+  // without `needed_from` (e.g. drafts) are matched on `created_at` instead.
   const { data: requests = [], isLoading, refetch } = useQuery({
-    queryKey: ["my-vehicle-requests", organizationId, user?.id],
+    queryKey: ["my-vehicle-requests", organizationId, user?.id, startISO, endISO],
     queryFn: async () => {
       if (!user || !organizationId) return [];
       const { data, error } = await (supabase as any)
@@ -138,6 +141,10 @@ const RequesterPortalInner = () => {
         )
         .eq("organization_id", organizationId)
         .eq("requester_id", user.id)
+        .or(
+          `and(needed_from.gte.${startISO},needed_from.lte.${endISO}),` +
+            `and(needed_from.is.null,created_at.gte.${startISO},created_at.lte.${endISO})`,
+        )
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as RequestDetail[];
