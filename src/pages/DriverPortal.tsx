@@ -33,6 +33,7 @@ import DriverNotificationBanner from "@/components/driver-portal/DriverNotificat
 import MyRequestsPanel from "@/components/driver-portal/MyRequestsPanel";
 import RequestLicenseRenewalDialog from "@/components/driver-portal/RequestLicenseRenewalDialog";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
+import DriverViewRequestDialog from "@/components/driver-portal/DriverViewRequestDialog";
 import { IdCard } from "lucide-react";
 
 const DriverPortal = () => {
@@ -52,6 +53,7 @@ const DriverPortal = () => {
   const [showInspection, setShowInspection] = useState(false);
   const [showLicenseRenewal, setShowLicenseRenewal] = useState(false);
   const [activeAssignment, setActiveAssignment] = useState<{ request: any; assignment: any } | null>(null);
+  const [viewRequest, setViewRequest] = useState<any | null>(null);
   // Override prefill when launching the inspection dialog as a post-trip flow
   // (from the pending banner or from an alert deep-link).
   const [inspectionPrefillOverride, setInspectionPrefillOverride] = useState<{
@@ -537,7 +539,7 @@ const DriverPortal = () => {
                         {activeRequest.needed_until && ` · Until ${format(new Date(activeRequest.needed_until), "MMM dd HH:mm")}`}
                       </p>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => navigate("/vehicle-requests")} className="shrink-0">
+                    <Button size="sm" variant="outline" onClick={() => setViewRequest(activeRequest)} className="shrink-0">
                       View Request <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
                     </Button>
                   </div>
@@ -591,22 +593,40 @@ const DriverPortal = () => {
                               {r?.destination ? ` → ${r.destination}` : ""}
                             </p>
                           </div>
-                          <Button
-                            size="sm"
-                            variant={checkedIn ? "outline" : "default"}
-                            className="gap-1 shrink-0"
-                            onClick={() => setActiveAssignment({ request: r, assignment: a })}
-                          >
-                            {checkedIn ? (
-                              <>
-                                <StopCircle className="w-4 h-4" aria-hidden="true" /> Check Out
-                              </>
-                            ) : (
-                              <>
-                                <PlayCircle className="w-4 h-4" aria-hidden="true" /> Check In
-                              </>
-                            )}
-                          </Button>
+                          <div className="flex flex-col gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              variant={checkedIn ? "outline" : "default"}
+                              className="gap-1"
+                              onClick={() => setActiveAssignment({ request: r, assignment: a })}
+                            >
+                              {checkedIn ? (
+                                <>
+                                  <StopCircle className="w-4 h-4" aria-hidden="true" /> Check Out
+                                </>
+                              ) : (
+                                <>
+                                  <PlayCircle className="w-4 h-4" aria-hidden="true" /> Check In
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="gap-1"
+                              onClick={() =>
+                                setViewRequest({
+                                  ...r,
+                                  assigned_vehicle: v,
+                                  assigned_vehicle_id: v?.id,
+                                  driver_checked_in_at: a.driver_checked_in_at,
+                                  driver_checked_out_at: a.driver_checked_out_at,
+                                })
+                              }
+                            >
+                              <FileText className="w-4 h-4" aria-hidden="true" /> View
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -861,6 +881,28 @@ const DriverPortal = () => {
             }}
           />
         )}
+        <DriverViewRequestDialog
+          open={!!viewRequest}
+          onClose={() => setViewRequest(null)}
+          request={viewRequest}
+          driverId={driverId}
+          onPreTrip={() => {
+            setInspectionPrefillOverride({
+              vehicle_id: viewRequest?.assigned_vehicle?.id ?? vehicle?.id,
+              inspection_type: "pre_trip",
+            });
+            setShowInspection(true);
+          }}
+          onPostTrip={() => {
+            setInspectionPrefillOverride({
+              vehicle_id: viewRequest?.assigned_vehicle?.id ?? vehicle?.id,
+              inspection_type: "post_trip",
+            });
+            setShowInspection(true);
+          }}
+          onReportIssue={() => setShowMaintenance(true)}
+          onRequestFuel={() => setShowFuel(true)}
+        />
       </div>
     </Layout>
   );
