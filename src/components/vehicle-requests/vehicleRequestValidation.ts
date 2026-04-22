@@ -468,6 +468,9 @@ export const vehicleRequestZodSchema = z.object({
     .optional()
     .or(z.literal("")),
   cargo_load: z.enum(["none", "small", "medium", "large"]).optional(),
+  cargo_weight_kg: z
+    .union([z.coerce.number().min(0).max(50000), z.literal(""), z.null()])
+    .optional(),
   vehicle_type_justification: z
     .string()
     .trim()
