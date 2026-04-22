@@ -179,6 +179,42 @@ const RequesterPortalInner = () => {
     };
   }, [user, qc]);
 
+  // Deep-link from notifications: `/my-requests?rate=<request-id>` opens the
+  // RateTripDialog for that completed trip. We fetch the row so the dialog
+  // works even if the request isn't in the current date-range filter.
+  useEffect(() => {
+    const rateId = searchParams.get("rate");
+    if (!rateId || !user || !organizationId) return;
+
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          `id, request_number, purpose, destination, departure_place,
+           needed_from, completed_at, driver_checked_out_at,
+           assigned_vehicle_id, assigned_driver_id, rated_at,
+           vehicles:assigned_vehicle_id ( plate_number, make, model ),
+           drivers:assigned_driver_id ( full_name )`,
+        )
+        .eq("id", rateId)
+        .eq("requester_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error || !data || data.rated_at) {
+        // Already rated or unavailable — just clear the param.
+        const next = new URLSearchParams(searchParams);
+        next.delete("rate");
+        setSearchParams(next, { replace: true });
+        return;
+      }
+      setRatingTrip(data as PendingRatingTrip);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, user, organizationId, setSearchParams]);
+
   // KPIs
   const kpis = useMemo(() => {
     const counts = {
