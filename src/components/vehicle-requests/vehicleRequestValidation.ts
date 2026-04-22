@@ -318,7 +318,7 @@ export function validateVRField(
 
     case "contact_phone": {
       const raw = sanitizeText(value);
-      if (!raw) return; // optional — empty is allowed
+      if (!raw) return "Contact phone is required so dispatch can reach you during the trip.";
       const v = sanitizePhone(value);
       // User typed something but only invalid characters remained after sanitizing.
       if (!v)
