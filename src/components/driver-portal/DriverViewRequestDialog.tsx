@@ -227,30 +227,48 @@ export const DriverViewRequestDialog = ({
   const assignedById = hydrated?.assigned_by ?? null;
   const assignedAt = hydrated?.assigned_at ?? request?.assigned_at ?? null;
 
-  // Always fetch requester profile so the driver gets full name + phone + email.
-  const { data: requesterProfile } = useQuery({
+  const parseEmbeddedContactPhone = (value?: string | null) => {
+    if (!value) return null;
+    const match = value.match(/contact\s*phone\s*:\s*([^\n]+)/i);
+    return match?.[1]?.trim() || null;
+  };
+
+  // Fetch requester contact details with profile -> employee -> embedded request fallback.
+  const { data: requesterInfo } = useQuery({
     queryKey: ["driver-portal-requester-profile", requesterId],
     enabled: !!requesterId && open,
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("profiles")
-        .select("full_name, first_name, last_name, email, phone, job_title")
-        .eq("id", requesterId)
-        .maybeSingle();
-      return data || null;
+      const [{ data: profile }, { data: employee }] = await Promise.all([
+        (supabase as any)
+          .from("profiles")
+          .select("full_name, first_name, last_name, email, phone, job_title")
+          .eq("id", requesterId)
+          .maybeSingle(),
+        (supabase as any)
+          .from("employees")
+          .select("first_name, last_name, email, phone, job_title")
+          .eq("user_id", requesterId)
+          .maybeSingle(),
+      ]);
+      return { profile: profile || null, employee: employee || null };
     },
   });
 
-  // Dispatcher / assigner profile + role from user_roles.
+  // Dispatcher / assigner profile + role + employee-phone fallback.
   const { data: assignerInfo } = useQuery({
     queryKey: ["driver-portal-assigner-info", assignedById],
     enabled: !!assignedById && open,
     queryFn: async () => {
-      const [{ data: profile }, { data: roleRows }] = await Promise.all([
+      const [{ data: profile }, { data: employee }, { data: roleRows }] = await Promise.all([
         (supabase as any)
           .from("profiles")
           .select("full_name, first_name, last_name, email, phone, job_title")
           .eq("id", assignedById)
+          .maybeSingle(),
+        (supabase as any)
+          .from("employees")
+          .select("first_name, last_name, email, phone, job_title")
+          .eq("user_id", assignedById)
           .maybeSingle(),
         (supabase as any)
           .from("user_roles")
@@ -260,7 +278,7 @@ export const DriverViewRequestDialog = ({
       const roles = Array.isArray(roleRows)
         ? roleRows.map((r: any) => String(r.role)).filter(Boolean)
         : [];
-      return { profile: profile || null, roles };
+      return { profile: profile || null, employee: employee || null, roles };
     },
   });
 
@@ -271,14 +289,17 @@ export const DriverViewRequestDialog = ({
     null;
 
   const requesterName =
-    requesterNameDirect || profileFullName(requesterProfile) || null;
-  const requesterPhone = requesterProfile?.phone || null;
-  const requesterEmail = requesterProfile?.email || null;
+    requesterNameDirect || profileFullName(requesterInfo?.profile) || profileFullName(requesterInfo?.employee) || null;
+  const requesterPhone =
+    requesterInfo?.profile?.phone || requesterInfo?.employee?.phone || parseEmbeddedContactPhone(request.purpose) || null;
+  const requesterEmail = requesterInfo?.profile?.email || requesterInfo?.employee?.email || null;
 
-  const assignerName = profileFullName(assignerInfo?.profile);
+  const assignerName = profileFullName(assignerInfo?.profile) || profileFullName(assignerInfo?.employee);
+  const assignerPhone = assignerInfo?.profile?.phone || assignerInfo?.employee?.phone || null;
+  const assignerEmail = assignerInfo?.profile?.email || assignerInfo?.employee?.email || null;
   const assignerRole = (() => {
     const roles = assignerInfo?.roles ?? [];
-    if (!roles.length) return assignerInfo?.profile?.job_title || null;
+    if (!roles.length) return assignerInfo?.profile?.job_title || assignerInfo?.employee?.job_title || null;
     const pretty = roles
       .map((r) => r.replace(/_/g, " "))
       .map((r) => r.replace(/\b\w/g, (m) => m.toUpperCase()));
