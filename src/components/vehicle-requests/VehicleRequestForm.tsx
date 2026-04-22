@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { useAuth } from "@/hooks/useAuth";
 import { History } from "lucide-react";
@@ -276,6 +276,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   }, [onBehalfOf, onBehalfDraftKey]);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
+  const fieldAnchors = useRef<Partial<Record<"date" | "start_time" | "end_time" | "start_date" | "end_date" | "project_number", HTMLDivElement | null>>>({});
 
   // Mandatory rating gate — block new requests until prior completed trips are rated.
   // The DB also enforces this with a trigger; the UI gives immediate feedback.
@@ -935,6 +936,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       };
       const target = tabForField[firstField];
       if (target) setActiveTab(target);
+      requestAnimationFrame(() => {
+        const anchor = fieldAnchors.current[firstField as keyof typeof fieldAnchors.current];
+        anchor?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       return;
     }
 
@@ -1009,7 +1014,40 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     { id: "details", label: "Details", icon: FileText, hint: "Purpose & Submit" },
   ] as const;
   const tabIndex = TABS.findIndex(t => t.id === activeTab);
-  const goNext = () => setActiveTab(TABS[Math.min(tabIndex + 1, TABS.length - 1)].id as any);
+  const goNext = () => {
+    if (activeTab === "schedule") {
+      const ctx = form as any;
+      const scheduleChecks = isDaily
+        ? ([
+            ["date", form.date],
+            ["start_time", form.start_time],
+            ["end_time", form.end_time],
+          ] as const)
+        : ([
+            ["start_date", form.start_date],
+            ["end_date", form.end_date],
+            ...(isProject ? ([["project_number", form.project_number]] as const) : []),
+          ] as const);
+
+      const firstInvalid = scheduleChecks.find(([field, value]) => {
+        const msg = validation.validateField(field as any, value, ctx);
+        if (msg) handleBlur(field as any, value, ctx);
+        return !!msg;
+      });
+
+      if (firstInvalid) {
+        const [field] = firstInvalid;
+        toast.error(validation.getError(field as any) || "Please complete the schedule fields.");
+        requestAnimationFrame(() => {
+          const anchor = fieldAnchors.current[field as keyof typeof fieldAnchors.current];
+          anchor?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+        return;
+      }
+    }
+
+    setActiveTab(TABS[Math.min(tabIndex + 1, TABS.length - 1)].id as any);
+  };
   const goPrev = () => setActiveTab(TABS[Math.max(tabIndex - 1, 0)].id as any);
 
   // Per-tab completion indicators
