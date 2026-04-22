@@ -38,7 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Car, MapPin, Calendar, Users, FileText, AlertTriangle,
   Gauge, Wrench, Fuel, Navigation, PlayCircle, StopCircle,
-  Clock, Hash, Building2, ClipboardCheck, CheckCircle2, XCircle, UserCheck,
+  Clock, Hash, Building2, ClipboardCheck, CheckCircle2, XCircle, UserCheck, RotateCcw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
