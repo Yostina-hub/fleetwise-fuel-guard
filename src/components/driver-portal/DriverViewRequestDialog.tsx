@@ -431,11 +431,21 @@ export const DriverViewRequestDialog = ({
                 : null
             }
           />
-          {passengers != null && (
-            <Field icon={Users} label="Passengers" value={String(passengers)} />
+          <Field
+            icon={Users}
+            label="Passengers"
+            value={passengers != null ? String(passengers) : null}
+          />
+          {departmentName && (
+            <Field icon={Building2} label="Department" value={departmentName} />
           )}
           <Field icon={FileText} label="Purpose" value={request.purpose} />
-          <Field icon={MapPin} label="Destination" value={request.destination} />
+          <Field
+            icon={MapPin}
+            label="Departure"
+            value={departurePlace || poolLocation}
+          />
+          <Field icon={Navigation} label="Destination" value={request.destination} />
           <Field
             icon={Calendar}
             label="Needed From"
