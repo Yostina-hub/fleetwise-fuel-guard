@@ -435,41 +435,6 @@ export const DriverViewRequestDialog = ({
 
         <Separator />
 
-        {/* Stage progress */}
-        <div className="flex items-center justify-between text-xs">
-          {(["pre_trip", "in_trip", "post_trip", "done"] as const).map((s, i) => {
-            const order = ["pre_trip", "in_trip", "post_trip", "done"];
-            const currentIdx = order.indexOf(stage === "post_trip" ? "in_trip" : stage);
-            const active = order.indexOf(s) <= currentIdx;
-            const labels: Record<string, string> = {
-              pre_trip: "Pre-Trip",
-              in_trip: "On Trip",
-              post_trip: "Post-Trip",
-              done: "Completed",
-            };
-            return (
-              <div key={s} className="flex items-center gap-1 flex-1">
-                <div
-                  className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border",
-                    active
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted text-muted-foreground border-border",
-                  )}
-                >
-                  {i + 1}
-                </div>
-                <span className={cn("text-[11px]", active ? "text-foreground font-medium" : "text-muted-foreground")}>
-                  {labels[s]}
-                </span>
-                {i < 3 && <div className={cn("flex-1 h-px mx-1", active ? "bg-primary" : "bg-border")} />}
-              </div>
-            );
-          })}
-        </div>
-
-        <Separator />
-
         {/* Next-step actions — hidden for rejected/cancelled requests */}
         {stage !== "done" && request.status !== "rejected" && request.status !== "cancelled" && (
           <div className="space-y-3">
