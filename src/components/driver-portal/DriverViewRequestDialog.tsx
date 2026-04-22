@@ -427,9 +427,7 @@ export const DriverViewRequestDialog = ({
     },
     onSuccess: () => {
       toast.success("Check-in undone");
-      setOdometer("");
       setNotes("");
-      setOdoError(null);
       setNotesError(null);
       refresh();
     },
