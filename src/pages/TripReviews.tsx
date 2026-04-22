@@ -251,7 +251,9 @@ function TripReviewsInner() {
     if (tab === "needs_attention")
       list = list.filter((r) => r.overall_score && r.overall_score < 3);
 
-    // KPI card filter — show reviews where the selected metric is below 4 (i.e. dragging the avg down)
+    // KPI card filter — show only reviews that have a rating for the selected
+    // metric, sorted ascending so the lowest scores (the ones dragging the
+    // average down) appear first. Clicking again toggles the filter off.
     if (scoreFilter) {
       const key =
         scoreFilter === "driver"
@@ -261,10 +263,17 @@ function TripReviewsInner() {
             : scoreFilter === "punctuality"
               ? "punctuality_score"
               : "overall_score";
-      list = list.filter((r) => {
-        const v = r[key as keyof EnrichedReview] as number | null;
-        return typeof v === "number" && v > 0 && v < 4;
-      });
+      list = list
+        .filter((r) => {
+          const v = r[key as keyof EnrichedReview] as number | null;
+          return typeof v === "number" && v > 0;
+        })
+        .slice()
+        .sort((a, b) => {
+          const av = (a[key as keyof EnrichedReview] as number) ?? 0;
+          const bv = (b[key as keyof EnrichedReview] as number) ?? 0;
+          return av - bv;
+        });
     }
 
     if (search.trim()) {
