@@ -63,6 +63,7 @@ const EVManagement = lazyWithRetry(() => import("./pages/EVManagement"), "EVMana
 const VehicleRequests = lazyWithRetry(() => import("./pages/VehicleRequests"), "VehicleRequests");
 const RequesterPortal = lazyWithRetry(() => import("./pages/RequesterPortal"), "RequesterPortal");
 const PoolSupervisors = lazyWithRetry(() => import("./pages/PoolSupervisors"), "PoolSupervisors");
+const TripReviews = lazyWithRetry(() => import("./pages/TripReviews"), "TripReviews");
 const TireManagement = lazyWithRetry(() => import("./pages/TireManagement"), "TireManagement");
 const HandoverCatalogAdmin = lazyWithRetry(() => import("./pages/HandoverCatalogAdmin"), "HandoverCatalogAdmin");
 
@@ -225,6 +226,7 @@ const App = () => {
                         <Route path="/vehicle-requests" element={<ProtectedRoute><VehicleRequests /></ProtectedRoute>} />
                         <Route path="/pool-supervisors" element={<ProtectedRoute><PoolSupervisors /></ProtectedRoute>} />
                         <Route path="/my-requests" element={<ProtectedRoute><RequesterPortal /></ProtectedRoute>} />
+                        <Route path="/trip-reviews" element={<ProtectedRoute><TripReviews /></ProtectedRoute>} />
                         <Route path="/tire-management" element={<ProtectedRoute><TireManagement /></ProtectedRoute>} />
                         <Route path="/cold-chain" element={<ProtectedRoute><IoTSensorManagement /></ProtectedRoute>} />
                         <Route path="/rental-vehicles" element={<ProtectedRoute><RentalVehicles /></ProtectedRoute>} />
