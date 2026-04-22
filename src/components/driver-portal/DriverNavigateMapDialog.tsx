@@ -160,10 +160,9 @@ export const DriverNavigateMapDialog = ({
   // and a resize observer so the viewport stays correct inside the dialog.
   useEffect(() => {
     if (!open || !containerEl || map.current) return;
-    // Wait until the Lemat API key has been fetched — otherwise the style
-    // request will be made without authentication and the tiles won't load,
-    // leaving the dialog with a blank gray canvas.
-    if (!lematReady) return;
+    // Do not block map creation on the Lemat key hook.
+    // In preview the key fetch can lag or fail, and waiting here leaves the
+    // dialog as a blank panel because MapLibre never mounts at all.
 
     let disposed = false;
     let resizeObserver: ResizeObserver | null = null;
