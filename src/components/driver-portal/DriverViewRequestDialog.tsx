@@ -581,16 +581,28 @@ export const DriverViewRequestDialog = ({
                   <div>
                     <Label className="text-xs">Final Odometer (km)</Label>
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={odometer}
-                      onChange={(e) => setOdometer(e.target.value)}
+                      onChange={(e) => {
+                        const v = sanitizeNumeric(e.target.value);
+                        setOdometer(v);
+                        if (v) validateOdometer(v, "out");
+                        else setOdoError(null);
+                      }}
+                      onBlur={() => odometer && validateOdometer(odometer, "out")}
                       placeholder="e.g. 45360"
+                      aria-invalid={!!odoError}
+                      className={inputStatusClass(odoError ? "error" : odometer ? "success" : "neutral")}
                     />
+                    {odoError && (
+                      <p className="text-xs text-destructive mt-1">{odoError}</p>
+                    )}
                   </div>
                   <Button
                     className="w-full gap-2 bg-warning hover:bg-warning/90"
                     onClick={() => checkOut.mutate()}
-                    disabled={checkOut.isPending}
+                    disabled={checkOut.isPending || !!odoError || !odometer}
                   >
                     <StopCircle className="w-4 h-4" />
                     {checkOut.isPending ? "Checking out…" : "Check Out & Complete Trip"}
