@@ -1389,11 +1389,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             ) : (
               <div className={`grid grid-cols-1 gap-5`}>
                 <div>
-                  <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime />
+                  <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime error={!!getError("start_date")} />
                   <FieldError field="start_date" />
                 </div>
                 <div>
-                  <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => { update("end_date", d); handleBlur("end_date", d, form as any); }} required={isProject} minDate={form.start_date} hideTime />
+                  <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => { update("end_date", d); handleBlur("end_date", d, form as any); }} required={isProject} minDate={form.start_date} hideTime error={!!getError("end_date")} />
                   <FieldError field="end_date" />
                 </div>
                 {visibility.showProjectNumber && (
