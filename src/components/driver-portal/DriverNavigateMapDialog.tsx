@@ -97,7 +97,7 @@ export const DriverNavigateMapDialog = ({
   vehicleLabel,
   departureTime,
 }: Props) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
+  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const liveMarkerRef = useRef<maplibregl.Marker | null>(null);
@@ -161,13 +161,16 @@ export const DriverNavigateMapDialog = ({
     };
   }, [open, departurePlace, departureLat, departureLng, destinationPlace]);
 
-  // Initialize / tear down the map (style follows org default)
+  // Initialize / tear down the map. Uses a callback ref (`containerEl`) so
+  // we wait for the dialog to actually mount the map div before constructing
+  // the MapLibre instance — `useRef` was racing the dialog mount and the
+  // map sometimes never initialised, leaving an empty box.
   useEffect(() => {
     if (!open) return;
-    if (!mapContainer.current || map.current) return;
+    if (!containerEl || map.current) return;
 
     map.current = new maplibregl.Map({
-      container: mapContainer.current,
+      container: containerEl,
       style: STYLE_URL[defaultMapStyle] ?? STYLE_URL.streets,
       center: [38.7578, 9.03], // Addis Ababa default
       zoom: 11,
@@ -175,7 +178,14 @@ export const DriverNavigateMapDialog = ({
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
     map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
 
+    // After the dialog finishes its open animation, the container size may
+    // have changed. Force MapLibre to recompute its viewport.
+    const resizeTimer = window.setTimeout(() => {
+      try { map.current?.resize(); } catch { /* noop */ }
+    }, 250);
+
     return () => {
+      window.clearTimeout(resizeTimer);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       liveMarkerRef.current?.remove();
@@ -183,7 +193,7 @@ export const DriverNavigateMapDialog = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [open, defaultMapStyle]);
+  }, [open, defaultMapStyle, containerEl]);
 
   // Poll the latest GPS position for the assigned vehicle every 10s
   useEffect(() => {
@@ -414,21 +424,39 @@ export const DriverNavigateMapDialog = ({
   };
 
   const openInGoogleMaps = () => {
-    if (!destination && !origin) return;
-    let url: string;
+    // Prefer resolved coordinates; fall back to free-text places so the
+    // button still works while geocoding is in flight or failed.
+    let url: string | null = null;
     if (origin && destination) {
       url = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
-    } else {
+    } else if (origin || destination) {
       const p = (destination || origin)!;
       url = `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
+    } else if (departurePlace?.trim() || destinationPlace?.trim()) {
+      const dest = destinationPlace?.trim();
+      const orig = departurePlace?.trim();
+      if (dest && orig) {
+        url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(orig)}&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+      } else {
+        url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((dest || orig)!)}`;
+      }
     }
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    if (!url) return;
+    try {
+      const w = (window.top || window).open(url, "_blank", "noopener,noreferrer");
+      if (w) return;
+    } catch { /* fall through */ }
+    try {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      try { window.top!.location.href = url; } catch { window.location.href = url; }
+    }
   };
 
   return (
@@ -516,7 +544,7 @@ export const DriverNavigateMapDialog = ({
         </div>
 
         <div className="relative flex-1 min-h-[420px] rounded-lg overflow-hidden border">
-          <div ref={mapContainer} className="absolute inset-0" />
+          <div ref={setContainerEl} className="absolute inset-0" />
           {(resolving || (!origin && !destination)) && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
               {resolving ? (
@@ -538,7 +566,7 @@ export const DriverNavigateMapDialog = ({
           <Button
             variant="outline"
             onClick={openInGoogleMaps}
-            disabled={!origin && !destination}
+            disabled={!origin && !destination && !departurePlace?.trim() && !destinationPlace?.trim()}
             className="gap-2"
           >
             <ExternalLink className="w-4 h-4" /> Open in Google Maps

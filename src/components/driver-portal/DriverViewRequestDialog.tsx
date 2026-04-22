@@ -426,24 +426,37 @@ export const DriverViewRequestDialog = ({
     onError: (e: any) => toast.error(e.message || "Could not undo check-in"),
   });
 
-  const buildMapsUrl = (
-    place?: string | null,
-    lat?: number | null,
-    lng?: number | null,
-  ): string | null => {
-    if (lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
-      return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  /** Build a driving-directions URL using whichever endpoints we have. */
+  const buildDirectionsUrl = (): string | null => {
+    const dest = request?.destination?.trim();
+    const originLatLng =
+      departureLat != null && departureLng != null &&
+      Number.isFinite(Number(departureLat)) && Number.isFinite(Number(departureLng))
+        ? `${departureLat},${departureLng}`
+        : null;
+    const originText = departurePlace?.trim();
+    const destPart = dest ? encodeURIComponent(dest) : null;
+    if (!destPart) {
+      if (originLatLng) return `https://www.google.com/maps/search/?api=1&query=${originLatLng}`;
+      if (originText) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(originText)}`;
+      return null;
     }
-    if (place && place.trim()) {
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+    const originPart = originLatLng || (originText ? encodeURIComponent(originText) : null);
+    if (originPart) {
+      return `https://www.google.com/maps/dir/?api=1&origin=${originPart}&destination=${destPart}&travelmode=driving`;
     }
-    return null;
+    return `https://www.google.com/maps/dir/?api=1&destination=${destPart}&travelmode=driving`;
   };
 
   const openMaps = (url: string | null) => {
     if (!url) return;
-    // In sandboxed iframes (preview), window.open is blocked. Use a temporary
-    // anchor with target="_blank" — falls back to top-level nav if blocked.
+    // Lovable preview runs inside a sandboxed iframe — `window.open` can be
+    // blocked. Try top-level window.open first, then anchor click, then
+    // direct top navigation as a final fallback.
+    try {
+      const w = (window.top || window).open(url, "_blank", "noopener,noreferrer");
+      if (w) return;
+    } catch { /* fall through */ }
     try {
       const a = document.createElement("a");
       a.href = url;
@@ -551,6 +564,14 @@ export const DriverViewRequestDialog = ({
                       📞 {assignerInfo.profile.phone}
                     </a>
                   )}
+                  {assignerInfo?.profile?.email && (
+                    <a
+                      href={`mailto:${assignerInfo.profile.email}`}
+                      className="block text-xs text-muted-foreground hover:underline break-all"
+                    >
+                      ✉️ {assignerInfo.profile.email}
+                    </a>
+                  )}
                   {assignedAt && (
                     <span className="block text-[11px] text-muted-foreground">
                       {format(new Date(assignedAt), "MMM dd, yyyy HH:mm")}
@@ -641,8 +662,8 @@ export const DriverViewRequestDialog = ({
                   <Button
                     variant="outline"
                     className="justify-start gap-2"
-                    onClick={() => openMaps(buildMapsUrl(request.destination, null, null))}
-                    disabled={!request.destination}
+                    onClick={() => openMaps(buildDirectionsUrl())}
+                    disabled={!request.destination && !departurePlace && departureLat == null}
                   >
                     <MapPin className="w-4 h-4" /> Open in Google Maps
                   </Button>
