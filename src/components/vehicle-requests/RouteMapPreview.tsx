@@ -302,9 +302,17 @@ export function RouteMapPreview({
     markersRef.current = [];
 
     // Render markers
-    orderedPoints.forEach((p) => {
+    const haveLegs = routeLegs.length === Math.max(0, orderedPoints.length - 1) && routeLegs.length > 0;
+    orderedPoints.forEach((p, idx) => {
       if (p.lat == null || p.lng == null) return;
       const popupLabel = getPointLabel(p);
+      const popupInfo: PopupSegmentInfo = haveLegs
+        ? {
+            arriveKm: idx > 0 ? routeLegs[idx - 1].distance_m / 1000 : null,
+            arriveMin: idx > 0 ? routeLegs[idx - 1].duration_s / 60 : null,
+            departKm: idx < routeLegs.length ? routeLegs[idx].distance_m / 1000 : null,
+          }
+        : { arriveKm: null, arriveMin: null, departKm: null };
       const el = document.createElement("div");
       el.style.display = "flex";
       el.style.alignItems = "center";
@@ -331,7 +339,7 @@ export function RouteMapPreview({
         .setLngLat([p.lng, p.lat])
         .setPopup(
           new maplibregl.Popup({ offset: 14, closeButton: false, maxWidth: "300px" }).setHTML(
-            buildPopupHtml(popupLabel)
+            buildPopupHtml(popupLabel, popupInfo)
           )
         )
         .addTo(map);
@@ -437,6 +445,7 @@ export function RouteMapPreview({
     destination?.lng,
     JSON.stringify(stops?.map((s) => [s.lat, s.lng])),
     routeGeometry,
+    routeLegs,
   ]);
 
   const hasAny = orderedPoints.length > 0;
