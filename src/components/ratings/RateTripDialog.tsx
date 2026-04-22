@@ -33,6 +33,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { StarRating } from "./StarRating";
 import type { PendingRatingTrip } from "@/hooks/usePendingRatings";
 
@@ -53,6 +54,7 @@ const STEPS = [
 
 export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDialogProps) {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [step, setStep] = React.useState<Step>(0);
   const [driver, setDriver] = React.useState(0);
   const [vehicle, setVehicle] = React.useState(0);
@@ -81,6 +83,8 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
       } = await supabase.auth.getUser();
       if (!authUser) throw new Error("Not authenticated");
 
+      const actingRequesterId = user?.id ?? authUser.id;
+
       const { data: requestRow, error: requestError } = await (supabase as any)
         .from("vehicle_requests")
         .select("id, organization_id, requester_id, assigned_driver_id, assigned_vehicle_id")
@@ -89,14 +93,14 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
 
       if (requestError) throw requestError;
       if (!requestRow) throw new Error("Trip not found");
-      if (requestRow.requester_id !== authUser.id) {
-        throw new Error("You can only rate your own trip.");
+      if (requestRow.requester_id !== actingRequesterId) {
+        throw new Error("You can only rate the currently impersonated requester's trip.");
       }
 
       const payload = {
         organization_id: requestRow.organization_id,
         vehicle_request_id: trip.id,
-        rated_by: authUser.id,
+        rated_by: actingRequesterId,
         driver_id: requestRow.assigned_driver_id ?? trip.assigned_driver_id ?? null,
         vehicle_id: requestRow.assigned_vehicle_id ?? trip.assigned_vehicle_id ?? null,
         driver_score: driver,
@@ -112,7 +116,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
         .from("vehicle_request_ratings")
         .select("id")
         .eq("vehicle_request_id", trip.id)
-        .eq("rated_by", authUser.id)
+        .eq("rated_by", actingRequesterId)
         .maybeSingle();
 
       if (existingRatingError) throw existingRatingError;
@@ -122,7 +126,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
             .from("vehicle_request_ratings")
             .update(payload)
             .eq("id", existingRating.id)
-            .eq("rated_by", authUser.id)
+            .eq("rated_by", actingRequesterId)
         : await (supabase as any)
             .from("vehicle_request_ratings")
             .insert(payload);
@@ -136,7 +140,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
           requester_feedback: comment.trim() || null,
         })
         .eq("id", trip.id)
-        .eq("requester_id", authUser.id);
+        .eq("requester_id", actingRequesterId);
 
       if (requestUpdateError) throw requestUpdateError;
     },
