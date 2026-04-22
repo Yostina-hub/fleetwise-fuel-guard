@@ -251,9 +251,17 @@ const CarbonEmissionsInner = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </Layout>
+    </div>
   );
 };
 
+const CarbonEmissions = () => (
+  <Layout>
+    <PageDateRangeProvider>
+      <CarbonEmissionsInner />
+    </PageDateRangeProvider>
+  </Layout>
+);
+
 export default CarbonEmissions;
+
