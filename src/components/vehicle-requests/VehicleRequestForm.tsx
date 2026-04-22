@@ -1446,6 +1446,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <LocationPickerField
                 label="Departure Place"
                 value={form.departure_place}
+                lat={form.departure_lat}
+                lng={form.departure_lng}
                 onChange={v => update("departure_place", v)}
                 onCoordsChange={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
                 placeholder="Select or type departure"
@@ -1454,6 +1456,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <LocationPickerField
                 label="Final Destination"
                 value={form.destination}
+                lat={form.destination_lat}
+                lng={form.destination_lng}
                 onChange={v => update("destination", v)}
                 onCoordsChange={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
                 placeholder="Select or type final destination"
