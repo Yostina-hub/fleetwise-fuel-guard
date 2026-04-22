@@ -48,7 +48,77 @@ function getPointLabel(point: RoutePoint & { kind: "departure" | "stop" | "desti
   return `Stop ${point.index}`;
 }
 
-function buildPopupHtml(label: string): string {
+interface PopupSegmentInfo {
+  /** Distance (km) of the leg arriving at this point. null for the departure. */
+  arriveKm: number | null;
+  /** Duration (minutes) of the leg arriving at this point. null for the departure. */
+  arriveMin: number | null;
+  /** Distance (km) of the leg leaving this point. null for the destination. */
+  departKm: number | null;
+}
+
+function formatKm(km: number | null): string | null {
+  if (km == null || !Number.isFinite(km)) return null;
+  if (km < 1) return `${Math.max(1, Math.round(km * 1000))} m`;
+  return `${km.toFixed(1)} km`;
+}
+
+function formatMin(min: number | null): string | null {
+  if (min == null || !Number.isFinite(min)) return null;
+  return `~${Math.max(1, Math.round(min))} min`;
+}
+
+function buildPopupHtml(label: string, info?: PopupSegmentInfo): string {
+  const arriveKm = formatKm(info?.arriveKm ?? null);
+  const arriveMin = formatMin(info?.arriveMin ?? null);
+  const departKm = formatKm(info?.departKm ?? null);
+
+  const segmentRows: string[] = [];
+  if (arriveKm) {
+    segmentRows.push(
+      `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:hsl(var(--muted-foreground));">
+         <span style="display:inline-block;width:8px;height:8px;border-radius:9999px;background:hsl(217 91% 55%);"></span>
+         <span>From previous: <strong style="color:hsl(var(--popover-foreground));">${escapeHtml(arriveKm)}</strong>${arriveMin ? ` · ${escapeHtml(arriveMin)}` : ""}</span>
+       </div>`,
+    );
+  }
+  if (departKm) {
+    segmentRows.push(
+      `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:hsl(var(--muted-foreground));">
+         <span style="display:inline-block;width:8px;height:8px;border-radius:9999px;background:hsl(142 71% 45%);"></span>
+         <span>To next: <strong style="color:hsl(var(--popover-foreground));">${escapeHtml(departKm)}</strong></span>
+       </div>`,
+    );
+  }
+
+  const segmentBlock =
+    segmentRows.length > 0
+      ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid hsl(var(--border));display:flex;flex-direction:column;gap:4px;">${segmentRows.join("")}</div>`
+      : "";
+
+  return `
+    <div
+      style="
+        min-width: 200px;
+        max-width: 280px;
+        padding: 10px 12px;
+        background: hsl(var(--popover));
+        color: hsl(var(--popover-foreground));
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.45;
+        white-space: normal;
+        word-break: break-word;
+      "
+    >
+      <div style="font-weight:600;">${escapeHtml(label)}</div>
+      ${segmentBlock}
+    </div>
+  `;
+}
+
+function buildPopupHtmlSimple(label: string): string {
   return `
     <div
       style="
