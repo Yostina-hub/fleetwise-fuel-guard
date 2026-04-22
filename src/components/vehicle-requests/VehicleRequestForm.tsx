@@ -1669,6 +1669,46 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 )}
               </div>
 
+              {/* Total cargo weight (kg) — validated against the chosen vehicle's max payload. */}
+              <div>
+                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
+                  Total Cargo Weight (kg)
+                  <FieldHint>
+                    Optional but recommended. The system blocks vehicles whose payload capacity is below this weight.
+                  </FieldHint>
+                </Label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={50000}
+                    step={1}
+                    value={form.cargo_weight_kg}
+                    onChange={(e) => update("cargo_weight_kg", e.target.value)}
+                    onBlur={(e) => handleBlur("vehicle_type", form.vehicle_type, { ...form, cargo_weight_kg: e.target.value } as any)}
+                    placeholder="e.g. 250"
+                    className="h-12 text-base pr-12"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                    kg
+                  </span>
+                </div>
+                {chosenProfile && cargoWeightKgNum > 0 && (
+                  <p
+                    className={`text-xs mt-1 ${
+                      chosenProfile.maxPayloadKg >= cargoWeightKgNum
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-destructive"
+                    }`}
+                  >
+                    {chosenProfile.maxPayloadKg >= cargoWeightKgNum
+                      ? `✓ ${chosenProfile.label} carries up to ${chosenProfile.maxPayloadKg.toLocaleString()} kg — within capacity.`
+                      : `✗ ${chosenProfile.label} max payload is ${chosenProfile.maxPayloadKg.toLocaleString()} kg. Pick a larger class.`}
+                  </p>
+                )}
+              </div>
+
               {/* Resource-aware recommendation banner — pure derivation from passengers + cargo */}
               {recommendation && (
                 <div className=" rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2 animate-fade-in">
@@ -1732,11 +1772,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     )}
                   </SelectContent>
                 </Select>
-                {chosenProfile && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Capacity: {chosenProfile.capacity} · Cargo: {chosenProfile.cargo} · Tier: {COST_BAND_LABELS[chosenProfile.costBand]}
-                  </p>
-                )}
+                {/* Capacity / Cargo / Tier info intentionally not duplicated here —
+                    the recommendation banner above already surfaces this for the
+                    selected class. */}
               </div>
 
               {/* Justification — only shown when over-spec'd */}
