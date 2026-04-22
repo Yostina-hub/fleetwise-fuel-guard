@@ -35,9 +35,9 @@ export async function notifyFleetOpsRequestApproved(args: NotifyApprovedArgs): P
     // Find user_ids of fleet operators / fleet managers in this org.
     const { data: roleRows, error } = await (supabase as any)
       .from("user_roles")
-      .select("user_id, role, profiles!inner(organization_id)")
+      .select("user_id, role")
       .in("role", FLEET_OPS_ROLES as unknown as string[])
-      .eq("profiles.organization_id", organizationId);
+      .eq("organization_id", organizationId);
 
     if (error) {
       console.warn("[fleetApprovalPush] role lookup failed:", error.message);
