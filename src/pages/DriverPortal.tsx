@@ -34,6 +34,7 @@ import MyRequestsPanel from "@/components/driver-portal/MyRequestsPanel";
 import RequestLicenseRenewalDialog from "@/components/driver-portal/RequestLicenseRenewalDialog";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
 import DriverViewRequestDialog from "@/components/driver-portal/DriverViewRequestDialog";
+import ReportTripIncidentDialog from "@/components/driver-portal/ReportTripIncidentDialog";
 import { IdCard } from "lucide-react";
 
 const DriverPortal = () => {
@@ -48,6 +49,11 @@ const DriverPortal = () => {
   // Dialog states
   const [showMaintenance, setShowMaintenance] = useState(false);
   const [showFuel, setShowFuel] = useState(false);
+  const [reportIncidentContext, setReportIncidentContext] = useState<{
+    vehicleId?: string | null;
+    tripId?: string | null;
+    location?: string | null;
+  } | null>(null);
   
   const [showTire, setShowTire] = useState(false);
   const [showInspection, setShowInspection] = useState(false);
@@ -905,8 +911,25 @@ const DriverPortal = () => {
             });
             setShowInspection(true);
           }}
-          onReportIssue={() => setShowMaintenance(true)}
+          onReportIssue={() =>
+            setReportIncidentContext({
+              vehicleId: viewRequest?.assigned_vehicle?.id ?? vehicle?.id ?? null,
+              tripId: viewRequest?.id ?? null,
+              location: viewRequest?.destination_place ?? viewRequest?.departure_place ?? null,
+            })
+          }
           onRequestFuel={() => setShowFuel(true)}
+        />
+
+        <ReportTripIncidentDialog
+          open={!!reportIncidentContext}
+          onOpenChange={(o) => {
+            if (!o) setReportIncidentContext(null);
+          }}
+          driverId={driverId}
+          vehicleId={reportIncidentContext?.vehicleId ?? vehicle?.id ?? null}
+          tripId={reportIncidentContext?.tripId ?? null}
+          location={reportIncidentContext?.location ?? null}
         />
       </div>
     </Layout>
