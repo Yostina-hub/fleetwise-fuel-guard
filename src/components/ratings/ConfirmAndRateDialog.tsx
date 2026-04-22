@@ -260,6 +260,7 @@ export function ConfirmAndRateDialog({
         .from("vehicle_request_ratings")
         .select("id")
         .eq("vehicle_request_id", request.id)
+        .eq("rated_by", user.id)
         .maybeSingle();
 
       if (existingRatingError) throw existingRatingError;
@@ -269,6 +270,7 @@ export function ConfirmAndRateDialog({
             .from("vehicle_request_ratings")
             .update(payload)
             .eq("id", existingRating.id)
+            .eq("rated_by", user.id)
         : await (supabase as any)
             .from("vehicle_request_ratings")
             .insert(payload);
