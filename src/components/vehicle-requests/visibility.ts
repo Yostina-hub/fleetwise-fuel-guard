@@ -15,7 +15,8 @@ export type RequestType =
   | "nighttime_operation"
   | "project_operation"
   | "field_operation"
-  | "group_operation";
+  | "group_operation"
+  | "delivery_operation";
 
 export interface VRVisibility {
   /** Single-day layout (date + start/end time). True for Daily and Nighttime. */
@@ -28,6 +29,8 @@ export interface VRVisibility {
   isField: boolean;
   /** Group / shared trip — multi-day layout. */
   isGroup: boolean;
+  /** Delivery — motorcycle-based courier trip; passengers field is N/A. */
+  isDelivery: boolean;
 
   /** Show the Project Number field. */
   showProjectNumber: boolean;
@@ -42,8 +45,10 @@ export interface VRVisibility {
 }
 
 export function deriveVisibility(requestType: string | undefined): VRVisibility {
+  const isDelivery = requestType === "delivery_operation";
   const isNighttime = requestType === "nighttime_operation";
-  const isDaily = requestType === "daily_operation" || isNighttime;
+  // Delivery uses the same single-day layout as Daily (date + start/end time).
+  const isDaily = requestType === "daily_operation" || isNighttime || isDelivery;
   const isProject = requestType === "project_operation";
   const isField = requestType === "field_operation";
   const isGroup = requestType === "group_operation";
@@ -54,6 +59,7 @@ export function deriveVisibility(requestType: string | undefined): VRVisibility 
     isProject,
     isField,
     isGroup,
+    isDelivery,
     showProjectNumber: isProject,
     allowsMultipleVehicles: isProject,
     showWorkingHoursBanner: isProject,
