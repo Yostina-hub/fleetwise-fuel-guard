@@ -75,10 +75,39 @@ Deno.serve(async (req) => {
     const body: DispatchRequest = await req.json().catch(() => ({} as any));
     const { organization_id, pool_name, dry_run = false } = body;
 
+    // No org provided → sweep mode: dispatch for every org that has eligible requests.
     if (!organization_id) {
+      const { data: orgs, error: oErr } = await supabase
+        .from("vehicle_requests")
+        .select("organization_id")
+        .eq("status", "approved")
+        .is("assigned_vehicle_id", null)
+        .is("deleted_at", null)
+        .limit(2000);
+      if (oErr) throw oErr;
+      const uniqueOrgs = Array.from(new Set((orgs || []).map((r) => r.organization_id)));
+      const sweepResults: any[] = [];
+      for (const org of uniqueOrgs) {
+        try {
+          const r = await fetch(
+            `${SUPABASE_URL}/functions/v1/auto-dispatch-pool`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${SERVICE_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ organization_id: org, dry_run }),
+            },
+          );
+          sweepResults.push({ organization_id: org, result: await r.json() });
+        } catch (e: any) {
+          sweepResults.push({ organization_id: org, error: e?.message });
+        }
+      }
       return new Response(
-        JSON.stringify({ error: "organization_id is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({ ok: true, mode: "sweep", orgs: uniqueOrgs.length, sweepResults }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
