@@ -347,12 +347,26 @@ export function RouteMapPreview({
             <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white bg-destructive">B</span>
             <span className="text-muted-foreground">Destination</span>
           </div>
-          {totalKm > 0 && (
+          {routeKm != null ? (
+            <Badge variant="secondary" className="self-start gap-1 text-[11px] font-medium shadow-sm">
+              <Route className="w-3 h-3" />
+              {routeKm.toFixed(1)} km via roads
+              {routeMin != null && (
+                <span className="text-muted-foreground/80">· ~{Math.max(1, Math.round(routeMin))} min</span>
+              )}
+            </Badge>
+          ) : routeLoading ? (
+            <Badge variant="secondary" className="self-start gap-1 text-[11px] font-medium shadow-sm opacity-80">
+              <Route className="w-3 h-3 animate-pulse" />
+              Calculating road route…
+            </Badge>
+          ) : totalKm > 0 ? (
             <Badge variant="secondary" className="self-start gap-1 text-[11px] font-medium shadow-sm">
               <Ruler className="w-3 h-3" />
               ~{totalKm.toFixed(1)} km straight-line
+              {routeFailed && <span className="text-muted-foreground/70">· road route unavailable</span>}
             </Badge>
-          )}
+          ) : null}
         </div>
       )}
       {hasAny && (orderedPoints.length === 1) && (
