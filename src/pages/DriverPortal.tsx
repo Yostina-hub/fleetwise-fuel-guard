@@ -706,6 +706,71 @@ const DriverPortal = () => {
                   </>
                 )}
               </div>
+
+              {/* Recently completed trips — visible right after the driver checks out */}
+              {trips?.recent?.length ? (
+                <div className="mt-6 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-success" aria-hidden="true" />
+                      Recently Completed
+                      <span className="text-muted-foreground/70 normal-case font-normal">
+                        ({trips.recent.length})
+                      </span>
+                    </h3>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs"
+                      onClick={() => setActiveTab("history")}
+                    >
+                      View all <ChevronRight className="w-3.5 h-3.5 ml-1" aria-hidden="true" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {trips.recent.slice(0, 5).map((t: any) => (
+                      <div
+                        key={t.id}
+                        className="p-3 rounded-lg border border-success/20 bg-success/5 flex items-start justify-between gap-3 cursor-pointer hover:bg-success/10 transition-colors"
+                        onClick={() => navigate(`/route-history?tripId=${t.id}`)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge
+                              variant="outline"
+                              className="bg-success/15 text-success border-success/30 text-xs"
+                            >
+                              <CheckCircle2 className="w-3 h-3 mr-1" aria-hidden="true" />
+                              Completed
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {t.end_time
+                                ? formatDistanceToNow(new Date(t.end_time), { addSuffix: true })
+                                : "—"}
+                            </span>
+                            {t.distance_km != null && (
+                              <span className="text-xs font-medium text-muted-foreground">
+                                · {Number(t.distance_km).toFixed(1)} km
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm mt-1 truncate flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
+                            {t.start_location || "—"} → {t.end_location || "—"}
+                          </p>
+                          {t.start_time && t.end_time && (
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              {format(new Date(t.start_time), "MMM dd HH:mm")} –{" "}
+                              {format(new Date(t.end_time), "HH:mm")}
+                            </p>
+                          )}
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1" aria-hidden="true" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </Card>
           </TabsContent>
 
