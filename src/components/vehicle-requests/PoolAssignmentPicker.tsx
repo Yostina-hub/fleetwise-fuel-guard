@@ -96,15 +96,35 @@ export const PoolAssignmentPicker = ({
     [drivers, driverId],
   );
 
-  const inPoolVehicles = vehicles.filter(
-    (v) => request.pool_name && v.specific_pool === request.pool_name,
-  );
-  const otherVehicles = vehicles.filter(
-    (v) => !(request.pool_name && v.specific_pool === request.pool_name),
-  );
+  const inPoolVehicles = vehicles.filter((v) => v.in_pool);
+  const otherVehicles = vehicles.filter((v) => !v.in_pool);
 
   const inPoolDrivers = drivers.filter((d) => d.in_pool);
   const otherDrivers = drivers.filter((d) => !d.in_pool);
+
+  // Cross-pool resource map for decision-making.
+  // Groups vehicles by pool (or "Unassigned"), counting idle vs busy.
+  const vehiclesByPool = useMemo(() => {
+    const map = new Map<string, { total: number; idle: number; busy: number }>();
+    vehicles.forEach((v) => {
+      const key = v.specific_pool || "Unassigned";
+      const cur = map.get(key) || { total: 0, idle: 0, busy: 0 };
+      cur.total += 1;
+      if (v.is_idle) cur.idle += 1;
+      else cur.busy += 1;
+      map.set(key, cur);
+    });
+    return Array.from(map.entries()).sort((a, b) => {
+      // Requested pool first, then by idle desc
+      if (request.pool_name) {
+        if (a[0] === request.pool_name) return -1;
+        if (b[0] === request.pool_name) return 1;
+      }
+      return b[1].idle - a[1].idle;
+    });
+  }, [vehicles, request.pool_name]);
+
+  const totalIdle = vehicles.filter((v) => v.is_idle).length;
 
   return (
     <div className="space-y-3">
