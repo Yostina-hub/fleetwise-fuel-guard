@@ -301,15 +301,31 @@ export function RouteMapPreview({
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    // Render markers — but draw STOPS LAST (on top) so they remain visible
-    // when a stop is placed near/under the Departure or Destination pin.
+    // Detect overlapping coordinates so we can spread markers apart visually.
+    // Two points are "overlapping" if their lat/lng differ by < ~10 m (~0.0001°).
+    const OVERLAP_DEG = 0.0001;
+    const overlapKey = (lat: number, lng: number) =>
+      `${lat.toFixed(4)},${lng.toFixed(4)}`;
+    const overlapGroups = new Map<string, number>();
+    orderedPoints.forEach((p) => {
+      if (p.lat == null || p.lng == null) return;
+      const key = overlapKey(p.lat, p.lng);
+      overlapGroups.set(key, (overlapGroups.get(key) ?? 0) + 1);
+    });
+
+    // Render markers — draw Departure/Destination first, STOPS on top so they
+    // remain visible when placed near another pin.
     const haveLegs = routeLegs.length === Math.max(0, orderedPoints.length - 1) && routeLegs.length > 0;
     const renderOrder = orderedPoints
       .map((p, idx) => ({ p, idx }))
       .sort((a, b) => {
-        const rank = (k: string) => (k === "stop" ? 2 : 1); // stops drawn last
+        const rank = (k: string) => (k === "stop" ? 2 : 1);
         return rank(a.p.kind) - rank(b.p.kind);
       });
+
+    // Track per-overlap-group placement counter so multiple coincident pins
+    // get fanned out around the shared point in a small circle.
+    const overlapCursor = new Map<string, number>();
 
     renderOrder.forEach(({ p, idx }) => {
       if (p.lat == null || p.lng == null) return;
@@ -321,6 +337,24 @@ export function RouteMapPreview({
             departKm: idx < routeLegs.length ? routeLegs[idx].distance_m / 1000 : null,
           }
         : { arriveKm: null, arriveMin: null, departKm: null };
+
+      // If this point overlaps with another, fan it out by a small pixel offset
+      // (kept on the marker DOM element so the underlying coordinate stays exact).
+      const key = overlapKey(p.lat, p.lng);
+      const groupSize = overlapGroups.get(key) ?? 1;
+      const cursor = overlapCursor.get(key) ?? 0;
+      overlapCursor.set(key, cursor + 1);
+      const needsFan = groupSize > 1;
+      let pxX = 0;
+      let pxY = 0;
+      if (needsFan) {
+        // Spread up to 6 markers around a 22px radius circle.
+        const angle = (cursor / Math.max(groupSize, 1)) * Math.PI * 2 - Math.PI / 2;
+        const radius = 22;
+        pxX = Math.cos(angle) * radius;
+        pxY = Math.sin(angle) * radius;
+      }
+
       const el = document.createElement("div");
       el.style.display = "flex";
       el.style.alignItems = "center";
@@ -331,33 +365,32 @@ export function RouteMapPreview({
       el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.35)";
       el.style.border = "2px solid #fff";
       el.style.cursor = "pointer";
+      el.style.transition = "transform 120ms ease";
       if (p.kind === "departure") {
         el.style.width = "26px";
         el.style.height = "26px";
         el.style.fontSize = "11px";
-        el.style.background = "hsl(142 71% 45%)"; // emerald
+        el.style.background = "hsl(142 71% 45%)";
         el.style.zIndex = "2";
         el.textContent = "A";
       } else if (p.kind === "destination") {
         el.style.width = "26px";
         el.style.height = "26px";
         el.style.fontSize = "11px";
-        el.style.background = "hsl(0 84% 60%)"; // red
-        el.style.zIndex = "2";
+        el.style.background = "hsl(0 84% 60%)";
+        el.style.zIndex = "3";
         el.textContent = "B";
       } else {
-        // Stops: slightly bigger + on top so they're visible even when
-        // overlapping the Departure/Destination pin.
-        el.style.width = "30px";
-        el.style.height = "30px";
-        el.style.fontSize = "12px";
-        el.style.background = "hsl(38 92% 50%)"; // amber
-        el.style.border = "3px solid #fff";
-        el.style.boxShadow = "0 3px 10px rgba(0,0,0,0.45)";
+        el.style.width = "28px";
+        el.style.height = "28px";
+        el.style.fontSize = "11px";
+        el.style.background = "hsl(38 92% 50%)";
+        el.style.border = "2.5px solid #fff";
+        el.style.boxShadow = "0 3px 8px rgba(0,0,0,0.4)";
         el.style.zIndex = "10";
         el.textContent = String(p.index ?? "·");
       }
-      const marker = new maplibregl.Marker({ element: el })
+      const marker = new maplibregl.Marker({ element: el, offset: [pxX, pxY] })
         .setLngLat([p.lng, p.lat])
         .setPopup(
           new maplibregl.Popup({ offset: 14, closeButton: false, maxWidth: "300px" }).setHTML(
