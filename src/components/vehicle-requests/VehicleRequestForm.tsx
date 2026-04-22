@@ -665,16 +665,31 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       onSubmitted?.({ id: data?.id });
     },
     onError: (err: any) => {
-      const msg: string = err?.message ?? "Submission failed";
-      // DB trigger returns "PENDING_RATINGS:N" when prior trips are unrated.
-      const m = msg.match(/PENDING_RATINGS:(\d+)/);
-      if (m) {
+      const message = String(err?.message ?? "");
+      const details = String(err?.details ?? "");
+      const hint = String(err?.hint ?? "");
+      const combined = [message, details, hint].filter(Boolean).join(" | ");
+
+      // The pre-insert rating gate may surface as either a custom
+      // `PENDING_RATINGS:N` exception or as a generic insert-policy error with
+      // the real guidance in `hint`/`details`, depending on the client path.
+      const pendingMatch = combined.match(/PENDING_RATINGS:(\d+)/);
+      const isPendingRatingsGate =
+        !!pendingMatch ||
+        /Rate your previous completed trips before submitting a new request/i.test(combined) ||
+        /previous trips first/i.test(combined);
+
+      if (isPendingRatingsGate) {
+        const count = pendingMatch?.[1];
         toast.error("Rate your previous trips first", {
-          description: `You have ${m[1]} completed trip${m[1] === "1" ? "" : "s"} that need a rating before you can submit a new request.`,
+          description: count
+            ? `You have ${count} completed trip${count === "1" ? "" : "s"} that need a rating before you can submit a new request.`
+            : "Complete the pending trip rating before submitting a new request.",
         });
         return;
       }
-      toast.error(msg);
+
+      toast.error(message || "Submission failed");
     },
   });
 
