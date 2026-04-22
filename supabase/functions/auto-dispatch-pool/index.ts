@@ -364,6 +364,8 @@ Deno.serve(async (req) => {
           requests: reqs.map((r) => r.request_number),
           chosen_vehicle: vehicle.plate_number,
           distance_km: Math.round(picked.distance * 10) / 10,
+          in_pickup_geofence: picked.inGeofence,
+          pickup_geofence: pickupFence?.name || null,
           passengers: totalPassengers,
         });
         continue;
