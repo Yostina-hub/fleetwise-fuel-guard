@@ -1307,7 +1307,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   <div className="">
-                    <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }} required minDate={new Date()} hideTime />
+                    <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }} required minDate={new Date()} hideTime error={!!getError("date")} />
                     <FieldError field="date" />
                   </div>
                   <div>
@@ -1389,11 +1389,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             ) : (
               <div className={`grid grid-cols-1 gap-5`}>
                 <div>
-                  <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime />
+                  <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime error={!!getError("start_date")} />
                   <FieldError field="start_date" />
                 </div>
                 <div>
-                  <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => { update("end_date", d); handleBlur("end_date", d, form as any); }} required={isProject} minDate={form.start_date} hideTime />
+                  <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => { update("end_date", d); handleBlur("end_date", d, form as any); }} required={isProject} minDate={form.start_date} hideTime error={!!getError("end_date")} />
                   <FieldError field="end_date" />
                 </div>
                 {visibility.showProjectNumber && (
@@ -1906,8 +1906,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     value={form.contact_phone}
                     onChange={e => update("contact_phone", e.target.value)}
                     onBlur={e => handleBlur("contact_phone", e.target.value, form as any)}
-                    placeholder="+251 9X XXX XXXX — reachable while the trip is active"
-                    className="h-12 text-base"
+                    placeholder="0911 234 567 or +251 911 234 567"
+                    aria-invalid={!!getError("contact_phone")}
+                    className={`h-12 text-base ${getError("contact_phone") ? "border-destructive ring-1 ring-destructive/30 focus-visible:ring-destructive/40" : ""}`}
                   />
                 </VRField>
               </div>
