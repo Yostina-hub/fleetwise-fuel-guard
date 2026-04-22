@@ -342,10 +342,39 @@ export const DriverViewRequestDialog = ({
     onError: (e: any) => toast.error(e.message || "Check-out failed"),
   });
 
-  const navigateTo = (place?: string | null) => {
-    if (!place) return;
-    const q = encodeURIComponent(place);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, "_blank", "noopener,noreferrer");
+  const buildMapsUrl = (
+    place?: string | null,
+    lat?: number | null,
+    lng?: number | null,
+  ): string | null => {
+    if (lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
+      return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    }
+    if (place && place.trim()) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+    }
+    return null;
+  };
+
+  const openMaps = (url: string | null) => {
+    if (!url) return;
+    // In sandboxed iframes (preview), window.open is blocked. Use a temporary
+    // anchor with target="_blank" — falls back to top-level nav if blocked.
+    try {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      try {
+        window.top!.location.href = url;
+      } catch {
+        window.location.href = url;
+      }
+    }
   };
 
   const v = request?.assigned_vehicle;
