@@ -422,6 +422,7 @@ const TireManagement = () => {
         <TireChangeDialog open={showChangeDialog} onOpenChange={setShowChangeDialog} tires={tireInventory} />
         <TireRequestDialog open={showRequestDialog} onOpenChange={setShowRequestDialog} />
       </div>
+      </PageDateRangeProvider>
     </Layout>
   );
 };
