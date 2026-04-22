@@ -410,6 +410,22 @@ const RequesterPortalInner = () => {
         open={!!editing}
         onOpenChange={(o) => !o && setEditing(null)}
       />
+      <RateTripDialog
+        trip={ratingTrip}
+        open={!!ratingTrip}
+        onOpenChange={(o) => {
+          if (!o) {
+            setRatingTrip(null);
+            // Strip the `rate` query param so refreshes don't re-open the dialog.
+            const next = new URLSearchParams(searchParams);
+            if (next.has("rate")) {
+              next.delete("rate");
+              setSearchParams(next, { replace: true });
+            }
+          }
+        }}
+        onRated={() => qc.invalidateQueries({ queryKey: ["my-vehicle-requests"] })}
+      />
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
