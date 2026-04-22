@@ -53,6 +53,9 @@ interface ActiveRequest {
   approval_status?: string | null;
   purpose?: string | null;
   destination?: string | null;
+  departure_place?: string | null;
+  departure_lat?: number | null;
+  departure_lng?: number | null;
   needed_from?: string | null;
   needed_until?: string | null;
   assigned_at?: string | null;
@@ -67,8 +70,12 @@ interface ActiveRequest {
   organization_id?: string | null;
   requester_id?: string | null;
   requester_name?: string | null;
+  requester_phone?: string | null;
+  passengers?: number | null;
   passengers_count?: number | null;
   number_of_passengers?: number | null;
+  department_name?: string | null;
+  pool_location?: string | null;
   assigned_vehicle?: {
     id: string;
     plate_number: string;
@@ -213,7 +220,7 @@ export const DriverViewRequestDialog = ({
       const { data } = await (supabase as any)
         .from("vehicle_requests")
         .select(
-          "id, requester_id, requester_name, passengers_count, number_of_passengers, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes",
+          "id, requester_id, requester_name, requester_phone, passengers, passengers_count, number_of_passengers, departure_place, departure_lat, departure_lng, department_name, pool_location, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes",
         )
         .eq("id", request!.id)
         .maybeSingle();
@@ -223,9 +230,15 @@ export const DriverViewRequestDialog = ({
 
   const requesterId = hydrated?.requester_id ?? request?.requester_id ?? null;
   const requesterNameDirect = hydrated?.requester_name ?? request?.requester_name ?? null;
+  const requesterPhoneDirect = hydrated?.requester_phone ?? request?.requester_phone ?? null;
   const passengers =
-    hydrated?.passengers_count ?? hydrated?.number_of_passengers ??
-    request?.passengers_count ?? request?.number_of_passengers ?? null;
+    hydrated?.passengers ?? hydrated?.passengers_count ?? hydrated?.number_of_passengers ??
+    request?.passengers ?? request?.passengers_count ?? request?.number_of_passengers ?? null;
+  const departurePlace = hydrated?.departure_place ?? request?.departure_place ?? null;
+  const departureLat = hydrated?.departure_lat ?? request?.departure_lat ?? null;
+  const departureLng = hydrated?.departure_lng ?? request?.departure_lng ?? null;
+  const departmentName = hydrated?.department_name ?? request?.department_name ?? null;
+  const poolLocation = hydrated?.pool_location ?? request?.pool_location ?? null;
 
   // Resolve the requester display name from profiles when only an id is stored.
   const { data: requesterProfile } = useQuery({
@@ -243,7 +256,8 @@ export const DriverViewRequestDialog = ({
 
   const requesterName =
     requesterNameDirect || requesterProfile?.full_name || requesterProfile?.email || null;
-  const requesterContact = requesterProfile?.phone || requesterProfile?.email || null;
+  const requesterContact =
+    requesterPhoneDirect || requesterProfile?.phone || requesterProfile?.email || null;
 
   const checkIn = useMutation({
     mutationFn: async () => {
@@ -328,10 +342,39 @@ export const DriverViewRequestDialog = ({
     onError: (e: any) => toast.error(e.message || "Check-out failed"),
   });
 
-  const navigateTo = (place?: string | null) => {
-    if (!place) return;
-    const q = encodeURIComponent(place);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, "_blank", "noopener,noreferrer");
+  const buildMapsUrl = (
+    place?: string | null,
+    lat?: number | null,
+    lng?: number | null,
+  ): string | null => {
+    if (lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
+      return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    }
+    if (place && place.trim()) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+    }
+    return null;
+  };
+
+  const openMaps = (url: string | null) => {
+    if (!url) return;
+    // In sandboxed iframes (preview), window.open is blocked. Use a temporary
+    // anchor with target="_blank" — falls back to top-level nav if blocked.
+    try {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      try {
+        window.top!.location.href = url;
+      } catch {
+        window.location.href = url;
+      }
+    }
   };
 
   const v = request?.assigned_vehicle;
@@ -388,11 +431,21 @@ export const DriverViewRequestDialog = ({
                 : null
             }
           />
-          {passengers != null && (
-            <Field icon={Users} label="Passengers" value={String(passengers)} />
+          <Field
+            icon={Users}
+            label="Passengers"
+            value={passengers != null ? String(passengers) : null}
+          />
+          {departmentName && (
+            <Field icon={Building2} label="Department" value={departmentName} />
           )}
           <Field icon={FileText} label="Purpose" value={request.purpose} />
-          <Field icon={MapPin} label="Destination" value={request.destination} />
+          <Field
+            icon={MapPin}
+            label="Departure"
+            value={departurePlace || poolLocation}
+          />
+          <Field icon={Navigation} label="Destination" value={request.destination} />
           <Field
             icon={Calendar}
             label="Needed From"
@@ -506,14 +559,24 @@ export const DriverViewRequestDialog = ({
 
             {stage === "pre_trip" && (
               <>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => navigateTo(request.destination)}
-                  disabled={!request.destination}
-                >
-                  <Navigation className="w-4 h-4" /> Open in Maps
-                </Button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    className="justify-start gap-2"
+                    onClick={() => openMaps(buildMapsUrl(departurePlace, departureLat, departureLng))}
+                    disabled={!departurePlace && departureLat == null}
+                  >
+                    <MapPin className="w-4 h-4" /> Departure in Maps
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="justify-start gap-2"
+                    onClick={() => openMaps(buildMapsUrl(request.destination, null, null))}
+                    disabled={!request.destination}
+                  >
+                    <Navigation className="w-4 h-4" /> Destination in Maps
+                  </Button>
+                </div>
 
                 <div className="rounded-lg border p-3 space-y-2">
                   <p className="text-sm font-medium flex items-center gap-1.5">
@@ -580,7 +643,7 @@ export const DriverViewRequestDialog = ({
                   <Button
                     variant="outline"
                     className="justify-start gap-2"
-                    onClick={() => navigateTo(request.destination)}
+                    onClick={() => openMaps(buildMapsUrl(request.destination, null, null))}
                     disabled={!request.destination}
                   >
                     <Navigation className="w-4 h-4" /> Navigate
