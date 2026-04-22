@@ -551,6 +551,14 @@ export const DriverViewRequestDialog = ({
                       📞 {assignerInfo.profile.phone}
                     </a>
                   )}
+                  {assignerInfo?.profile?.email && (
+                    <a
+                      href={`mailto:${assignerInfo.profile.email}`}
+                      className="block text-xs text-muted-foreground hover:underline break-all"
+                    >
+                      ✉️ {assignerInfo.profile.email}
+                    </a>
+                  )}
                   {assignedAt && (
                     <span className="block text-[11px] text-muted-foreground">
                       {format(new Date(assignedAt), "MMM dd, yyyy HH:mm")}
