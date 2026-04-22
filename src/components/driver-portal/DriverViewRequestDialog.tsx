@@ -501,26 +501,49 @@ export const DriverViewRequestDialog = ({
                     <div>
                       <Label className="text-xs">Odometer (km)</Label>
                       <Input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         value={odometer}
-                        onChange={(e) => setOdometer(e.target.value)}
+                        onChange={(e) => {
+                          const v = sanitizeNumeric(e.target.value);
+                          setOdometer(v);
+                          if (v) validateOdometer(v, "in");
+                          else setOdoError(null);
+                        }}
+                        onBlur={() => odometer && validateOdometer(odometer, "in")}
                         placeholder="e.g. 45200"
+                        aria-invalid={!!odoError}
+                        className={inputStatusClass(odoError ? "error" : odometer ? "success" : "neutral")}
                       />
+                      {odoError && (
+                        <p className="text-xs text-destructive mt-1">{odoError}</p>
+                      )}
                     </div>
                     <div>
                       <Label className="text-xs">Notes (optional)</Label>
                       <Textarea
                         value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
+                        onChange={(e) => {
+                          const v = sanitizeWhileTyping(e.target.value).slice(0, 500);
+                          setNotes(v);
+                          if (v) validateNotes(v);
+                          else setNotesError(null);
+                        }}
                         rows={1}
+                        maxLength={500}
                         placeholder="Vehicle condition…"
+                        aria-invalid={!!notesError}
+                        className={inputStatusClass(notesError ? "error" : "neutral")}
                       />
+                      {notesError && (
+                        <p className="text-xs text-destructive mt-1">{notesError}</p>
+                      )}
                     </div>
                   </div>
                   <Button
                     className="w-full gap-2"
                     onClick={() => checkIn.mutate()}
-                    disabled={checkIn.isPending}
+                    disabled={checkIn.isPending || !!odoError || !!notesError || !odometer}
                   >
                     <PlayCircle className="w-4 h-4" />
                     {checkIn.isPending ? "Checking in…" : "Check In Now"}
