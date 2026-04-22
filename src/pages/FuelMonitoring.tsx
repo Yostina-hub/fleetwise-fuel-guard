@@ -221,6 +221,9 @@ const FuelMonitoring = () => {
           {/* Page-level date range filter */}
           <PageDateRangeFilter />
 
+          {/* Live fuel alerts summary (date-range aware) */}
+          <FuelAlertsSummaryCard />
+
           {/* Quick Stats Bar */}
           <FuelQuickStats 
             totalConsumption={stats.totalConsumption}
