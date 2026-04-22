@@ -152,6 +152,7 @@ const buildInitialForm = () => ({
   // Resource-aware request fields (demand-shaping pattern).
   purpose_category: "" as string,                  // business taxonomy — required
   cargo_load: "" as CargoLoad | "",                // mandatory — drives recommendation engine
+  cargo_weight_kg: "" as string,                   // optional — total cargo weight (kg) checked against vehicle max payload
   vehicle_type_justification: "" as string,        // required when user upgrades over recommendation
 });
 
@@ -296,7 +297,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     project_operation: 7,
     field_operation: 1,
     group_operation: 0,
-    delivery_operation: 0,
+    messenger_service: 0,
+    delivery_operation: 0, // legacy alias — kept so old drafts still resolve
   };
 
   // While impersonating, force the form to file the request as the impersonated
