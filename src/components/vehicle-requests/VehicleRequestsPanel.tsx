@@ -45,6 +45,7 @@ type SortKey =
   | "requester_name"
   | "route"
   | "needed_from"
+  | "created_at"
   | "vehicle"
   | "status";
 
@@ -70,8 +71,8 @@ export const VehicleRequestsPanel = () => {
     end: endOfDay(new Date()),
   });
 
-  // Sorting — default newest first by needed_from to match operational expectations.
-  const [sortKey, setSortKey] = useState<SortKey>("needed_from");
+  // Sorting — default newest first by created_at so the most recently submitted request appears at the top.
+  const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -79,7 +80,7 @@ export const VehicleRequestsPanel = () => {
     } else {
       setSortKey(key);
       // Dates default desc (most recent first), text columns default asc.
-      setSortDir(key === "needed_from" ? "desc" : "asc");
+      setSortDir(key === "needed_from" || key === "created_at" ? "desc" : "asc");
     }
   };
 
@@ -188,6 +189,7 @@ export const VehicleRequestsPanel = () => {
         case "requester_name": return (r.requester_name || "").toLowerCase();
         case "route": return ((r.departure_place || "") + " " + (r.destination || "")).toLowerCase();
         case "needed_from": return r.needed_from ? new Date(r.needed_from).getTime() : 0;
+        case "created_at": return r.created_at ? new Date(r.created_at).getTime() : 0;
         case "vehicle": return (r.assigned_vehicle?.plate_number || "").toLowerCase();
         case "status": return (r.status || "").toLowerCase();
         default: return 0;
