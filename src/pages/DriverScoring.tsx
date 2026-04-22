@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { PageDateRangeProvider } from "@/contexts/PageDateRangeContext";
+import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
 
 const DriverScoring = () => {
   const { t } = useTranslation();
@@ -115,6 +117,7 @@ const DriverScoring = () => {
   
   return (
     <Layout>
+      <PageDateRangeProvider>
       <div className="p-4 md:p-8 space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -136,6 +139,9 @@ const DriverScoring = () => {
             Back to Drivers
           </Button>
         </div>
+
+        {/* Page-level date range filter */}
+        <PageDateRangeFilter />
 
         {/* Quick Stats */}
         <DriverScoringQuickStats {...stats} />
@@ -175,6 +181,7 @@ const DriverScoring = () => {
           </TabsContent>
         </Tabs>
       </div>
+      </PageDateRangeProvider>
     </Layout>
   );
 };

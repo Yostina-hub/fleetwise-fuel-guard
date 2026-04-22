@@ -17,6 +17,8 @@ import DelegationRulesConfig from "@/components/workorders/DelegationRulesConfig
 import DuePreventiveSchedules from "@/components/maintenance-enterprise/DuePreventiveSchedules";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { PageDateRangeProvider } from "@/contexts/PageDateRangeContext";
+import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
 
 const WorkOrders = () => {
   const { t } = useTranslation();
@@ -58,6 +60,7 @@ const WorkOrders = () => {
 
   return (
     <Layout>
+      <PageDateRangeProvider>
       <div className="p-3 md:p-6 space-y-4 animate-fade-in overflow-x-hidden">
         <div className="flex items-center gap-3 slide-in-right">
           <div className="p-4 rounded-2xl glass-strong glow-strong">
@@ -70,6 +73,9 @@ const WorkOrders = () => {
             </p>
           </div>
         </div>
+
+        {/* Page-level date range filter */}
+        <PageDateRangeFilter />
 
         <WorkOrdersQuickStats {...stats} />
 
@@ -163,6 +169,7 @@ const WorkOrders = () => {
           workOrderId={fuelWoDialog.id}
         />
       </div>
+      </PageDateRangeProvider>
     </Layout>
   );
 };

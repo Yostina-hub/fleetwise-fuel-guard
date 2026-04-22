@@ -24,6 +24,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 
 import { useTranslation } from 'react-i18next';
+import { PageDateRangeProvider } from "@/contexts/PageDateRangeContext";
+import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
 const TireManagement = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("workflow");
@@ -127,6 +129,7 @@ const TireManagement = () => {
 
   return (
     <Layout>
+      <PageDateRangeProvider>
       <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -150,6 +153,9 @@ const TireManagement = () => {
             </Button>
           </div>
         </div>
+
+        {/* Page-level date range filter */}
+        <PageDateRangeFilter />
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
@@ -416,6 +422,7 @@ const TireManagement = () => {
         <TireChangeDialog open={showChangeDialog} onOpenChange={setShowChangeDialog} tires={tireInventory} />
         <TireRequestDialog open={showRequestDialog} onOpenChange={setShowRequestDialog} />
       </div>
+      </PageDateRangeProvider>
     </Layout>
   );
 };

@@ -28,6 +28,8 @@ import FuelBudgetTracker from "@/components/fuel/FuelBudgetTracker";
 import { FuelPageContext } from "@/contexts/FuelPageContext";
 import { useTranslation } from "react-i18next";
 import FuelComprehensiveReportsTab from "@/components/fuel/FuelComprehensiveReportsTab";
+import { PageDateRangeProvider } from "@/contexts/PageDateRangeContext";
+import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
 
 const FuelMonitoring = () => {
   const { t } = useTranslation();
@@ -207,6 +209,7 @@ const FuelMonitoring = () => {
   return (
     <FuelPageContext.Provider value={contextValue}>
       <Layout>
+        <PageDateRangeProvider>
         <div className="p-4 md:p-8 space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4">
@@ -218,6 +221,9 @@ const FuelMonitoring = () => {
               <p className="text-muted-foreground mt-1 text-lg">{t('fuel.monitoring')}</p>
             </div>
           </div>
+
+          {/* Page-level date range filter */}
+          <PageDateRangeFilter />
 
           {/* Quick Stats Bar */}
           <FuelQuickStats 
@@ -325,6 +331,7 @@ const FuelMonitoring = () => {
             </Tabs>
           </div>
         </div>
+        </PageDateRangeProvider>
       </Layout>
     </FuelPageContext.Provider>
   );

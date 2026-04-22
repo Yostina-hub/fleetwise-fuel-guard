@@ -17,25 +17,31 @@ import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { PageDateRangeProvider, usePageDateRange } from "@/contexts/PageDateRangeContext";
+import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))", "#6366f1", "#f59e0b", "#10b981"];
 
-const CarbonEmissions = () => {
+const CarbonEmissionsInner = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
+  const { startISO, endISO } = usePageDateRange();
   const qc = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState({ vehicle_id: "", co2_kg: 0, fuel_consumed_liters: 0, distance_km: 0, emission_source: "fuel_combustion", period_start: "", period_end: "", offset_credits: 0, notes: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Date-aware: KPI cards, charts, tables all reflect the selected range.
   const { data: emissions = [], isLoading } = useQuery({
-    queryKey: ["carbon-emissions", organizationId],
+    queryKey: ["carbon-emissions", organizationId, startISO, endISO],
     queryFn: async () => {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("carbon_emissions")
         .select("*, vehicles(plate_number, make, model)")
         .eq("organization_id", organizationId)
+        .gte("period_start", startISO)
+        .lte("period_start", endISO)
         .order("period_start", { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -122,19 +128,21 @@ const CarbonEmissions = () => {
   });
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">{t('carbonEmissions.title')}</h1><p className="text-muted-foreground">{t('carbonEmissions.totalEmissions')}</p></div>
-          <Button onClick={() => { setForm({ vehicle_id: "", co2_kg: 0, fuel_consumed_liters: 0, distance_km: 0, emission_source: "fuel_combustion", period_start: "", period_end: "", offset_credits: 0, notes: "" }); setErrors({}); setAddOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Add Record</Button>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-2xl font-bold">{t('carbonEmissions.title')}</h1><p className="text-muted-foreground">{t('carbonEmissions.totalEmissions')}</p></div>
+        <Button onClick={() => { setForm({ vehicle_id: "", co2_kg: 0, fuel_consumed_liters: 0, distance_km: 0, emission_source: "fuel_combustion", period_start: "", period_end: "", offset_credits: 0, notes: "" }); setErrors({}); setAddOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Add Record</Button>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Leaf className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{(totalCO2 / 1000).toFixed(1)}t</p><p className="text-sm text-muted-foreground">Total CO₂</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Droplets className="h-8 w-8 text-blue-500" /><div><p className="text-2xl font-bold">{totalFuel.toLocaleString()}L</p><p className="text-sm text-muted-foreground">Fuel Consumed</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><TrendingDown className="h-8 w-8 text-emerald-500" /><div><p className="text-2xl font-bold">{(totalOffset / 1000).toFixed(1)}t</p><p className="text-sm text-muted-foreground">Offset Credits</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><BarChart3 className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{(netEmissions / 1000).toFixed(1)}t</p><p className="text-sm text-muted-foreground">Net Emissions</p></div></div></CardContent></Card>
-        </div>
+      {/* Page-level date filter — drives KPIs, charts, and tables */}
+      <PageDateRangeFilter hint={t('common.dateRange', 'filters records by period start')} />
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Leaf className="h-8 w-8 text-success" /><div><p className="text-2xl font-bold">{(totalCO2 / 1000).toFixed(1)}t</p><p className="text-sm text-muted-foreground">Total CO₂</p></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Droplets className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{totalFuel.toLocaleString()}L</p><p className="text-sm text-muted-foreground">Fuel Consumed</p></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><TrendingDown className="h-8 w-8 text-success" /><div><p className="text-2xl font-bold">{(totalOffset / 1000).toFixed(1)}t</p><p className="text-sm text-muted-foreground">Offset Credits</p></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><BarChart3 className="h-8 w-8 text-warning" /><div><p className="text-2xl font-bold">{(netEmissions / 1000).toFixed(1)}t</p><p className="text-sm text-muted-foreground">Net Emissions</p></div></div></CardContent></Card>
+      </div>
 
         <Tabs defaultValue="overview">
           <TabsList><TabsTrigger value="overview">{t('common.overview', 'Overview')}</TabsTrigger><TabsTrigger value="vehicles">{t('emissions.byVehicle', 'By Vehicle')}</TabsTrigger><TabsTrigger value="sources">{t('emissions.bySource', 'By Source')}</TabsTrigger><TabsTrigger value="details">{t('common.details', 'Details')}</TabsTrigger></TabsList>
@@ -243,9 +251,17 @@ const CarbonEmissions = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </Layout>
+    </div>
   );
 };
 
+const CarbonEmissions = () => (
+  <Layout>
+    <PageDateRangeProvider>
+      <CarbonEmissionsInner />
+    </PageDateRangeProvider>
+  </Layout>
+);
+
 export default CarbonEmissions;
+
