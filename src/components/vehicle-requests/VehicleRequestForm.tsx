@@ -1177,7 +1177,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 { v: "project_operation", title: "Project Operation", desc: "Multi-day, project-coded assignment", icon: Layers },
                 { v: "field_operation", title: "Field Operation", desc: "Extended off-base or field deployment", icon: Route },
                 { v: "group_operation", title: "Group Operation", desc: "Shared trip for a group of passengers", icon: Users },
-                { v: "delivery_operation", title: "Delivery", desc: "Motorcycle courier — packages & documents", icon: Bike },
+                { v: "delivery_operation", title: "Motorist (Messenger) Service", desc: "Motorcycle courier — packages & documents", icon: Bike },
               ].map(({ v, title, desc, icon: Icon }) => {
                 const active = form.request_type === v;
                 return (
