@@ -168,8 +168,8 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
           )}
 
           <div>
-            <Label>Target Pool</Label>
-            <Select value={targetPool} onValueChange={setTargetPool}>
+            <Label>Target Pool *</Label>
+            <Select value={targetPool} onValueChange={handlePoolChange}>
               <SelectTrigger><SelectValue placeholder="Select target pool" /></SelectTrigger>
               <SelectContent>
                 {pools.filter((p: any) => p.name !== request.pool_name).map((p: any) => (
@@ -180,31 +180,65 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
           </div>
 
           <div>
-            <Label className="flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Vehicle</Label>
-            <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
-              <SelectTrigger><SelectValue placeholder="Select vehicle from another pool" /></SelectTrigger>
+            <Label className="flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Vehicle (from target pool)</Label>
+            <Select value={selectedVehicle} onValueChange={setSelectedVehicle} disabled={!targetPool}>
+              <SelectTrigger>
+                <SelectValue placeholder={targetPool ? "Select vehicle" : "Select target pool first"} />
+              </SelectTrigger>
               <SelectContent>
-                {otherPoolVehicles.slice(0, 30).map((v: any) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.plate_number} - {v.make} {v.model}
-                  </SelectItem>
-                ))}
+                {poolVehicles.length === 0 && targetPool && (
+                  <div className="px-2 py-3 text-xs text-muted-foreground">No vehicles in this pool</div>
+                )}
+                {poolVehicles.map((v: any) => {
+                  const st = vehicleStatusLabel(v.status);
+                  const busy = v.status !== "active";
+                  return (
+                    <SelectItem key={v.id} value={v.id} disabled={busy}>
+                      <div className="flex items-center justify-between gap-3 w-full">
+                        <span>{v.plate_number} — {v.make} {v.model}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${st.cls}`}>{st.label}</span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
+            {targetPool && poolVehicles.length > 0 && (
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {poolVehicles.filter((v: any) => v.status === "active").length} available · {poolVehicles.length} total in pool
+              </p>
+            )}
           </div>
 
           <div>
-            <Label>Driver *</Label>
-            <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-              <SelectTrigger><SelectValue placeholder="Select driver" /></SelectTrigger>
+            <Label>Driver (from target pool) *</Label>
+            <Select value={selectedDriver} onValueChange={setSelectedDriver} disabled={!targetPool}>
+              <SelectTrigger>
+                <SelectValue placeholder={targetPool ? "Select driver" : "Select target pool first"} />
+              </SelectTrigger>
               <SelectContent>
-                {drivers.map((d: any) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.first_name} {d.last_name}
-                  </SelectItem>
-                ))}
+                {poolDrivers.length === 0 && targetPool && (
+                  <div className="px-2 py-3 text-xs text-muted-foreground">No drivers in this pool</div>
+                )}
+                {poolDrivers.map((d: any) => {
+                  const st = driverStatusLabel(d.status);
+                  const busy = d.status !== "active";
+                  return (
+                    <SelectItem key={d.id} value={d.id} disabled={busy}>
+                      <div className="flex items-center justify-between gap-3 w-full">
+                        <span>{d.first_name} {d.last_name}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${st.cls}`}>{st.label}</span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
+            {targetPool && poolDrivers.length > 0 && (
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {poolDrivers.filter((d: any) => d.status === "active").length} available · {poolDrivers.length} total in pool
+              </p>
+            )}
           </div>
 
           <div>
