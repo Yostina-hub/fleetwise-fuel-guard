@@ -228,7 +228,12 @@ export const ReportTripIncidentDialog = ({
     mutationFn: async () => {
       if (!organizationId) throw new Error("Missing organization context");
 
-      const parsed = formSchema.parse({ reason, description });
+      const kmNum = kmReading.trim() === "" ? undefined : Number(kmReading);
+      const parsed = formSchema.parse({
+        reason,
+        description,
+        km_reading: kmNum,
+      });
       const meta = REASONS.find((r) => r.value === parsed.reason)!;
       const incidentNumber = `INC-${Date.now().toString().slice(-8)}`;
 
@@ -245,6 +250,7 @@ export const ReportTripIncidentDialog = ({
           severity: meta.severity,
           reason: parsed.reason,
           description: parsed.description,
+          km_reading: parsed.km_reading ?? null,
           location: location || null,
           incident_time: new Date().toISOString(),
           status: "open",
