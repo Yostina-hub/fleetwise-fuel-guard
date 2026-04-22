@@ -58,10 +58,17 @@ interface ActiveRequest {
   assigned_at?: string | null;
   driver_checked_in_at?: string | null;
   driver_checked_out_at?: string | null;
+  driver_checkin_odometer?: number | null;
+  driver_checkout_odometer?: number | null;
+  driver_checkin_notes?: string | null;
   assigned_vehicle_id?: string | null;
   rejection_reason?: string | null;
   rejected_at?: string | null;
   organization_id?: string | null;
+  requester_id?: string | null;
+  requester_name?: string | null;
+  passengers_count?: number | null;
+  number_of_passengers?: number | null;
   assigned_vehicle?: {
     id: string;
     plate_number: string;
@@ -155,7 +162,7 @@ export const DriverViewRequestDialog = ({
     const num = Number(parsed.data);
     // For check-out, ensure final reading is greater than the recorded check-in.
     if (kind === "out") {
-      const startRaw = (request as any)?.checkin_odometer;
+      const startRaw = request?.driver_checkin_odometer;
       const start = startRaw != null ? Number(startRaw) : null;
       if (start != null && Number.isFinite(start) && num <= start) {
         setOdoError(`Final odometer must be greater than starting (${start})`);
@@ -197,6 +204,47 @@ export const DriverViewRequestDialog = ({
     },
   });
 
+  // Hydrate latest request fields (requester, odometers, notes) so the
+  // dialog always reflects the DB regardless of what the caller passed in.
+  const { data: hydrated } = useQuery({
+    queryKey: ["driver-portal-request-hydrate", request?.id],
+    enabled: !!request?.id && open,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          "id, requester_id, requester_name, passengers_count, number_of_passengers, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes",
+        )
+        .eq("id", request!.id)
+        .maybeSingle();
+      return data || null;
+    },
+  });
+
+  const requesterId = hydrated?.requester_id ?? request?.requester_id ?? null;
+  const requesterNameDirect = hydrated?.requester_name ?? request?.requester_name ?? null;
+  const passengers =
+    hydrated?.passengers_count ?? hydrated?.number_of_passengers ??
+    request?.passengers_count ?? request?.number_of_passengers ?? null;
+
+  // Resolve the requester display name from profiles when only an id is stored.
+  const { data: requesterProfile } = useQuery({
+    queryKey: ["driver-portal-requester-profile", requesterId],
+    enabled: !!requesterId && !requesterNameDirect && open,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("full_name, email, phone")
+        .eq("id", requesterId)
+        .maybeSingle();
+      return data || null;
+    },
+  });
+
+  const requesterName =
+    requesterNameDirect || requesterProfile?.full_name || requesterProfile?.email || null;
+  const requesterContact = requesterProfile?.phone || requesterProfile?.email || null;
+
   const checkIn = useMutation({
     mutationFn: async () => {
       if (!request) throw new Error("No request");
@@ -208,8 +256,8 @@ export const DriverViewRequestDialog = ({
         .from("vehicle_requests")
         .update({
           driver_checked_in_at: new Date().toISOString(),
-          checkin_odometer: odo,
-          checkin_notes: cleanedNotes || null,
+          driver_checkin_odometer: odo,
+          driver_checkin_notes: cleanedNotes || null,
           status: "in_progress",
         })
         .eq("id", request.id);
@@ -248,7 +296,7 @@ export const DriverViewRequestDialog = ({
         .from("vehicle_requests")
         .update({
           driver_checked_out_at: new Date().toISOString(),
-          checkout_odometer: odo,
+          driver_checkout_odometer: odo,
           status: "completed",
           completed_at: new Date().toISOString(),
         })
@@ -329,6 +377,20 @@ export const DriverViewRequestDialog = ({
 
         {/* Trip details */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <Field
+            icon={UserCheck}
+            label="Requester"
+            value={
+              requesterName
+                ? requesterContact
+                  ? `${requesterName} · ${requesterContact}`
+                  : requesterName
+                : null
+            }
+          />
+          {passengers != null && (
+            <Field icon={Users} label="Passengers" value={String(passengers)} />
+          )}
           <Field icon={FileText} label="Purpose" value={request.purpose} />
           <Field icon={MapPin} label="Destination" value={request.destination} />
           <Field
