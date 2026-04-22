@@ -538,7 +538,7 @@ export function ConfirmAndRateDialog({
               <Button
                 type="button"
                 size="sm"
-                disabled={!canConfirm}
+                disabled={!canConfirm || isImpersonating}
                 onClick={() => confirmMutation.mutate()}
                 className="min-w-[180px]"
               >
@@ -569,7 +569,7 @@ export function ConfirmAndRateDialog({
               <Button
                 type="button"
                 size="sm"
-                disabled={rateMutation.isPending}
+                disabled={rateMutation.isPending || isImpersonating}
                 onClick={() => rateMutation.mutate()}
                 className="min-w-[180px]"
               >
