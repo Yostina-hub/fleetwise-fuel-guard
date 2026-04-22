@@ -56,6 +56,12 @@ export function RouteMapPreview({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const [ready, setReady] = useState(false);
+  // Real driving route (fetched from OSRM). null = not loaded / falls back to straight line.
+  const [routeGeometry, setRouteGeometry] = useState<[number, number][] | null>(null);
+  const [routeKm, setRouteKm] = useState<number | null>(null);
+  const [routeMin, setRouteMin] = useState<number | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [routeFailed, setRouteFailed] = useState(false);
 
   // Build the ordered list of valid points
   const orderedPoints: Array<RoutePoint & { kind: "departure" | "stop" | "destination"; index?: number }> = [];
@@ -71,12 +77,59 @@ export function RouteMapPreview({
     orderedPoints.push({ ...destination, kind: "destination" });
   }
 
-  // Total estimated distance (sum of leg straight-line distances)
+  // Total estimated straight-line distance (used as fallback when routing unavailable)
   const totalKm = orderedPoints.reduce((sum, _p, i) => {
     if (i === 0) return 0;
     const d = haversineKm(orderedPoints[i - 1], orderedPoints[i]);
     return d != null ? sum + d : sum;
   }, 0);
+
+  // Fetch the real driving route from OSRM whenever the ordered points change.
+  // OSRM public demo server: https://router.project-osrm.org
+  // Returns full geometry (geojson) so we can draw the actual road path.
+  useEffect(() => {
+    const valid = orderedPoints.filter((p) => p.lat != null && p.lng != null);
+    if (valid.length < 2) {
+      setRouteGeometry(null);
+      setRouteKm(null);
+      setRouteMin(null);
+      setRouteFailed(false);
+      return;
+    }
+    const coordsParam = valid.map((p) => `${p.lng},${p.lat}`).join(";");
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordsParam}?overview=full&geometries=geojson`;
+    const controller = new AbortController();
+    setRouteLoading(true);
+    setRouteFailed(false);
+    fetch(url, { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`OSRM ${r.status}`))))
+      .then((json) => {
+        const route = json?.routes?.[0];
+        const coords: [number, number][] | undefined = route?.geometry?.coordinates;
+        if (coords && coords.length >= 2) {
+          setRouteGeometry(coords);
+          setRouteKm(route.distance ? route.distance / 1000 : null);
+          setRouteMin(route.duration ? route.duration / 60 : null);
+        } else {
+          setRouteGeometry(null);
+          setRouteFailed(true);
+        }
+      })
+      .catch(() => {
+        setRouteGeometry(null);
+        setRouteFailed(true);
+      })
+      .finally(() => setRouteLoading(false));
+
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    departure?.lat,
+    departure?.lng,
+    destination?.lat,
+    destination?.lng,
+    JSON.stringify(stops?.map((s) => [s.lat, s.lng])),
+  ]);
 
   // Init map once
   useEffect(() => {
