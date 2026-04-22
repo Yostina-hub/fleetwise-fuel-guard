@@ -2004,14 +2004,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 maxLength={1000}
               />
             </VRField>
-            <div className="rounded-lg border border-border bg-gradient-to-br from-muted/50 to-muted/20 p-4 text-xs text-muted-foreground space-y-2">
-              <p className="font-medium text-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Approval Routing</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1">
-                <div className="rounded-md bg-background/60 border border-border/50 p-2"><span className="font-medium text-foreground">≤15 days</span> → Immediate Manager</div>
-                <div className="rounded-md bg-background/60 border border-border/50 p-2"><span className="font-medium text-foreground">&gt;15 days</span> → Director</div>
-                <div className="rounded-md bg-background/60 border border-border/50 p-2"><span className="font-medium text-foreground">Managers+</span> → Auto-approved</div>
-              </div>
-            </div>
+            {/* Approval Routing block intentionally removed — routing is handled
+                automatically server-side via route_vehicle_request_approval and
+                surfaced to approvers in their own queue. */}
           </section>
         </div>
       </div>
