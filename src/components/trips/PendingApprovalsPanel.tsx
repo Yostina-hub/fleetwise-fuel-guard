@@ -26,6 +26,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { notifyRequesterDecisionSms, getAppUrl } from "@/services/vehicleRequestSmsService";
+import { notifyFleetOpsRequestApproved } from "@/services/fleetApprovalPushService";
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
 
 const PRIORITY_STYLES: Record<string, string> = {
@@ -180,6 +181,19 @@ export const PendingApprovalsPanel = () => {
           }
         } catch (e) {
           console.warn("SMS notify failed for", req.request_number, e);
+        }
+
+        // 4. Push notify fleet operators / fleet managers on approval (best effort)
+        if (decision === "approved") {
+          await notifyFleetOpsRequestApproved({
+            organizationId: req.organization_id,
+            requestNumber: req.request_number,
+            requesterName: req.requester_name || req.requester?.full_name,
+            departure: req.departure_place,
+            destination: req.destination,
+            neededFrom: req.needed_from,
+            requestId: id,
+          });
         }
       }
     },

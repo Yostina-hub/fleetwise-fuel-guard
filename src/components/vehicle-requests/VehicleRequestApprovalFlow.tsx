@@ -32,6 +32,7 @@ const fmtOrgTime = (iso?: string | null, opts: Intl.DateTimeFormatOptions = {
 };
 import { sendDispatchSms } from "@/services/smsNotificationService";
 import { notifyRequesterDecisionSms, notifyAssignmentSms, getAppUrl } from "@/services/vehicleRequestSmsService";
+import { notifyFleetOpsRequestApproved } from "@/services/fleetApprovalPushService";
 import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
 import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetList";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
@@ -147,6 +148,17 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       } catch (e) {
         console.error("Approval SMS error:", e);
       }
+
+      // Push notify fleet operators / fleet managers (best effort)
+      await notifyFleetOpsRequestApproved({
+        organizationId: request.organization_id,
+        requestNumber: request.request_number,
+        requesterName: request.requester_name,
+        departure: request.departure_place,
+        destination: request.destination,
+        neededFrom: request.needed_from,
+        requestId: request.id,
+      });
     },
     onSuccess: () => {
       toast.success("Request approved");
