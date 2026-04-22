@@ -514,6 +514,11 @@ const RBACManagement = () => {
             </Card>
           </TabsContent>
 
+          {/* User Overrides Tab */}
+          <TabsContent value="overrides" className="mt-4">
+            <UserOverridesTab />
+          </TabsContent>
+
           {/* Location Access Tab */}
           <TabsContent value="location" className="mt-4 space-y-4">
             <Card className="glass-strong">
