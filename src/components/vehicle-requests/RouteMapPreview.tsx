@@ -172,6 +172,9 @@ export function RouteMapPreview({
   const [routeMin, setRouteMin] = useState<number | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeFailed, setRouteFailed] = useState(false);
+  // Per-leg distance/duration returned by the routing engine. legs[i] is the
+  // segment FROM orderedPoints[i] TO orderedPoints[i+1].
+  const [routeLegs, setRouteLegs] = useState<{ distance_m: number; duration_s: number }[]>([]);
 
   // Build the ordered list of valid points
   const orderedPoints: Array<RoutePoint & { kind: "departure" | "stop" | "destination"; index?: number }> = [];
@@ -219,15 +222,25 @@ export function RouteMapPreview({
         if (controller.signal.aborted) return;
         if (error || !data?.ok || !Array.isArray(data?.geometry) || data.geometry.length < 2) {
           setRouteGeometry(null);
+          setRouteLegs([]);
           setRouteFailed(true);
           return;
         }
         setRouteGeometry(data.geometry as [number, number][]);
         setRouteKm(typeof data.distance_m === "number" ? data.distance_m / 1000 : null);
         setRouteMin(typeof data.duration_s === "number" ? data.duration_s / 60 : null);
+        setRouteLegs(
+          Array.isArray(data.legs)
+            ? data.legs.map((l: any) => ({
+                distance_m: Number(l?.distance_m) || 0,
+                duration_s: Number(l?.duration_s) || 0,
+              }))
+            : [],
+        );
       } catch {
         if (!controller.signal.aborted) {
           setRouteGeometry(null);
+          setRouteLegs([]);
           setRouteFailed(true);
         }
       } finally {
