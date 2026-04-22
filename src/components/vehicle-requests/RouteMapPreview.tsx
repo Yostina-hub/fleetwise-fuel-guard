@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getPreviewSafeMapStyle } from "@/lib/lemat";
+import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Route, Ruler } from "lucide-react";
 
@@ -84,9 +85,9 @@ export function RouteMapPreview({
     return d != null ? sum + d : sum;
   }, 0);
 
-  // Fetch the real driving route from OSRM whenever the ordered points change.
-  // OSRM public demo server: https://router.project-osrm.org
-  // Returns full geometry (geojson) so we can draw the actual road path.
+  // Fetch the real driving route via the `route-directions` edge function.
+  // The function proxies OSRM server-side so we avoid browser CORS / mixed-content
+  // issues that block calls from the Lovable preview origin.
   useEffect(() => {
     const valid = orderedPoints.filter((p) => p.lat != null && p.lng != null);
     if (valid.length < 2) {
@@ -96,30 +97,34 @@ export function RouteMapPreview({
       setRouteFailed(false);
       return;
     }
-    const coordsParam = valid.map((p) => `${p.lng},${p.lat}`).join(";");
-    const url = `https://router.project-osrm.org/route/v1/driving/${coordsParam}?overview=full&geometries=geojson`;
+    const coordinates = valid.map((p) => [p.lng as number, p.lat as number]);
     const controller = new AbortController();
     setRouteLoading(true);
     setRouteFailed(false);
-    fetch(url, { signal: controller.signal })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`OSRM ${r.status}`))))
-      .then((json) => {
-        const route = json?.routes?.[0];
-        const coords: [number, number][] | undefined = route?.geometry?.coordinates;
-        if (coords && coords.length >= 2) {
-          setRouteGeometry(coords);
-          setRouteKm(route.distance ? route.distance / 1000 : null);
-          setRouteMin(route.duration ? route.duration / 60 : null);
-        } else {
+
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("route-directions", {
+          body: { coordinates },
+        });
+        if (controller.signal.aborted) return;
+        if (error || !data?.ok || !Array.isArray(data?.geometry) || data.geometry.length < 2) {
+          setRouteGeometry(null);
+          setRouteFailed(true);
+          return;
+        }
+        setRouteGeometry(data.geometry as [number, number][]);
+        setRouteKm(typeof data.distance_m === "number" ? data.distance_m / 1000 : null);
+        setRouteMin(typeof data.duration_s === "number" ? data.duration_s / 60 : null);
+      } catch {
+        if (!controller.signal.aborted) {
           setRouteGeometry(null);
           setRouteFailed(true);
         }
-      })
-      .catch(() => {
-        setRouteGeometry(null);
-        setRouteFailed(true);
-      })
-      .finally(() => setRouteLoading(false));
+      } finally {
+        if (!controller.signal.aborted) setRouteLoading(false);
+      }
+    })();
 
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
