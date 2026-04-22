@@ -1224,7 +1224,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 { v: "project_operation", title: "Project Operation", desc: "Multi-day, project-coded assignment", icon: Layers },
                 { v: "field_operation", title: "Field Operation", desc: "Extended off-base or field deployment", icon: Route },
                 { v: "group_operation", title: "Group Operation", desc: "Shared trip for a group of passengers", icon: Users },
-                { v: "delivery_operation", title: "Motorist (Messenger) Service", desc: "Motorcycle courier — packages & documents", icon: Bike },
+                { v: "messenger_service", title: "Messenger Service", desc: "Motorcycle courier — packages & documents", icon: Bike },
               ].map(({ v, title, desc, icon: Icon }) => {
                 const active = form.request_type === v;
                 return (
@@ -1448,6 +1448,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 iconColor="text-red-500"
               />
             </div>
+            {/* Combined route preview map — A → numbered stops → B */}
+            <RouteMapPreview
+              departure={{ lat: form.departure_lat, lng: form.departure_lng, label: form.departure_place }}
+              destination={{ lat: form.destination_lat, lng: form.destination_lng, label: form.destination }}
+              stops={form.stops.map((s) => ({ lat: s.lat, lng: s.lng, label: s.name }))}
+            />
             {/* Coordinate previews intentionally removed — the map picker
                 already auto-fills a human-readable place name, and showing
                 raw lat/lng under the route fields looked unprofessional. */}
