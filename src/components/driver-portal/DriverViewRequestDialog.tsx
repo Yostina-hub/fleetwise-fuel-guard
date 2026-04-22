@@ -162,7 +162,7 @@ export const DriverViewRequestDialog = ({
     const num = Number(parsed.data);
     // For check-out, ensure final reading is greater than the recorded check-in.
     if (kind === "out") {
-      const startRaw = (request as any)?.checkin_odometer;
+      const startRaw = request?.driver_checkin_odometer;
       const start = startRaw != null ? Number(startRaw) : null;
       if (start != null && Number.isFinite(start) && num <= start) {
         setOdoError(`Final odometer must be greater than starting (${start})`);
