@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { buildCorsHeaders, handleCorsPreflightRequest, secureJsonResponse } from "../_shared/cors.ts";
 import { checkRateLimit, rateLimitResponse, getClientId } from "../_shared/rate-limiter.ts";
 
@@ -53,34 +52,9 @@ serve(async (req) => {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 60, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Missing backend credentials", {
-        hasSupabaseUrl: Boolean(supabaseUrl),
-        hasServiceRoleKey: Boolean(supabaseServiceKey),
-      });
-      return secureJsonResponse({ error: "Server configuration error" }, req, 500);
-    }
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return secureJsonResponse({ error: "Missing authorization header" }, req, 401);
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? supabaseServiceKey;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-    const { data: userData, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !userData?.user) {
-      console.error("Auth verification failed:", authError);
-      return secureJsonResponse({ error: "Unauthorized" }, req, 401);
-    }
-
     const lematApiKey = Deno.env.get("LEMAT_API_KEY");
     if (!lematApiKey) {
+      console.error("Missing LEMAT_API_KEY for reverse geocoding");
       return secureJsonResponse({ error: "Lemat API key not configured" }, req, 500);
     }
 
@@ -94,6 +68,7 @@ serve(async (req) => {
 
     const latNum = parseFloat(lat);
     const lonNum = parseFloat(lon);
+
     if (!isFinite(latNum) || !isFinite(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
       return secureJsonResponse({ error: "Invalid coordinates" }, req, 400);
     }
@@ -107,6 +82,7 @@ serve(async (req) => {
       if (!lematRes.ok) {
         const body = await lematRes.text();
         console.error("Lemat reverse-geocode error:", lematRes.status, body);
+
         return secureJsonResponse(
           {
             ...fallbackResponse,
@@ -137,6 +113,13 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error("Error in lemat-reverse-geocode:", error);
-    return secureJsonResponse({ error: "Internal server error" }, req, 500);
+    return secureJsonResponse({
+      display_name: null,
+      name: null,
+      address: {},
+      fallback: true,
+      fallback_reason: "internal_error",
+      error: "Internal server error",
+    }, req);
   }
 });
