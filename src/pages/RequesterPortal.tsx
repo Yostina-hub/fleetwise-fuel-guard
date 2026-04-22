@@ -624,13 +624,14 @@ function RequestList({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-xs">
-                <SortHeader label="Request #"   field="request_number" />
-                <SortHeader label="Type"        field="request_type" />
-                <SortHeader label="Purpose"     field="purpose" />
-                <SortHeader label="Route"       field="route" />
-                <SortHeader label="Needed From" field="needed_from" />
-                <SortHeader label="Vehicle"     field="vehicle" />
-                <SortHeader label="Status"      field="status" align="center" />
+                <SortHeader label="Request #"    field="request_number" />
+                <SortHeader label="Type"         field="request_type" />
+                <SortHeader label="Purpose"      field="purpose" />
+                <SortHeader label="Route"        field="route" />
+                <SortHeader label="Needed From"  field="needed_from" />
+                <SortHeader label="Needed Until" field="needed_until" />
+                <SortHeader label="Vehicle"      field="vehicle" />
+                <SortHeader label="Status"       field="status" align="center" />
                 <th className="text-center py-2 px-3 text-muted-foreground">Actions</th>
               </tr>
             </thead>
