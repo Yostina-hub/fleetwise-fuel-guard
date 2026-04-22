@@ -16,6 +16,7 @@ import {
 export function useVehicleRequestValidation() {
   const [errors, setErrors] = useState<Partial<Record<VRFieldName, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<VRFieldName, boolean>>>({});
+  const [showAllErrors, setShowAllErrors] = useState(false);
 
   const validateField = useCallback(
     (field: VRFieldName, value: unknown, ctx: Partial<VRFormValues> = {}) => {
@@ -50,6 +51,7 @@ export function useVehicleRequestValidation() {
   const validateAll = useCallback((values: VRFormValues) => {
     const result = validateVehicleRequestForm(values);
     setErrors(result.errors);
+    setShowAllErrors(true);
     setTouched((prev) => {
       const next = { ...prev };
       Object.keys(result.errors).forEach((k) => {
@@ -63,12 +65,13 @@ export function useVehicleRequestValidation() {
   const reset = useCallback(() => {
     setErrors({});
     setTouched({});
+    setShowAllErrors(false);
   }, []);
 
   const getError = useCallback(
     (field: VRFieldName): string | undefined =>
-      touched[field] ? errors[field] : undefined,
-    [errors, touched],
+      touched[field] || showAllErrors ? errors[field] : undefined,
+    [errors, touched, showAllErrors],
   );
 
   const errorCount = Object.keys(errors).length;
@@ -76,6 +79,7 @@ export function useVehicleRequestValidation() {
   return {
     errors,
     touched,
+    showAllErrors,
     errorCount,
     validateField,
     handleBlur,
