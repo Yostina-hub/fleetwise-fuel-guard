@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, ArrowRight, Truck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Truck } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -16,9 +16,10 @@ interface Props {
   request: any;
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
 }
 
-export const CrossPoolAssignmentDialog = ({ request, open, onClose }: Props) => {
+export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Props) => {
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
   const queryClient = useQueryClient();
@@ -170,15 +171,22 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose }: Props) => 
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button
-            onClick={() => assignMutation.mutate()}
-            disabled={!selectedVehicle || !selectedDriver || !reason.trim() || assignMutation.isPending}
-            className="bg-amber-600 hover:bg-amber-700"
-          >
-            {assignMutation.isPending ? "Assigning..." : "Assign Cross-Pool"}
-          </Button>
+        <DialogFooter className="gap-2 sm:justify-between">
+          {onBack ? (
+            <Button variant="ghost" onClick={onBack}>
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back to details
+            </Button>
+          ) : <span />}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button
+              onClick={() => assignMutation.mutate()}
+              disabled={!selectedVehicle || !selectedDriver || !reason.trim() || assignMutation.isPending}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              {assignMutation.isPending ? "Assigning..." : "Assign Cross-Pool"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
