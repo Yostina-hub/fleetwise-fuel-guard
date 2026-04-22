@@ -514,6 +514,39 @@ export function RouteMapPreview({
           </Badge>
         </div>
       )}
+
+      {/* Per-segment breakdown — appears whenever the routing engine returned
+          more than one leg (i.e., at least one intermediate stop). */}
+      {hasAny && routeLegs.length >= 2 && routeLegs.length === orderedPoints.length - 1 && (
+        <div className="absolute bottom-2 left-2 max-w-[60%]">
+          <div className="rounded-md border bg-background/90 backdrop-blur shadow-sm px-2.5 py-1.5 text-[11px] space-y-1">
+            <div className="font-semibold text-foreground flex items-center gap-1">
+              <Route className="w-3 h-3 text-primary" /> Segments
+            </div>
+            <div className="space-y-0.5">
+              {routeLegs.map((leg, i) => {
+                const from = getPointLabel(orderedPoints[i]);
+                const to = getPointLabel(orderedPoints[i + 1]);
+                const km = formatKm(leg.distance_m / 1000);
+                const min = formatMin(leg.duration_s / 60);
+                return (
+                  <div key={i} className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold text-white bg-primary/80 shrink-0">
+                      {i + 1}
+                    </span>
+                    <span className="truncate text-foreground/90" title={`${from} → ${to}`}>
+                      {from} → {to}
+                    </span>
+                    <span className="ml-auto pl-2 font-medium text-foreground whitespace-nowrap">
+                      {km}{min ? ` · ${min}` : ""}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
