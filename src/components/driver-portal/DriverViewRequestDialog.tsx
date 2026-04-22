@@ -17,7 +17,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import {
-  sanitizeNumeric,
   sanitizeWhileTyping,
   inputStatusClass,
 } from "@/components/fleet/formSanitizers";
@@ -142,9 +141,7 @@ export const DriverViewRequestDialog = ({
   onRequestFuel,
 }: Props) => {
   const queryClient = useQueryClient();
-  const [odometer, setOdometer] = useState("");
   const [notes, setNotes] = useState("");
-  const [odoError, setOdoError] = useState<string | null>(null);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [navMapOpen, setNavMapOpen] = useState(false);
 
@@ -152,35 +149,7 @@ export const DriverViewRequestDialog = ({
   const checkedOut = !!request?.driver_checked_out_at;
 
   // ---- Validation schemas ----
-  // Odometer: required positive integer up to 9,999,999 km. Notes: optional, max 500.
-  const odometerSchema = z
-    .string()
-    .trim()
-    .min(1, "Odometer reading is required")
-    .regex(/^\d+(\.\d{1,2})?$/, "Enter a valid number (e.g. 45200 or 45200.5)")
-    .refine((v) => Number(v) > 0, "Odometer must be greater than 0")
-    .refine((v) => Number(v) <= 9_999_999, "Odometer seems too high");
   const notesSchema = z.string().trim().max(500, "Notes must be 500 characters or less");
-
-  const validateOdometer = (val: string, kind: "in" | "out"): number | null => {
-    const parsed = odometerSchema.safeParse(val);
-    if (!parsed.success) {
-      setOdoError(parsed.error.issues[0]?.message ?? "Invalid odometer");
-      return null;
-    }
-    const num = Number(parsed.data);
-    // For check-out, ensure final reading is greater than the recorded check-in.
-    if (kind === "out") {
-      const startRaw = request?.driver_checkin_odometer;
-      const start = startRaw != null ? Number(startRaw) : null;
-      if (start != null && Number.isFinite(start) && num <= start) {
-        setOdoError(`Final odometer must be greater than starting (${start})`);
-        return null;
-      }
-    }
-    setOdoError(null);
-    return num;
-  };
 
   const validateNotes = (val: string): string | null => {
     const parsed = notesSchema.safeParse(val);
@@ -309,15 +278,12 @@ export const DriverViewRequestDialog = ({
   const checkIn = useMutation({
     mutationFn: async () => {
       if (!request) throw new Error("No request");
-      const odo = validateOdometer(odometer, "in");
       const cleanedNotes = validateNotes(notes);
-      if (odo == null) throw new Error("Please enter a valid odometer reading");
       if (notes && cleanedNotes == null) throw new Error("Please fix the notes field");
       const { error } = await (supabase as any)
         .from("vehicle_requests")
         .update({
           driver_checked_in_at: new Date().toISOString(),
-          driver_checkin_odometer: odo,
           driver_checkin_notes: cleanedNotes || null,
           status: "in_progress",
         })
@@ -339,9 +305,7 @@ export const DriverViewRequestDialog = ({
     },
     onSuccess: () => {
       toast.success("Checked in — drive safely!");
-      setOdometer("");
       setNotes("");
-      setOdoError(null);
       setNotesError(null);
       refresh();
     },
@@ -351,13 +315,10 @@ export const DriverViewRequestDialog = ({
   const checkOut = useMutation({
     mutationFn: async () => {
       if (!request) throw new Error("No request");
-      const odo = validateOdometer(odometer, "out");
-      if (odo == null) throw new Error(odoError || "Please enter a valid final odometer");
       const { error } = await (supabase as any)
         .from("vehicle_requests")
         .update({
           driver_checked_out_at: new Date().toISOString(),
-          driver_checkout_odometer: odo,
           status: "completed",
           completed_at: new Date().toISOString(),
         })
@@ -379,9 +340,7 @@ export const DriverViewRequestDialog = ({
     },
     onSuccess: () => {
       toast.success("Checked out — trip completed");
-      setOdometer("");
       setNotes("");
-      setOdoError(null);
       setNotesError(null);
       refresh();
       onClose();
@@ -416,7 +375,6 @@ export const DriverViewRequestDialog = ({
         .from("vehicle_requests")
         .update({
           driver_checked_in_at: null,
-          driver_checkin_odometer: null,
           driver_checkin_notes: null,
           status: "assigned",
         })
@@ -438,9 +396,7 @@ export const DriverViewRequestDialog = ({
     },
     onSuccess: () => {
       toast.success("Check-in undone");
-      setOdometer("");
       setNotes("");
-      setOdoError(null);
       setNotesError(null);
       refresh();
     },
@@ -694,53 +650,30 @@ export const DriverViewRequestDialog = ({
                   <p className="text-sm font-medium flex items-center gap-1.5">
                     <PlayCircle className="w-4 h-4 text-success" /> Check In
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs">Odometer (km)</Label>
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        value={odometer}
-                        onChange={(e) => {
-                          const v = sanitizeNumeric(e.target.value);
-                          setOdometer(v);
-                          if (v) validateOdometer(v, "in");
-                          else setOdoError(null);
-                        }}
-                        onBlur={() => odometer && validateOdometer(odometer, "in")}
-                        placeholder="e.g. 45200"
-                        aria-invalid={!!odoError}
-                        className={inputStatusClass(odoError ? "error" : odometer ? "success" : "neutral")}
-                      />
-                      {odoError && (
-                        <p className="text-xs text-destructive mt-1">{odoError}</p>
-                      )}
-                    </div>
-                    <div>
-                      <Label className="text-xs">Notes (optional)</Label>
-                      <Textarea
-                        value={notes}
-                        onChange={(e) => {
-                          const v = sanitizeWhileTyping(e.target.value).slice(0, 500);
-                          setNotes(v);
-                          if (v) validateNotes(v);
-                          else setNotesError(null);
-                        }}
-                        rows={1}
-                        maxLength={500}
-                        placeholder="Vehicle condition…"
-                        aria-invalid={!!notesError}
-                        className={inputStatusClass(notesError ? "error" : "neutral")}
-                      />
-                      {notesError && (
-                        <p className="text-xs text-destructive mt-1">{notesError}</p>
-                      )}
-                    </div>
+                  <div>
+                    <Label className="text-xs">Notes (optional)</Label>
+                    <Textarea
+                      value={notes}
+                      onChange={(e) => {
+                        const v = sanitizeWhileTyping(e.target.value).slice(0, 500);
+                        setNotes(v);
+                        if (v) validateNotes(v);
+                        else setNotesError(null);
+                      }}
+                      rows={2}
+                      maxLength={500}
+                      placeholder="Vehicle condition…"
+                      aria-invalid={!!notesError}
+                      className={inputStatusClass(notesError ? "error" : "neutral")}
+                    />
+                    {notesError && (
+                      <p className="text-xs text-destructive mt-1">{notesError}</p>
+                    )}
                   </div>
                   <Button
                     className="w-full gap-2"
                     onClick={() => checkIn.mutate()}
-                    disabled={checkIn.isPending || !!odoError || !!notesError || !odometer}
+                    disabled={checkIn.isPending || !!notesError}
                   >
                     <PlayCircle className="w-4 h-4" />
                     {checkIn.isPending ? "Checking in…" : "Check In Now"}
@@ -797,31 +730,10 @@ export const DriverViewRequestDialog = ({
                   <p className="text-sm font-medium flex items-center gap-1.5">
                     <StopCircle className="w-4 h-4 text-warning" /> Check Out
                   </p>
-                  <div>
-                    <Label className="text-xs">Final Odometer (km)</Label>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={odometer}
-                      onChange={(e) => {
-                        const v = sanitizeNumeric(e.target.value);
-                        setOdometer(v);
-                        if (v) validateOdometer(v, "out");
-                        else setOdoError(null);
-                      }}
-                      onBlur={() => odometer && validateOdometer(odometer, "out")}
-                      placeholder="e.g. 45360"
-                      aria-invalid={!!odoError}
-                      className={inputStatusClass(odoError ? "error" : odometer ? "success" : "neutral")}
-                    />
-                    {odoError && (
-                      <p className="text-xs text-destructive mt-1">{odoError}</p>
-                    )}
-                  </div>
                   <Button
                     className="w-full gap-2 bg-warning hover:bg-warning/90"
                     onClick={() => checkOut.mutate()}
-                    disabled={checkOut.isPending || !!odoError || !odometer}
+                    disabled={checkOut.isPending}
                   >
                     <StopCircle className="w-4 h-4" />
                     {checkOut.isPending ? "Checking out…" : "Check Out & Complete Trip"}
