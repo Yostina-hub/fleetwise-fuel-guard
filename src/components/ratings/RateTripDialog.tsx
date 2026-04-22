@@ -54,6 +54,7 @@ const STEPS = [
 
 export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDialogProps) {
   const qc = useQueryClient();
+  const { isImpersonating } = useAuth();
   const [step, setStep] = React.useState<Step>(0);
   const [driver, setDriver] = React.useState(0);
   const [vehicle, setVehicle] = React.useState(0);
@@ -77,6 +78,11 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
   const submit = useMutation({
     mutationFn: async () => {
       if (!trip) throw new Error("No trip selected");
+      if (isImpersonating) {
+        throw new Error(
+          "Impersonation mode is read-only for ratings. Stop impersonating to rate this trip as the requester.",
+        );
+      }
       const {
         data: { user },
       } = await supabase.auth.getUser();
