@@ -267,46 +267,65 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-2 px-6 py-4 border-t border-border/50 bg-muted/20">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={step === 0 || submit.isPending}
-            onClick={() => setStep((s) => (s > 0 ? ((s - 1) as Step) : s))}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          {step < 3 ? (
-            <Button
-              type="button"
-              size="sm"
-              disabled={!canProceed}
-              onClick={() => setStep((s) => ((s + 1) as Step))}
-            >
-              Continue
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
+          {step === 4 ? (
+            <>
+              <span className="text-xs text-muted-foreground">
+                You can update this rating any time from this trip's details.
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="min-w-[100px]"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Done
+              </Button>
+            </>
           ) : (
-            <Button
-              type="button"
-              size="sm"
-              disabled={submit.isPending || !canProceed}
-              onClick={() => submit.mutate()}
-              className="min-w-[140px]"
-            >
-              {submit.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Submitting…
-                </>
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={step === 0 || submit.isPending}
+                onClick={() => setStep((s) => (s > 0 ? ((s - 1) as Step) : s))}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+              {step < 3 ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!canProceed}
+                  onClick={() => setStep((s) => ((s + 1) as Step))}
+                >
+                  Continue
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Submit rating
-                </>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={submit.isPending || !canProceed}
+                  onClick={() => submit.mutate()}
+                  className="min-w-[140px]"
+                >
+                  {submit.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Submitting…
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Submit rating
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
+            </>
           )}
         </div>
       </DialogContent>
