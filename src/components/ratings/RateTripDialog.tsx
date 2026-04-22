@@ -33,7 +33,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { StarRating } from "./StarRating";
 import type { PendingRatingTrip } from "@/hooks/usePendingRatings";
 
@@ -54,7 +53,6 @@ const STEPS = [
 
 export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDialogProps) {
   const qc = useQueryClient();
-  const { isImpersonating } = useAuth();
   const [step, setStep] = React.useState<Step>(0);
   const [driver, setDriver] = React.useState(0);
   const [vehicle, setVehicle] = React.useState(0);
@@ -78,15 +76,10 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
   const submit = useMutation({
     mutationFn: async () => {
       if (!trip) throw new Error("No trip selected");
-      if (isImpersonating) {
-        throw new Error(
-          "Impersonation mode is read-only for ratings. Stop impersonating to rate this trip as the requester.",
-        );
-      }
       const {
-        data: { user },
+        data: { user: authUser },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!authUser) throw new Error("Not authenticated");
 
       const { data: requestRow, error: requestError } = await (supabase as any)
         .from("vehicle_requests")
@@ -96,14 +89,14 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
 
       if (requestError) throw requestError;
       if (!requestRow) throw new Error("Trip not found");
-      if (requestRow.requester_id !== user.id) {
+      if (requestRow.requester_id !== authUser.id) {
         throw new Error("You can only rate your own trip.");
       }
 
       const payload = {
         organization_id: requestRow.organization_id,
         vehicle_request_id: trip.id,
-        rated_by: user.id,
+        rated_by: authUser.id,
         driver_id: requestRow.assigned_driver_id ?? trip.assigned_driver_id ?? null,
         vehicle_id: requestRow.assigned_vehicle_id ?? trip.assigned_vehicle_id ?? null,
         driver_score: driver,
@@ -119,7 +112,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
         .from("vehicle_request_ratings")
         .select("id")
         .eq("vehicle_request_id", trip.id)
-        .eq("rated_by", user.id)
+        .eq("rated_by", authUser.id)
         .maybeSingle();
 
       if (existingRatingError) throw existingRatingError;
@@ -129,7 +122,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
             .from("vehicle_request_ratings")
             .update(payload)
             .eq("id", existingRating.id)
-            .eq("rated_by", user.id)
+            .eq("rated_by", authUser.id)
         : await (supabase as any)
             .from("vehicle_request_ratings")
             .insert(payload);
@@ -143,7 +136,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
           requester_feedback: comment.trim() || null,
         })
         .eq("id", trip.id)
-        .eq("requester_id", user.id);
+        .eq("requester_id", authUser.id);
 
       if (requestUpdateError) throw requestUpdateError;
     },
@@ -220,15 +213,6 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
 
         {/* Body */}
         <div className="px-6 py-6 min-h-[260px] flex flex-col">
-          {isImpersonating && step !== 4 && (
-            <div className="mb-4 rounded-md border border-warning/40 bg-warning/10 p-3 flex items-start gap-2 text-xs text-warning-foreground">
-              <Sparkles className="h-3.5 w-3.5 mt-0.5 shrink-0 text-warning" />
-              <span>
-                You are impersonating this user. Ratings can only be submitted
-                by the original requester — stop impersonating to rate this trip.
-              </span>
-            </div>
-          )}
           {step < 3 ? (() => {
             const s = STEPS[step as 0 | 1 | 2];
             const Icon = s.icon;
@@ -378,7 +362,7 @@ export function RateTripDialog({ trip, open, onOpenChange, onRated }: RateTripDi
                 <Button
                   type="button"
                   size="sm"
-                  disabled={submit.isPending || !canProceed || isImpersonating}
+                  disabled={submit.isPending || !canProceed}
                   onClick={() => submit.mutate()}
                   className="min-w-[140px]"
                 >
