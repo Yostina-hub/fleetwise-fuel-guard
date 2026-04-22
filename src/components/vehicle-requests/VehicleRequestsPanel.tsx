@@ -45,6 +45,7 @@ type SortKey =
   | "requester_name"
   | "route"
   | "needed_from"
+  | "created_at"
   | "vehicle"
   | "status";
 
