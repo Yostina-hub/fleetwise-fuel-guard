@@ -42,6 +42,8 @@ import {
   isUpgradeOverRecommendation,
   COST_BAND_LABELS,
 } from "@/lib/vehicle-requests/vehicleClassRecommendation";
+import { useSuggestedVehicles } from "@/hooks/useSuggestedVehicles";
+import { Sparkles, MapPin } from "lucide-react";
 
 interface Props {
   request: any;
