@@ -321,6 +321,7 @@ const Generators = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </PageDateRangeProvider>
     </Layout>
   );
 };
