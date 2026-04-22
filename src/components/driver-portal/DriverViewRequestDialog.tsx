@@ -377,6 +377,20 @@ export const DriverViewRequestDialog = ({
 
         {/* Trip details */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <Field
+            icon={UserCheck}
+            label="Requester"
+            value={
+              requesterName
+                ? requesterContact
+                  ? `${requesterName} · ${requesterContact}`
+                  : requesterName
+                : null
+            }
+          />
+          {passengers != null && (
+            <Field icon={Users} label="Passengers" value={String(passengers)} />
+          )}
           <Field icon={FileText} label="Purpose" value={request.purpose} />
           <Field icon={MapPin} label="Destination" value={request.destination} />
           <Field
