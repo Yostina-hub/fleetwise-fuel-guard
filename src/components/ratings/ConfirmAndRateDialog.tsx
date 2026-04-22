@@ -146,7 +146,7 @@ export function ConfirmAndRateDialog({
   onOpenChange,
   onConfirmed,
 }: Props) {
-  const { user, isImpersonating } = useAuth();
+  const { user } = useAuth();
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
 
@@ -184,24 +184,22 @@ export function ConfirmAndRateDialog({
   const confirmMutation = useMutation({
     mutationFn: async () => {
       if (!request) throw new Error("Missing request");
-      if (isImpersonating) {
-        throw new Error(
-          "Impersonation mode is read-only for ratings. Stop impersonating to confirm or rate this trip as the requester.",
-        );
-      }
       const {
         data: { user: authUser },
       } = await supabase.auth.getUser();
       if (!authUser) throw new Error("Not authenticated");
 
+      const actingRequesterId = user?.id ?? authUser.id;
+
       const { error } = await supabase
         .from("vehicle_requests")
         .update({
           requester_confirmed_at: new Date().toISOString(),
-          requester_confirmed_by: authUser.id,
+          requester_confirmed_by: actingRequesterId,
           requester_confirmation_notes: confirmNotes.trim() || null,
         })
-        .eq("id", request.id);
+        .eq("id", request.id)
+        .eq("requester_id", actingRequesterId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -222,15 +220,12 @@ export function ConfirmAndRateDialog({
   const rateMutation = useMutation({
     mutationFn: async () => {
       if (!request || !orgId) throw new Error("Missing context");
-      if (isImpersonating) {
-        throw new Error(
-          "Impersonation mode is read-only for ratings. Stop impersonating to rate this trip as the requester.",
-        );
-      }
       const {
         data: { user: authUser },
       } = await supabase.auth.getUser();
       if (!authUser) throw new Error("Not authenticated");
+
+      const actingRequesterId = user?.id ?? authUser.id;
 
       const anyScore =
         scores.driver || scores.vehicle || scores.punctuality || scores.overall;
@@ -253,9 +248,9 @@ export function ConfirmAndRateDialog({
 
       if (requestError) throw requestError;
       if (!requestRow) throw new Error("Trip not found");
-      if (requestRow.requester_id !== authUser.id) {
+      if (requestRow.requester_id !== actingRequesterId) {
         throw new Error(
-          "You can only rate your own trip. Ratings must be submitted by the original requester.",
+          "You can only rate the currently impersonated requester's trip.",
         );
       }
 
@@ -265,7 +260,7 @@ export function ConfirmAndRateDialog({
       const payload = {
         organization_id: resolvedOrgId,
         vehicle_request_id: request.id,
-        rated_by: authUser.id,
+        rated_by: actingRequesterId,
         driver_id: requestRow.assigned_driver_id ?? request.assigned_driver_id ?? null,
         vehicle_id: requestRow.assigned_vehicle_id ?? request.assigned_vehicle_id ?? null,
         driver_score: scores.driver || null,
@@ -281,7 +276,7 @@ export function ConfirmAndRateDialog({
         .from("vehicle_request_ratings")
         .select("id")
         .eq("vehicle_request_id", request.id)
-        .eq("rated_by", authUser.id)
+        .eq("rated_by", actingRequesterId)
         .maybeSingle();
 
       if (existingRatingError) throw existingRatingError;
@@ -291,7 +286,7 @@ export function ConfirmAndRateDialog({
             .from("vehicle_request_ratings")
             .update(payload)
             .eq("id", existingRating.id)
-            .eq("rated_by", authUser.id)
+            .eq("rated_by", actingRequesterId)
         : await (supabase as any)
             .from("vehicle_request_ratings")
             .insert(payload);
@@ -305,7 +300,7 @@ export function ConfirmAndRateDialog({
           requester_feedback: comment.trim() || null,
         })
         .eq("id", request.id)
-        .eq("requester_id", authUser.id);
+        .eq("requester_id", actingRequesterId);
 
       if (requestUpdateError) throw requestUpdateError;
       return { skipped: false } as const;
@@ -379,16 +374,6 @@ export function ConfirmAndRateDialog({
 
         {/* Body */}
         <div className="px-6 py-5 space-y-5 max-h-[65vh] overflow-y-auto">
-          {isImpersonating && (
-            <div className="rounded-md border border-warning/40 bg-warning/10 p-3 flex items-start gap-2 text-xs text-warning-foreground">
-              <ShieldAlert className="h-3.5 w-3.5 mt-0.5 shrink-0 text-warning" />
-              <span>
-                You are impersonating this user. Ratings can only be submitted
-                by the original requester — stop impersonating to confirm or
-                rate this trip.
-              </span>
-            </div>
-          )}
           {phase === "confirm" ? (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <p className="text-sm text-foreground/90">
@@ -538,7 +523,7 @@ export function ConfirmAndRateDialog({
               <Button
                 type="button"
                 size="sm"
-                disabled={!canConfirm || isImpersonating}
+                disabled={!canConfirm}
                 onClick={() => confirmMutation.mutate()}
                 className="min-w-[180px]"
               >
@@ -569,7 +554,7 @@ export function ConfirmAndRateDialog({
               <Button
                 type="button"
                 size="sm"
-                disabled={rateMutation.isPending || isImpersonating}
+                disabled={rateMutation.isPending}
                 onClick={() => rateMutation.mutate()}
                 className="min-w-[180px]"
               >
