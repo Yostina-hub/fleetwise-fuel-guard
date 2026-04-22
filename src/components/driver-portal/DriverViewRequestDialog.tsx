@@ -448,11 +448,48 @@ export const DriverViewRequestDialog = ({
             icon={UserCheck}
             label="Requester"
             value={
-              requesterName
-                ? requesterContact
-                  ? `${requesterName} · ${requesterContact}`
-                  : requesterName
-                : null
+              requesterName ? (
+                <span className="space-y-0.5 inline-block align-top">
+                  <span className="block">{requesterName}</span>
+                  {requesterPhone && (
+                    <a
+                      href={`tel:${requesterPhone}`}
+                      className="block text-xs text-primary hover:underline"
+                    >
+                      📞 {requesterPhone}
+                    </a>
+                  )}
+                  {requesterEmail && (
+                    <a
+                      href={`mailto:${requesterEmail}`}
+                      className="block text-xs text-muted-foreground hover:underline break-all"
+                    >
+                      ✉️ {requesterEmail}
+                    </a>
+                  )}
+                </span>
+              ) : null
+            }
+          />
+          <Field
+            icon={UserCheck}
+            label="Assigned By"
+            value={
+              assignerName ? (
+                <span className="space-y-0.5 inline-block align-top">
+                  <span className="block">{assignerName}</span>
+                  {assignerRole && (
+                    <span className="block text-xs text-muted-foreground capitalize">
+                      {assignerRole}
+                    </span>
+                  )}
+                  {assignedAt && (
+                    <span className="block text-[11px] text-muted-foreground">
+                      {format(new Date(assignedAt), "MMM dd, yyyy HH:mm")}
+                    </span>
+                  )}
+                </span>
+              ) : null
             }
           />
           <Field
