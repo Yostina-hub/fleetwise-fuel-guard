@@ -109,6 +109,26 @@ export const DriverNavigateMapDialog = ({
   const [insightLoading, setInsightLoading] = useState(false);
   const [insightError, setInsightError] = useState<string | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [useFallbackMap, setUseFallbackMap] = useState(false);
+
+  const fallbackMapUrl = (() => {
+    if (origin && destination) {
+      return `https://maps.google.com/maps?saddr=${origin.lat},${origin.lng}&daddr=${destination.lat},${destination.lng}&z=11&output=embed`;
+    }
+
+    const point = destination || origin;
+    if (point) {
+      return `https://maps.google.com/maps?q=${point.lat},${point.lng}&z=14&output=embed`;
+    }
+
+    const query = destinationPlace?.trim() || departurePlace?.trim();
+    if (query) {
+      return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=14&output=embed`;
+    }
+
+    return null;
+  })();
 
   // Resolve coordinates when the dialog opens
   useEffect(() => {
@@ -116,6 +136,9 @@ export const DriverNavigateMapDialog = ({
     let cancelled = false;
     (async () => {
       setResolving(true);
+      setMapLoaded(false);
+      setUseFallbackMap(false);
+      setMapError(null);
       setOrigin(null);
       setDestination(null);
       setDistanceKm(null);
@@ -156,6 +179,16 @@ export const DriverNavigateMapDialog = ({
       cancelled = true;
     };
   }, [open, departurePlace, departureLat, departureLng, destinationPlace]);
+
+  useEffect(() => {
+    if (!open || mapLoaded) return;
+
+    const timer = setTimeout(() => {
+      setUseFallbackMap(true);
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [open, mapLoaded, origin, destination, departurePlace, destinationPlace]);
 
   // Initialize / tear down the map using the hardened preview-safe style loader
   // and a resize observer so the viewport stays correct inside the dialog.
@@ -200,6 +233,9 @@ export const DriverNavigateMapDialog = ({
         const initialStyle = getPreviewSafeMapStyle(defaultMapStyle);
         if (disposed || !containerEl || map.current) return;
 
+        containerEl.style.width = "100%";
+        containerEl.style.height = "100%";
+
         const nextMap = new maplibregl.Map({
           container: containerEl,
           style: initialStyle,
@@ -213,11 +249,15 @@ export const DriverNavigateMapDialog = ({
         nextMap.addControl(new maplibregl.NavigationControl(), "top-right");
         nextMap.addControl(new maplibregl.FullscreenControl(), "top-right");
         nextMap.on("load", () => {
+          setMapLoaded(true);
           setMapError(null);
+          setUseFallbackMap(false);
           forceResize();
         });
         nextMap.on("style.load", () => {
+          setMapLoaded(true);
           setMapError(null);
+          setUseFallbackMap(false);
           forceResize();
         });
         nextMap.on("error", (event) => {
@@ -228,7 +268,9 @@ export const DriverNavigateMapDialog = ({
             failedUrl.includes("arcgisonline.com");
 
           if (isStyleFailure) {
+            setMapLoaded(false);
             setMapError("Map tiles failed to load.");
+            setUseFallbackMap(true);
           }
           console.error("[DriverNavigateMap] maplibre error", event?.error || event);
         });
@@ -240,7 +282,9 @@ export const DriverNavigateMapDialog = ({
           resizeObserver.observe(containerEl);
         }
       } catch (err) {
+        setMapLoaded(false);
         setMapError("Could not initialize the map.");
+        setUseFallbackMap(true);
         console.error("[DriverNavigateMap] map initialization failed", err);
       }
     };
@@ -612,7 +656,19 @@ export const DriverNavigateMapDialog = ({
         </div>
 
         <div className="relative flex-1 min-h-[420px] rounded-lg overflow-hidden border">
-          <div ref={setContainerEl} className="absolute inset-0" />
+          <div
+            ref={setContainerEl}
+            className={`absolute inset-0 ${useFallbackMap ? "pointer-events-none opacity-0" : ""}`}
+          />
+          {useFallbackMap && fallbackMapUrl && (
+            <iframe
+              title="Trip map"
+              src={fallbackMapUrl}
+              className="absolute inset-0 h-full w-full border-0 bg-muted"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          )}
           {mapError && !resolving && (
             <div className="absolute left-3 right-3 top-3 z-10 rounded-md border border-destructive/40 bg-background/90 px-3 py-2 text-xs text-destructive shadow-sm backdrop-blur-sm">
               {mapError}
