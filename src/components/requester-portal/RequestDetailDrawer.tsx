@@ -175,6 +175,54 @@ export function RequestDetailDrawer({ request, open, onOpenChange, canCancel }: 
             <RequestCommentsThread requestId={request.id} />
           </div>
 
+          {/* Confirmation / rating call-to-action */}
+          {tripDelivered && (
+            <div
+              className={cn(
+                "rounded-lg border p-3 flex items-start gap-3",
+                needsConfirmation
+                  ? "border-primary/40 bg-primary/5"
+                  : "border-success/40 bg-success/5",
+              )}
+            >
+              {needsConfirmation ? (
+                <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium">
+                  {needsConfirmation
+                    ? "Confirm service delivery"
+                    : "Service confirmed"}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {needsConfirmation
+                    ? "The driver has checked out. Please confirm and (optionally) rate."
+                    : `Confirmed ${fmtDate(request.requester_confirmed_at)}.`}
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant={needsConfirmation ? "default" : "outline"}
+                className="gap-1.5"
+                onClick={() => setConfirmOpen(true)}
+              >
+                {needsConfirmation ? (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Confirm & rate
+                  </>
+                ) : (
+                  <>
+                    <Star className="h-3.5 w-3.5" />
+                    Rate trip
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
           {/* Actions */}
           {cancellable && (
             <div className="pt-2 flex justify-end">
@@ -192,6 +240,13 @@ export function RequestDetailDrawer({ request, open, onOpenChange, canCancel }: 
           )}
         </div>
       </SheetContent>
+
+      <ConfirmAndRateDialog
+        request={request}
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onConfirmed={() => qc.invalidateQueries({ queryKey: ["my-vehicle-requests"] })}
+      />
     </Sheet>
   );
 }
