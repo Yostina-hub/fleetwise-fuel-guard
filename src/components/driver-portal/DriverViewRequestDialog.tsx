@@ -14,7 +14,7 @@
  * inlines a single-vehicle check-in/out path for the parent
  * vehicle_request when there are no per-vehicle assignment rows.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import {
   sanitizeNumeric,
@@ -38,7 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Car, MapPin, Calendar, Users, FileText, AlertTriangle,
   Gauge, Wrench, Fuel, Navigation, PlayCircle, StopCircle,
-  Clock, Hash, Building2, ClipboardCheck, CheckCircle2, XCircle, UserCheck,
+  Clock, Hash, Building2, ClipboardCheck, CheckCircle2, XCircle, UserCheck, RotateCcw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -368,6 +368,64 @@ export const DriverViewRequestDialog = ({
     onError: (e: any) => toast.error(e.message || "Check-out failed"),
   });
 
+  // ---- Undo check-in (driver self-service, 5 min window) ----
+  const UNDO_WINDOW_MS = 5 * 60 * 1000;
+  const checkedInAtMs = request?.driver_checked_in_at
+    ? new Date(request.driver_checked_in_at).getTime()
+    : null;
+
+  // Tick once a second so the remaining-time label & disabled state stay live.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!checkedIn || checkedOut) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [checkedIn, checkedOut]);
+
+  const undoMsLeft =
+    checkedInAtMs != null ? Math.max(0, UNDO_WINDOW_MS - (now - checkedInAtMs)) : 0;
+  const canUndoCheckIn = checkedIn && !checkedOut && undoMsLeft > 0;
+  const undoSecondsLeft = Math.ceil(undoMsLeft / 1000);
+
+  const undoCheckIn = useMutation({
+    mutationFn: async () => {
+      if (!request) throw new Error("No request");
+      if (!canUndoCheckIn) throw new Error("Undo window has expired");
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update({
+          driver_checked_in_at: null,
+          driver_checkin_odometer: null,
+          driver_checkin_notes: null,
+          status: "assigned",
+        })
+        .eq("id", request.id);
+      if (error) throw error;
+
+      if (request.assigned_vehicle_id) {
+        await (supabase as any)
+          .from("vehicles")
+          .update({ status: "available", updated_at: new Date().toISOString() })
+          .eq("id", request.assigned_vehicle_id);
+      }
+      if (driverId) {
+        await (supabase as any)
+          .from("drivers")
+          .update({ status: "active", updated_at: new Date().toISOString() })
+          .eq("id", driverId);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Check-in undone");
+      setOdometer("");
+      setNotes("");
+      setOdoError(null);
+      setNotesError(null);
+      refresh();
+    },
+    onError: (e: any) => toast.error(e.message || "Could not undo check-in"),
+  });
+
   const buildMapsUrl = (
     place?: string | null,
     lat?: number | null,
@@ -659,6 +717,31 @@ export const DriverViewRequestDialog = ({
                     <Fuel className="w-4 h-4" /> Request Fuel
                   </Button>
                 </div>
+
+                {canUndoCheckIn && (
+                  <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">Checked in by mistake?</p>
+                      <p className="text-xs text-muted-foreground">
+                        You can undo within{" "}
+                        <span className="font-mono">
+                          {Math.floor(undoSecondsLeft / 60)}:
+                          {String(undoSecondsLeft % 60).padStart(2, "0")}
+                        </span>
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 border-warning/40 text-warning hover:bg-warning/10"
+                      onClick={() => undoCheckIn.mutate()}
+                      disabled={undoCheckIn.isPending}
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      {undoCheckIn.isPending ? "Undoing…" : "Undo Check-In"}
+                    </Button>
+                  </div>
+                )}
 
                 <div className="rounded-lg border p-3 space-y-2">
                   <p className="text-sm font-medium flex items-center gap-1.5">
