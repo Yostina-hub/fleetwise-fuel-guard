@@ -24,6 +24,9 @@ interface DateTimePickerProps {
   minDate?: Date;
   /** When true, only a date is shown (no time input). */
   hideTime?: boolean;
+  /** When true, render the trigger with a destructive border so the field
+   *  visually matches the inline error message shown below it. */
+  error?: boolean;
 }
 
 /**
