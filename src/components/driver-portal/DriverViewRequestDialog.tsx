@@ -718,6 +718,31 @@ export const DriverViewRequestDialog = ({
                   </Button>
                 </div>
 
+                {canUndoCheckIn && (
+                  <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">Checked in by mistake?</p>
+                      <p className="text-xs text-muted-foreground">
+                        You can undo within{" "}
+                        <span className="font-mono">
+                          {Math.floor(undoSecondsLeft / 60)}:
+                          {String(undoSecondsLeft % 60).padStart(2, "0")}
+                        </span>
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 border-warning/40 text-warning hover:bg-warning/10"
+                      onClick={() => undoCheckIn.mutate()}
+                      disabled={undoCheckIn.isPending}
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      {undoCheckIn.isPending ? "Undoing…" : "Undo Check-In"}
+                    </Button>
+                  </div>
+                )}
+
                 <div className="rounded-lg border p-3 space-y-2">
                   <p className="text-sm font-medium flex items-center gap-1.5">
                     <StopCircle className="w-4 h-4 text-warning" /> Check Out
