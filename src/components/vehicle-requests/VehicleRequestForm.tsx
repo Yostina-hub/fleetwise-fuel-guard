@@ -803,6 +803,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const canSubmit =
     !!form.purpose &&
     !!form.purpose_category &&
+    !!form.contact_phone?.trim() &&
     (isDaily ? !!form.date : !!form.start_date) &&
     (!isProject || !!form.project_number?.trim()) &&
     (!isUpgrade || !!form.vehicle_type_justification?.trim()) &&
