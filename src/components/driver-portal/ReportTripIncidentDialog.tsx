@@ -103,6 +103,11 @@ const formSchema = z.object({
     .trim()
     .min(5, "Please describe what happened (min 5 characters)")
     .max(1000, "Description must be under 1000 characters"),
+  km_reading: z
+    .number({ invalid_type_error: "KM reading must be a number" })
+    .min(0, "KM reading cannot be negative")
+    .max(10_000_000, "KM reading is too large")
+    .optional(),
 });
 
 interface ReportTripIncidentDialogProps {
