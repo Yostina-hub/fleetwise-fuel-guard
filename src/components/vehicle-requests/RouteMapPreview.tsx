@@ -48,7 +48,77 @@ function getPointLabel(point: RoutePoint & { kind: "departure" | "stop" | "desti
   return `Stop ${point.index}`;
 }
 
-function buildPopupHtml(label: string): string {
+interface PopupSegmentInfo {
+  /** Distance (km) of the leg arriving at this point. null for the departure. */
+  arriveKm: number | null;
+  /** Duration (minutes) of the leg arriving at this point. null for the departure. */
+  arriveMin: number | null;
+  /** Distance (km) of the leg leaving this point. null for the destination. */
+  departKm: number | null;
+}
+
+function formatKm(km: number | null): string | null {
+  if (km == null || !Number.isFinite(km)) return null;
+  if (km < 1) return `${Math.max(1, Math.round(km * 1000))} m`;
+  return `${km.toFixed(1)} km`;
+}
+
+function formatMin(min: number | null): string | null {
+  if (min == null || !Number.isFinite(min)) return null;
+  return `~${Math.max(1, Math.round(min))} min`;
+}
+
+function buildPopupHtml(label: string, info?: PopupSegmentInfo): string {
+  const arriveKm = formatKm(info?.arriveKm ?? null);
+  const arriveMin = formatMin(info?.arriveMin ?? null);
+  const departKm = formatKm(info?.departKm ?? null);
+
+  const segmentRows: string[] = [];
+  if (arriveKm) {
+    segmentRows.push(
+      `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:hsl(var(--muted-foreground));">
+         <span style="display:inline-block;width:8px;height:8px;border-radius:9999px;background:hsl(217 91% 55%);"></span>
+         <span>From previous: <strong style="color:hsl(var(--popover-foreground));">${escapeHtml(arriveKm)}</strong>${arriveMin ? ` · ${escapeHtml(arriveMin)}` : ""}</span>
+       </div>`,
+    );
+  }
+  if (departKm) {
+    segmentRows.push(
+      `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:hsl(var(--muted-foreground));">
+         <span style="display:inline-block;width:8px;height:8px;border-radius:9999px;background:hsl(142 71% 45%);"></span>
+         <span>To next: <strong style="color:hsl(var(--popover-foreground));">${escapeHtml(departKm)}</strong></span>
+       </div>`,
+    );
+  }
+
+  const segmentBlock =
+    segmentRows.length > 0
+      ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid hsl(var(--border));display:flex;flex-direction:column;gap:4px;">${segmentRows.join("")}</div>`
+      : "";
+
+  return `
+    <div
+      style="
+        min-width: 200px;
+        max-width: 280px;
+        padding: 10px 12px;
+        background: hsl(var(--popover));
+        color: hsl(var(--popover-foreground));
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.45;
+        white-space: normal;
+        word-break: break-word;
+      "
+    >
+      <div style="font-weight:600;">${escapeHtml(label)}</div>
+      ${segmentBlock}
+    </div>
+  `;
+}
+
+function buildPopupHtmlSimple(label: string): string {
   return `
     <div
       style="
@@ -102,6 +172,9 @@ export function RouteMapPreview({
   const [routeMin, setRouteMin] = useState<number | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeFailed, setRouteFailed] = useState(false);
+  // Per-leg distance/duration returned by the routing engine. legs[i] is the
+  // segment FROM orderedPoints[i] TO orderedPoints[i+1].
+  const [routeLegs, setRouteLegs] = useState<{ distance_m: number; duration_s: number }[]>([]);
 
   // Build the ordered list of valid points
   const orderedPoints: Array<RoutePoint & { kind: "departure" | "stop" | "destination"; index?: number }> = [];
@@ -149,15 +222,25 @@ export function RouteMapPreview({
         if (controller.signal.aborted) return;
         if (error || !data?.ok || !Array.isArray(data?.geometry) || data.geometry.length < 2) {
           setRouteGeometry(null);
+          setRouteLegs([]);
           setRouteFailed(true);
           return;
         }
         setRouteGeometry(data.geometry as [number, number][]);
         setRouteKm(typeof data.distance_m === "number" ? data.distance_m / 1000 : null);
         setRouteMin(typeof data.duration_s === "number" ? data.duration_s / 60 : null);
+        setRouteLegs(
+          Array.isArray(data.legs)
+            ? data.legs.map((l: any) => ({
+                distance_m: Number(l?.distance_m) || 0,
+                duration_s: Number(l?.duration_s) || 0,
+              }))
+            : [],
+        );
       } catch {
         if (!controller.signal.aborted) {
           setRouteGeometry(null);
+          setRouteLegs([]);
           setRouteFailed(true);
         }
       } finally {
@@ -219,9 +302,17 @@ export function RouteMapPreview({
     markersRef.current = [];
 
     // Render markers
-    orderedPoints.forEach((p) => {
+    const haveLegs = routeLegs.length === Math.max(0, orderedPoints.length - 1) && routeLegs.length > 0;
+    orderedPoints.forEach((p, idx) => {
       if (p.lat == null || p.lng == null) return;
       const popupLabel = getPointLabel(p);
+      const popupInfo: PopupSegmentInfo = haveLegs
+        ? {
+            arriveKm: idx > 0 ? routeLegs[idx - 1].distance_m / 1000 : null,
+            arriveMin: idx > 0 ? routeLegs[idx - 1].duration_s / 60 : null,
+            departKm: idx < routeLegs.length ? routeLegs[idx].distance_m / 1000 : null,
+          }
+        : { arriveKm: null, arriveMin: null, departKm: null };
       const el = document.createElement("div");
       el.style.display = "flex";
       el.style.alignItems = "center";
@@ -248,7 +339,7 @@ export function RouteMapPreview({
         .setLngLat([p.lng, p.lat])
         .setPopup(
           new maplibregl.Popup({ offset: 14, closeButton: false, maxWidth: "300px" }).setHTML(
-            buildPopupHtml(popupLabel)
+            buildPopupHtml(popupLabel, popupInfo)
           )
         )
         .addTo(map);
@@ -354,6 +445,7 @@ export function RouteMapPreview({
     destination?.lng,
     JSON.stringify(stops?.map((s) => [s.lat, s.lng])),
     routeGeometry,
+    routeLegs,
   ]);
 
   const hasAny = orderedPoints.length > 0;
@@ -420,6 +512,39 @@ export function RouteMapPreview({
             <MapPin className="w-3 h-3" />
             {orderedPoints[0].kind === "departure" ? "Pick a destination to draw the route" : "Pick a departure to draw the route"}
           </Badge>
+        </div>
+      )}
+
+      {/* Per-segment breakdown — appears whenever the routing engine returned
+          more than one leg (i.e., at least one intermediate stop). */}
+      {hasAny && routeLegs.length >= 2 && routeLegs.length === orderedPoints.length - 1 && (
+        <div className="absolute bottom-2 left-2 max-w-[60%]">
+          <div className="rounded-md border bg-background/90 backdrop-blur shadow-sm px-2.5 py-1.5 text-[11px] space-y-1">
+            <div className="font-semibold text-foreground flex items-center gap-1">
+              <Route className="w-3 h-3 text-primary" /> Segments
+            </div>
+            <div className="space-y-0.5">
+              {routeLegs.map((leg, i) => {
+                const from = getPointLabel(orderedPoints[i]);
+                const to = getPointLabel(orderedPoints[i + 1]);
+                const km = formatKm(leg.distance_m / 1000);
+                const min = formatMin(leg.duration_s / 60);
+                return (
+                  <div key={i} className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold text-white bg-primary/80 shrink-0">
+                      {i + 1}
+                    </span>
+                    <span className="truncate text-foreground/90" title={`${from} → ${to}`}>
+                      {from} → {to}
+                    </span>
+                    <span className="ml-auto pl-2 font-medium text-foreground whitespace-nowrap">
+                      {km}{min ? ` · ${min}` : ""}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>
