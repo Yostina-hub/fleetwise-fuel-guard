@@ -96,31 +96,96 @@ export const PoolAssignmentPicker = ({
     [drivers, driverId],
   );
 
-  const inPoolVehicles = vehicles.filter(
-    (v) => request.pool_name && v.specific_pool === request.pool_name,
-  );
-  const otherVehicles = vehicles.filter(
-    (v) => !(request.pool_name && v.specific_pool === request.pool_name),
-  );
+  const inPoolVehicles = vehicles.filter((v) => v.in_pool);
+  const otherVehicles = vehicles.filter((v) => !v.in_pool);
 
   const inPoolDrivers = drivers.filter((d) => d.in_pool);
   const otherDrivers = drivers.filter((d) => !d.in_pool);
 
+  // Cross-pool resource map for decision-making.
+  // Groups vehicles by pool (or "Unassigned"), counting idle vs busy.
+  const vehiclesByPool = useMemo(() => {
+    const map = new Map<string, { total: number; idle: number; busy: number }>();
+    vehicles.forEach((v) => {
+      const key = v.specific_pool || "Unassigned";
+      const cur = map.get(key) || { total: 0, idle: 0, busy: 0 };
+      cur.total += 1;
+      if (v.is_idle) cur.idle += 1;
+      else cur.busy += 1;
+      map.set(key, cur);
+    });
+    return Array.from(map.entries()).sort((a, b) => {
+      // Requested pool first, then by idle desc
+      if (request.pool_name) {
+        if (a[0] === request.pool_name) return -1;
+        if (b[0] === request.pool_name) return 1;
+      }
+      return b[1].idle - a[1].idle;
+    });
+  }, [vehicles, request.pool_name]);
+
+  const totalIdle = vehicles.filter((v) => v.is_idle).length;
+
   return (
     <div className="space-y-3">
-      {/* Pool context */}
-      {request.pool_name && (
-        <div className="text-xs flex items-center gap-2 text-muted-foreground">
+      {/* Pool context + cross-pool resource visibility */}
+      <div className="rounded-md border border-border/40 bg-muted/30 p-2.5 space-y-2">
+        <div className="text-xs flex flex-wrap items-center gap-2">
           <Crosshair className="w-3 h-3 text-primary" />
-          Suggestions ranked for pool
-          <Badge variant="secondary" className="text-[10px] font-mono">
-            {request.pool_name}
-          </Badge>
-          <span className="opacity-70">
-            • {inPoolVehicles.length} pool vehicle(s) • {inPoolDrivers.length} pool driver(s)
+          {request.pool_name ? (
+            <>
+              <span className="text-muted-foreground">Requested pool</span>
+              <Badge variant="secondary" className="text-[10px] font-mono">
+                {request.pool_name}
+              </Badge>
+            </>
+          ) : (
+            <span className="text-muted-foreground">No pool specified — choose any vehicle</span>
+          )}
+          <span className="text-muted-foreground/80">
+            • {inPoolVehicles.length} in-pool / {totalIdle} idle of {vehicles.length} active vehicles
+            • {inPoolDrivers.length} pool drivers / {drivers.length} total
           </span>
         </div>
-      )}
+
+        {/* Cross-pool resource matrix — helps cross-checking other pools/zones */}
+        {vehiclesByPool.length > 1 && (
+          <div className="flex flex-wrap gap-1.5 pt-1 border-t border-border/30">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 self-center mr-1">
+              Resources by pool:
+            </span>
+            {vehiclesByPool.map(([pool, stats]) => {
+              const isRequested = pool === request.pool_name;
+              const exhausted = stats.idle === 0;
+              return (
+                <div
+                  key={pool}
+                  className={cn(
+                    "flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px]",
+                    isRequested
+                      ? "border-primary/50 bg-primary/10"
+                      : exhausted
+                        ? "border-border/30 bg-muted/40 opacity-70"
+                        : "border-border/40 bg-background",
+                  )}
+                  title={`${stats.idle} idle / ${stats.busy} busy / ${stats.total} total`}
+                >
+                  <span className="font-mono font-semibold">{pool}</span>
+                  <span
+                    className={cn(
+                      "font-medium",
+                      exhausted ? "text-muted-foreground" : "text-emerald-600",
+                    )}
+                  >
+                    {stats.idle}
+                  </span>
+                  <span className="text-muted-foreground">/{stats.total}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       <div className="grid sm:grid-cols-2 gap-3">
         {/* ───── Vehicle ───── */}
@@ -182,21 +247,36 @@ export const PoolAssignmentPicker = ({
                       ))}
                     </CommandGroup>
                   )}
-                  {otherVehicles.length > 0 && (
-                    <CommandGroup heading={`Other available (${otherVehicles.length})`}>
-                      {otherVehicles.slice(0, 30).map((v) => (
-                        <VehicleRow
-                          key={v.id}
-                          v={v}
-                          selected={vehicleId === v.id}
-                          onSelect={() => {
-                            setVehicleId(v.id);
-                            setVehicleOpen(false);
-                          }}
-                        />
-                      ))}
-                    </CommandGroup>
-                  )}
+                  {otherVehicles.length > 0 && (() => {
+                    // Group by pool so supervisor can cross-check pools/zones
+                    const groups = new Map<string, typeof otherVehicles>();
+                    otherVehicles.forEach((v) => {
+                      const k = v.specific_pool || "Unassigned pool";
+                      if (!groups.has(k)) groups.set(k, []);
+                      groups.get(k)!.push(v);
+                    });
+                    return Array.from(groups.entries()).map(([poolKey, items]) => {
+                      const idleCount = items.filter((x) => x.is_idle).length;
+                      return (
+                        <CommandGroup
+                          key={poolKey}
+                          heading={`${poolKey} — ${idleCount} idle / ${items.length}`}
+                        >
+                          {items.slice(0, 30).map((v) => (
+                            <VehicleRow
+                              key={v.id}
+                              v={v}
+                              selected={vehicleId === v.id}
+                              onSelect={() => {
+                                setVehicleId(v.id);
+                                setVehicleOpen(false);
+                              }}
+                            />
+                          ))}
+                        </CommandGroup>
+                      );
+                    });
+                  })()}
                 </CommandList>
               </Command>
             </PopoverContent>
@@ -354,6 +434,11 @@ const VehicleRow = ({
           {v.in_geofence && (
             <Badge variant="outline" className="text-[9px] py-0 h-4 border-emerald-500/40 text-emerald-600">
               <MapPin className="w-2.5 h-2.5 mr-0.5" /> in zone
+            </Badge>
+          )}
+          {v.is_idle === false && (
+            <Badge variant="outline" className="text-[9px] py-0 h-4 text-amber-600 border-amber-500/30">
+              busy
             </Badge>
           )}
         </div>
