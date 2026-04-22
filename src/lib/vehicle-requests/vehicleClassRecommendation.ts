@@ -27,9 +27,13 @@ export interface VehicleClassProfile {
   label: string;
   capacity: number;        // total seats (driver + passengers)
   cargo: CargoLoad;        // max cargo size it can carry
+  /** Max payload in kilograms — drives the cargo-weight validation. */
+  maxPayloadKg: number;
   costBand: CostBand;      // operating-cost tier (used for sort + UX)
   /** Smaller index = preferred (cheaper / smaller). Used for tie-breaking. */
   rank: number;
+  /** When true, this is a courier-only class — restricted to Messenger Service. */
+  courierOnly?: boolean;
 }
 
 /**
@@ -37,34 +41,37 @@ export interface VehicleClassProfile {
  * VEHICLE_TYPES_OPTIONS) so each row encodes operational policy. Heavy
  * trucks / specialised gear are NOT recommendable from the staff form —
  * those go through dispatcher assignment.
+ *
+ * `maxPayloadKg` figures are conservative defaults representative of common
+ * Ethio-fleet vehicle classes. Adjust per real fleet specs as needed.
  */
 export const VEHICLE_CLASS_CATALOG: VehicleClassProfile[] = [
-  // Economy — smallest, cheapest, recommended first
-  { value: "motorbike",           label: "Motorbike",        capacity: 2,  cargo: "none",   costBand: "economy",     rank: 0 },
-  { value: "scooter",             label: "Scooter",          capacity: 2,  cargo: "none",   costBand: "economy",     rank: 1 },
-  { value: "sedan",               label: "Sedan",            capacity: 5,  cargo: "small",  costBand: "economy",     rank: 2 },
+  // Courier-only (Messenger Service) — economy
+  { value: "motorbike",           label: "Motorbike",        capacity: 2,  cargo: "none",   maxPayloadKg: 30,    costBand: "economy",     rank: 0,  courierOnly: true },
+  { value: "scooter",             label: "Scooter",          capacity: 2,  cargo: "none",   maxPayloadKg: 20,    costBand: "economy",     rank: 1,  courierOnly: true },
+  { value: "bicycle",             label: "Bicycle",          capacity: 1,  cargo: "none",   maxPayloadKg: 10,    costBand: "economy",     rank: 2,  courierOnly: true },
+
+  // Economy passenger
+  { value: "sedan",               label: "Sedan",            capacity: 5,  cargo: "small",  maxPayloadKg: 200,   costBand: "economy",     rank: 3 },
 
   // Standard
-  { value: "single_cab",          label: "Single Cab",       capacity: 3,  cargo: "medium", costBand: "standard",    rank: 3 },
-  { value: "double_cab",          label: "Double Cab",       capacity: 5,  cargo: "medium", costBand: "standard",    rank: 4 },
-  { value: "pannel_van",          label: "Panel Van",        capacity: 3,  cargo: "large",  costBand: "standard",    rank: 5 },
-  { value: "mini_van",            label: "Mini-Van",         capacity: 8,  cargo: "small",  costBand: "standard",    rank: 6 },
+  { value: "single_cab",          label: "Single Cab",       capacity: 3,  cargo: "medium", maxPayloadKg: 1000,  costBand: "standard",    rank: 4 },
+  { value: "double_cab",          label: "Double Cab",       capacity: 5,  cargo: "medium", maxPayloadKg: 1000,  costBand: "standard",    rank: 5 },
+  { value: "pannel_van",          label: "Panel Van",        capacity: 3,  cargo: "large",  maxPayloadKg: 1500,  costBand: "standard",    rank: 6 },
+  { value: "mini_van",            label: "Mini-Van",         capacity: 8,  cargo: "small",  maxPayloadKg: 800,   costBand: "standard",    rank: 7 },
 
   // Premium (larger group transport, higher cost)
-  { value: "mini_bus",            label: "Mini-Bus",         capacity: 14, cargo: "small",  costBand: "premium",     rank: 7 },
-  { value: "midi_van_truck",      label: "Midi Van-Truck",   capacity: 6,  cargo: "large",  costBand: "premium",     rank: 8 },
-  { value: "midi_bus",            label: "Midi-Bus",         capacity: 25, cargo: "small",  costBand: "premium",     rank: 9 },
-  { value: "suv",                 label: "SUV",              capacity: 7,  cargo: "small",  costBand: "premium",     rank: 10 },
+  { value: "mini_bus",            label: "Mini-Bus",         capacity: 14, cargo: "small",  maxPayloadKg: 1200,  costBand: "premium",     rank: 8 },
+  { value: "midi_van_truck",      label: "Midi Van-Truck",   capacity: 6,  cargo: "large",  maxPayloadKg: 2500,  costBand: "premium",     rank: 9 },
+  { value: "midi_bus",            label: "Midi-Bus",         capacity: 25, cargo: "small",  maxPayloadKg: 2000,  costBand: "premium",     rank: 10 },
+  { value: "suv",                 label: "SUV",              capacity: 7,  cargo: "small",  maxPayloadKg: 600,   costBand: "premium",     rank: 11 },
 
   // Specialised — cargo trucks. Not selectable for personnel transport.
-  { value: "light_cargo_truck",   label: "Light Cargo Truck", capacity: 3,  cargo: "large", costBand: "specialised", rank: 11 },
-  { value: "medium_cargo_truck",  label: "Medium Cargo Truck",capacity: 3,  cargo: "large", costBand: "specialised", rank: 12 },
-  { value: "heavy_cargo_truck",   label: "Heavy Cargo Truck", capacity: 3,  cargo: "large", costBand: "specialised", rank: 13 },
-  { value: "dump_truck",          label: "Dump Truck",        capacity: 3,  cargo: "large", costBand: "specialised", rank: 14 },
-  { value: "heavy_cargo_crane",   label: "Heavy Cargo Crane", capacity: 3,  cargo: "large", costBand: "specialised", rank: 15 },
-
-  // Other
-  { value: "bicycle",             label: "Bicycle",          capacity: 1,  cargo: "none",   costBand: "economy",     rank: 16 },
+  { value: "light_cargo_truck",   label: "Light Cargo Truck", capacity: 3,  cargo: "large", maxPayloadKg: 3500,  costBand: "specialised", rank: 12 },
+  { value: "medium_cargo_truck",  label: "Medium Cargo Truck",capacity: 3,  cargo: "large", maxPayloadKg: 7500,  costBand: "specialised", rank: 13 },
+  { value: "heavy_cargo_truck",   label: "Heavy Cargo Truck", capacity: 3,  cargo: "large", maxPayloadKg: 18000, costBand: "specialised", rank: 14 },
+  { value: "dump_truck",          label: "Dump Truck",        capacity: 3,  cargo: "large", maxPayloadKg: 15000, costBand: "specialised", rank: 15 },
+  { value: "heavy_cargo_crane",   label: "Heavy Cargo Crane", capacity: 3,  cargo: "large", maxPayloadKg: 20000, costBand: "specialised", rank: 16 },
 ];
 
 /** Cargo size ordering — used to test "X covers Y" in the recommendation. */
