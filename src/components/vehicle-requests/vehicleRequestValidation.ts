@@ -92,6 +92,8 @@ export interface VRFormValues {
   contact_phone?: string;
   /** Drives passenger+cargo fitness check on vehicle_type. */
   cargo_load?: CargoLoad;
+  /** Optional cargo total weight (kg) — validated against vehicle max payload. */
+  cargo_weight_kg?: string | number | null;
 }
 
 /* --------------------------------------------------------------------------
