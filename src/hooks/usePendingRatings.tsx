@@ -20,6 +20,7 @@ export interface PendingRatingTrip {
   needed_from: string;
   completed_at: string | null;
   driver_checked_out_at: string | null;
+  rated_at?: string | null;
   assigned_vehicle_id: string | null;
   assigned_driver_id: string | null;
   vehicles?: { plate_number: string | null; make: string | null; model: string | null } | null;
@@ -35,24 +36,39 @@ export function usePendingRatings(enabled = true) {
     enabled: enabled && !!user?.id && !!organizationId,
     staleTime: 30_000,
     queryFn: async (): Promise<PendingRatingTrip[]> => {
+      const { data: ratingRows, error: ratingError } = await (supabase as any)
+        .from("vehicle_request_ratings")
+        .select("vehicle_request_id")
+        .eq("organization_id", organizationId!)
+        .eq("rated_by", user!.id)
+        .limit(200);
+
+      if (ratingError) throw ratingError;
+      const ratedIds = new Set(
+        ((ratingRows ?? []) as Array<{ vehicle_request_id: string | null }>)
+          .map((row) => row.vehicle_request_id)
+          .filter(Boolean),
+      );
+
       const { data, error } = await supabase
         .from("vehicle_requests")
         .select(`
           id, request_number, purpose, destination, departure_place,
-          needed_from, completed_at, driver_checked_out_at,
+          needed_from, completed_at, driver_checked_out_at, rated_at,
           assigned_vehicle_id, assigned_driver_id,
           vehicles:assigned_vehicle_id ( plate_number, make, model ),
           drivers:assigned_driver_id ( full_name )
         `)
         .eq("requester_id", user!.id)
         .eq("organization_id", organizationId!)
-        .is("rated_at", null)
-        .or("status.in.(completed,closed),driver_checked_out_at.not.is.null")
+        .or("status.in.(completed,closed),driver_checked_out_at.not.is.null,completed_at.not.is.null,requester_confirmed_at.not.is.null")
         .order("completed_at", { ascending: false, nullsFirst: false })
         .limit(20);
 
       if (error) throw error;
-      return (data ?? []) as unknown as PendingRatingTrip[];
+      return ((data ?? []) as unknown as PendingRatingTrip[]).filter(
+        (trip) => !trip.rated_at && !ratedIds.has(trip.id),
+      );
     },
   });
 }
