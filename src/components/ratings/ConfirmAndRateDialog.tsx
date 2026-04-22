@@ -184,6 +184,11 @@ export function ConfirmAndRateDialog({
   const confirmMutation = useMutation({
     mutationFn: async () => {
       if (!request) throw new Error("Missing request");
+      if (isImpersonating) {
+        throw new Error(
+          "Impersonation mode is read-only for ratings. Stop impersonating to confirm or rate this trip as the requester.",
+        );
+      }
       const {
         data: { user: authUser },
       } = await supabase.auth.getUser();
