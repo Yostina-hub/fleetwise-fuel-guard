@@ -242,7 +242,8 @@ export const DriverViewRequestDialog = ({
   const checkOut = useMutation({
     mutationFn: async () => {
       if (!request) throw new Error("No request");
-      const odo = odometer ? parseFloat(odometer) : null;
+      const odo = validateOdometer(odometer, "out");
+      if (odo == null) throw new Error(odoError || "Please enter a valid final odometer");
       const { error } = await (supabase as any)
         .from("vehicle_requests")
         .update({
@@ -271,6 +272,8 @@ export const DriverViewRequestDialog = ({
       toast.success("Checked out — trip completed");
       setOdometer("");
       setNotes("");
+      setOdoError(null);
+      setNotesError(null);
       refresh();
       onClose();
     },
