@@ -710,6 +710,15 @@ export const DriverViewRequestDialog = ({
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
+
+      <DriverNavigateMapDialog
+        open={navMapOpen}
+        onClose={() => setNavMapOpen(false)}
+        departurePlace={departurePlace}
+        departureLat={departureLat}
+        departureLng={departureLng}
+        destinationPlace={request.destination}
+      />
     </Dialog>
   );
 };
