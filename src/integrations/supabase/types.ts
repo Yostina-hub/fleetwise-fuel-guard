@@ -11631,6 +11631,7 @@ export type Database = {
           actual_cost: number | null
           assigned_to: string | null
           assigned_to_name: string | null
+          attachments: string[] | null
           created_at: string
           description: string
           driver_id: string | null
@@ -11642,11 +11643,14 @@ export type Database = {
           incident_type: string
           location: string | null
           organization_id: string
+          reason: string | null
+          reported_via: string | null
           resolution_notes: string | null
           resolved_at: string | null
           resolved_by: string | null
           severity: string
           status: string
+          trip_id: string | null
           updated_at: string
           vehicle_id: string | null
         }
@@ -11654,6 +11658,7 @@ export type Database = {
           actual_cost?: number | null
           assigned_to?: string | null
           assigned_to_name?: string | null
+          attachments?: string[] | null
           created_at?: string
           description: string
           driver_id?: string | null
@@ -11665,11 +11670,14 @@ export type Database = {
           incident_type: string
           location?: string | null
           organization_id: string
+          reason?: string | null
+          reported_via?: string | null
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           severity: string
           status?: string
+          trip_id?: string | null
           updated_at?: string
           vehicle_id?: string | null
         }
@@ -11677,6 +11685,7 @@ export type Database = {
           actual_cost?: number | null
           assigned_to?: string | null
           assigned_to_name?: string | null
+          attachments?: string[] | null
           created_at?: string
           description?: string
           driver_id?: string | null
@@ -11688,11 +11697,14 @@ export type Database = {
           incident_type?: string
           location?: string | null
           organization_id?: string
+          reason?: string | null
+          reported_via?: string | null
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           severity?: string
           status?: string
+          trip_id?: string | null
           updated_at?: string
           vehicle_id?: string | null
         }
