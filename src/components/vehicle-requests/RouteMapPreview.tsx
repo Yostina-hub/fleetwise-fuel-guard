@@ -210,17 +210,20 @@ export function RouteMapPreview({
       markersRef.current.push(marker);
     });
 
-    // Render route line (dashed connector through all points in order)
-    const lineCoords = orderedPoints
+    // Render route line: prefer real driving geometry from OSRM, fall back to
+    // the dashed straight-line connector when routing isn't available yet.
+    const straightLineCoords = orderedPoints
       .filter((p) => p.lat != null && p.lng != null)
       .map((p) => [p.lng as number, p.lat as number] as [number, number]);
 
     const ROUTE_SOURCE = "vr-route-line";
     const ROUTE_LAYER = "vr-route-line-layer";
+    const ROUTE_CASING_LAYER = "vr-route-line-casing";
 
     const removeRouteLayer = () => {
       try {
         if (map.getLayer(ROUTE_LAYER)) map.removeLayer(ROUTE_LAYER);
+        if (map.getLayer(ROUTE_CASING_LAYER)) map.removeLayer(ROUTE_CASING_LAYER);
         if (map.getSource(ROUTE_SOURCE)) map.removeSource(ROUTE_SOURCE);
       } catch {
         /* noop */
@@ -228,38 +231,69 @@ export function RouteMapPreview({
     };
     removeRouteLayer();
 
-    if (lineCoords.length >= 2) {
+    const useRealRoute = !!(routeGeometry && routeGeometry.length >= 2);
+    const drawnCoords: [number, number][] | null = useRealRoute
+      ? routeGeometry
+      : straightLineCoords.length >= 2
+        ? straightLineCoords
+        : null;
+
+    if (drawnCoords) {
       map.addSource(ROUTE_SOURCE, {
         type: "geojson",
         data: {
           type: "Feature",
           properties: {},
-          geometry: { type: "LineString", coordinates: lineCoords },
+          geometry: { type: "LineString", coordinates: drawnCoords },
         },
       });
+      // Soft white casing under the real route for readability
+      if (useRealRoute) {
+        map.addLayer({
+          id: ROUTE_CASING_LAYER,
+          type: "line",
+          source: ROUTE_SOURCE,
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": "#ffffff",
+            "line-width": 7,
+            "line-opacity": 0.9,
+          },
+        });
+      }
       map.addLayer({
         id: ROUTE_LAYER,
         type: "line",
         source: ROUTE_SOURCE,
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": "hsl(217 91% 60%)",
-          "line-width": 4,
-          "line-opacity": 0.85,
-          "line-dasharray": [2, 1.5],
-        },
+        paint: useRealRoute
+          ? {
+              "line-color": "hsl(217 91% 55%)",
+              "line-width": 4.5,
+              "line-opacity": 0.95,
+            }
+          : {
+              "line-color": "hsl(217 91% 60%)",
+              "line-width": 4,
+              "line-opacity": 0.85,
+              "line-dasharray": [2, 1.5],
+            },
       });
     }
 
-    // Auto-fit bounds
-    if (orderedPoints.length === 1) {
+    // Auto-fit bounds — include the full route geometry if we have it so the
+    // entire driving path is visible, not just the markers.
+    if (orderedPoints.length === 1 && !useRealRoute) {
       const only = orderedPoints[0];
       map.flyTo({ center: [only.lng as number, only.lat as number], zoom: 13, essential: true });
-    } else if (orderedPoints.length >= 2) {
+    } else if (orderedPoints.length >= 2 || useRealRoute) {
       const bounds = new maplibregl.LngLatBounds();
       orderedPoints.forEach((p) => {
         if (p.lat != null && p.lng != null) bounds.extend([p.lng, p.lat]);
       });
+      if (useRealRoute) {
+        routeGeometry!.forEach((c) => bounds.extend(c));
+      }
       try {
         map.fitBounds(bounds, { padding: 48, maxZoom: 14, duration: 600 });
       } catch {
@@ -274,6 +308,7 @@ export function RouteMapPreview({
     destination?.lat,
     destination?.lng,
     JSON.stringify(stops?.map((s) => [s.lat, s.lng])),
+    routeGeometry,
   ]);
 
   const hasAny = orderedPoints.length > 0;
