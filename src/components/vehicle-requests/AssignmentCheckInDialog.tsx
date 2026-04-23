@@ -138,9 +138,9 @@ export const AssignmentCheckInDialog = ({ request, assignment, open, onClose }: 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isCheckedIn && !isCheckedOut ? (
-              <><LogOut className="w-5 h-5 text-amber-500" /> Check Out — {assignment.vehicle?.plate_number}</>
+              <><LogOut className="w-5 h-5 text-warning" /> Check Out — {assignment.vehicle?.plate_number}</>
             ) : (
-              <><LogIn className="w-5 h-5 text-green-500" /> Check In — {assignment.vehicle?.plate_number}</>
+              <><LogIn className="w-5 h-5 text-success" /> Start Now — {assignment.vehicle?.plate_number}</>
             )}
           </DialogTitle>
         </DialogHeader>
@@ -165,7 +165,7 @@ export const AssignmentCheckInDialog = ({ request, assignment, open, onClose }: 
 
           {isCheckedIn && (
             <div className="flex items-center gap-2 text-sm">
-              <Badge className="bg-emerald-600">Checked In</Badge>
+              <Badge className="bg-success text-success-foreground">Started</Badge>
               <span className="text-xs text-muted-foreground">
                 {format(new Date(assignment.driver_checked_in_at!), "MMM dd, HH:mm")}
               </span>
@@ -206,19 +206,19 @@ export const AssignmentCheckInDialog = ({ request, assignment, open, onClose }: 
             <Button
               onClick={() => checkOutMutation.mutate()}
               disabled={checkOutMutation.isPending}
-              className="bg-amber-600 hover:bg-amber-700"
+              className="bg-warning text-warning-foreground hover:bg-warning/90"
             >
               <LogOut className="w-3.5 h-3.5 mr-1" />
-              {checkOutMutation.isPending ? "Checking out..." : "Check Out"}
+              {checkOutMutation.isPending ? "Finishing…" : "Finish Trip"}
             </Button>
           ) : !isCheckedIn ? (
             <Button
               onClick={() => checkInMutation.mutate()}
               disabled={checkInMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-success text-success-foreground hover:bg-success/90"
             >
               <LogIn className="w-3.5 h-3.5 mr-1" />
-              {checkInMutation.isPending ? "Checking in..." : "Check In"}
+              {checkInMutation.isPending ? "Starting…" : "Start Now"}
             </Button>
           ) : null}
         </DialogFooter>
