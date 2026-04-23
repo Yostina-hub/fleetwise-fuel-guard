@@ -8637,30 +8637,42 @@ export type Database = {
           category: string
           code: string
           created_at: string
+          description: string | null
           id: string
           is_active: boolean | null
           name: string
           organization_id: string
+          parent_code: string | null
+          shift: string | null
+          sort_order: number | null
           updated_at: string
         }
         Insert: {
           category: string
           code: string
           created_at?: string
+          description?: string | null
           id?: string
           is_active?: boolean | null
           name: string
           organization_id: string
+          parent_code?: string | null
+          shift?: string | null
+          sort_order?: number | null
           updated_at?: string
         }
         Update: {
           category?: string
           code?: string
           created_at?: string
+          description?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
           organization_id?: string
+          parent_code?: string | null
+          shift?: string | null
+          sort_order?: number | null
           updated_at?: string
         }
         Relationships: [

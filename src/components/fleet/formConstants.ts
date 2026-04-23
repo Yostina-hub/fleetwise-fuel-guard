@@ -229,11 +229,25 @@ export const SAFETY_COMFORT_CATEGORIES = [
 ];
 
 // Assigned location groups — Corporate / Zone / Region (Ethio telecom hierarchy)
+// Corporate items can be either a top-level office (FOM I, FOM II, ZemenGEBEYA)
+// or a specific operational sub-pool nested under one of the FOM groups via `parent`.
 export const ASSIGNED_LOCATIONS = [
-  // Corporate (3)
+  // Corporate parents (3)
   { group: "Corporate", value: "corp_fom1",         label: "FOM I" },
   { group: "Corporate", value: "corp_fom2",         label: "FOM II" },
   { group: "Corporate", value: "corp_zemengebeya",  label: "ZemenGEBEYA Logistics" },
+
+  // Corporate sub-pools — FOM I
+  { group: "Corporate", value: "corp_fom1_ho_night",  label: "Head Office Night Shift Fleet Pool", parent: "corp_fom1", shift: "night" },
+  { group: "Corporate", value: "corp_fom1_ho_day",    label: "Head Office Day Shift Fleet Pool",   parent: "corp_fom1", shift: "day"   },
+  { group: "Corporate", value: "corp_fom1_tpo_eyor",  label: "TPO/Eyor Fleet Pool",                parent: "corp_fom1" },
+  { group: "Corporate", value: "corp_fom1_personal",  label: "Personal Fleet Pool",                parent: "corp_fom1" },
+
+  // Corporate sub-pools — FOM II
+  { group: "Corporate", value: "corp_fom2_central_tx",  label: "Central Transport Fleet Pool",            parent: "corp_fom2" },
+  { group: "Corporate", value: "corp_fom2_legehar_fan", label: "Legehar FAN & Support NWD Fleet Pool",    parent: "corp_fom2" },
+  { group: "Corporate", value: "corp_fom2_wtn",         label: "Wireless and Transport Network Fleet Pool", parent: "corp_fom2" },
+  { group: "Corporate", value: "corp_fom2_legehar_om",  label: "Legehar O&M & NWD Fleet Pool",            parent: "corp_fom2" },
 
   // Zone (5) — Addis Ababa operational zones
   { group: "Zone", value: "zone_eaaz_aa",  label: "EAAZ - Addis Ababa" },
@@ -262,6 +276,23 @@ export const ASSIGNED_LOCATIONS = [
   { group: "Region", value: "region_swwr_gambella",      label: "SWWR - Gambella" },
   { group: "Region", value: "region_nr_mekelle",         label: "NR - Mekelle" },
 ];
+
+/**
+ * Corporate pool parents — used to render the Corporate sub-pools as a
+ * grouped (FOM I / FOM II / ZemenGEBEYA) cascade in selectors and to
+ * reconstruct the visual hierarchy on detail/list views.
+ */
+export const CORPORATE_POOL_PARENTS = [
+  { value: "corp_fom1",        label: "FOM I" },
+  { value: "corp_fom2",        label: "FOM II" },
+  { value: "corp_zemengebeya", label: "ZemenGEBEYA Logistics" },
+] as const;
+
+/** Sub-pools nested under a corporate parent (FOM I / FOM II / ...). */
+export const getCorporateSubPools = (parentValue: string) =>
+  ASSIGNED_LOCATIONS.filter(
+    (l) => l.group === "Corporate" && (l as any).parent === parentValue,
+  );
 
 // Backward-compatibility alias — kept so legacy edit forms still compile.
 // New code should use ASSIGNED_POOLS instead.
