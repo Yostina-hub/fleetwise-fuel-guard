@@ -781,19 +781,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.start_date, form.request_type, isDaily]);
 
-  // Auto-switch between Daily and Nighttime based on Ethiopian (EAT) operational hours.
+  // Auto-switch between Daily and Nighttime based on Ethiopian operational hours.
   //
-  // Ethiopia operates on East Africa Time (EAT, UTC+3). Standard fleet day-shift
-  // dispatch covers 06:00–18:00 (sunrise to sunset). Anything that starts or
-  // ends outside that window is a Nighttime Operation handled by the night
-  // dispatch desk (after 18:00 EAT).
+  // Local convention (Ethiopia, EAT / UTC+3):
+  //   • Night Operation begins at "8:00 in the night" on the Ethiopian 12-hour
+  //     clock — that is 20:00 in the 24-hour clock used by the form.
+  //   • Day Operation runs from 06:00 (sunrise) up to 20:00 EAT.
   //
   // Rule (24h, EAT):
-  //   • Day:   start ≥ 06:00 AND end ≤ 18:00
-  //   • Night: start < 06:00  OR  end > 18:00
+  //   • Day:   06:00 ≤ start AND end ≤ 20:00
+  //   • Night: start < 06:00  OR  start ≥ 20:00  OR  end > 20:00  OR  end ≤ 06:00
   //
-  // Only auto-toggles when the user is currently on daily/nighttime — never
-  // overrides Project / Field / Group / Messenger selections.
+  // Only auto-toggles when the user is on daily/nighttime — never overrides
+  // Project / Field / Group / Messenger selections.
   useEffect(() => {
     if (form.request_type !== "daily_operation" && form.request_type !== "nighttime_operation") return;
     const toMin = (t: string) => {
@@ -805,11 +805,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     const startMin = toMin(form.start_time);
     const endMin = toMin(form.end_time);
     if (startMin == null && endMin == null) return; // wait for input
-    const DAY_START = 6 * 60;   // 06:00 EAT
-    const DAY_END   = 18 * 60;  // 18:00 EAT
+    const DAY_START = 6 * 60;    // 06:00 EAT (sunrise)
+    const NIGHT_START = 20 * 60; // 20:00 EAT = "8:00 night" on Ethiopian 12h clock
     const isNight =
-      (startMin != null && (startMin < DAY_START || startMin >= DAY_END)) ||
-      (endMin   != null && (endMin   > DAY_END   || endMin   <= DAY_START));
+      (startMin != null && (startMin < DAY_START || startMin >= NIGHT_START)) ||
+      (endMin   != null && (endMin   > NIGHT_START || endMin   <= DAY_START));
     const desired = isNight ? "nighttime_operation" : "daily_operation";
     if (desired !== form.request_type) {
       setForm((f) => ({ ...f, request_type: desired }));
@@ -817,8 +817,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         isNight ? "Switched to Nighttime Operation" : "Switched to Daily Operation",
         {
           description: isNight
-            ? "Trip falls outside 06:00–18:00 EAT — categorized as Nighttime."
-            : "Trip is within 06:00–18:00 EAT — categorized as Daily.",
+            ? "Trip falls outside 06:00–20:00 EAT (after 8:00 night) — categorized as Nighttime."
+            : "Trip is within 06:00–20:00 EAT — categorized as Daily.",
         }
       );
     }
@@ -1335,8 +1335,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
               {[
-                { v: "daily_operation", title: "Daily Operation", desc: "Day-shift trip (06:00 – 18:00 EAT)", icon: Clock },
-                { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip (18:00 – 06:00 EAT)", icon: Moon },
+                { v: "daily_operation", title: "Daily Operation", desc: "Day-shift trip (06:00 – 20:00 EAT)", icon: Clock },
+                { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip — from 8:00 night (20:00 EAT)", icon: Moon },
                 { v: "project_operation", title: "Project Operation", desc: "Multi-day, project-coded assignment", icon: Layers },
                 { v: "field_operation", title: "Field Operation", desc: "Extended off-base or field deployment", icon: Route },
                 { v: "group_operation", title: "Group Operation", desc: "Shared trip for a group of passengers", icon: Users },
@@ -1402,10 +1402,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Moon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <span className="text-muted-foreground">
                   <span className="font-medium text-foreground">Nighttime window (EAT):</span>{" "}
-                  Start or end falls outside{" "}
-                  <span className="font-medium text-foreground">06:00–18:00</span>{" "}
-                  Addis Ababa time. Night dispatch handles this trip after{" "}
-                  <span className="font-medium text-foreground">18:00</span>.
+                  Night Operation starts at <span className="font-medium text-foreground">8:00 in the night</span>{" "}
+                  (<span className="font-medium text-foreground">20:00</span> on the 24-hour clock) and runs until{" "}
+                  <span className="font-medium text-foreground">06:00</span> the next morning. Night dispatch handles this trip after{" "}
+                  <span className="font-medium text-foreground">20:00</span>.
                 </span>
               </div>
             )}
@@ -1437,7 +1437,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <FieldError field="end_time" />
                   </div>
                 </div>
-                {/* Day vs Night classification banner — Ethiopian (EAT) operational hours */}
+                {/* Day vs Night classification banner — Ethiopian operational hours.
+                    Night begins at 20:00 EAT ("8:00 in the night" on the local 12h clock). */}
                 {(() => {
                   const toMin = (t: string) => {
                     if (!t) return null;
@@ -1447,12 +1448,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   };
                   const startMin = toMin(form.start_time);
                   const endMin = toMin(form.end_time);
-                  const DAY_START = 6 * 60;   // 06:00 EAT
-                  const DAY_END   = 18 * 60;  // 18:00 EAT
+                  const DAY_START = 6 * 60;     // 06:00 EAT
+                  const NIGHT_START = 20 * 60;  // 20:00 EAT = 8:00 night (Ethiopian 12h)
                   if (startMin == null && endMin == null) return null;
 
-                  const startIsNight = startMin != null && (startMin < DAY_START || startMin >= DAY_END);
-                  const endIsNight   = endMin   != null && (endMin   > DAY_END   || endMin   <= DAY_START);
+                  const startIsNight = startMin != null && (startMin < DAY_START || startMin >= NIGHT_START);
+                  const endIsNight   = endMin   != null && (endMin   > NIGHT_START || endMin   <= DAY_START);
                   const isNight = startIsNight || endIsNight;
 
                   if (!isNight) {
@@ -1461,7 +1462,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                         <Clock className="w-4 h-4 text-success shrink-0 mt-0.5" />
                         <span className="text-muted-foreground">
                           <span className="font-medium text-foreground">Day Operation (EAT):</span>{" "}
-                          Trip runs within <span className="font-medium">06:00–18:00</span> Addis Ababa time — handled by the standard day dispatch.
+                          Trip runs within <span className="font-medium">06:00–20:00</span> Addis Ababa time — handled by the standard day dispatch.
                         </span>
                       </div>
                     );
@@ -1474,11 +1475,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                         <div>
                           <span className="font-medium text-foreground">Night Operation (auto · EAT):</span>{" "}
                           {startIsNight
-                            ? <>Start time is outside <span className="font-medium">06:00–18:00</span> Addis Ababa time — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>
-                            : <>End time is outside <span className="font-medium">06:00–18:00</span> Addis Ababa time — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>}
+                            ? <>Start time is at or after <span className="font-medium">20:00 (8:00 night)</span> or before <span className="font-medium">06:00</span> — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>
+                            : <>End time is after <span className="font-medium">20:00 (8:00 night)</span> or at/before <span className="font-medium">06:00</span> — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>}
                         </div>
                         <div>
-                          The night dispatch desk will pick this up <span className="font-medium text-foreground">after 18:00 EAT</span>.
+                          The night dispatch desk will pick this up <span className="font-medium text-foreground">after 20:00 EAT</span>.
                         </div>
                       </div>
                     </div>
