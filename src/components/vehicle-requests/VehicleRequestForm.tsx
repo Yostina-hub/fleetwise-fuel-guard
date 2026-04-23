@@ -1092,11 +1092,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const body = (
     <>
       {embedded ? (
-        <div className="px-6 sm:px-8 pt-6 pb-5 border-b border-border bg-card">
+        <div className="px-5 sm:px-6 py-3 border-b border-border bg-card">
           {HeaderInner}
         </div>
       ) : (
-        <div className="px-6 sm:px-8 pt-6 pb-5 border-b border-border bg-card sticky top-0 z-10">
+        <div className="px-5 sm:px-6 py-3 border-b border-border bg-card sticky top-0 z-10">
           <DialogHeader>
             <DialogTitle className="sr-only">Vehicle Request</DialogTitle>
             <DialogDescription className="sr-only">
@@ -1107,7 +1107,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         </div>
       )}
 
-      <div className={`${embedded ? "px-1" : "px-6 sm:px-8"} pt-6 pb-2 space-y-5`}>
+      <div className={`${embedded ? "px-1" : "px-5 sm:px-6"} pt-4 pb-2 space-y-4`}>
         {/* Draft restored notice */}
         {restoredAt && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs animate-fade-in">
@@ -1124,14 +1124,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             >
               Discard draft
             </Button>
-          </div>
-        )}
-
-        {/* Auto-save indicator (always visible while typing) */}
-        {!restoredAt && savedAt && (
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground -mt-2">
-            <CheckCircle2 className="w-3 h-3 text-success" />
-            Draft auto-saved {new Date(savedAt).toLocaleTimeString()}
           </div>
         )}
 
