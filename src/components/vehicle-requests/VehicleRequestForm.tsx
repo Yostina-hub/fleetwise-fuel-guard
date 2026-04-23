@@ -1992,16 +1992,45 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
-                    {ASSIGNED_LOCATIONS
-                      .filter(l => l.group === POOL_CATEGORY_META[form.pool_category as keyof typeof POOL_CATEGORY_META]?.locationGroup)
-                      .map(l => (
-                        <SelectItem key={l.value} value={l.value}>
-                          <span className="flex items-center gap-2">
-                            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                            {l.label}
-                          </span>
-                        </SelectItem>
-                      ))}
+                    {form.pool_category === "corporate" ? (
+                      ASSIGNED_LOCATIONS
+                        .filter(l => l.group === "Corporate" && !(l as any).parent)
+                        .flatMap(parent => {
+                          const subs = ASSIGNED_LOCATIONS.filter(
+                            (l: any) => l.group === "Corporate" && l.parent === parent.value
+                          );
+                          return [
+                            <SelectItem key={parent.value} value={parent.value}>
+                              <span className="flex items-center gap-2 font-semibold">
+                                <MapPin className="h-3.5 w-3.5 text-primary" />
+                                {parent.label}
+                              </span>
+                            </SelectItem>,
+                            ...subs.map((s: any) => (
+                              <SelectItem key={s.value} value={s.value}>
+                                <span className="flex items-center gap-2 pl-4 text-sm">
+                                  <span className="text-muted-foreground">└</span>
+                                  <span className="truncate">{s.label}</span>
+                                  {s.shift && s.shift !== "all" && (
+                                    <span className="ml-auto text-[10px] uppercase text-muted-foreground">{s.shift}</span>
+                                  )}
+                                </span>
+                              </SelectItem>
+                            )),
+                          ];
+                        })
+                    ) : (
+                      ASSIGNED_LOCATIONS
+                        .filter(l => l.group === POOL_CATEGORY_META[form.pool_category as keyof typeof POOL_CATEGORY_META]?.locationGroup)
+                        .map(l => (
+                          <SelectItem key={l.value} value={l.value}>
+                            <span className="flex items-center gap-2">
+                              <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                              {l.label}
+                            </span>
+                          </SelectItem>
+                        ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
