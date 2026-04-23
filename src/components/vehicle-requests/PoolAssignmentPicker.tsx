@@ -57,6 +57,8 @@ export const PoolAssignmentPicker = ({
   const [driverId, setDriverId] = useState<string>("");
   const [vehicleOpen, setVehicleOpen] = useState(false);
   const [driverOpen, setDriverOpen] = useState(false);
+  const [confirmAssign, setConfirmAssign] = useState(false);
+  const [confirmUnavailable, setConfirmUnavailable] = useState(false);
 
   const { data: vehicles = [], isLoading: vehiclesLoading } = useSuggestedVehicles({
     organizationId,
