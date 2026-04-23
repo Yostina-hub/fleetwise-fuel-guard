@@ -167,7 +167,7 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowRight className="w-5 h-5 text-amber-500" />
