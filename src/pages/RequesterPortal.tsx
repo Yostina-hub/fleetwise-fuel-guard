@@ -53,6 +53,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useVehicleRequestScope, applyVRScope } from "@/hooks/useVehicleRequestScope";
 import { format } from "date-fns";
 import { formatInOrgTz } from "@/components/ui/date-time-picker";
 import { cn } from "@/lib/utils";
@@ -90,6 +91,7 @@ const RequesterPortal = () => (
 const RequesterPortalInner = () => {
   const { user } = useAuth();
   const { organizationId } = useOrganization();
+  const vrScope = useVehicleRequestScope();
   const qc = useQueryClient();
   const { toast } = useToast();
 
@@ -141,40 +143,55 @@ const RequesterPortalInner = () => {
   // (e.g. user picks 00:00 local time which serializes as the previous UTC
   // day after timezone normalization).
   const { data: requests = [], isLoading, refetch } = useQuery({
-    queryKey: ["my-vehicle-requests", organizationId, user?.id, startISO, endISO],
+    queryKey: [
+      "my-vehicle-requests",
+      organizationId,
+      user?.id,
+      vrScope.tier,
+      vrScope.driverId,
+      startISO,
+      endISO,
+    ],
     queryFn: async () => {
       if (!user || !organizationId) return [];
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from("vehicle_requests")
         .select(
           "*, assigned_vehicle:assigned_vehicle_id(plate_number, make, model), assigned_driver:assigned_driver_id(first_name, last_name)",
         )
         .eq("organization_id", organizationId)
-        .eq("requester_id", user.id)
         .or(
           `and(needed_from.gte.${startISO},needed_from.lte.${endISO}),` +
             `and(needed_from.is.null,created_at.gte.${startISO},created_at.lte.${endISO}),` +
             `and(created_at.gte.${startISO},created_at.lte.${endISO})`,
         )
         .order("created_at", { ascending: false });
+      // Apply role-based row scoping. Admin/operator tiers see the full org
+      // queue (so super_admins can monitor pending requests across users);
+      // driver/self tiers stay restricted to their own filed requests.
+      query = applyVRScope(query, vrScope);
+      const { data, error } = await query;
       if (error) throw error;
       return (data ?? []) as RequestDetail[];
     },
-    enabled: !!user && !!organizationId,
+    enabled: !!user && !!organizationId && !vrScope.loading,
   });
 
-  // Realtime — refresh on any change to my requests
+  // Realtime — refresh on any change to relevant requests. Admin/operator
+  // tiers subscribe to the whole org so newly-filed requests by anyone show
+  // up live; self/driver tiers only need their own rows.
   useEffect(() => {
     if (!user) return;
+    const wideScope = vrScope.tier === "all" || vrScope.tier === "operator";
     const ch = supabase
-      .channel(`my-vehicle-requests-${user.id}`)
+      .channel(`my-vehicle-requests-${user.id}-${vrScope.tier}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "vehicle_requests",
-          filter: `requester_id=eq.${user.id}`,
+          ...(wideScope ? {} : { filter: `requester_id=eq.${user.id}` }),
         },
         () => qc.invalidateQueries({ queryKey: ["my-vehicle-requests"] }),
       )
@@ -182,7 +199,7 @@ const RequesterPortalInner = () => {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [user, qc]);
+  }, [user, qc, vrScope.tier]);
 
   // Deep-link from notifications: `/my-requests?rate=<request-id>` opens the
   // RateTripDialog for that completed trip. We fetch the row so the dialog
