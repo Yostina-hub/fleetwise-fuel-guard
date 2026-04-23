@@ -193,16 +193,58 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
             </div>
           )}
 
-          <div>
-            <Label>Target Pool *</Label>
-            <Select value={targetPool} onValueChange={handlePoolChange}>
-              <SelectTrigger><SelectValue placeholder="Select target pool" /></SelectTrigger>
-              <SelectContent>
-                {pools.filter((p: any) => p.name !== request.pool_name).map((p: any) => (
-                  <SelectItem key={p.id} value={p.name}>{p.category} / {p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Step 1 — Pool Category (corporate / zone / region) */}
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <Label>Target Pool Category *</Label>
+              <Select value={targetCategory} onValueChange={handleCategoryChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.length === 0 && (
+                    <div className="px-2 py-3 text-xs text-muted-foreground">
+                      No pool categories configured
+                    </div>
+                  )}
+                  {categories.map((c: string) => (
+                    <SelectItem key={c} value={c}>
+                      {c.charAt(0).toUpperCase() + c.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Step 2 — specific Pool within the chosen category */}
+            <div>
+              <Label>Target Pool *</Label>
+              <Select
+                value={targetPool}
+                onValueChange={handlePoolChange}
+                disabled={!targetCategory}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      targetCategory ? "Select pool" : "Pick a category first"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {targetCategory && poolsInCategory.length === 0 && (
+                    <div className="px-2 py-3 text-xs text-muted-foreground">
+                      No other pools in this category
+                    </div>
+                  )}
+                  {poolsInCategory.map((p: any) => (
+                    <SelectItem key={p.id} value={p.name}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div>
