@@ -760,10 +760,29 @@ export const DriverViewRequestDialog = ({
                   <p className="text-sm font-medium flex items-center gap-1.5">
                     <StopCircle className="w-4 h-4 text-warning" /> Check Out
                   </p>
+                  <div>
+                    <Label className="text-xs">Completion remark</Label>
+                    <Textarea
+                      value={completionRemark}
+                      onChange={(e) => {
+                        const v = sanitizeWhileTyping(e.target.value).slice(0, 500);
+                        setCompletionRemark(v);
+                        validateCompletionRemark(v);
+                      }}
+                      rows={3}
+                      maxLength={500}
+                      placeholder="Trip completed, delivered successfully…"
+                      aria-invalid={!!completionRemarkError}
+                      className={inputStatusClass(completionRemarkError ? "error" : "neutral")}
+                    />
+                    {completionRemarkError && (
+                      <p className="text-xs text-destructive mt-1">{completionRemarkError}</p>
+                    )}
+                  </div>
                   <Button
                     className="w-full gap-2 bg-warning hover:bg-warning/90"
                     onClick={() => checkOut.mutate()}
-                    disabled={checkOut.isPending}
+                    disabled={checkOut.isPending || !completionRemark.trim() || !!completionRemarkError}
                   >
                     <StopCircle className="w-4 h-4" />
                     {checkOut.isPending ? "Checking out…" : "Check Out & Complete Trip"}
