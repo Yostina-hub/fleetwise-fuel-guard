@@ -907,6 +907,16 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         </DialogContent>
       </Dialog>
     </Card>
+
+    {/* Inline assign dialog (opens from a row's "Assign" button) */}
+    {assignTarget && (
+      <QuickAssignDialog
+        request={assignTarget}
+        organizationId={organizationId}
+        open={!!assignTarget}
+        onClose={() => setAssignTarget(null)}
+      />
+    )}
     </div>
   );
 };
