@@ -724,10 +724,10 @@ function RequestList({
                       {route}
                     </td>
                     <td className="py-2 px-3 text-muted-foreground text-xs whitespace-nowrap">
-                      {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
+                      {r.needed_from ? formatInOrgTz(r.needed_from, "MMM dd, HH:mm") : "—"}
                     </td>
                     <td className="py-2 px-3 text-muted-foreground text-xs whitespace-nowrap">
-                      {(r as any).needed_until ? format(new Date((r as any).needed_until), "MMM dd, HH:mm") : "—"}
+                      {(r as any).needed_until ? formatInOrgTz((r as any).needed_until, "MMM dd, HH:mm") : "—"}
                     </td>
                     <td className="py-2 px-3 text-muted-foreground text-xs">
                       {r.assigned_vehicle?.plate_number || "—"}
