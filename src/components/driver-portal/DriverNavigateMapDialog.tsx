@@ -772,14 +772,32 @@ export const DriverNavigateMapDialog = ({
             ref={containerRef}
             className={`absolute inset-0 ${useFallbackMap ? "pointer-events-none opacity-0" : ""}`}
           />
-          {useFallbackMap && fallbackMapUrl && (
-            <iframe
-              title="Trip map"
-              src={fallbackMapUrl}
-              className="absolute inset-0 h-full w-full border-0 bg-muted"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+          {useFallbackMap && fallbackViewport?.url && (
+            <>
+              <iframe
+                title="Trip map"
+                src={fallbackViewport.url}
+                className="absolute inset-0 h-full w-full border-0 bg-muted"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <div className="pointer-events-none absolute inset-0 z-[1]">
+                {fallbackMarkers.map((marker) => (
+                  <div
+                    key={marker.key}
+                    className="absolute -translate-x-1/2 -translate-y-1/2"
+                    style={{ left: marker.left, top: marker.top }}
+                    title={marker.label}
+                  >
+                    <div
+                      className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-background text-[11px] font-bold text-primary-foreground shadow-md ${marker.kind === "start" ? "bg-success" : "bg-destructive"}`}
+                    >
+                      {marker.kind === "start" ? "A" : "B"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
           {mapError && !resolving && (
             <div className="absolute left-3 right-3 top-3 z-10 rounded-md border border-destructive/40 bg-background/90 px-3 py-2 text-xs text-destructive shadow-sm backdrop-blur-sm">
