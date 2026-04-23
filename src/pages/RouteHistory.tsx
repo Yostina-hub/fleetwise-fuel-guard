@@ -1236,14 +1236,35 @@ const RouteHistory = () => {
                       : "No route data found for the selected date"}
                   </p>
                   {selectedVehicle && (
-                    <div className="text-xs space-y-1 max-w-xs mx-auto">
-                      <p className="flex items-center justify-center gap-1">
-                        <Info className="h-3 w-3" aria-hidden="true" />
-                        Try selecting a different date
-                      </p>
+                    <div className="text-xs space-y-3 max-w-md mx-auto">
                       <p className="text-muted-foreground/70">
-                        The GPS device may not have transmitted data on {format(parseISO(selectedDate), "PPP")}
+                        The GPS device may not have transmitted data on {format(parseISO(selectedDate), "PPP")}.
                       </p>
+                      {(availableDates?.length || 0) > 0 ? (
+                        <div className="space-y-2">
+                          <p className="flex items-center justify-center gap-1 text-foreground font-medium">
+                            <Info className="h-3 w-3" aria-hidden="true" />
+                            Recent dates with route data
+                          </p>
+                          <div className="flex flex-wrap justify-center gap-2">
+                            {availableDates!.map((d) => (
+                              <button
+                                key={d}
+                                type="button"
+                                onClick={() => setSelectedDate(d)}
+                                className="rounded-md border border-border bg-card hover:bg-accent hover:border-primary/50 transition-colors px-2.5 py-1 text-xs"
+                              >
+                                {format(parseISO(d), "MMM d")}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="flex items-center justify-center gap-1">
+                          <Info className="h-3 w-3" aria-hidden="true" />
+                          Try selecting a different date
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
