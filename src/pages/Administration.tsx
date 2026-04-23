@@ -2,7 +2,7 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Settings, Shield, Lock, Globe, Scale, History, Mail, AlertTriangle, KeyRound } from "lucide-react";
+import { Settings, Shield, Lock, Globe, Scale, History, Mail, AlertTriangle, KeyRound, Activity } from "lucide-react";
 import OrganizationSettingsTab from "@/components/admin/OrganizationSettingsTab";
 import SSOConfigTab from "@/components/admin/SSOConfigTab";
 import PasswordPoliciesTab from "@/components/admin/PasswordPoliciesTab";
@@ -13,6 +13,7 @@ import TwoFactorTab from "@/components/admin/TwoFactorTab";
 import { EmailReportsTab } from "@/components/admin/EmailReportsTab";
 import { PenaltyConfigTab } from "@/components/admin/PenaltyConfigTab";
 import { DriverPenaltiesTab } from "@/components/admin/DriverPenaltiesTab";
+import UserActivityTab from "@/components/admin/UserActivityTab";
 import AdminQuickStats from "@/components/admin/AdminQuickStats";
 import AdminQuickActions from "@/components/admin/AdminQuickActions";
 import { useTranslation } from "react-i18next";
@@ -80,6 +81,11 @@ const Administration = () => {
             <span className="hidden sm:inline">Login History</span>
             <span className="sm:hidden">History</span>
           </TabsTrigger>
+          <TabsTrigger value="activity" className="gap-2">
+            <Activity className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">User Activity</span>
+            <span className="sm:hidden">Activity</span>
+          </TabsTrigger>
           <TabsTrigger value="email-reports" className="gap-2">
             <Mail className="h-4 w-4" aria-hidden="true" />
             <span className="hidden sm:inline">Email Reports</span>
@@ -136,6 +142,12 @@ const Administration = () => {
         <TabsContent value="history">
           <Card className="p-6">
             <LoginHistoryTab />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="activity">
+          <Card className="p-6">
+            <UserActivityTab />
           </Card>
         </TabsContent>
 
