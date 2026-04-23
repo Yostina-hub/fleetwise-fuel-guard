@@ -1089,9 +1089,17 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     </div>
   );
 
-  /** No-op: section headers removed for a flat single-page form. Kept as a
-   *  null component so existing call sites compile without churn. */
-  const SectionHeader = (_: { icon: any; title: string }) => null;
+  /** Section header matching the reference Register-Vehicle layout: a soft
+   *  rounded icon tile + title, sitting above a 3-column grid of fields.
+   *  Keeps the form scannable without feeling like a wizard. */
+  const SectionHeader = ({ icon: Icon, title }: { icon: any; title: string }) => (
+    <div className="flex items-center gap-2 pb-2 border-b border-border/60">
+      <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary/10 text-primary">
+        <Icon className="w-4 h-4" />
+      </span>
+      <h4 className="text-base font-semibold tracking-tight text-foreground">{title}</h4>
+    </div>
+  );
 
   const body = (
     <>
@@ -1223,12 +1231,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
         {/* Single-page form — flat, professionally aligned */}
-        <div className="space-y-3">
+        <div className="space-y-5">
           {/* TYPE SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={Sparkles} title="Operation Type" />
             <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
-              <SelectTrigger className="w-full md:w-72">
+              <SelectTrigger className="w-full md:max-w-sm h-9 text-sm">
                 <SelectValue placeholder="Select operation type…" />
               </SelectTrigger>
               <SelectContent>
@@ -2001,7 +2009,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[94vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="max-w-6xl max-h-[94vh] overflow-y-auto p-0 gap-0">
         {isDriverOnly ? blockedBody : body}
       </DialogContent>
     </Dialog>
