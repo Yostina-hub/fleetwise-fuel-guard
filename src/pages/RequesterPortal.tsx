@@ -91,6 +91,7 @@ const RequesterPortal = () => (
 const RequesterPortalInner = () => {
   const { user } = useAuth();
   const { organizationId } = useOrganization();
+  const vrScope = useVehicleRequestScope();
   const qc = useQueryClient();
   const { toast } = useToast();
 
