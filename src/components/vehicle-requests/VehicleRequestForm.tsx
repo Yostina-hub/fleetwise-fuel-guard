@@ -1089,6 +1089,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     </div>
   );
 
+  /** Minimal section divider — small icon + title, subtle border. Keeps the
+   *  single-page form scannable without feeling like a wizard. */
+  const SectionHeader = ({ icon: Icon, title }: { icon: any; title: string }) => (
+    <div className="flex items-center gap-2 pt-2 pb-1 border-b border-border/60">
+      <Icon className="w-4 h-4 text-primary" />
+      <h4 className="text-sm font-semibold tracking-tight text-foreground">{title}</h4>
+    </div>
+  );
+
   const body = (
     <>
       {embedded ? (
@@ -1218,10 +1227,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
 
-        {/* Tabbed form — only the active section is rendered (matches the registration form's BasicInfoTabs UX) */}
-        <div className="space-y-4">
+        {/* Single-page form — clean, sectioned layout */}
+        <div className="space-y-6">
           {/* TYPE SECTION */}
-          <section className="space-y-3">
+          <section className="space-y-2.5">
+            <SectionHeader icon={Sparkles} title="Operation Type" />
             <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
               <SelectTrigger className="w-full sm:max-w-md">
                 <SelectValue placeholder="Select operation type…" />
@@ -1238,38 +1248,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE SECTION */}
-          <section className="space-y-3">
-            {/* Working-hours policy banner — Project / operational only */}
-            {isProject && workingHoursPolicy && (() => {
-              const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-              const days = workingHoursPolicy.days.map((d) => dayNames[d]).join(", ");
-              return (
-                <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
-                  <ShieldCheck className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
-                  <span className="text-muted-foreground">
-                    <span className="font-medium text-foreground">Working-hours policy:</span>{" "}
-                    Operational requests must run between{" "}
-                    <span className="font-medium text-foreground">
-                      {workingHoursPolicy.start.slice(0, 5)}–{workingHoursPolicy.end.slice(0, 5)}
-                    </span>{" "}
-                    on <span className="font-medium text-foreground">{days}</span>.
-                    Outside these hours? Use Daily or Field operations instead.
-                  </span>
-                </div>
-              );
-            })()}
-            {isNighttime && (
-              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs flex items-start gap-2">
-                <Moon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                <span className="text-muted-foreground">
-                  <span className="font-medium text-foreground">Nighttime window (EAT):</span>{" "}
-                  Night Operation starts at <span className="font-medium text-foreground">8:00 PM</span>{" "}
-                  (<span className="font-medium text-foreground">8:00 in the night</span> on the Ethiopian clock) and runs until{" "}
-                  <span className="font-medium text-foreground">6:00 AM</span> the next morning. Night dispatch handles this trip after{" "}
-                  <span className="font-medium text-foreground">8:00 PM</span>.
-                </span>
-              </div>
-            )}
+          <section className="space-y-2.5">
+            <SectionHeader icon={CalendarDays} title="Schedule" />
             {isDaily ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1298,54 +1278,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <FieldError field="end_time" />
                   </div>
                 </div>
-                {/* Day vs Night classification banner — Ethiopian operational hours.
-                    Night begins at 20:00 EAT ("8:00 in the night" on the local 12h clock). */}
-                {(() => {
-                  const toMin = (t: string) => {
-                    if (!t) return null;
-                    const [h, m] = t.split(":").map(Number);
-                    if (Number.isNaN(h) || Number.isNaN(m)) return null;
-                    return h * 60 + m;
-                  };
-                  const startMin = toMin(form.start_time);
-                  const endMin = toMin(form.end_time);
-                  const DAY_START = 6 * 60;     // 06:00 EAT
-                  const NIGHT_START = 20 * 60;  // 20:00 EAT = 8:00 night (Ethiopian 12h)
-                  if (startMin == null && endMin == null) return null;
-
-                  const startIsNight = startMin != null && (startMin < DAY_START || startMin >= NIGHT_START);
-                  const endIsNight   = endMin   != null && (endMin   > NIGHT_START || endMin   <= DAY_START);
-                  const isNight = startIsNight || endIsNight;
-
-                  if (!isNight) {
-                    return (
-                      <div className="rounded-lg border border-success/30 bg-success/5 p-3 text-xs flex items-start gap-2">
-                        <Clock className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                        <span className="text-muted-foreground">
-                          <span className="font-medium text-foreground">Day Operation (EAT):</span>{" "}
-                          Trip runs within <span className="font-medium">6:00 AM – 8:00 PM</span> Addis Ababa time — handled by the standard day dispatch.
-                        </span>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs flex items-start gap-2">
-                      <Moon className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                      <div className="text-muted-foreground space-y-1.5 flex-1">
-                        <div>
-                          <span className="font-medium text-foreground">Night Operation (auto · EAT):</span>{" "}
-                          {startIsNight
-                            ? <>Start time is at or after <span className="font-medium">8:00 PM (8:00 night)</span> or before <span className="font-medium">6:00 AM</span> — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>
-                            : <>End time is after <span className="font-medium">8:00 PM (8:00 night)</span> or at/before <span className="font-medium">6:00 AM</span> — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>}
-                        </div>
-                        <div>
-                          The night dispatch desk will pick this up <span className="font-medium text-foreground">after 8:00 PM EAT</span>.
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
               </>
             ) : (
               <div className={`grid grid-cols-1 gap-5`}>
@@ -1380,27 +1312,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             )}
 
 
-            {/* Live duration summary */}
-            {durationLabel && (
-              <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
-                <Clock className="w-3.5 h-3.5 text-primary" />
-                <span className="text-muted-foreground">Estimated duration:</span>
-                <Badge variant="secondary" className="font-semibold">{durationLabel}</Badge>
-              </div>
-            )}
 
             {/* Per-field errors are rendered inline below their inputs. */}
 
-            {isField && (
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
-                <p className="font-medium text-primary">Field Operation Note</p>
-                <p className="mt-0.5">Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled for the duration of the trip.</p>
-              </div>
-            )}
           </section>
 
           {/* ROUTE SECTION */}
-          <section className="space-y-3">
+          <section className="space-y-2.5">
+            <SectionHeader icon={MapPin} title="Route" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <LocationPickerField
                 label="Departure Place"
@@ -1542,7 +1461,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* RESOURCES SECTION */}
-          <section className="space-y-3">
+          <section className="space-y-2.5">
+            <SectionHeader icon={Layers} title="Vehicle & Resources" />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <VRField
                 id="vr-num-vehicles"
@@ -1900,7 +1820,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* DETAILS SECTION */}
-          <section className="space-y-3">
+          <section className="space-y-2.5">
+            <SectionHeader icon={FileText} title="Purpose & Details" />
             <div>
               <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                 Business Purpose Category <span className="text-destructive">*</span>
