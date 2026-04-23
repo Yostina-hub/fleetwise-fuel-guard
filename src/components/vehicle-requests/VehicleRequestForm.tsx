@@ -224,6 +224,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     values: form,
     setValues: setForm,
     restoredAt,
+    savedAt,
     clear: clearDraft,
   } = useFormDraft<typeof initialForm>(draftKey, initialWithPrefill);
 
