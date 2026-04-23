@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wrench, Fuel, Car, RefreshCw, Loader2 } from "lucide-react";
+import { Wrench, Fuel, Car, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 
 interface Props {
@@ -54,6 +54,21 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
     enabled: !!driverId,
   });
 
+  const { data: incidents, isLoading: li } = useQuery({
+    queryKey: ["driver-portal-submissions", "incidents", driverId],
+    queryFn: async () => {
+      if (!driverId) return [];
+      const { data } = await (supabase as any)
+        .from("incidents")
+        .select("id, incident_number, incident_type, severity, status, reason, location, description, incident_time, created_at")
+        .eq("driver_id", driverId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+    enabled: !!driverId,
+  });
+
   const { data: vehicles, isLoading: lv } = useQuery({
     queryKey: ["driver-portal-submissions", "vehicle", userId, organizationId],
     queryFn: async () => {
@@ -75,7 +90,7 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
     queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
   };
 
-  const isLoading = lm || lf || lv;
+  const isLoading = lm || lf || lv || li;
 
   return (
     <Card className="p-6">
@@ -93,6 +108,9 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
           </TabsTrigger>
           <TabsTrigger value="fuel" className="gap-1">
             <Fuel className="w-4 h-4" aria-hidden="true" /> Fuel ({fuel?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="incidents" className="gap-1">
+            <AlertTriangle className="w-4 h-4" aria-hidden="true" /> Incidents ({incidents?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="vehicle" className="gap-1">
             <Car className="w-4 h-4" aria-hidden="true" /> Vehicle ({vehicles?.length || 0})
@@ -166,6 +184,43 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
             </Table>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-6">No fuel requests yet</p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="incidents">
+          {isLoading ? (
+            <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" /></div>
+          ) : incidents && incidents.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Incident #</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Severity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {incidents.map((r: any) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-mono text-xs">{r.incident_number}</TableCell>
+                    <TableCell className="capitalize">{(r.incident_type || "—").replace(/_/g, " ")}</TableCell>
+                    <TableCell>
+                      <Badge variant={r.severity === "critical" || r.severity === "high" ? "destructive" : "outline"} className="capitalize">
+                        {r.severity}
+                      </Badge>
+                    </TableCell>
+                    <TableCell><Badge variant={statusVariant(r.status)}>{r.status?.replace(/_/g, " ")}</Badge></TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate">{r.location || "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{format(new Date(r.incident_time || r.created_at), "MMM dd HH:mm")}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-6">No incidents reported</p>
           )}
         </TabsContent>
 
