@@ -284,7 +284,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // Roles granted `vehicle_requests.bypass_rating_gate` on the RBAC matrix
   // (super admins, org admins, fleet managers by default) skip this gate
   // entirely so administrative users are never blocked from filing requests.
-  const { allowed: canBypassRatingGate } = useCan("vehicle_requests", "bypass_rating_gate");
+  //
+  // IMPORTANT: while a super_admin is impersonating another user, `useCan` and
+  // `usePendingRatings` both resolve against the impersonated identity — which
+  // means the admin would lose their bypass and could be blocked by the
+  // impersonated user's pending ratings. The real signed-in admin is always
+  // the one actually clicking submit, so the gate must respect their bypass.
+  const { allowed: canBypassRatingGateAsActor } = useCan("vehicle_requests", "bypass_rating_gate");
+  const canBypassRatingGate = canBypassRatingGateAsActor || isRealSuperAdmin;
   const { data: pendingRatings = [] } = usePendingRatings(open && !canBypassRatingGate);
   const hasPendingRatings = !canBypassRatingGate && pendingRatings.length > 0;
 
