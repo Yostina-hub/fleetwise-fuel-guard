@@ -558,85 +558,120 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     </div>
   );
 
-  // ── Table row for a single request ──
+  // ── Clean professional table row — Assign opens a modal, contract actions
+  // are tucked into a row-level dropdown so the table stays scannable. ──
   const renderTableRow = (r: any) => {
-    const isOpen = expandedId === r.id;
+    const hasContract = !!r.pool_review_decision;
     return (
-      <>
-        <TableRow
-          key={r.id}
-          className="cursor-pointer hover:bg-muted/40"
-          onClick={() => setExpandedId(isOpen ? null : r.id)}
-        >
-          <TableCell className="w-8 text-muted-foreground">
-            {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          </TableCell>
-          <TableCell className="font-mono text-xs font-semibold">{r.request_number}</TableCell>
-          <TableCell>
-            <div className="text-xs font-medium">{r.requester_name}</div>
-            <div className="text-[10px] text-muted-foreground">
-              {format(new Date(r.created_at), "MMM dd, HH:mm")}
-            </div>
-          </TableCell>
-          <TableCell>
-            <div className="flex items-center gap-1 text-xs">
-              <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
-              <span className="truncate max-w-[180px]" title={`${r.departure_place} → ${r.destination}`}>
-                {r.departure_place || "—"} → {r.destination || "—"}
-              </span>
-            </div>
-          </TableCell>
-          <TableCell className="text-xs">
-            {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
-          </TableCell>
-          <TableCell className="text-center text-xs">
-            <Badge variant="outline" className="text-[10px]">
-              <Users className="w-2.5 h-2.5 mr-0.5" />
-              {r.passengers || 1}
+      <TableRow key={r.id} className="hover:bg-muted/40">
+        <TableCell className="font-mono text-xs font-semibold">
+          {r.request_number}
+          {hasContract && (
+            <Badge
+              variant="outline"
+              className={`ml-1.5 text-[9px] capitalize ${
+                r.pool_review_decision === "approved"
+                  ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                  : r.pool_review_decision === "rejected"
+                  ? "border-rose-500/40 text-rose-600 dark:text-rose-400"
+                  : "border-amber-500/40 text-amber-600 dark:text-amber-400"
+              }`}
+              title={r.pool_review_conditions || r.pool_review_notes || ""}
+            >
+              <FileSignature className="w-2.5 h-2.5 mr-0.5" />
+              {r.pool_review_decision.replace("_", " ")}
             </Badge>
-          </TableCell>
-          <TableCell>
-            {r.pool_name ? (
-              <Badge variant="secondary" className="text-[10px] font-mono">
-                {r.pool_name}
-              </Badge>
-            ) : (
-              <span className="text-[10px] text-muted-foreground">—</span>
-            )}
-          </TableCell>
-          <TableCell>
-            <Badge variant="outline" className="text-[10px]">
-              {r.request_type === "daily_operation"
-                ? "Daily"
-                : r.request_type === "project_operation"
-                ? "Project"
-                : "Field"}
+          )}
+        </TableCell>
+        <TableCell>
+          <div className="text-xs font-medium">{r.requester_name}</div>
+          <div className="text-[10px] text-muted-foreground">
+            {format(new Date(r.created_at), "MMM dd, HH:mm")}
+          </div>
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center gap-1 text-xs">
+            <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+            <span className="truncate max-w-[200px]" title={`${r.departure_place} → ${r.destination}`}>
+              {r.departure_place || "—"} → {r.destination || "—"}
+            </span>
+          </div>
+        </TableCell>
+        <TableCell className="text-xs whitespace-nowrap">
+          {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
+        </TableCell>
+        <TableCell className="text-center text-xs">
+          <Badge variant="outline" className="text-[10px]">
+            <Users className="w-2.5 h-2.5 mr-0.5" />
+            {r.passengers || 1}
+          </Badge>
+        </TableCell>
+        <TableCell>
+          {r.pool_name ? (
+            <Badge variant="secondary" className="text-[10px] font-mono">
+              {r.pool_name}
             </Badge>
-          </TableCell>
-          <TableCell className="text-right">
+          ) : (
+            <span className="text-[10px] text-muted-foreground">—</span>
+          )}
+        </TableCell>
+        <TableCell>
+          <Badge variant="outline" className="text-[10px]">
+            {r.request_type === "daily_operation"
+              ? "Daily"
+              : r.request_type === "project_operation"
+              ? "Project"
+              : "Field"}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex items-center justify-end gap-1">
             <Button
               size="sm"
-              variant={isOpen ? "secondary" : "default"}
-              className="text-xs h-7"
-              onClick={(e) => {
-                e.stopPropagation();
-                setExpandedId(isOpen ? null : r.id);
-              }}
+              className="text-xs h-7 gap-1"
+              onClick={() => setAssignTarget(r)}
             >
-              {isOpen ? "Close" : "Assign"}
+              <UserCheck className="w-3 h-3" />
+              Assign
             </Button>
-          </TableCell>
-        </TableRow>
-        {isOpen && (
-          <TableRow key={`${r.id}-expanded`} className="bg-transparent hover:bg-transparent">
-            <TableCell colSpan={9} className="p-0">
-              {renderExpandedContent(r)}
-            </TableCell>
-          </TableRow>
-        )}
-      </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="More">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => openContractDialog(r, "approved")}>
+                  <CheckCircle className="w-3.5 h-3.5 mr-2 text-emerald-600" />
+                  Approve with conditions
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openContractDialog(r, "changes_requested")}>
+                  <RotateCcw className="w-3.5 h-3.5 mr-2 text-amber-600" />
+                  Request changes
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => openContractDialog(r, "rejected")}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <XCircle className="w-3.5 h-3.5 mr-2" />
+                  Reject request
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => reviewMutation.mutate({ requestId: r.id, action: "unavailable" })}
+                >
+                  <XCircle className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                  Mark "no vehicle"
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </TableCell>
+      </TableRow>
     );
   };
+
 
   return (
     <div className="space-y-3">
