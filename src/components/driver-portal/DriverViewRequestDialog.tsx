@@ -64,6 +64,7 @@ interface ActiveRequest {
   driver_checkin_odometer?: number | null;
   driver_checkout_odometer?: number | null;
   driver_checkin_notes?: string | null;
+  driver_checkout_notes?: string | null;
   assigned_vehicle_id?: string | null;
   rejection_reason?: string | null;
   rejected_at?: string | null;
@@ -143,6 +144,8 @@ export const DriverViewRequestDialog = ({
   const queryClient = useQueryClient();
   const [notes, setNotes] = useState("");
   const [notesError, setNotesError] = useState<string | null>(null);
+  const [completionRemark, setCompletionRemark] = useState("");
+  const [completionRemarkError, setCompletionRemarkError] = useState<string | null>(null);
   const [navMapOpen, setNavMapOpen] = useState(false);
 
   const checkedIn = !!request?.driver_checked_in_at;
@@ -150,6 +153,11 @@ export const DriverViewRequestDialog = ({
 
   // ---- Validation schemas ----
   const notesSchema = z.string().trim().max(500, "Notes must be 500 characters or less");
+  const completionRemarkSchema = z
+    .string()
+    .trim()
+    .min(1, "Completion remark is required")
+    .max(500, "Completion remark must be 500 characters or less");
 
   const validateNotes = (val: string): string | null => {
     const parsed = notesSchema.safeParse(val);
@@ -158,6 +166,16 @@ export const DriverViewRequestDialog = ({
       return null;
     }
     setNotesError(null);
+    return parsed.data;
+  };
+
+  const validateCompletionRemark = (val: string): string | null => {
+    const parsed = completionRemarkSchema.safeParse(val);
+    if (!parsed.success) {
+      setCompletionRemarkError(parsed.error.issues[0]?.message ?? "Invalid completion remark");
+      return null;
+    }
+    setCompletionRemarkError(null);
     return parsed.data;
   };
 
@@ -177,7 +195,7 @@ export const DriverViewRequestDialog = ({
       const { data } = await (supabase as any)
         .from("vehicle_requests")
         .select(
-          "id, requester_id, requester_name, passengers, departure_place, departure_lat, departure_lng, department_name, pool_location, assigned_by, assigned_at, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes",
+          "id, requester_id, requester_name, passengers, departure_place, departure_lat, departure_lng, department_name, pool_location, assigned_by, assigned_at, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes, driver_checkout_notes",
         )
         .eq("id", request!.id)
         .maybeSingle();
@@ -195,6 +213,12 @@ export const DriverViewRequestDialog = ({
   const poolLocation = hydrated?.pool_location ?? request?.pool_location ?? null;
   const assignedById = hydrated?.assigned_by ?? null;
   const assignedAt = hydrated?.assigned_at ?? request?.assigned_at ?? null;
+
+  useEffect(() => {
+    if (!open) return;
+    setCompletionRemark((hydrated?.driver_checkout_notes ?? request?.driver_checkout_notes ?? "").trim());
+    setCompletionRemarkError(null);
+  }, [open, hydrated?.driver_checkout_notes, request?.driver_checkout_notes, request?.id]);
 
   const parseEmbeddedContactPhone = (value?: string | null) => {
     if (!value) return null;
@@ -316,10 +340,13 @@ export const DriverViewRequestDialog = ({
   const checkOut = useMutation({
     mutationFn: async () => {
       if (!request) throw new Error("No request");
+      const cleanedRemark = validateCompletionRemark(completionRemark);
+      if (cleanedRemark == null) throw new Error("Please add a completion remark");
       const { error } = await (supabase as any)
         .from("vehicle_requests")
         .update({
           driver_checked_out_at: new Date().toISOString(),
+          driver_checkout_notes: cleanedRemark,
           status: "completed",
           completed_at: new Date().toISOString(),
         })
@@ -343,6 +370,8 @@ export const DriverViewRequestDialog = ({
       toast.success("Checked out — trip completed");
       setNotes("");
       setNotesError(null);
+      setCompletionRemark("");
+      setCompletionRemarkError(null);
       refresh();
       onClose();
     },
