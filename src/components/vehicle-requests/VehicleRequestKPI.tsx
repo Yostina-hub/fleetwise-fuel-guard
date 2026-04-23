@@ -3,7 +3,7 @@ import { TrendingUp, Clock, Star, Target, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
-type StatusFilter = "all" | "pending" | "approved" | "assigned" | "completed" | "rejected";
+type StatusFilter = "all" | "pending" | "approved" | "assigned" | "completed" | "rejected" | "cancelled";
 
 interface KPIProps {
   requests: any[];
