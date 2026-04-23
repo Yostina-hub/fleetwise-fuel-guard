@@ -1002,19 +1002,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       const firstField = Object.keys(result.errors)[0];
       const firstMsg = (result.errors as any)[firstField];
       toast.error(firstMsg || "Please fix the highlighted fields before submitting.");
-      // Jump to the first tab containing an error
-      const tabForField: Record<string, typeof activeTab> = {
-        request_type: "type",
-        date: "schedule", start_time: "schedule", end_time: "schedule",
-        start_date: "schedule", end_date: "schedule", project_number: "schedule",
-        departure_place: "route", destination: "route", trip_type: "route",
-        num_vehicles: "resources", passengers: "resources", vehicle_type: "resources",
-        priority: "resources", pool_category: "resources", pool_name: "resources",
-        contact_phone: "resources",
-        purpose: "details",
-      };
-      const target = tabForField[firstField];
-      if (target) setActiveTab(target);
       requestAnimationFrame(() => {
         const anchor = fieldAnchors.current[firstField as keyof typeof fieldAnchors.current];
         anchor?.scrollIntoView({ behavior: "smooth", block: "center" });
