@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import { RouteMapPreview } from "@/components/vehicle-requests/RouteMapPreview";
+import TripOverviewMap, { TripOverviewItem } from "@/components/routehistory/TripOverviewMap";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
