@@ -54,6 +54,21 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
     enabled: !!driverId,
   });
 
+  const { data: incidents, isLoading: li } = useQuery({
+    queryKey: ["driver-portal-submissions", "incidents", driverId],
+    queryFn: async () => {
+      if (!driverId) return [];
+      const { data } = await (supabase as any)
+        .from("incidents")
+        .select("id, incident_number, incident_type, severity, status, reason, location, description, incident_time, created_at")
+        .eq("driver_id", driverId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+    enabled: !!driverId,
+  });
+
   const { data: vehicles, isLoading: lv } = useQuery({
     queryKey: ["driver-portal-submissions", "vehicle", userId, organizationId],
     queryFn: async () => {
