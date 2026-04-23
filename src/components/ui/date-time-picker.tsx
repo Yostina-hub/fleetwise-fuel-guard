@@ -183,7 +183,7 @@ export function DateTimePicker({
  * Africa/Addis_Ababa (the default for this fleet). This keeps date/time inputs
  * stable regardless of the browser's locale (e.g. a Lovable preview running in UTC).
  */
-function getActiveTimezone(): string {
+export function getActiveTimezone(): string {
   if (typeof window !== "undefined") {
     const fromStorage = window.localStorage?.getItem("org_timezone");
     if (fromStorage) return fromStorage;
