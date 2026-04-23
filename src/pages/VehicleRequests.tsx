@@ -706,8 +706,9 @@ const VehicleRequests = () => {
           </div>
         </div>
 
-        <VehicleRequestKPI requests={requests} />
+        <PageDateRangeFilter hint="Filters KPIs and the table below" />
 
+        <VehicleRequestKPI requests={requests} />
 
         {/* Pool Supervisor Review now lives at /pool-supervisors */}
 
