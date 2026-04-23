@@ -1222,8 +1222,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
 
-        {/* Single-page form — clean, sectioned layout */}
-        <div className="space-y-6">
+        {/* Single-page form — flat, professionally aligned */}
+        <div className="space-y-4">
           {/* TYPE SECTION */}
           <section className="space-y-2.5">
             <SectionHeader icon={Sparkles} title="Operation Type" />
