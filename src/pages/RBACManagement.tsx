@@ -435,8 +435,20 @@ const RBACManagement = () => {
           <TabsContent value="matrix" className="mt-4">
             <Card className="glass-strong overflow-hidden">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Permission Matrix</CardTitle>
-                <CardDescription>Toggle permissions for each role. Super Admin always has full access.</CardDescription>
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <CardTitle className="text-lg">Permission Matrix</CardTitle>
+                    <CardDescription>Toggle permissions for each role. Super Admin always has full access.</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={expandAllResources} className="h-8 text-xs">
+                      <ChevronDown className="w-3.5 h-3.5 mr-1" /> Expand all
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={collapseAllResources} className="h-8 text-xs">
+                      <ChevronRight className="w-3.5 h-3.5 mr-1" /> Collapse all
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="p-0 overflow-hidden">
                 {loading ? (
@@ -444,15 +456,15 @@ const RBACManagement = () => {
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
-                  <div className="overflow-x-auto max-w-full -mx-0">
+                  <div className="overflow-auto max-w-full max-h-[70vh]">
                     <table className="w-full min-w-[1200px] border-collapse">
-                      <thead>
-                        <tr className="border-b border-border/50">
-                          <th className="sticky left-0 z-20 bg-background text-left px-4 py-2 w-[180px] min-w-[180px] text-xs font-medium text-muted-foreground">
+                      <thead className="sticky top-0 z-30 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
+                        <tr>
+                          <th className="sticky left-0 z-40 bg-background text-left px-4 py-2 w-[200px] min-w-[200px] text-xs font-medium text-muted-foreground border-b border-border/50">
                             Permission
                           </th>
                           {ALL_ROLES.map((role) => (
-                            <th key={role.value} className="text-center px-1 py-2 min-w-[70px]">
+                            <th key={role.value} className="text-center px-1 py-2 min-w-[70px] bg-background border-b border-border/50">
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -471,59 +483,73 @@ const RBACManagement = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {resources.map(([resource, perms]) => (
-                          <React.Fragment key={resource}>
-                            <tr className="bg-muted/20">
-                              <td
-                                colSpan={ALL_ROLES.length + 1}
-                                className="sticky left-0 z-10 bg-muted/20 px-4 py-1.5"
+                        {resources.map(([resource, perms]) => {
+                          const isCollapsed = collapsedResources.has(resource);
+                          return (
+                            <React.Fragment key={resource}>
+                              <tr
+                                className="bg-muted/30 hover:bg-muted/40 cursor-pointer transition-colors"
+                                onClick={() => toggleResource(resource)}
                               >
-                                <div className="flex items-center gap-2">
-                                  {RESOURCE_ICONS[resource] || <Shield className="w-3.5 h-3.5" />}
-                                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                    {resource}
-                                  </span>
-                                </div>
-                              </td>
-                            </tr>
-                            {perms.map((perm) => (
-                              <tr key={perm.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
-                                <td className="sticky left-0 z-10 bg-background px-4 py-1.5">
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <div className="flex items-center gap-2 cursor-help">
-                                          {ACTION_ICONS[perm.action] || <Info className="w-3 h-3" />}
-                                          <span className="text-xs font-medium whitespace-nowrap">{perm.name.replace(/_/g, " ")}</span>
-                                        </div>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="right">
-                                        <p className="text-xs">{perm.description}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                                <td
+                                  colSpan={ALL_ROLES.length + 1}
+                                  className="sticky left-0 z-10 bg-muted/30 px-4 py-2 border-b border-border/30"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    {isCollapsed ? (
+                                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                                    ) : (
+                                      <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                                    )}
+                                    {RESOURCE_ICONS[resource] || <Shield className="w-3.5 h-3.5" />}
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                      {resource}
+                                    </span>
+                                    <Badge variant="outline" className="ml-1 text-[10px] h-4 px-1.5">
+                                      {perms.length}
+                                    </Badge>
+                                  </div>
                                 </td>
-                                {ALL_ROLES.map((role) => {
-                                  const enabled = isPermEnabled(role.value, perm.id);
-                                  const isSA = role.value === "super_admin";
-                                  return (
-                                    <td key={role.value} className="text-center px-1 py-1">
-                                      {isSA ? (
-                                        <CheckCircle2 className="w-4 h-4 text-emerald-400 mx-auto" />
-                                      ) : (
-                                        <Switch
-                                          checked={enabled}
-                                          onCheckedChange={() => togglePermission(role.value, perm.id)}
-                                          className="mx-auto scale-75"
-                                        />
-                                      )}
-                                    </td>
-                                  );
-                                })}
                               </tr>
-                            ))}
-                          </React.Fragment>
-                        ))}
+                              {!isCollapsed && perms.map((perm) => (
+                                <tr key={perm.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
+                                  <td className="sticky left-0 z-10 bg-background px-4 py-1.5">
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <div className="flex items-center gap-2 cursor-help pl-5">
+                                            {ACTION_ICONS[perm.action] || <Info className="w-3 h-3" />}
+                                            <span className="text-xs font-medium whitespace-nowrap">{perm.name.replace(/_/g, " ")}</span>
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right">
+                                          <p className="text-xs">{perm.description}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </td>
+                                  {ALL_ROLES.map((role) => {
+                                    const enabled = isPermEnabled(role.value, perm.id);
+                                    const isSA = role.value === "super_admin";
+                                    return (
+                                      <td key={role.value} className="text-center px-1 py-1">
+                                        {isSA ? (
+                                          <CheckCircle2 className="w-4 h-4 text-emerald-400 mx-auto" />
+                                        ) : (
+                                          <Switch
+                                            checked={enabled}
+                                            onCheckedChange={() => togglePermission(role.value, perm.id)}
+                                            className="mx-auto scale-75"
+                                          />
+                                        )}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </React.Fragment>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
