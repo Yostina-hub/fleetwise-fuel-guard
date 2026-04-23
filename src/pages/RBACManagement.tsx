@@ -255,24 +255,42 @@ const RBACManagement = () => {
       const toAdd = roleMappings.filter((m) => !origSet.has(`${m.role}:${m.permission_id}`));
       const toRemove = originalMappings.filter((m) => !currSet.has(`${m.role}:${m.permission_id}`));
 
+      // Group removals by role so we can issue ONE delete per role using `.in()`.
+      // The previous per-row loop was slow and could leave the matrix in a half-saved
+      // state if any single delete failed mid-way through.
+      const removalsByRole = new Map<string, string[]>();
       for (const rm of toRemove) {
+        const list = removalsByRole.get(rm.role) || [];
+        list.push(rm.permission_id);
+        removalsByRole.set(rm.role, list);
+      }
+
+      for (const [role, permIds] of removalsByRole) {
         const { error } = await supabase
           .from("role_permissions")
           .delete()
-          .eq("role", rm.role as any)
-          .eq("permission_id", rm.permission_id);
+          .eq("role", role as any)
+          .in("permission_id", permIds);
         if (error) throw error;
       }
 
       if (toAdd.length > 0) {
+        // Use upsert so retries / duplicate runs don't blow up on the unique
+        // (role, permission_id) constraint.
         const { error } = await supabase
           .from("role_permissions")
-          .insert(toAdd.map((m) => ({ role: m.role as any, permission_id: m.permission_id })));
+          .upsert(
+            toAdd.map((m) => ({ role: m.role as any, permission_id: m.permission_id })),
+            { onConflict: "role,permission_id", ignoreDuplicates: true },
+          );
         if (error) throw error;
       }
 
       setOriginalMappings([...roleMappings]);
-      toast({ title: "Permissions Saved", description: `Updated ${toAdd.length + toRemove.length} permission mappings.` });
+      toast({
+        title: "Permissions Saved",
+        description: `Updated ${toAdd.length + toRemove.length} permission mapping${toAdd.length + toRemove.length === 1 ? "" : "s"}.`,
+      });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
