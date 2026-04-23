@@ -333,37 +333,58 @@ const RequesterPortalInner = () => {
         {/* Page-level date range filter — drives the requests table & history */}
         <PageDateRangeFilter hint="filters requests by needed-from date" />
 
-        {/* KPI cards */}
+        {/* KPI cards — clickable to filter the table by status */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KPICard
-            label="Pending"
-            value={kpis.pending}
-            icon={Hourglass}
-            tone="bg-warning/15 text-warning border-warning/30"
-          />
-          <KPICard
-            label="Approved"
-            value={kpis.approved}
-            icon={CheckCircle2}
-            tone="bg-primary/15 text-primary border-primary/30"
-          />
-          <KPICard
-            label="In Progress"
-            value={kpis.in_progress}
-            icon={PlayCircle}
-            tone="bg-success/15 text-success border-success/30"
-          />
-          <KPICard
-            label="Completed"
-            value={kpis.completed}
-            icon={CheckCircle2}
-            tone="bg-success/15 text-success border-success/30"
-            sub={
-              kpis.avgApprovalH != null
-                ? `Avg approval ${kpis.avgApprovalH.toFixed(1)}h`
-                : undefined
-            }
-          />
+          {(
+            [
+              {
+                key: "pending" as const,
+                label: "Pending",
+                value: kpis.pending,
+                icon: Hourglass,
+                tone: "bg-warning/15 text-warning border-warning/30",
+              },
+              {
+                key: "approved" as const,
+                label: "Approved",
+                value: kpis.approved,
+                icon: CheckCircle2,
+                tone: "bg-primary/15 text-primary border-primary/30",
+              },
+              {
+                key: "in_progress" as const,
+                label: "In Progress",
+                value: kpis.in_progress,
+                icon: PlayCircle,
+                tone: "bg-success/15 text-success border-success/30",
+              },
+              {
+                key: "completed" as const,
+                label: "Completed",
+                value: kpis.completed,
+                icon: CheckCircle2,
+                tone: "bg-success/15 text-success border-success/30",
+                sub:
+                  kpis.avgApprovalH != null
+                    ? `Avg approval ${kpis.avgApprovalH.toFixed(1)}h`
+                    : undefined,
+              },
+            ] as const
+          ).map((card) => (
+            <KPICard
+              key={card.key}
+              label={card.label}
+              value={card.value}
+              icon={card.icon}
+              tone={card.tone}
+              sub={(card as any).sub}
+              active={activeTab === "requests" && statusFilter === card.key}
+              onClick={() => {
+                setActiveTab("requests");
+                setStatusFilter((prev) => (prev === card.key ? "all" : card.key));
+              }}
+            />
+          ))}
         </div>
 
         {/* Tabs */}
