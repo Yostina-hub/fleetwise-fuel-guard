@@ -1025,7 +1025,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       );
       if (violation) {
         toast.error(violation);
-        setActiveTab("schedule");
         return;
       }
     }
@@ -1033,14 +1032,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // Resource-aware demand shaping.
     if (!form.purpose_category) {
       toast.error("Select a business purpose category. Personal use of fleet vehicles is not permitted.");
-      setActiveTab("details");
       return;
     }
     if (isUpgrade && !form.vehicle_type_justification?.trim()) {
       toast.error(
         `You picked ${chosenProfile?.label || "a larger vehicle"} but ${recommendation?.label} is sufficient. Please add a justification.`
       );
-      setActiveTab("resources");
       return;
     }
 
