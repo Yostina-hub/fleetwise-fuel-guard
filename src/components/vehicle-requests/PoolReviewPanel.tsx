@@ -154,6 +154,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   const [contractDecision, setContractDecision] = useState<ContractDecision>("approved");
   const [contractConditions, setContractConditions] = useState("");
   const [contractNotes, setContractNotes] = useState("");
+  const [confirmContract, setConfirmContract] = useState(false);
 
   const openContractDialog = (r: any, decision: ContractDecision = "approved") => {
     setContractTarget({ requestId: r.id, requestNumber: r.request_number });
@@ -907,15 +908,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                 contractMutation.isPending ||
                 (contractDecision !== "approved" && !contractNotes.trim())
               }
-              onClick={() =>
-                contractTarget &&
-                contractMutation.mutate({
-                  requestId: contractTarget.requestId,
-                  decision: contractDecision,
-                  conditions: contractConditions,
-                  notes: contractNotes,
-                })
-              }
+              onClick={() => setConfirmContract(true)}
               className="gap-1.5"
             >
               <FileSignature className="w-4 h-4" />
@@ -924,6 +917,38 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmActionDialog
+        open={confirmContract}
+        onOpenChange={setConfirmContract}
+        title={
+          contractDecision === "approved"
+            ? "Sign & approve with conditions?"
+            : contractDecision === "rejected"
+            ? "Reject this request?"
+            : "Send back for changes?"
+        }
+        description={
+          contractDecision === "approved"
+            ? `This will sign the pool contract for request ${contractTarget?.requestNumber ?? ""} and move it to vehicle assignment. The requester will be notified.`
+            : contractDecision === "rejected"
+            ? `This will reject request ${contractTarget?.requestNumber ?? ""} with the reason provided. The requester will be notified.`
+            : `This will return request ${contractTarget?.requestNumber ?? ""} to the requester for edits. They will be able to update and resubmit.`
+        }
+        confirmLabel={contractDecision === "rejected" ? "Reject" : contractDecision === "changes_requested" ? "Send back" : "Sign & Submit"}
+        loading={contractMutation.isPending}
+        variant={contractDecision === "rejected" ? "destructive" : "default"}
+        onConfirm={() => {
+          if (!contractTarget) return;
+          setConfirmContract(false);
+          contractMutation.mutate({
+            requestId: contractTarget.requestId,
+            decision: contractDecision,
+            conditions: contractConditions,
+            notes: contractNotes,
+          });
+        }}
+      />
     </Card>
 
     {/* Inline assign dialog (opens from a row's "Assign" button) */}
