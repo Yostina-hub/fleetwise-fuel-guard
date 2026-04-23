@@ -67,7 +67,7 @@ import {
 } from "@/components/requester-portal/RequestDetailDrawer";
 import { EditRequestDialog } from "@/components/requester-portal/EditRequestDialog";
 import { RateTripDialog } from "@/components/ratings/RateTripDialog";
-import type { PendingRatingTrip } from "@/hooks/usePendingRatings";
+import { usePendingRatings, type PendingRatingTrip } from "@/hooks/usePendingRatings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -243,6 +243,24 @@ const RequesterPortalInner = () => {
       cancelled = true;
     };
   }, [searchParams, user, organizationId, setSearchParams]);
+
+  // Issue #88 — Combined Rating + Completion: as soon as a requester lands on
+  // the portal and has trips that finished but were never rated, auto-open the
+  // RateTripDialog for the most recent one. This fuses the "trip finished"
+  // moment with the "leave a rating" step so users can't silently skip it.
+  // We gate with a per-session sessionStorage key so we only auto-pop once
+  // per browser tab — manual rating from the blocker list still works after.
+  const { data: pendingRatings = [] } = usePendingRatings(!!user && !!organizationId);
+  useEffect(() => {
+    if (ratingTrip) return;
+    if (searchParams.get("rate")) return; // deep-link path handles it
+    if (!pendingRatings.length) return;
+    const SESSION_KEY = "requester-portal:auto-rated-prompted";
+    if (sessionStorage.getItem(SESSION_KEY)) return;
+    const next = pendingRatings[0];
+    sessionStorage.setItem(SESSION_KEY, next.id);
+    setRatingTrip(next as PendingRatingTrip);
+  }, [pendingRatings, ratingTrip, searchParams]);
 
   // KPIs
   const kpis = useMemo(() => {
