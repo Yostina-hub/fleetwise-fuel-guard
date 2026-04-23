@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useOrganization } from "@/contexts/OrganizationContext";
+import { useOrganizationContext } from "@/contexts/OrganizationContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -51,7 +51,7 @@ interface EventRow {
 }
 
 export default function UserActivityTab() {
-  const { organizationId } = useOrganization();
+  const { organizationId } = useOrganizationContext();
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"summary" | "sessions" | "events">("summary");
 
