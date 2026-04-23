@@ -1068,7 +1068,8 @@ const RouteHistory = () => {
               />
             )}
 
-            {/* Playback Controls */}
+            {/* Playback Controls — hidden when showing the trip-overview fallback */}
+            {!(!hasData && !telemetryLoading && hasFallbackTrips) && (
             <Card className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[600px] max-w-[calc(100%-3rem)] bg-card/95 backdrop-blur z-10">
               <CardContent className="pt-6">
                 {/* Progress Bar */}
