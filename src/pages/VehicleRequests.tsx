@@ -1427,6 +1427,14 @@ const VehicleRequests = () => {
             onClose={() => setShowMultiAssign(null)}
           />
         )}
+        {showQuickAssign && organizationId && (
+          <QuickAssignDialog
+            request={showQuickAssign}
+            organizationId={organizationId}
+            open={!!showQuickAssign}
+            onClose={() => setShowQuickAssign(null)}
+          />
+        )}
         <BulkImportVehicleRequestsDialog
           open={showImport}
           onOpenChange={setShowImport}
