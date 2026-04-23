@@ -105,6 +105,7 @@ const VehicleRequests = () => {
   const { isDriverOnly, driverId, userId, loading: scopeLoading } = useDriverScope();
   const vrScope = useVehicleRequestScope();
   const queryClient = useQueryClient();
+  const { startISO, endISO } = usePageDateRange();
 
   // Drivers don't manage requests — they consume their assigned trips on the
   // Driver Portal. Redirect once we know they're driver-only.
