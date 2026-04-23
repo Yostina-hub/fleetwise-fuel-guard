@@ -1111,7 +1111,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         </div>
       )}
 
-      <div className={`${embedded ? "px-1" : "px-5 sm:px-6"} pt-4 pb-2 space-y-4`}>
+      <div className={`${embedded ? "px-1" : "px-5 sm:px-6"} pt-2 pb-1 space-y-3`}>
         {/* Draft restored notice */}
         {restoredAt && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs animate-fade-in">
@@ -1223,7 +1223,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
         {/* Single-page form — flat, professionally aligned */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* TYPE SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={Sparkles} title="Operation Type" />
@@ -1253,7 +1253,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <FieldError field="date" />
                   </div>
                   <div ref={(node) => { fieldAnchors.current.start_time = node; }}>
-                    <Label className="text-primary font-medium text-sm mb-1.5 block">Start Time <span className="text-destructive">*</span></Label>
+                    <Label className="text-primary font-medium text-sm mb-1 block">Start Time <span className="text-destructive">*</span></Label>
                     <TimePicker
                       value={form.start_time}
                       onChange={v => update("start_time", v)}
@@ -1263,7 +1263,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <FieldError field="start_time" />
                   </div>
                   <div ref={(node) => { fieldAnchors.current.end_time = node; }}>
-                    <Label className="text-primary font-medium text-sm mb-1.5 block">End Time <span className="text-destructive">*</span></Label>
+                    <Label className="text-primary font-medium text-sm mb-1 block">End Time <span className="text-destructive">*</span></Label>
                     <TimePicker
                       value={form.end_time}
                       onChange={v => update("end_time", v)}
@@ -1298,7 +1298,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                         onChange={e => update("project_number", e.target.value)}
                         onBlur={e => handleBlur("project_number", e.target.value, form as any)}
                         placeholder="e.g. PRJ-2026-001"
-                        className="h-12 text-base"
+                        className="h-9 text-sm"
                       />
                     </VRField>
                   </div>
@@ -1347,7 +1347,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
+                  <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
                     <Route className="w-3.5 h-3.5" /> Intermediate Stops
                     <FieldHint>
                       Add ordered waypoints between Departure and Final Destination. Driver will visit them in this order.
@@ -1440,9 +1440,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             </div>
 
             <div>
-              <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
+              <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
               <Select value={form.trip_type} onValueChange={v => update("trip_type", v)}>
-                <SelectTrigger className="h-12 text-base"><SelectValue placeholder="Select Trip Type" /></SelectTrigger>
+                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select Trip Type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="one_way">One Way Trip</SelectItem>
                   <SelectItem value="round_trip">Round Trip</SelectItem>
@@ -1481,7 +1481,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   onChange={e => update("num_vehicles", e.target.value)}
                   onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
                   disabled={!allowsMultipleVehicles}
-                  className="h-12 text-base"
+                  className="h-9 text-sm"
                 />
               </VRField>
               <VRField
@@ -1503,7 +1503,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     value={form.passengers}
                     onChange={e => update("passengers", e.target.value)}
                     onBlur={e => handleBlur("passengers", e.target.value, form as any)}
-                    className="h-12 text-base"
+                    className="h-9 text-sm"
                   />
                 ) : (
                   <div className="flex items-center gap-2">
@@ -1512,7 +1512,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                       value="N/A (driver only)"
                       readOnly
                       disabled
-                      className="h-12 text-base bg-muted/40"
+                      className="h-9 text-sm bg-muted/40"
                     />
                     <Badge variant="outline" className="text-xs whitespace-nowrap">
                       stored as -1
@@ -1521,7 +1521,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 )}
               </VRField>
               <div>
-                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
                   Cargo / Equipment <span className="text-destructive">*</span>
                   <FieldHint>Required — helps recommend the smallest sufficient vehicle and reserve cargo capacity.</FieldHint>
                 </Label>
@@ -1530,7 +1530,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   onValueChange={(v) => update("cargo_load", v as CargoLoad)}
                 >
                   <SelectTrigger
-                    className="h-12 text-base"
+                    className="h-9 text-sm"
                     aria-invalid={!form.cargo_load}
                   >
                     <SelectValue placeholder="Select cargo size (required)" />
@@ -1555,7 +1555,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               {/* Total cargo weight (kg) — validated against the chosen vehicle's max payload. */}
               <div>
-                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
                   Total Cargo Weight (kg)
                   <FieldHint>
                     Optional but recommended. The system blocks vehicles whose payload capacity is below this weight.
@@ -1572,7 +1572,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     onChange={(e) => update("cargo_weight_kg", e.target.value)}
                     onBlur={(e) => handleBlur("vehicle_type", form.vehicle_type, { ...form, cargo_weight_kg: e.target.value } as any)}
                     placeholder="e.g. 250"
-                    className="h-12 text-base pr-12"
+                    className="h-9 text-sm pr-12"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
                     kg
@@ -1616,7 +1616,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               )}
 
               <div className="">
-                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-2">
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-2">
                   Vehicle Type
                   {recommendation && form.vehicle_type === recommendation.value && (
                     <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 gap-1">
@@ -1630,7 +1630,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   )}
                 </Label>
                 <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
-                  <SelectTrigger className="h-12 text-base"><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
                   <SelectContent>
                     {eligibleVehicleTypes.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-muted-foreground">
@@ -1664,7 +1664,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               {/* Justification — only shown when over-spec'd */}
               {isUpgrade && (
                 <div className=" animate-fade-in">
-                  <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1.5 flex items-center gap-1.5">
+                  <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1 flex items-center gap-1.5">
                     Why is {chosenProfile?.label} needed instead of {recommendation?.label}? <span className="text-destructive">*</span>
                     <FieldHint tone="warning">
                       Visible to your approver. Be specific — generic reasons may be rejected.
@@ -1680,9 +1680,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               )}
               <div>
-                <Label className="text-primary font-medium text-sm mb-1.5 block">Priority</Label>
+                <Label className="text-primary font-medium text-sm mb-1 block">Priority</Label>
                 <Select value={form.priority} onValueChange={v => update("priority", v)}>
-                  <SelectTrigger className="h-12 text-base"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">🟢 Low — flexible timing</SelectItem>
                     <SelectItem value="normal">🔵 Normal — standard priority</SelectItem>
@@ -1693,7 +1693,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
               {/* Pool Category — mirrors Vehicle Registration form (Corporate / Zone / Region) */}
               <div>
-                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
                   Pool Category
                   <FieldHint>Corporate / Zone / Region — determines which Assigned Locations you can pick.</FieldHint>
                 </Label>
@@ -1709,7 +1709,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     }
                   }}
                 >
-                  <SelectTrigger className="h-12 text-base">
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder="Select category...">
                       {form.pool_category && <PoolCategoryChip value={form.pool_category} />}
                     </SelectValue>
@@ -1724,7 +1724,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               {/* Assigned Location — filtered by Pool Category */}
               <div>
-                <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
                   Assigned Location
                   <FieldHint>Filtered by Pool Category. Pick the operational pool the trip will be served from.</FieldHint>
                 </Label>
@@ -1733,7 +1733,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   onValueChange={v => update("pool_name", v)}
                   disabled={!form.pool_category}
                 >
-                  <SelectTrigger className={`h-12 text-base ${!form.pool_category ? "opacity-50" : ""}`}>
+                  <SelectTrigger className={`h-9 text-sm ${!form.pool_category ? "opacity-50" : ""}`}>
                     <SelectValue placeholder={form.pool_category ? "Select location..." : "Pick category first"}>
                       {form.pool_name && (
                         <span className="flex items-center gap-2">
@@ -1803,7 +1803,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     onBlur={e => handleBlur("contact_phone", e.target.value, form as any)}
                     placeholder="0911 234 567 or +251 911 234 567"
                     aria-invalid={!!getError("contact_phone")}
-                    className={`h-12 text-base ${getError("contact_phone") ? "border-destructive ring-1 ring-destructive/30 focus-visible:ring-destructive/40" : ""}`}
+                    className={`h-9 text-sm ${getError("contact_phone") ? "border-destructive ring-1 ring-destructive/30 focus-visible:ring-destructive/40" : ""}`}
                   />
                 </VRField>
               </div>
@@ -1814,14 +1814,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <section className="space-y-3">
             <SectionHeader icon={FileText} title="Purpose & Details" />
             <div>
-              <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
+              <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
                 Business Purpose Category <span className="text-destructive">*</span>
                 <FieldHint>
                   Fleet vehicles are for business use only. Personal or family trips are not permitted.
                 </FieldHint>
               </Label>
               <Select value={form.purpose_category} onValueChange={(v) => update("purpose_category", v)}>
-                <SelectTrigger className="h-12 text-base">
+                <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Select the business purpose…" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[420px]">
@@ -1870,7 +1870,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               })()}
             </div>
             <div>
-              <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
+              <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
                 Department / Division
                 <FieldHint>
                   The unit this trip is charged to / belongs to. Helps approval routing & reporting.
@@ -1880,7 +1880,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 value={form.department_id || "__none__"}
                 onValueChange={(v) => update("department_id", v === "__none__" ? "" : v)}
               >
-                <SelectTrigger className="h-12 text-base">
+                <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Select department (optional)" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1911,7 +1911,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 onChange={e => update("purpose", e.target.value.slice(0, 1000))}
                 onBlur={e => handleBlur("purpose", e.target.value, form as any)}
                 placeholder="Describe the purpose of this trip — what, where, and why (min 10 characters)…"
-                rows={4}
+                rows={3}
                 maxLength={1000}
               />
             </VRField>
@@ -1996,7 +1996,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   );
 
   if (embedded) {
-    return <div className="space-y-4">{isDriverOnly ? blockedBody : body}</div>;
+    return <div className="space-y-3">{isDriverOnly ? blockedBody : body}</div>;
   }
 
   return (
