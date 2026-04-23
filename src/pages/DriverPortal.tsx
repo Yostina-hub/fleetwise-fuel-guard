@@ -520,41 +520,6 @@ const DriverPortal = () => {
                   <Calendar className="w-4 h-4" aria-hidden="true" /> My Assignments
                 </h2>
               </div>
-              {/* Active vehicle request assignment banner */}
-              {activeRequest && activeRequest.assigned_vehicle && (
-                <div className="mb-4 p-4 rounded-lg border border-success/30 bg-success/5">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-2">
-                        <Badge className="bg-success/20 text-success border-success/30" variant="outline">
-                          <Car className="w-3 h-3 mr-1" aria-hidden="true" /> Vehicle Assigned
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">{activeRequest.request_number}</Badge>
-                        <Badge variant="outline" className="text-xs capitalize">{activeRequest.status}</Badge>
-                      </div>
-                      <p className="text-sm font-semibold">
-                        {activeRequest.assigned_vehicle.plate_number} · {activeRequest.assigned_vehicle.make} {activeRequest.assigned_vehicle.model}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1 truncate">
-                        {activeRequest.purpose || "—"}
-                        {activeRequest.destination && ` → ${activeRequest.destination}`}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {activeRequest.needed_from && `From ${format(new Date(activeRequest.needed_from), "MMM dd HH:mm")}`}
-                        {activeRequest.needed_until && ` · Until ${format(new Date(activeRequest.needed_until), "MMM dd HH:mm")}`}
-                      </p>
-                    </div>
-                    <Button size="sm" variant="outline" onClick={() => setViewRequest(activeRequest)} className="shrink-0">
-                      View Request <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Unified assignments table — combines vehicle request
-                  assignments and dispatch jobs (active + upcoming) into a
-                  single sortable surface so drivers see everything at a
-                  glance instead of stacked cards. */}
               {(() => {
                 type Row = {
                   id: string;
@@ -570,8 +535,41 @@ const DriverPortal = () => {
                 };
 
                 const rows: Row[] = [];
+                const requestAssignmentIds = new Set(
+                  (trips?.requestAssignments ?? [])
+                    .map((a: any) => a?.request?.id)
+                    .filter(Boolean),
+                );
 
-                // 1) Vehicle request assignments
+                // Include the currently active assigned request in the same table
+                // so the entire section stays in one consistent format.
+                if (activeRequest && !requestAssignmentIds.has(activeRequest.id)) {
+                  rows.push({
+                    id: `active-request-${activeRequest.id}`,
+                    kind: "request",
+                    statusLabel: activeRequest.driver_checked_in_at ? "Checked In" : "Assigned",
+                    statusTone: activeRequest.driver_checked_in_at ? "success" : "primary",
+                    reference: activeRequest.request_number || "—",
+                    when: activeRequest.needed_from || null,
+                    vehicle: activeRequest.assigned_vehicle
+                      ? `${activeRequest.assigned_vehicle.plate_number || "—"}${activeRequest.assigned_vehicle.make ? ` · ${activeRequest.assigned_vehicle.make}` : ""}${activeRequest.assigned_vehicle.model ? ` ${activeRequest.assigned_vehicle.model}` : ""}`
+                      : "—",
+                    route: activeRequest.destination
+                      ? `${activeRequest.purpose || "Trip"} → ${activeRequest.destination}`
+                      : activeRequest.purpose || "—",
+                    raw: {
+                      request: activeRequest,
+                      assignment: {
+                        id: activeRequest.id,
+                        driver_checked_in_at: activeRequest.driver_checked_in_at,
+                        driver_checked_out_at: activeRequest.driver_checked_out_at,
+                      },
+                      vehicle: activeRequest.assigned_vehicle,
+                    },
+                  });
+                }
+
+                // Vehicle request assignments
                 for (const a of trips?.requestAssignments ?? []) {
                   const checkedIn = !!a.driver_checked_in_at;
                   const v = a.vehicle;
@@ -593,7 +591,7 @@ const DriverPortal = () => {
                   });
                 }
 
-                // 2) Active dispatch jobs
+                // Active dispatch jobs
                 for (const j of trips?.active ?? []) {
                   rows.push({
                     id: `job-${j.id}`,
@@ -609,7 +607,7 @@ const DriverPortal = () => {
                   });
                 }
 
-                // 3) Upcoming dispatch jobs
+                // Upcoming dispatch jobs
                 for (const j of trips?.upcoming ?? []) {
                   rows.push({
                     id: `job-${j.id}`,
@@ -625,7 +623,6 @@ const DriverPortal = () => {
                   });
                 }
 
-                // Sort by date ascending (nulls last)
                 rows.sort((a, b) => {
                   const at = a.when ? new Date(a.when).getTime() : Infinity;
                   const bt = b.when ? new Date(b.when).getTime() : Infinity;
@@ -650,110 +647,112 @@ const DriverPortal = () => {
 
                 return (
                   <div className="rounded-lg border overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/40">
-                          <TableHead className="w-[120px]">Status</TableHead>
-                          <TableHead className="w-[140px]">Reference</TableHead>
-                          <TableHead className="w-[150px]">When</TableHead>
-                          <TableHead>Vehicle</TableHead>
-                          <TableHead>Route / Purpose</TableHead>
-                          <TableHead className="w-[180px] text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {rows.map((row) => {
-                          const isRequest = row.kind === "request";
-                          const a = isRequest ? row.raw.assignment : null;
-                          const r = isRequest ? row.raw.request : null;
-                          const v = isRequest ? row.raw.vehicle : null;
-                          const j = !isRequest ? row.raw : null;
-                          const checkedIn = isRequest ? !!a?.driver_checked_in_at : false;
-                          const inProgress = !isRequest && j?.status === "in_progress";
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/40">
+                            <TableHead className="w-[120px]">Status</TableHead>
+                            <TableHead className="w-[160px]">Reference</TableHead>
+                            <TableHead className="w-[160px]">When</TableHead>
+                            <TableHead className="min-w-[220px]">Vehicle</TableHead>
+                            <TableHead className="min-w-[280px]">Route / Purpose</TableHead>
+                            <TableHead className="w-[180px] text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {rows.map((row) => {
+                            const isRequest = row.kind === "request";
+                            const a = isRequest ? row.raw.assignment : null;
+                            const r = isRequest ? row.raw.request : null;
+                            const v = isRequest ? row.raw.vehicle : null;
+                            const j = !isRequest ? row.raw : null;
+                            const checkedIn = isRequest ? !!a?.driver_checked_in_at : false;
+                            const inProgress = !isRequest && j?.status === "in_progress";
 
-                          return (
-                            <TableRow key={row.id} className="align-top">
-                              <TableCell>
-                                <div className="flex flex-col gap-1">
-                                  <Badge variant="outline" className={cn("text-xs w-fit capitalize", toneClass[row.statusTone])}>
-                                    {row.statusLabel}
-                                  </Badge>
-                                  {row.priority && (
-                                    <Badge
-                                      variant={row.priority === "high" ? "destructive" : "outline"}
-                                      className="text-[10px] w-fit capitalize"
-                                    >
-                                      {row.priority}
+                            return (
+                              <TableRow key={row.id} className="align-top">
+                                <TableCell>
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant="outline" className={cn("text-xs w-fit capitalize", toneClass[row.statusTone])}>
+                                      {row.statusLabel}
                                     </Badge>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="font-mono text-xs">{row.reference}</TableCell>
-                              <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                                {row.when ? format(new Date(row.when), "MMM dd HH:mm") : "—"}
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                <span className="truncate block max-w-[220px]">{row.vehicle}</span>
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                <div className="flex items-start gap-1">
-                                  <MapPin className="w-3 h-3 mt-1 shrink-0 text-muted-foreground" aria-hidden="true" />
-                                  <span className="truncate">{row.route}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-2 flex-wrap">
-                                  {isRequest ? (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        variant={checkedIn ? "outline" : "default"}
-                                        className="gap-1 h-8"
-                                        onClick={() => setActiveAssignment({ request: r, assignment: a })}
+                                    {row.priority && (
+                                      <Badge
+                                        variant={row.priority === "high" ? "destructive" : "outline"}
+                                        className="text-[10px] w-fit capitalize"
                                       >
-                                        {checkedIn ? (
-                                          <><StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> Out</>
-                                        ) : (
-                                          <><PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> In</>
-                                        )}
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="gap-1 h-8"
-                                        onClick={() =>
-                                          setViewRequest({
-                                            ...r,
-                                            assigned_vehicle: v,
-                                            assigned_vehicle_id: v?.id,
-                                            driver_checked_in_at: a.driver_checked_in_at,
-                                            driver_checked_out_at: a.driver_checked_out_at,
-                                          })
-                                        }
-                                      >
-                                        <FileText className="w-3.5 h-3.5" aria-hidden="true" /> View
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      {inProgress ? (
-                                        <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id, j.odometer_start)} className="gap-1 h-8">
-                                          <StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> Out
+                                        {row.priority}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="font-mono text-xs">{row.reference}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {row.when ? format(new Date(row.when), "MMM dd HH:mm") : "—"}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  <span className="block min-w-[180px]">{row.vehicle}</span>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  <div className="flex items-start gap-1">
+                                    <MapPin className="w-3 h-3 mt-1 shrink-0 text-muted-foreground" aria-hidden="true" />
+                                    <span>{row.route}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex items-center justify-end gap-2 flex-wrap">
+                                    {isRequest ? (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          variant={checkedIn ? "outline" : "default"}
+                                          className="gap-1 h-8"
+                                          onClick={() => setActiveAssignment({ request: r, assignment: a })}
+                                        >
+                                          {checkedIn ? (
+                                            <><StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> Out</>
+                                          ) : (
+                                            <><PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> In</>
+                                          )}
                                         </Button>
-                                      ) : j ? (
-                                        <Button size="sm" onClick={() => handleStartJob(j.id)} className="gap-1 h-8">
-                                          <PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> In
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="gap-1 h-8"
+                                          onClick={() =>
+                                            setViewRequest({
+                                              ...r,
+                                              assigned_vehicle: v,
+                                              assigned_vehicle_id: v?.id,
+                                              driver_checked_in_at: a?.driver_checked_in_at,
+                                              driver_checked_out_at: a?.driver_checked_out_at,
+                                            })
+                                          }
+                                        >
+                                          <FileText className="w-3.5 h-3.5" aria-hidden="true" /> View
                                         </Button>
-                                      ) : null}
-                                    </>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                                      </>
+                                    ) : (
+                                      <>
+                                        {inProgress ? (
+                                          <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id, j.odometer_start)} className="gap-1 h-8">
+                                            <StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> Out
+                                          </Button>
+                                        ) : j ? (
+                                          <Button size="sm" onClick={() => handleStartJob(j.id)} className="gap-1 h-8">
+                                            <PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> In
+                                          </Button>
+                                        ) : null}
+                                      </>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 );
               })()}
