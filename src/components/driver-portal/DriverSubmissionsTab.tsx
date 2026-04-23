@@ -90,7 +90,7 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
     queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
   };
 
-  const isLoading = lm || lf || lv;
+  const isLoading = lm || lf || lv || li;
 
   return (
     <Card className="p-6">
@@ -108,6 +108,9 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
           </TabsTrigger>
           <TabsTrigger value="fuel" className="gap-1">
             <Fuel className="w-4 h-4" aria-hidden="true" /> Fuel ({fuel?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="incidents" className="gap-1">
+            <AlertTriangle className="w-4 h-4" aria-hidden="true" /> Incidents ({incidents?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="vehicle" className="gap-1">
             <Car className="w-4 h-4" aria-hidden="true" /> Vehicle ({vehicles?.length || 0})
