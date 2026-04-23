@@ -71,8 +71,8 @@ const TripManagement = () => {
         .from("vehicle_requests")
         .select(`
           *,
-          assigned_vehicle:assigned_vehicle_id(plate_number, make, model),
-          assigned_driver:assigned_driver_id(first_name, last_name)
+          assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model),
+          assigned_driver:assigned_driver_id(id, first_name, last_name)
         `)
         .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
