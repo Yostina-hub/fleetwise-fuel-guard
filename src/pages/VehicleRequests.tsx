@@ -279,16 +279,25 @@ const VehicleRequests = () => {
   });
 
   // Date-range scoped requests — drives KPIs and tab counts so all summary
-  // numbers reflect the picker on top of the page.
+  // numbers reflect the picker on top of the page. We accept a row when EITHER
+  // its `needed_from` OR its `created_at` falls within the window. Using only
+  // `needed_from` would silently hide freshly-submitted requests whose trip
+  // start sits in the next local day after timezone normalization (e.g. a
+  // request created at 11:00 EAT for "tonight at midnight" → needed_from
+  // serializes as 21:00 UTC = next-day in EAT, which a user who picked
+  // "today" in the date filter would not expect to lose).
   const dateScopedRequests = useMemo(() => {
     const startMs = new Date(startISO).getTime();
     const endMs = new Date(endISO).getTime();
+    const inRange = (iso?: string | null) => {
+      if (!iso) return false;
+      const t = new Date(iso).getTime();
+      return !Number.isNaN(t) && t >= startMs && t <= endMs;
+    };
     return requests.filter((r: any) => {
-      const ref = r.needed_from || r.created_at;
-      if (!ref) return true;
-      const t = new Date(ref).getTime();
-      if (Number.isNaN(t)) return true;
-      return t >= startMs && t <= endMs;
+      // No timestamps at all → keep (nothing to filter on).
+      if (!r.needed_from && !r.created_at) return true;
+      return inRange(r.needed_from) || inRange(r.created_at);
     });
   }, [requests, startISO, endISO]);
 
