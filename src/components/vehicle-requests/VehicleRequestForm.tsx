@@ -781,11 +781,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.start_date, form.request_type, isDaily]);
 
-  // Auto-switch between Daily and Nighttime based on the entered times.
-  // Rule: if start OR end time falls after 11:30 (NIGHT_THRESHOLD), this is a
-  // Night Operation. Otherwise Day Operation. Only auto-toggles when the user
-  // is currently on one of these two types — never overrides Project / Field /
-  // Group / Messenger selections (those are explicit operational choices).
+  // Auto-switch between Daily and Nighttime based on Ethiopian (EAT) operational hours.
+  //
+  // Ethiopia operates on East Africa Time (EAT, UTC+3). Standard fleet day-shift
+  // dispatch covers 06:00–18:00 (sunrise to sunset). Anything that starts or
+  // ends outside that window is a Nighttime Operation handled by the night
+  // dispatch desk (after 18:00 EAT).
+  //
+  // Rule (24h, EAT):
+  //   • Day:   start ≥ 06:00 AND end ≤ 18:00
+  //   • Night: start < 06:00  OR  end > 18:00
+  //
+  // Only auto-toggles when the user is currently on daily/nighttime — never
+  // overrides Project / Field / Group / Messenger selections.
   useEffect(() => {
     if (form.request_type !== "daily_operation" && form.request_type !== "nighttime_operation") return;
     const toMin = (t: string) => {
@@ -797,10 +805,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     const startMin = toMin(form.start_time);
     const endMin = toMin(form.end_time);
     if (startMin == null && endMin == null) return; // wait for input
-    const NIGHT_THRESHOLD = 11 * 60 + 30; // 11:30
+    const DAY_START = 6 * 60;   // 06:00 EAT
+    const DAY_END   = 18 * 60;  // 18:00 EAT
     const isNight =
-      (startMin != null && startMin > NIGHT_THRESHOLD) ||
-      (endMin != null && endMin > NIGHT_THRESHOLD);
+      (startMin != null && (startMin < DAY_START || startMin >= DAY_END)) ||
+      (endMin   != null && (endMin   > DAY_END   || endMin   <= DAY_START));
     const desired = isNight ? "nighttime_operation" : "daily_operation";
     if (desired !== form.request_type) {
       setForm((f) => ({ ...f, request_type: desired }));
@@ -808,8 +817,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         isNight ? "Switched to Nighttime Operation" : "Switched to Daily Operation",
         {
           description: isNight
-            ? "Times fall after 11:30 — this trip is now categorized as Nighttime."
-            : "Times fall before 11:30 — this trip is now categorized as Daily.",
+            ? "Trip falls outside 06:00–18:00 EAT — categorized as Nighttime."
+            : "Trip is within 06:00–18:00 EAT — categorized as Daily.",
         }
       );
     }
@@ -1326,8 +1335,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
               {[
-                { v: "daily_operation", title: "Daily Operation", desc: "Single-day trip with start & end time", icon: Clock },
-                { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip (02:00 – 12:00 window)", icon: Moon },
+                { v: "daily_operation", title: "Daily Operation", desc: "Day-shift trip (06:00 – 18:00 EAT)", icon: Clock },
+                { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip (18:00 – 06:00 EAT)", icon: Moon },
                 { v: "project_operation", title: "Project Operation", desc: "Multi-day, project-coded assignment", icon: Layers },
                 { v: "field_operation", title: "Field Operation", desc: "Extended off-base or field deployment", icon: Route },
                 { v: "group_operation", title: "Group Operation", desc: "Shared trip for a group of passengers", icon: Users },
@@ -1392,9 +1401,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs flex items-start gap-2">
                 <Moon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <span className="text-muted-foreground">
-                  <span className="font-medium text-foreground">Nighttime window:</span>{" "}
-                  Start and end times must be between{" "}
-                  <span className="font-medium text-foreground">02:00 and 12:00</span>.
+                  <span className="font-medium text-foreground">Nighttime window (EAT):</span>{" "}
+                  Start or end falls outside{" "}
+                  <span className="font-medium text-foreground">06:00–18:00</span>{" "}
+                  Addis Ababa time. Night dispatch handles this trip after{" "}
+                  <span className="font-medium text-foreground">18:00</span>.
                 </span>
               </div>
             )}
@@ -1426,7 +1437,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <FieldError field="end_time" />
                   </div>
                 </div>
-                {/* Day vs Night classification banner */}
+                {/* Day vs Night classification banner — Ethiopian (EAT) operational hours */}
                 {(() => {
                   const toMin = (t: string) => {
                     if (!t) return null;
@@ -1436,20 +1447,21 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   };
                   const startMin = toMin(form.start_time);
                   const endMin = toMin(form.end_time);
-                  const NIGHT_THRESHOLD = 11 * 60 + 30; // 11:30
+                  const DAY_START = 6 * 60;   // 06:00 EAT
+                  const DAY_END   = 18 * 60;  // 18:00 EAT
                   if (startMin == null && endMin == null) return null;
 
-                  const isNightByEnd = endMin != null && endMin > NIGHT_THRESHOLD;
-                  const isNightByStart = startMin != null && startMin > NIGHT_THRESHOLD;
-                  const isNight = isNightByStart || isNightByEnd;
+                  const startIsNight = startMin != null && (startMin < DAY_START || startMin >= DAY_END);
+                  const endIsNight   = endMin   != null && (endMin   > DAY_END   || endMin   <= DAY_START);
+                  const isNight = startIsNight || endIsNight;
 
                   if (!isNight) {
                     return (
                       <div className="rounded-lg border border-success/30 bg-success/5 p-3 text-xs flex items-start gap-2">
                         <Clock className="w-4 h-4 text-success shrink-0 mt-0.5" />
                         <span className="text-muted-foreground">
-                          <span className="font-medium text-foreground">Day Operation:</span>{" "}
-                          End time before <span className="font-medium">11:30</span> qualifies this trip for normal day-time dispatch.
+                          <span className="font-medium text-foreground">Day Operation (EAT):</span>{" "}
+                          Trip runs within <span className="font-medium">06:00–18:00</span> Addis Ababa time — handled by the standard day dispatch.
                         </span>
                       </div>
                     );
@@ -1460,13 +1472,13 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                       <Moon className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                       <div className="text-muted-foreground space-y-1.5 flex-1">
                         <div>
-                          <span className="font-medium text-foreground">Night Operation (auto):</span>{" "}
-                          {isNightByStart
-                            ? <>Start time is after <span className="font-medium">11:30</span> — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>
-                            : <>End time is after <span className="font-medium">11:30</span> — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>}
+                          <span className="font-medium text-foreground">Night Operation (auto · EAT):</span>{" "}
+                          {startIsNight
+                            ? <>Start time is outside <span className="font-medium">06:00–18:00</span> Addis Ababa time — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>
+                            : <>End time is outside <span className="font-medium">06:00–18:00</span> Addis Ababa time — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>}
                         </div>
                         <div>
-                          The dispatch team will manage this request <span className="font-medium text-foreground">after 8:00 PM</span>.
+                          The night dispatch desk will pick this up <span className="font-medium text-foreground">after 18:00 EAT</span>.
                         </div>
                       </div>
                     </div>
