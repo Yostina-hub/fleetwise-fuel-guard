@@ -89,12 +89,16 @@ export function EditRequestDialog({ request, open, onOpenChange }: Props) {
       if (!purpose.trim()) throw new Error("Purpose is required.");
       if (!neededFrom) throw new Error("Needed-from date is required.");
 
+      const fromIso = fromLocalInput(neededFrom);
+      if (!fromIso) throw new Error("Invalid needed-from date.");
+      const untilIso = neededUntil ? fromLocalInput(neededUntil) : null;
+
       const payload: Record<string, any> = {
         purpose: purpose.trim(),
         departure_place: departure.trim() || null,
         destination: destination.trim() || null,
-        needed_from: new Date(neededFrom).toISOString(),
-        needed_until: neededUntil ? new Date(neededUntil).toISOString() : null,
+        needed_from: fromIso,
+        needed_until: untilIso,
         passengers: passengers ? parseInt(passengers, 10) : null,
         updated_at: new Date().toISOString(),
       };
