@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import { RouteMapPreview } from "@/components/vehicle-requests/RouteMapPreview";
+import TripOverviewMap, { TripOverviewItem } from "@/components/routehistory/TripOverviewMap";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -1038,7 +1039,37 @@ const RouteHistory = () => {
               visible={showEventMarkers && hasData}
             />
 
-            {/* Playback Controls */}
+            {/* Trip overview fallback — full-size animated map shown
+                when GPS telemetry is missing for the selected day. */}
+            {!hasData && !telemetryLoading && hasFallbackTrips && selectedVehicle && (
+              <TripOverviewMap
+                trips={(tripsForDay || []).map((t: any): TripOverviewItem => ({
+                  id: t.id,
+                  request_number: t.request_number,
+                  status: t.status,
+                  departure_lat: t.departure_lat,
+                  departure_lng: t.departure_lng,
+                  destination_lat: t.destination_lat,
+                  destination_lng: t.destination_lng,
+                  departure_place: t.departure_place,
+                  destination: t.destination,
+                  driver_checked_in_at: t.driver_checked_in_at,
+                  driver_checked_out_at: t.driver_checked_out_at,
+                  needed_from: t.needed_from,
+                  needed_until: t.needed_until,
+                  driver_checkin_odometer: t.driver_checkin_odometer,
+                  driver_checkout_odometer: t.driver_checkout_odometer,
+                  driver_name: t.assigned_driver
+                    ? `${t.assigned_driver.first_name || ""} ${t.assigned_driver.last_name || ""}`.trim() || null
+                    : null,
+                }))}
+                vehiclePlate={selectedVehicleData?.plate_number || null}
+                selectedDateLabel={format(parseISO(selectedDate), "PPP")}
+              />
+            )}
+
+            {/* Playback Controls — hidden when showing the trip-overview fallback */}
+            {!(!hasData && !telemetryLoading && hasFallbackTrips) && (
             <Card className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[600px] max-w-[calc(100%-3rem)] bg-card/95 backdrop-blur z-10">
               <CardContent className="pt-6">
                 {/* Progress Bar */}
@@ -1169,6 +1200,7 @@ const RouteHistory = () => {
                  </div>
               </CardContent>
             </Card>
+            )}
           </div>
 
           {/* Stats Panel */}
@@ -1370,88 +1402,16 @@ const RouteHistory = () => {
                           : "You haven't completed any trips yet"
                         : "Select a vehicle to view route history"
                       : hasFallbackTrips
-                        ? "No GPS telemetry — showing trip overview from manifest"
+                        ? "Trip overview shown on the map →"
                         : "No route data found for the selected date"}
                   </p>
                   {selectedVehicle && (
                     <div className="text-xs space-y-3 max-w-2xl mx-auto">
-                      {/* Trip overview fallback — start → destination per trip */}
-                      {hasFallbackTrips && (
-                        <div className="space-y-3 text-left">
-                          {tripsForDay!.map((t: any) => {
-                            const driverName = t.assigned_driver
-                              ? `${t.assigned_driver.first_name || ""} ${t.assigned_driver.last_name || ""}`.trim()
-                              : null;
-                            const distance =
-                              t.driver_checkin_odometer != null && t.driver_checkout_odometer != null
-                                ? Math.max(0, Number(t.driver_checkout_odometer) - Number(t.driver_checkin_odometer))
-                                : null;
-                            const startTs = t.driver_checked_in_at || t.needed_from;
-                            const endTs = t.driver_checked_out_at || t.needed_until;
-                            return (
-                              <Card key={t.id} className="overflow-hidden">
-                                <CardHeader className="py-2 px-3 bg-muted/40 flex-row items-center gap-2 space-y-0">
-                                  <Navigation className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-                                  <span className="text-xs font-mono">{t.request_number}</span>
-                                  <Badge variant="outline" className="text-[10px] capitalize">
-                                    {String(t.status || "").replace(/_/g, " ")}
-                                  </Badge>
-                                  {driverName && (
-                                    <span className="text-[11px] text-muted-foreground ml-auto">
-                                      {driverName}
-                                    </span>
-                                  )}
-                                </CardHeader>
-                                <CardContent className="p-0">
-                                  <RouteMapPreview
-                                    departure={{
-                                      lat: t.departure_lat ?? null,
-                                      lng: t.departure_lng ?? null,
-                                      label: t.departure_place || "Start",
-                                    }}
-                                    destination={{
-                                      lat: t.destination_lat ?? null,
-                                      lng: t.destination_lng ?? null,
-                                      label: t.destination || "Destination",
-                                    }}
-                                    heightPx={220}
-                                  />
-                                  <div className="px-3 py-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-                                    <div>
-                                      <p className="text-muted-foreground">Start</p>
-                                      <p className="font-medium">
-                                        {startTs ? format(parseISO(startTs), "HH:mm") : "—"}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-muted-foreground">End</p>
-                                      <p className="font-medium">
-                                        {endTs ? format(parseISO(endTs), "HH:mm") : "—"}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-muted-foreground">Distance</p>
-                                      <p className="font-medium">
-                                        {distance != null ? `${distance.toFixed(1)} km` : "—"}
-                                      </p>
-                                    </div>
-                                    <div className="truncate">
-                                      <p className="text-muted-foreground">Route</p>
-                                      <p className="font-medium truncate">
-                                        {(t.departure_place || "—") + " → " + (t.destination || "—")}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            );
-                          })}
-                        </div>
+                      {!hasFallbackTrips && (
+                        <p className="text-muted-foreground/70">
+                          The GPS device may not have transmitted data on {format(parseISO(selectedDate), "PPP")}.
+                        </p>
                       )}
-
-                      <p className="text-muted-foreground/70">
-                        The GPS device may not have transmitted data on {format(parseISO(selectedDate), "PPP")}.
-                      </p>
 
                       {/* Last-known position quick access */}
                       {latestPosition && latestSeenLabel && (
