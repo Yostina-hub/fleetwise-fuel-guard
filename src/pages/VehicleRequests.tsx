@@ -780,7 +780,7 @@ const VehicleRequests = () => {
 
         {/* ============== ASSIGNMENTS WORKSPACE (formerly /pool-supervisors) ============== */}
         {viewMode === "assignments" && canManageAll && organizationId && (
-          <div className="space-y-4 animate-fade-in">
+          <div className="space-y-4 animate-fade-in" data-assignments-workspace>
             <Card className="border-primary/30 bg-primary/5">
               <CardContent className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="flex items-center gap-2 text-sm">
