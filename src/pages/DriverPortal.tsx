@@ -551,160 +551,212 @@ const DriverPortal = () => {
                 </div>
               )}
 
-              {/* Multi-vehicle trip request assignments — each driver
-                  checks in/out their own assigned vehicle independently. */}
-              {trips?.requestAssignments?.length ? (
-                <div className="mb-4 space-y-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                    <Car className="w-3.5 h-3.5" aria-hidden="true" /> Vehicle Request Assignments
-                  </h3>
-                  {trips.requestAssignments.map((a: any) => {
-                    const checkedIn = !!a.driver_checked_in_at;
-                    const v = a.vehicle;
-                    const r = a.request;
-                    return (
-                      <div
-                        key={a.id}
-                        className="p-3 rounded-lg border border-primary/20 bg-primary/5"
-                      >
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  "text-xs capitalize",
-                                  checkedIn
-                                    ? "bg-success/15 text-success border-success/30"
-                                    : "bg-primary/15 text-primary border-primary/30",
-                                )}
-                              >
-                                {checkedIn ? "Checked In" : "Assigned"}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {r?.request_number || "—"}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {r?.needed_from
-                                  ? format(new Date(r.needed_from), "MMM dd HH:mm")
-                                  : "—"}
-                              </span>
-                            </div>
-                            <p className="text-sm font-medium mt-2 truncate">
-                              {v?.plate_number || "—"} · {v?.make || ""} {v?.model || ""}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                              {r?.purpose || "—"}
-                              {r?.destination ? ` → ${r.destination}` : ""}
-                            </p>
-                          </div>
-                          <div className="flex flex-col gap-2 shrink-0">
-                            <Button
-                              size="sm"
-                              variant={checkedIn ? "outline" : "default"}
-                              className="gap-1"
-                              onClick={() => setActiveAssignment({ request: r, assignment: a })}
-                            >
-                              {checkedIn ? (
-                                <>
-                                  <StopCircle className="w-4 h-4" aria-hidden="true" /> Check Out
-                                </>
-                              ) : (
-                                <>
-                                  <PlayCircle className="w-4 h-4" aria-hidden="true" /> Check In
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="gap-1"
-                              onClick={() =>
-                                setViewRequest({
-                                  ...r,
-                                  assigned_vehicle: v,
-                                  assigned_vehicle_id: v?.id,
-                                  driver_checked_in_at: a.driver_checked_in_at,
-                                  driver_checked_out_at: a.driver_checked_out_at,
-                                })
-                              }
-                            >
-                              <FileText className="w-4 h-4" aria-hidden="true" /> View
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
+              {/* Unified assignments table — combines vehicle request
+                  assignments and dispatch jobs (active + upcoming) into a
+                  single sortable surface so drivers see everything at a
+                  glance instead of stacked cards. */}
+              {(() => {
+                type Row = {
+                  id: string;
+                  kind: "request" | "job";
+                  statusLabel: string;
+                  statusTone: "success" | "primary" | "muted" | "warn";
+                  reference: string;
+                  when: string | null;
+                  vehicle: string;
+                  route: string;
+                  priority?: string | null;
+                  raw: any;
+                };
 
-              <div className="space-y-3">
-                {trips?.active?.length === 0 &&
-                trips?.upcoming?.length === 0 &&
-                !trips?.requestAssignments?.length ? (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    <CheckCircle2 className="w-10 h-10 mx-auto mb-2 opacity-50" aria-hidden="true" />
-                    No active or scheduled assignments
-                  </div>
-                ) : (
-                  <>
-                    {trips?.active?.map((j: any) => {
-                      const inProgress = j.status === "in_progress";
-                      return (
-                        <div key={j.id} className="p-3 rounded-lg border border-primary/20 bg-primary/5">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Badge className="bg-primary/20 text-primary border-primary/30" variant="outline">{j.status}</Badge>
-                                <Badge variant="outline" className="text-xs">{j.job_number}</Badge>
-                                {j.priority && (
-                                  <Badge variant={j.priority === "high" ? "destructive" : "outline"} className="text-xs capitalize">
-                                    {j.priority}
+                const rows: Row[] = [];
+
+                // 1) Vehicle request assignments
+                for (const a of trips?.requestAssignments ?? []) {
+                  const checkedIn = !!a.driver_checked_in_at;
+                  const v = a.vehicle;
+                  const r = a.request;
+                  rows.push({
+                    id: `req-${a.id}`,
+                    kind: "request",
+                    statusLabel: checkedIn ? "Checked In" : "Assigned",
+                    statusTone: checkedIn ? "success" : "primary",
+                    reference: r?.request_number || "—",
+                    when: r?.needed_from || null,
+                    vehicle: v
+                      ? `${v.plate_number || "—"}${v.make ? ` · ${v.make}` : ""}${v.model ? ` ${v.model}` : ""}`
+                      : "—",
+                    route: r?.destination
+                      ? `${r?.purpose || "Trip"} → ${r.destination}`
+                      : r?.purpose || "—",
+                    raw: { request: r, assignment: a, vehicle: v },
+                  });
+                }
+
+                // 2) Active dispatch jobs
+                for (const j of trips?.active ?? []) {
+                  rows.push({
+                    id: `job-${j.id}`,
+                    kind: "job",
+                    statusLabel: j.status === "in_progress" ? "In Progress" : j.status,
+                    statusTone: j.status === "in_progress" ? "success" : "primary",
+                    reference: j.job_number || "—",
+                    when: j.scheduled_pickup_at || null,
+                    vehicle: "—",
+                    route: `${j.pickup_location_name || "—"} → ${j.dropoff_location_name || "—"}`,
+                    priority: j.priority,
+                    raw: j,
+                  });
+                }
+
+                // 3) Upcoming dispatch jobs
+                for (const j of trips?.upcoming ?? []) {
+                  rows.push({
+                    id: `job-${j.id}`,
+                    kind: "job",
+                    statusLabel: "Scheduled",
+                    statusTone: "muted",
+                    reference: j.job_number || "—",
+                    when: j.scheduled_pickup_at || null,
+                    vehicle: "—",
+                    route: `${j.pickup_location_name || "—"} → ${j.dropoff_location_name || "—"}`,
+                    priority: j.priority,
+                    raw: j,
+                  });
+                }
+
+                // Sort by date ascending (nulls last)
+                rows.sort((a, b) => {
+                  const at = a.when ? new Date(a.when).getTime() : Infinity;
+                  const bt = b.when ? new Date(b.when).getTime() : Infinity;
+                  return at - bt;
+                });
+
+                if (rows.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground text-sm border rounded-lg">
+                      <CheckCircle2 className="w-10 h-10 mx-auto mb-2 opacity-50" aria-hidden="true" />
+                      No active or scheduled assignments
+                    </div>
+                  );
+                }
+
+                const toneClass: Record<Row["statusTone"], string> = {
+                  success: "bg-success/15 text-success border-success/30",
+                  primary: "bg-primary/15 text-primary border-primary/30",
+                  muted: "bg-muted text-muted-foreground border-border",
+                  warn: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
+                };
+
+                return (
+                  <div className="rounded-lg border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/40">
+                          <TableHead className="w-[120px]">Status</TableHead>
+                          <TableHead className="w-[140px]">Reference</TableHead>
+                          <TableHead className="w-[150px]">When</TableHead>
+                          <TableHead>Vehicle</TableHead>
+                          <TableHead>Route / Purpose</TableHead>
+                          <TableHead className="w-[180px] text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rows.map((row) => {
+                          const isRequest = row.kind === "request";
+                          const a = isRequest ? row.raw.assignment : null;
+                          const r = isRequest ? row.raw.request : null;
+                          const v = isRequest ? row.raw.vehicle : null;
+                          const j = !isRequest ? row.raw : null;
+                          const checkedIn = isRequest ? !!a?.driver_checked_in_at : false;
+                          const inProgress = !isRequest && j?.status === "in_progress";
+
+                          return (
+                            <TableRow key={row.id} className="align-top">
+                              <TableCell>
+                                <div className="flex flex-col gap-1">
+                                  <Badge variant="outline" className={cn("text-xs w-fit capitalize", toneClass[row.statusTone])}>
+                                    {row.statusLabel}
                                   </Badge>
-                                )}
-                                <span className="text-xs text-muted-foreground">
-                                  {j.scheduled_pickup_at ? format(new Date(j.scheduled_pickup_at), "MMM dd HH:mm") : "—"}
-                                </span>
-                              </div>
-                              <p className="text-sm mt-2 truncate flex items-center gap-1">
-                                <MapPin className="w-3 h-3" aria-hidden="true" /> {j.pickup_location_name || "—"} → {j.dropoff_location_name || "—"}
-                              </p>
-                            </div>
-                            <div className="flex flex-col gap-2 shrink-0">
-                              {!inProgress ? (
-                                <Button size="sm" onClick={() => handleStartJob(j.id)} className="gap-1">
-                                  <PlayCircle className="w-4 h-4" aria-hidden="true" /> Check In
-                                </Button>
-                              ) : (
-                                <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id, j.odometer_start)} className="gap-1">
-                                  <StopCircle className="w-4 h-4" aria-hidden="true" /> Check Out
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {trips?.upcoming?.map((j: any) => (
-                      <div key={j.id} className="p-3 rounded-lg border border-border bg-muted/20">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs">{j.job_number}</Badge>
-                          <Badge variant={j.priority === "high" ? "destructive" : "outline"} className="text-xs capitalize">
-                            {j.priority}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {j.scheduled_pickup_at ? format(new Date(j.scheduled_pickup_at), "MMM dd HH:mm") : "—"}
-                          </span>
-                        </div>
-                        <p className="text-sm mt-1 truncate flex items-center gap-1">
-                          <MapPin className="w-3 h-3" aria-hidden="true" /> {j.pickup_location_name || "—"} → {j.dropoff_location_name || "—"}
-                        </p>
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
+                                  {row.priority && (
+                                    <Badge
+                                      variant={row.priority === "high" ? "destructive" : "outline"}
+                                      className="text-[10px] w-fit capitalize"
+                                    >
+                                      {row.priority}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-mono text-xs">{row.reference}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                                {row.when ? format(new Date(row.when), "MMM dd HH:mm") : "—"}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                <span className="truncate block max-w-[220px]">{row.vehicle}</span>
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                <div className="flex items-start gap-1">
+                                  <MapPin className="w-3 h-3 mt-1 shrink-0 text-muted-foreground" aria-hidden="true" />
+                                  <span className="truncate">{row.route}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2 flex-wrap">
+                                  {isRequest ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant={checkedIn ? "outline" : "default"}
+                                        className="gap-1 h-8"
+                                        onClick={() => setActiveAssignment({ request: r, assignment: a })}
+                                      >
+                                        {checkedIn ? (
+                                          <><StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> Out</>
+                                        ) : (
+                                          <><PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> In</>
+                                        )}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="gap-1 h-8"
+                                        onClick={() =>
+                                          setViewRequest({
+                                            ...r,
+                                            assigned_vehicle: v,
+                                            assigned_vehicle_id: v?.id,
+                                            driver_checked_in_at: a.driver_checked_in_at,
+                                            driver_checked_out_at: a.driver_checked_out_at,
+                                          })
+                                        }
+                                      >
+                                        <FileText className="w-3.5 h-3.5" aria-hidden="true" /> View
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {inProgress ? (
+                                        <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id, j.odometer_start)} className="gap-1 h-8">
+                                          <StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> Out
+                                        </Button>
+                                      ) : j ? (
+                                        <Button size="sm" onClick={() => handleStartJob(j.id)} className="gap-1 h-8">
+                                          <PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> In
+                                        </Button>
+                                      ) : null}
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                );
+              })()}
 
               {/* Recently completed trips — visible right after the driver checks out */}
               {trips?.recent?.length ? (
