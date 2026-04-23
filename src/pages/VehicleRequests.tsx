@@ -778,7 +778,35 @@ const VehicleRequests = () => {
 
         <VehicleRequestKPI requests={dateScopedRequests} />
 
-        {/* Pool Supervisor Review now lives at /pool-supervisors */}
+        {/* ============== ASSIGNMENTS WORKSPACE (formerly /pool-supervisors) ============== */}
+        {viewMode === "assignments" && canManageAll && organizationId && (
+          <div className="space-y-4 animate-fade-in">
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <UserCheck className="w-4 h-4 text-primary shrink-0" />
+                  <div>
+                    <div className="font-medium">Assignment Workspace</div>
+                    <div className="text-xs text-muted-foreground">
+                      Review approved requests and allocate a vehicle + driver from your pool.
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => setViewMode("requests")}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Back to Requests
+                </Button>
+              </CardContent>
+            </Card>
+            <ConsolidationPanel organizationId={organizationId} />
+            <PoolReviewPanel requests={requests} organizationId={organizationId} />
+          </div>
+        )}
 
         {/* ============== MAIN PANEL ============== */}
         <Card id="vehicle-requests-table" className="overflow-hidden border-border/60 shadow-sm scroll-mt-20">
