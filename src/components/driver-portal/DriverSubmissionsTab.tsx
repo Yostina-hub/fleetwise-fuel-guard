@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wrench, Fuel, Car, RefreshCw, Loader2 } from "lucide-react";
+import { Wrench, Fuel, Car, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 
 interface Props {
