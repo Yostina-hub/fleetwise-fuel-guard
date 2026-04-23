@@ -316,6 +316,32 @@ const RouteHistory = () => {
   const routeHistory = telemetryData || [];
   const hasData = routeHistory.length > 0;
 
+  // Suggest dates with telemetry for the selected vehicle (last 14 days)
+  const { data: availableDates } = useQuery({
+    queryKey: ["route-history-available-dates", selectedVehicle],
+    queryFn: async () => {
+      if (!selectedVehicle) return [];
+      const fourteenDaysAgo = new Date();
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      const { data } = await supabase
+        .from("vehicle_telemetry")
+        .select("last_communication_at")
+        .eq("vehicle_id", selectedVehicle)
+        .gte("last_communication_at", fourteenDaysAgo.toISOString())
+        .order("last_communication_at", { ascending: false })
+        .limit(500);
+
+      const set = new Set<string>();
+      (data || []).forEach((r: any) => {
+        if (r.last_communication_at) {
+          set.add(format(new Date(r.last_communication_at), "yyyy-MM-dd"));
+        }
+      });
+      return Array.from(set).slice(0, 7);
+    },
+    enabled: !!selectedVehicle && !hasData && !telemetryLoading,
+  });
+
   // Auto-start playback when navigating from Trip Replay action
   useEffect(() => {
     if (autoplayRequested && hasData && !autoplayTriggered.current) {
