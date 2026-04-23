@@ -145,6 +145,8 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   const queryClient = useQueryClient();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showConsolidated, setShowConsolidated] = useState(true);
+  // Inline assignment dialog (opened from a table row's "Assign" button)
+  const [assignTarget, setAssignTarget] = useState<any>(null);
 
   // Contract-style decision dialog state
   const [contractTarget, setContractTarget] = useState<{ requestId: string; requestNumber: string } | null>(null);
