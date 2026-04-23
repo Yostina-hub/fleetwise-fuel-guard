@@ -552,7 +552,7 @@ export const DriverNavigateMapDialog = ({
     } else {
       map.current.once("load", renderEverything);
     }
-  }, [open, origin, destination, lematReady]);
+  }, [open, origin, destination, mapLoaded, lematReady]);
 
   // Render / move the live vehicle marker whenever a new GPS sample arrives
   useEffect(() => {
@@ -663,7 +663,7 @@ export const DriverNavigateMapDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl h-[92vh] max-h-[92vh] overflow-hidden flex flex-col min-h-0">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Navigation className="w-5 h-5 text-primary" />
@@ -767,7 +767,7 @@ export const DriverNavigateMapDialog = ({
           ) : null}
         </div>
 
-        <div className="relative flex-1 min-h-[420px] rounded-lg overflow-hidden border">
+        <div className="relative flex-1 min-h-[280px] sm:min-h-[340px] rounded-lg overflow-hidden border min-w-0 min-h-0">
           <div
             ref={containerRef}
             className={`absolute inset-0 ${useFallbackMap ? "pointer-events-none opacity-0" : ""}`}
