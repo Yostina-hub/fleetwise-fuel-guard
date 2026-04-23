@@ -1174,7 +1174,7 @@ const VehicleRequests = () => {
                           <td className="py-3 px-3 text-center">
                             <StatusPill status={r.status} autoClosed={r.auto_closed} />
                           </td>
-                          <td className="py-3 px-4 text-center">
+                          <td className="py-3 px-4 text-center sticky right-0 bg-background hover:bg-muted/40 transition-colors shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.08)]">
                             <div className="flex items-center justify-center gap-0.5">
                               {/* View — always available (rows are already scoped) */}
                               <Button
