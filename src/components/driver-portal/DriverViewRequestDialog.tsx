@@ -108,6 +108,8 @@ interface Props {
   onPostTrip: () => void;
   onReportIssue: () => void;
   onRequestFuel: () => void;
+  /** Called after the driver successfully checks out / completes the trip. */
+  onCompleted?: () => void;
 }
 
 const StatusPill = ({ status }: { status?: string | null }) => {
