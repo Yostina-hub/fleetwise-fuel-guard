@@ -214,6 +214,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // accidental close, refresh, navigation, or browser crash.
   // Versioned to invalidate stale drafts created before the AM/PM picker fix,
   // which could restore 04:03 when the requester meant 4:03 PM.
+  const legacyDraftKey = user?.id ? `vehicle-request:${user.id}:${source ?? "default"}` : null;
   const draftKey = user?.id ? `vehicle-request:v2:${user.id}:${source ?? "default"}` : null;
   const initialWithPrefill = useMemo(() => ({
     ...initialForm,
@@ -221,6 +222,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     ...(prefill?.departure_place ? { departure_place: String(prefill.departure_place) } : {}),
     ...(prefill?.destination ? { destination: String(prefill.destination) } : {}),
   }), [prefill?.purpose, prefill?.departure_place, prefill?.destination]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !legacyDraftKey) return;
+    try {
+      window.localStorage.removeItem(`lov-form-draft:${legacyDraftKey}`);
+      window.localStorage.removeItem(`${legacyDraftKey}:onBehalfOf`);
+    } catch {
+      /* ignore storage issues */
+    }
+  }, [legacyDraftKey]);
 
   const {
     values: form,
