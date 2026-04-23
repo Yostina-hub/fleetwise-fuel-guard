@@ -1018,27 +1018,27 @@ const VehicleRequests = () => {
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-muted/40">
-                      <tr className="border-b text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <thead className="bg-muted/40 sticky top-0 z-10">
+                      <tr className="border-b-2 border-border/60 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
                         <SortableTh sortKey="request_number" currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-4">Request #</SortableTh>
                         <SortableTh sortKey="request_type"   currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Type</SortableTh>
                         <SortableTh sortKey="requester_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Requester</SortableTh>
                         <SortableTh sortKey="route"          currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Route</SortableTh>
                         <SortableTh sortKey="pool_name"      currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Pool</SortableTh>
                         <SortableTh sortKey="needed_from"    currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Needed From</SortableTh>
-                        <th className="text-left py-3 px-3 font-semibold text-[11px] uppercase tracking-wide text-muted-foreground">Needed Until</th>
+                        <th className="text-left py-3 px-3 font-semibold">Needed Until</th>
                         <SortableTh sortKey="vehicle"        currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3">Vehicle</SortableTh>
                         <SortableTh sortKey="trip_type"      currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3" align="center">Trip</SortableTh>
                         <th className="text-center py-3 px-3 font-semibold">Check-in</th>
                         <SortableTh sortKey="status"         currentKey={sortKey} dir={sortDir} onSort={toggleSort} className="py-3 px-3" align="center">Status</SortableTh>
-                        <th className="text-center py-3 px-4 font-semibold">Actions</th>
+                        <th className="text-center py-3 px-4 font-semibold sticky right-0 bg-muted/40 shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)]">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginated.map((r: any) => (
                         <tr
                           key={r.id}
-                          className="border-b last:border-0 hover:bg-muted/40 transition-colors"
+                          className="border-b border-border/40 last:border-0 hover:bg-muted/40 transition-colors"
                         >
                           <td className="py-3 px-4 font-semibold text-foreground">
                             <button
