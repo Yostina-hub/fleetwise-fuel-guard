@@ -1089,14 +1089,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     </div>
   );
 
-  /** Minimal section divider — small icon + title, subtle border. Keeps the
-   *  single-page form scannable without feeling like a wizard. */
-  const SectionHeader = ({ icon: Icon, title }: { icon: any; title: string }) => (
-    <div className="flex items-center gap-2 pt-2 pb-1 border-b border-border/60">
-      <Icon className="w-4 h-4 text-primary" />
-      <h4 className="text-sm font-semibold tracking-tight text-foreground">{title}</h4>
-    </div>
-  );
+  /** No-op: section headers removed for a flat single-page form. Kept as a
+   *  null component so existing call sites compile without churn. */
+  const SectionHeader = (_: { icon: any; title: string }) => null;
 
   const body = (
     <>
