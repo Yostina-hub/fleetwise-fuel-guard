@@ -491,7 +491,24 @@ const RouteHistory = () => {
       : Math.floor((playbackProgress / 100) * Math.max(0, routeHistory.length - 1))
     : 0;
 
-  const currentPosition = hasData ? routeHistory[effectiveIndex] : null;
+  // Use latest known position as a fallback when there is no data on the
+  // selected date — keeps the map informative instead of empty.
+  const fallbackPosition: TelemetryPoint | null = latestPosition
+    ? {
+        id: "latest-known",
+        latitude: latestPosition.latitude,
+        longitude: latestPosition.longitude,
+        speed_kmh: latestPosition.speed_kmh ?? null,
+        fuel_level_percent: latestPosition.fuel_level_percent ?? null,
+        heading: latestPosition.heading ?? null,
+        last_communication_at: latestPosition.last_communication_at,
+        engine_on: latestPosition.engine_on ?? null,
+      }
+    : null;
+
+  const currentPosition = hasData
+    ? routeHistory[effectiveIndex]
+    : (followLive ? fallbackPosition : null);
 
   // Address geocoding for current position
   const { address: currentAddress, isLoading: addressLoading } = useAddressGeocoding(
