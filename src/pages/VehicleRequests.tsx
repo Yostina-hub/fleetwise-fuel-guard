@@ -1168,8 +1168,9 @@ const VehicleRequests = () => {
                                 <Eye className="w-3.5 h-3.5" />
                               </Button>
                               {/* Assign — pool supervisors / admins on approved rows
-                                  awaiting vehicle+driver allocation. Opens the
-                                  Assignments workspace where the row is reviewed. */}
+                                  awaiting vehicle+driver allocation. Opens an
+                                  inline assignment modal so the supervisor never
+                                  leaves the table. */}
                               {canManageAll &&
                                 r.status === "approved" &&
                                 r.pool_review_status !== "reviewed" && (
@@ -1177,17 +1178,8 @@ const VehicleRequests = () => {
                                     size="sm"
                                     variant="ghost"
                                     className="h-7 w-7 p-0"
-                                    onClick={() => {
-                                      setViewMode("assignments");
-                                      // Scroll the assignments workspace into view on the
-                                      // next paint so the user lands on it directly.
-                                      setTimeout(() => {
-                                        document
-                                          .querySelector("[data-assignments-workspace]")
-                                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                      }, 50);
-                                    }}
-                                    title="Assign vehicle & driver from pool"
+                                    onClick={() => setShowQuickAssign(r)}
+                                    title="Assign vehicle & driver"
                                   >
                                     <UserCheck className="w-3.5 h-3.5 text-primary" />
                                   </Button>
