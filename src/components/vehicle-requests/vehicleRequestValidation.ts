@@ -121,10 +121,12 @@ export function validateVRField(
 ): string | undefined {
   const isProject = ctx.request_type === "project_operation";
   const isNighttime = ctx.request_type === "nighttime_operation";
-  // Nighttime is a single-day variant of Daily (uses `date` + start/end times)
-  // but locked to a 02:00–12:00 window to match the night-shift policy.
+  // Nighttime is a single-day variant of Daily (uses `date` + start/end times).
+  // Operational window (EAT, 24h): start ≥ 20:00 (8:00 night) OR start < 06:00,
+  // end ≤ 06:00 (next morning) OR end > 20:00. This matches the auto-switcher
+  // in VehicleRequestForm.tsx so a trip categorized as Night never fails the
+  // window check it was just classified by.
   const isDaily = ctx.request_type === "daily_operation" || isNighttime;
-  const NIGHT_WINDOW = { start: "02:00", end: "12:00" };
 
   switch (field) {
     case "request_type": {
