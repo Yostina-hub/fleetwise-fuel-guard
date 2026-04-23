@@ -67,7 +67,7 @@ import {
 } from "@/components/requester-portal/RequestDetailDrawer";
 import { EditRequestDialog } from "@/components/requester-portal/EditRequestDialog";
 import { RateTripDialog } from "@/components/ratings/RateTripDialog";
-import type { PendingRatingTrip } from "@/hooks/usePendingRatings";
+import { usePendingRatings, type PendingRatingTrip } from "@/hooks/usePendingRatings";
 import {
   AlertDialog,
   AlertDialogAction,
