@@ -118,44 +118,46 @@ const roundedNowHHMM = (offsetMinutes = 0): string => {
   return `${hh}:${mm}`;
 };
 
-const buildInitialForm = () => ({
-  request_type: "daily_operation",
-  date: undefined as Date | undefined,
-  // Times must be explicitly entered by the user — no defaults so the
-  // validation can flag empty fields instead of silently accepting "now".
-  start_time: "",
-  end_time: "",
-  start_date: undefined as Date | undefined,
-  start_date_time: "",
-  end_date: undefined as Date | undefined,
-  end_date_time: "",
-  departure_place: "",
-  destination: "",
-  departure_lat: null as number | null,
-  departure_lng: null as number | null,
-  destination_lat: null as number | null,
-  destination_lng: null as number | null,
-  // Optional ordered intermediate stops between Departure and final Destination.
-  // Persisted to `vehicle_request_stops` (sequence-ordered waypoints).
-  stops: [] as Array<{ name: string; lat: number | null; lng: number | null }>,
-  num_vehicles: "1",
-  passengers: "1",
-  vehicle_type: "",
-  trip_type: "",
-  pool_category: "",
-  pool_name: "",
-  purpose: "",
-  department_id: "" as string,
-  project_number: "",
-  // New: priority + contact phone — surfaced for dispatch/approver context.
-  priority: "normal",
-  contact_phone: "",
-  // Resource-aware request fields (demand-shaping pattern).
-  purpose_category: "" as string,                  // business taxonomy — required
-  cargo_load: "" as CargoLoad | "",                // mandatory — drives recommendation engine
-  cargo_weight_kg: "" as string,                   // optional — total cargo weight (kg) checked against vehicle max payload
-  vehicle_type_justification: "" as string,        // required when user upgrades over recommendation
-});
+const buildInitialForm = () => {
+  // Prefill date + start time with the machine's current values so users land
+  // on a ready-to-submit form. End time stays blank so they choose when the
+  // trip ends. Times are HH:MM strings to match the TimePicker contract.
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  return {
+    request_type: "daily_operation",
+    date: today as Date | undefined,
+    start_time: nowHHMM,
+    end_time: "",
+    start_date: today as Date | undefined,
+    start_date_time: nowHHMM,
+    end_date: undefined as Date | undefined,
+    end_date_time: "",
+    departure_place: "",
+    destination: "",
+    departure_lat: null as number | null,
+    departure_lng: null as number | null,
+    destination_lat: null as number | null,
+    destination_lng: null as number | null,
+    stops: [] as Array<{ name: string; lat: number | null; lng: number | null }>,
+    num_vehicles: "1",
+    passengers: "1",
+    vehicle_type: "",
+    trip_type: "",
+    pool_category: "",
+    pool_name: "",
+    purpose: "",
+    department_id: "" as string,
+    project_number: "",
+    priority: "normal",
+    contact_phone: "",
+    purpose_category: "" as string,
+    cargo_load: "" as CargoLoad | "",
+    cargo_weight_kg: "" as string,
+    vehicle_type_justification: "" as string,
+  };
+};
 
 const initialForm = buildInitialForm();
 
