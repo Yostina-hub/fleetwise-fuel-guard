@@ -133,9 +133,12 @@ const RequesterPortalInner = () => {
   });
 
   // Fetch this user's requests in the selected page-level date range.
-  // We filter on `needed_from` (the trip start) so the table reflects the
-  // same "from / until" window the user picks at the top of the page. Rows
-  // without `needed_from` (e.g. drafts) are matched on `created_at` instead.
+  // We match a row when EITHER its trip start (`needed_from`) OR its
+  // submission time (`created_at`) falls within the selected window. This
+  // ensures freshly-submitted requests always appear in the table even when
+  // their `needed_from` is in a different timezone than the page filter
+  // (e.g. user picks 00:00 local time which serializes as the previous UTC
+  // day after timezone normalization).
   const { data: requests = [], isLoading, refetch } = useQuery({
     queryKey: ["my-vehicle-requests", organizationId, user?.id, startISO, endISO],
     queryFn: async () => {
@@ -149,7 +152,8 @@ const RequesterPortalInner = () => {
         .eq("requester_id", user.id)
         .or(
           `and(needed_from.gte.${startISO},needed_from.lte.${endISO}),` +
-            `and(needed_from.is.null,created_at.gte.${startISO},created_at.lte.${endISO})`,
+            `and(needed_from.is.null,created_at.gte.${startISO},created_at.lte.${endISO}),` +
+            `and(created_at.gte.${startISO},created_at.lte.${endISO})`,
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
