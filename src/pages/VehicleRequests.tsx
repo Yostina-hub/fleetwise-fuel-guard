@@ -834,7 +834,37 @@ const VehicleRequests = () => {
           </div>
         )}
 
+        {/* ============== OPS MAP WORKSPACE ============== */}
+        {viewMode === "ops_map" && canManageAll && organizationId && (
+          <div className="space-y-4 animate-fade-in">
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                  <div>
+                    <div className="font-medium">Operations Control Map</div>
+                    <div className="text-xs text-muted-foreground">
+                      Live view of pending routes, idle vehicles by pool, merge candidates, and cross-pool borrow suggestions.
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => setViewMode("requests")}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Back to Requests
+                </Button>
+              </CardContent>
+            </Card>
+            <OpsMapView organizationId={organizationId} />
+          </div>
+        )}
+
         {/* ============== MAIN PANEL ============== */}
+
         <Card id="vehicle-requests-table" className="overflow-hidden border-border/60 shadow-sm scroll-mt-20">
           <CardHeader className="pb-3 border-b bg-muted/30">
             <div className="flex flex-col gap-4">
