@@ -414,7 +414,7 @@ export const PoolAssignmentPicker = ({
           size="sm"
           className="bg-emerald-600 hover:bg-emerald-700 text-xs gap-1.5"
           disabled={!vehicleId || isAssigning}
-          onClick={() => onAssign(vehicleId, driverId || undefined)}
+          onClick={() => setConfirmAssign(true)}
         >
           {isAssigning ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -423,10 +423,53 @@ export const PoolAssignmentPicker = ({
           )}
           {isAssigning ? "Assigning…" : primaryLabel}
         </Button>
-        <Button size="sm" variant="outline" className="text-xs gap-1" onClick={onUnavailable}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-xs gap-1"
+          onClick={() => setConfirmUnavailable(true)}
+        >
           <XCircle className="w-3.5 h-3.5" /> No vehicles available
         </Button>
       </div>
+
+      {/* Confirmation: Assign vehicle & driver */}
+      <ConfirmActionDialog
+        open={confirmAssign}
+        onOpenChange={setConfirmAssign}
+        title="Confirm assignment"
+        description={
+          selectedVehicle
+            ? `Assign ${selectedVehicle.plate_number} (${selectedVehicle.make ?? ""} ${selectedVehicle.model ?? ""}).trim()${
+                selectedDriver
+                  ? ` with driver ${selectedDriver.first_name ?? ""} ${selectedDriver.last_name ?? ""}`
+                  : " without a driver"
+              } to request ${request.request_number ?? ""}? The requester will be notified.`
+            : "Assign this vehicle to the request? The requester will be notified."
+        }
+        confirmLabel={primaryLabel}
+        loading={!!isAssigning}
+        variant="default"
+        onConfirm={() => {
+          setConfirmAssign(false);
+          onAssign(vehicleId, driverId || undefined);
+        }}
+      />
+
+      {/* Confirmation: Mark pool as unavailable */}
+      <ConfirmActionDialog
+        open={confirmUnavailable}
+        onOpenChange={setConfirmUnavailable}
+        title="Mark pool as unavailable?"
+        description={`This will flag request ${request.request_number ?? ""} as having no vehicles in this pool. The request stays open so a supervisor can try a cross-pool assignment.`}
+        confirmLabel="Mark unavailable"
+        loading={false}
+        variant="destructive"
+        onConfirm={() => {
+          setConfirmUnavailable(false);
+          onUnavailable();
+        }}
+      />
     </div>
   );
 };
