@@ -49,12 +49,49 @@ export default function DriverNotificationBell({ driverId }: Props) {
   // Hide entirely when there is no linked driver — keeps non-driver headers clean.
   if (!driverId) return null;
 
+  /**
+   * Many notifications were originally authored for office users and link to
+   * admin-only routes (e.g. `/vehicle-requests`, `/sop/...`). Drivers can't
+   * open those — `ProtectedRoute` bounces them to `/my-license`, which made
+   * the bell feel broken. Map those links to driver-friendly equivalents
+   * before navigating.
+   */
+  const resolveDriverLink = (link: string | null, payload: Record<string, any> | null | undefined): string | null => {
+    if (!link) return null;
+    const requestId =
+      payload?.request_id ||
+      payload?.vehicle_request_id ||
+      payload?.workflow_instance_id ||
+      null;
+
+    // Vehicle request notifications → driver portal "My Assignments"
+    if (link.startsWith("/vehicle-requests")) {
+      return requestId
+        ? `/driver-portal?tab=requests&id=${requestId}`
+        : "/driver-portal?tab=requests";
+    }
+    // License renewal SOP → license hub
+    if (link.startsWith("/sop/license-renewal")) {
+      return "/my-license";
+    }
+    // Vehicle handover SOP → driver portal handovers tab
+    if (link.startsWith("/sop/vehicle-handover")) {
+      return "/driver-portal?tab=handovers";
+    }
+    // Any other SOP route → driver portal home
+    if (link.startsWith("/sop")) {
+      return "/driver-portal";
+    }
+    return link;
+  };
+
   const handleClick = async (n: typeof unread[number]) => {
     setOpen(false);
     if (!n.read_at) {
       await markDriverNotificationRead(n.id);
     }
-    if (n.link) navigate(n.link);
+    const target = resolveDriverLink(n.link, n.payload);
+    if (target) navigate(target);
   };
 
   return (
