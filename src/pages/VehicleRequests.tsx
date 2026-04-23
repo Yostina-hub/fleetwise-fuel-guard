@@ -70,6 +70,7 @@ import { DeallocateRequestDialog } from "@/components/vehicle-requests/Deallocat
 import { DeleteRequestDialog } from "@/components/vehicle-requests/DeleteRequestDialog";
 import { EditRequestDialog } from "@/components/vehicle-requests/EditRequestDialog";
 import { MultiVehicleAssignDialog } from "@/components/vehicle-requests/MultiVehicleAssignDialog";
+import { QuickAssignDialog } from "@/components/vehicle-requests/QuickAssignDialog";
 import BulkImportVehicleRequestsDialog from "@/components/vehicle-requests/BulkImportVehicleRequestsDialog";
 import * as XLSX from "xlsx";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -148,6 +149,7 @@ const VehicleRequests = () => {
   const [showDelete, setShowDelete] = useState<any>(null);
   const [showEdit, setShowEdit] = useState<any>(null);
   const [showMultiAssign, setShowMultiAssign] = useState<any>(null);
+  const [showQuickAssign, setShowQuickAssign] = useState<any>(null);
   const [showImport, setShowImport] = useState(false);
 
   // View mode — "requests" (default table) or "assignments" (pool supervisor
@@ -1166,8 +1168,9 @@ const VehicleRequests = () => {
                                 <Eye className="w-3.5 h-3.5" />
                               </Button>
                               {/* Assign — pool supervisors / admins on approved rows
-                                  awaiting vehicle+driver allocation. Opens the
-                                  Assignments workspace where the row is reviewed. */}
+                                  awaiting vehicle+driver allocation. Opens an
+                                  inline assignment modal so the supervisor never
+                                  leaves the table. */}
                               {canManageAll &&
                                 r.status === "approved" &&
                                 r.pool_review_status !== "reviewed" && (
@@ -1175,17 +1178,8 @@ const VehicleRequests = () => {
                                     size="sm"
                                     variant="ghost"
                                     className="h-7 w-7 p-0"
-                                    onClick={() => {
-                                      setViewMode("assignments");
-                                      // Scroll the assignments workspace into view on the
-                                      // next paint so the user lands on it directly.
-                                      setTimeout(() => {
-                                        document
-                                          .querySelector("[data-assignments-workspace]")
-                                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                      }, 50);
-                                    }}
-                                    title="Assign vehicle & driver from pool"
+                                    onClick={() => setShowQuickAssign(r)}
+                                    title="Assign vehicle & driver"
                                   >
                                     <UserCheck className="w-3.5 h-3.5 text-primary" />
                                   </Button>
@@ -1431,6 +1425,14 @@ const VehicleRequests = () => {
             request={showMultiAssign}
             open={!!showMultiAssign}
             onClose={() => setShowMultiAssign(null)}
+          />
+        )}
+        {showQuickAssign && organizationId && (
+          <QuickAssignDialog
+            request={showQuickAssign}
+            organizationId={organizationId}
+            open={!!showQuickAssign}
+            onClose={() => setShowQuickAssign(null)}
           />
         )}
         <BulkImportVehicleRequestsDialog

@@ -32,15 +32,22 @@ import {
   ScrollText,
   Zap,
   Loader2,
-  ChevronDown,
-  ChevronRight,
   MapPin,
+  MoreHorizontal,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { PoolAssignmentPicker } from "./PoolAssignmentPicker";
+import { QuickAssignDialog } from "./QuickAssignDialog";
 
 const sendAssignmentSMS = async (request: any, vehicleId: string, driverId?: string) => {
   try {
@@ -138,6 +145,8 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   const queryClient = useQueryClient();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showConsolidated, setShowConsolidated] = useState(true);
+  // Inline assignment dialog (opened from a table row's "Assign" button)
+  const [assignTarget, setAssignTarget] = useState<any>(null);
 
   // Contract-style decision dialog state
   const [contractTarget, setContractTarget] = useState<{ requestId: string; requestNumber: string } | null>(null);
@@ -549,85 +558,120 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     </div>
   );
 
-  // ── Table row for a single request ──
+  // ── Clean professional table row — Assign opens a modal, contract actions
+  // are tucked into a row-level dropdown so the table stays scannable. ──
   const renderTableRow = (r: any) => {
-    const isOpen = expandedId === r.id;
+    const hasContract = !!r.pool_review_decision;
     return (
-      <>
-        <TableRow
-          key={r.id}
-          className="cursor-pointer hover:bg-muted/40"
-          onClick={() => setExpandedId(isOpen ? null : r.id)}
-        >
-          <TableCell className="w-8 text-muted-foreground">
-            {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          </TableCell>
-          <TableCell className="font-mono text-xs font-semibold">{r.request_number}</TableCell>
-          <TableCell>
-            <div className="text-xs font-medium">{r.requester_name}</div>
-            <div className="text-[10px] text-muted-foreground">
-              {format(new Date(r.created_at), "MMM dd, HH:mm")}
-            </div>
-          </TableCell>
-          <TableCell>
-            <div className="flex items-center gap-1 text-xs">
-              <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
-              <span className="truncate max-w-[180px]" title={`${r.departure_place} → ${r.destination}`}>
-                {r.departure_place || "—"} → {r.destination || "—"}
-              </span>
-            </div>
-          </TableCell>
-          <TableCell className="text-xs">
-            {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
-          </TableCell>
-          <TableCell className="text-center text-xs">
-            <Badge variant="outline" className="text-[10px]">
-              <Users className="w-2.5 h-2.5 mr-0.5" />
-              {r.passengers || 1}
+      <TableRow key={r.id} className="hover:bg-muted/40">
+        <TableCell className="font-mono text-xs font-semibold">
+          {r.request_number}
+          {hasContract && (
+            <Badge
+              variant="outline"
+              className={`ml-1.5 text-[9px] capitalize ${
+                r.pool_review_decision === "approved"
+                  ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                  : r.pool_review_decision === "rejected"
+                  ? "border-rose-500/40 text-rose-600 dark:text-rose-400"
+                  : "border-amber-500/40 text-amber-600 dark:text-amber-400"
+              }`}
+              title={r.pool_review_conditions || r.pool_review_notes || ""}
+            >
+              <FileSignature className="w-2.5 h-2.5 mr-0.5" />
+              {r.pool_review_decision.replace("_", " ")}
             </Badge>
-          </TableCell>
-          <TableCell>
-            {r.pool_name ? (
-              <Badge variant="secondary" className="text-[10px] font-mono">
-                {r.pool_name}
-              </Badge>
-            ) : (
-              <span className="text-[10px] text-muted-foreground">—</span>
-            )}
-          </TableCell>
-          <TableCell>
-            <Badge variant="outline" className="text-[10px]">
-              {r.request_type === "daily_operation"
-                ? "Daily"
-                : r.request_type === "project_operation"
-                ? "Project"
-                : "Field"}
+          )}
+        </TableCell>
+        <TableCell>
+          <div className="text-xs font-medium">{r.requester_name}</div>
+          <div className="text-[10px] text-muted-foreground">
+            {format(new Date(r.created_at), "MMM dd, HH:mm")}
+          </div>
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center gap-1 text-xs">
+            <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+            <span className="truncate max-w-[200px]" title={`${r.departure_place} → ${r.destination}`}>
+              {r.departure_place || "—"} → {r.destination || "—"}
+            </span>
+          </div>
+        </TableCell>
+        <TableCell className="text-xs whitespace-nowrap">
+          {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
+        </TableCell>
+        <TableCell className="text-center text-xs">
+          <Badge variant="outline" className="text-[10px]">
+            <Users className="w-2.5 h-2.5 mr-0.5" />
+            {r.passengers || 1}
+          </Badge>
+        </TableCell>
+        <TableCell>
+          {r.pool_name ? (
+            <Badge variant="secondary" className="text-[10px] font-mono">
+              {r.pool_name}
             </Badge>
-          </TableCell>
-          <TableCell className="text-right">
+          ) : (
+            <span className="text-[10px] text-muted-foreground">—</span>
+          )}
+        </TableCell>
+        <TableCell>
+          <Badge variant="outline" className="text-[10px]">
+            {r.request_type === "daily_operation"
+              ? "Daily"
+              : r.request_type === "project_operation"
+              ? "Project"
+              : "Field"}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex items-center justify-end gap-1">
             <Button
               size="sm"
-              variant={isOpen ? "secondary" : "default"}
-              className="text-xs h-7"
-              onClick={(e) => {
-                e.stopPropagation();
-                setExpandedId(isOpen ? null : r.id);
-              }}
+              className="text-xs h-7 gap-1"
+              onClick={() => setAssignTarget(r)}
             >
-              {isOpen ? "Close" : "Assign"}
+              <UserCheck className="w-3 h-3" />
+              Assign
             </Button>
-          </TableCell>
-        </TableRow>
-        {isOpen && (
-          <TableRow key={`${r.id}-expanded`} className="bg-transparent hover:bg-transparent">
-            <TableCell colSpan={9} className="p-0">
-              {renderExpandedContent(r)}
-            </TableCell>
-          </TableRow>
-        )}
-      </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="More">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => openContractDialog(r, "approved")}>
+                  <CheckCircle className="w-3.5 h-3.5 mr-2 text-emerald-600" />
+                  Approve with conditions
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openContractDialog(r, "changes_requested")}>
+                  <RotateCcw className="w-3.5 h-3.5 mr-2 text-amber-600" />
+                  Request changes
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => openContractDialog(r, "rejected")}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <XCircle className="w-3.5 h-3.5 mr-2" />
+                  Reject request
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => reviewMutation.mutate({ requestId: r.id, action: "unavailable" })}
+                >
+                  <XCircle className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                  Mark "no vehicle"
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </TableCell>
+      </TableRow>
     );
   };
+
 
   return (
     <div className="space-y-3">
@@ -744,19 +788,18 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
 
           {/* Ungrouped requests — professional table */}
           {ungrouped.length > 0 && (
-            <div className="rounded-md border overflow-hidden">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead className="w-8" />
-                    <TableHead>Request #</TableHead>
-                    <TableHead>Requester</TableHead>
-                    <TableHead>Route</TableHead>
-                    <TableHead>Needed From</TableHead>
-                    <TableHead className="text-center">Pax</TableHead>
-                    <TableHead>Pool</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Request #</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Requester</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Route</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Needed From</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide text-center">Pax</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Pool</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Type</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>{ungrouped.map(renderTableRow)}</TableBody>
@@ -864,6 +907,16 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         </DialogContent>
       </Dialog>
     </Card>
+
+    {/* Inline assign dialog (opens from a row's "Assign" button) */}
+    {assignTarget && (
+      <QuickAssignDialog
+        request={assignTarget}
+        organizationId={organizationId}
+        open={!!assignTarget}
+        onClose={() => setAssignTarget(null)}
+      />
+    )}
     </div>
   );
 };
