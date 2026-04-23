@@ -125,10 +125,45 @@ const RouteHistory = () => {
     if (!isToday) setFollowLive(false);
   }, [isToday]);
 
-  // Fetch vehicles with assigned driver info
+  // Fetch vehicles with assigned driver info.
+  // For driver-only users, scope to vehicles they have actually used so the
+  // dropdown only shows trips that are theirs (not the entire org fleet).
   const { data: vehicles, isLoading: vehiclesLoading, isError: vehiclesError } = useQuery({
-    queryKey: ["vehicles-with-drivers", organizationId],
+    queryKey: ["vehicles-with-drivers", organizationId, isDriverOnly, driverId],
     queryFn: async () => {
+      if (isDriverOnly) {
+        if (!driverId) return [];
+
+        // Vehicles the driver has either been assigned to or completed a request with.
+        const [assignedRes, requestsRes] = await Promise.all([
+          supabase
+            .from("vehicles")
+            .select("id, plate_number, make, model, assigned_driver_id")
+            .eq("organization_id", organizationId!)
+            .eq("assigned_driver_id", driverId),
+          (supabase as any)
+            .from("vehicle_requests")
+            .select(
+              "assigned_vehicle_id, assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model, assigned_driver_id)"
+            )
+            .eq("assigned_driver_id", driverId)
+            .not("assigned_vehicle_id", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(100),
+        ]);
+
+        const map = new Map<string, any>();
+        (assignedRes.data || []).forEach((v: any) => map.set(v.id, v));
+        (requestsRes.data || []).forEach((r: any) => {
+          if (r.assigned_vehicle && !map.has(r.assigned_vehicle.id)) {
+            map.set(r.assigned_vehicle.id, r.assigned_vehicle);
+          }
+        });
+        return Array.from(map.values()).sort((a, b) =>
+          (a.plate_number || "").localeCompare(b.plate_number || "")
+        );
+      }
+
       const { data, error } = await supabase
         .from("vehicles")
         .select("id, plate_number, make, model, assigned_driver_id")
@@ -137,8 +172,43 @@ const RouteHistory = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!organizationId,
+    enabled: !!organizationId && !scopeLoading,
   });
+
+  // Driver-only: load recent journeys (vehicle + checkout date) for quick selection.
+  const { data: driverRecentTrips } = useQuery({
+    queryKey: ["route-history-driver-recent", driverId],
+    queryFn: async () => {
+      if (!driverId) return [];
+      const { data } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          `id, request_number, departure_place, destination,
+           driver_checked_in_at, driver_checked_out_at,
+           assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model)`
+        )
+        .eq("assigned_driver_id", driverId)
+        .not("driver_checked_out_at", "is", null)
+        .order("driver_checked_out_at", { ascending: false })
+        .limit(10);
+      return data || [];
+    },
+    enabled: isDriverOnly && !!driverId,
+  });
+
+  // Auto-select most recent vehicle/date for driver-only users when nothing
+  // is selected yet, so the page is immediately useful instead of blank.
+  useEffect(() => {
+    if (!isDriverOnly || selectedVehicle) return;
+    const recent = driverRecentTrips?.[0];
+    if (recent?.assigned_vehicle?.id) {
+      setSelectedVehicle(recent.assigned_vehicle.id);
+      const checkoutAt = recent.driver_checked_out_at || recent.driver_checked_in_at;
+      if (checkoutAt) {
+        setSelectedDate(format(new Date(checkoutAt), "yyyy-MM-dd"));
+      }
+    }
+  }, [isDriverOnly, selectedVehicle, driverRecentTrips]);
 
   // Fetch driver info for selected vehicle
   const selectedVehicleData = vehicles?.find(v => v.id === selectedVehicle);
