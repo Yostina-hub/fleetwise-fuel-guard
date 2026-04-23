@@ -1231,12 +1231,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
         {/* Single-page form — flat, professionally aligned */}
-        <div className="space-y-3">
+        <div className="space-y-5">
           {/* TYPE SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={Sparkles} title="Operation Type" />
             <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
-              <SelectTrigger className="w-full md:w-72">
+              <SelectTrigger className="w-full md:max-w-sm h-9 text-sm">
                 <SelectValue placeholder="Select operation type…" />
               </SelectTrigger>
               <SelectContent>
