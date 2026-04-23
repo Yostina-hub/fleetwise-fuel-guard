@@ -210,7 +210,7 @@ export const PoolAssignmentPicker = ({
                     <Loader2 className="w-3 h-3 animate-spin" /> Loading suggestions…
                   </span>
                 ) : selectedVehicle ? (
-                  <span className="flex items-center gap-1.5 truncate">
+                  <span className="flex items-center gap-1.5 truncate w-full">
                     <span className="font-mono font-semibold">
                       {selectedVehicle.plate_number}
                     </span>
@@ -220,6 +220,14 @@ export const PoolAssignmentPicker = ({
                     {selectedVehicle.is_top_pick && (
                       <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
                     )}
+                    <span
+                      className={cn(
+                        "text-[9px] px-1.5 py-0 rounded border ml-auto shrink-0",
+                        AVAILABILITY_STYLES[(selectedVehicle as any).availability] || AVAILABILITY_STYLES.inactive,
+                      )}
+                    >
+                      {AVAILABILITY_LABELS[(selectedVehicle as any).availability] || (selectedVehicle as any).availability}
+                    </span>
                   </span>
                 ) : (
                   <span className="text-muted-foreground">Select vehicle…</span>
