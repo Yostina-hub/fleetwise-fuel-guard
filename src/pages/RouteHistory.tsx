@@ -50,7 +50,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useDriverScope } from "@/hooks/useDriverScope";
-import { format, parseISO, differenceInMinutes } from "date-fns";
+import { format, parseISO, differenceInMinutes, formatDistanceToNow } from "date-fns";
+import { Radio, MapPinned } from "lucide-react";
 
 import { useTranslation } from 'react-i18next';
 interface TelemetryPoint {
@@ -120,10 +121,8 @@ const RouteHistory = () => {
     setSearchParams(params, { replace: true });
   }, [selectedVehicle, selectedDate, today, setSearchParams]);
 
-  // Live mode is only supported for today's date
-  useEffect(() => {
-    if (!isToday) setFollowLive(false);
-  }, [isToday]);
+  // Live mode follows the latest known position. Toggling Live also snaps
+  // the date to today (handled in the click handler), so no auto-disable here.
 
   // Fetch vehicles with assigned driver info.
   // For driver-only users, scope to vehicles they have actually used so the
@@ -342,6 +341,63 @@ const RouteHistory = () => {
     enabled: !!selectedVehicle && !hasData && !telemetryLoading,
   });
 
+  // Latest known position for the selected vehicle (across all history).
+  // Used by Live mode and to show "last seen" badge / jump-to buttons even
+  // when the selected date has no data.
+  const { data: latestPosition, refetch: refetchLatestPosition } = useQuery({
+    queryKey: ["route-history-latest-position", selectedVehicle],
+    queryFn: async () => {
+      if (!selectedVehicle) return null;
+      const { data, error } = await supabase
+        .from("vehicle_telemetry")
+        .select("latitude, longitude, speed_kmh, fuel_level_percent, heading, engine_on, last_communication_at")
+        .eq("vehicle_id", selectedVehicle)
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+        .order("last_communication_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!selectedVehicle,
+    refetchInterval: followLive ? 15_000 : false,
+  });
+
+  const latestSeenLabel = latestPosition?.last_communication_at
+    ? formatDistanceToNow(parseISO(latestPosition.last_communication_at), { addSuffix: true })
+    : null;
+
+  const jumpToLatestData = useCallback(() => {
+    if (!latestPosition?.last_communication_at) return;
+    const dateStr = format(parseISO(latestPosition.last_communication_at), "yyyy-MM-dd");
+    setSelectedDate(dateStr);
+    setFollowLive(false);
+  }, [latestPosition]);
+
+  const jumpToLatestPosition = useCallback(() => {
+    if (!latestPosition?.latitude || !latestPosition?.longitude || !mapInstance) return;
+    mapInstance.flyTo({
+      center: [latestPosition.longitude, latestPosition.latitude],
+      zoom: 15,
+      duration: 1200,
+    });
+  }, [latestPosition, mapInstance]);
+
+  // When Live is toggled on, immediately fly to the latest known position
+  // and refetch so the user sees a marker right away.
+  useEffect(() => {
+    if (!followLive) return;
+    refetchLatestPosition();
+    if (latestPosition?.latitude && latestPosition?.longitude && mapInstance) {
+      mapInstance.flyTo({
+        center: [latestPosition.longitude, latestPosition.latitude],
+        zoom: 15,
+        duration: 1000,
+      });
+    }
+  }, [followLive, mapInstance, latestPosition, refetchLatestPosition]);
+
   // Auto-start playback when navigating from Trip Replay action
   useEffect(() => {
     if (autoplayRequested && hasData && !autoplayTriggered.current) {
@@ -433,7 +489,24 @@ const RouteHistory = () => {
       : Math.floor((playbackProgress / 100) * Math.max(0, routeHistory.length - 1))
     : 0;
 
-  const currentPosition = hasData ? routeHistory[effectiveIndex] : null;
+  // Use latest known position as a fallback when there is no data on the
+  // selected date — keeps the map informative instead of empty.
+  const fallbackPosition: TelemetryPoint | null = latestPosition
+    ? {
+        id: "latest-known",
+        latitude: latestPosition.latitude,
+        longitude: latestPosition.longitude,
+        speed_kmh: latestPosition.speed_kmh ?? null,
+        fuel_level_percent: latestPosition.fuel_level_percent ?? null,
+        heading: latestPosition.heading ?? null,
+        last_communication_at: latestPosition.last_communication_at,
+        engine_on: latestPosition.engine_on ?? null,
+      }
+    : null;
+
+  const currentPosition = hasData
+    ? routeHistory[effectiveIndex]
+    : (followLive ? fallbackPosition : null);
 
   // Address geocoding for current position
   const { address: currentAddress, isLoading: addressLoading } = useAddressGeocoding(
@@ -714,7 +787,7 @@ const RouteHistory = () => {
 
           {/* Driver Info Badge */}
           {selectedVehicle && (
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
               <User className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm text-muted-foreground">Driver:</span>
               {assignedDriver ? (
@@ -724,6 +797,12 @@ const RouteHistory = () => {
                 </Badge>
               ) : (
                 <span className="text-sm text-muted-foreground italic">Not assigned</span>
+              )}
+              {latestSeenLabel && (
+                <Badge variant="outline" className="gap-1 ml-2">
+                  <Radio className="h-3 w-3 text-destructive" />
+                  Last seen {latestSeenLabel}
+                </Badge>
               )}
             </div>
           )}
@@ -983,16 +1062,38 @@ const RouteHistory = () => {
                      <SkipForward className="h-4 w-4" aria-hidden="true" />
                    </Button>
 
-                   <Button
-                     variant={followLive ? "default" : "outline"}
-                     size="sm"
-                     className="ml-4"
-                     onClick={() => setFollowLive((v) => !v)}
-                     disabled={!selectedVehicle || !isToday}
-                     aria-label={followLive ? "Live mode enabled" : "Enable live mode"}
-                   >
-                     Live
-                   </Button>
+                   <TooltipProvider>
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                         <Button
+                           variant={followLive ? "default" : "outline"}
+                           size="sm"
+                           className={`ml-4 gap-1.5 ${followLive ? "animate-pulse" : ""}`}
+                           onClick={() => {
+                             // Live: snap to today's date and follow latest position.
+                             if (!followLive) {
+                               setSelectedDate(today);
+                               setIsPlaying(false);
+                               setPlaybackProgress(100);
+                             }
+                             setFollowLive((v) => !v);
+                           }}
+                           disabled={!selectedVehicle}
+                           aria-label={followLive ? "Live mode enabled" : "Enable live mode"}
+                         >
+                           <Radio className={`h-3.5 w-3.5 ${followLive ? "text-destructive-foreground" : "text-destructive"}`} />
+                           Live
+                         </Button>
+                       </TooltipTrigger>
+                       <TooltipContent side="top" className="max-w-xs text-xs">
+                         {followLive
+                           ? "Following latest position. Auto-refresh every 15s."
+                           : latestSeenLabel
+                             ? `Show latest position. Last seen ${latestSeenLabel}.`
+                             : "No telemetry yet for this vehicle."}
+                       </TooltipContent>
+                     </Tooltip>
+                   </TooltipProvider>
 
                    <Button variant="outline" size="sm" className="ml-2" disabled aria-label={`Current playback speed: ${playbackSpeed}x`}>
                      {playbackSpeed}x Speed
@@ -1240,6 +1341,37 @@ const RouteHistory = () => {
                       <p className="text-muted-foreground/70">
                         The GPS device may not have transmitted data on {format(parseISO(selectedDate), "PPP")}.
                       </p>
+
+                      {/* Last-known position quick access */}
+                      {latestPosition && latestSeenLabel && (
+                        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+                          <div className="flex items-center justify-center gap-1.5 text-foreground font-medium">
+                            <MapPinned className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                            Last known position {latestSeenLabel}
+                          </div>
+                          <div className="flex flex-wrap justify-center gap-2">
+                            <Button size="sm" variant="default" onClick={jumpToLatestData} className="h-7 text-xs">
+                              Jump to that day
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setFollowLive(true)} className="h-7 text-xs gap-1">
+                              <Radio className="h-3 w-3 text-destructive" />
+                              Show on map (Live)
+                            </Button>
+                            {mapInstance && (
+                              <Button size="sm" variant="ghost" onClick={jumpToLatestPosition} className="h-7 text-xs">
+                                Pan map only
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {!latestPosition && (
+                        <p className="text-muted-foreground/70 italic">
+                          This device has not transmitted any GPS data yet.
+                        </p>
+                      )}
+
                       {(availableDates?.length || 0) > 0 ? (
                         <div className="space-y-2">
                           <p className="flex items-center justify-center gap-1 text-foreground font-medium">
@@ -1259,7 +1391,7 @@ const RouteHistory = () => {
                             ))}
                           </div>
                         </div>
-                      ) : (
+                      ) : !latestPosition ? null : (
                         <p className="flex items-center justify-center gap-1">
                           <Info className="h-3 w-3" aria-hidden="true" />
                           Try selecting a different date
