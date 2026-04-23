@@ -51,7 +51,7 @@ interface EventRow {
 }
 
 export default function UserActivityTab() {
-  const { organizationId } = useOrganizationContext();
+  const { effectiveOrganizationId: organizationId } = useOrganizationContext();
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"summary" | "sessions" | "events">("summary");
 
