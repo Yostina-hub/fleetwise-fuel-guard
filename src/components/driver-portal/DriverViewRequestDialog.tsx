@@ -859,6 +859,34 @@ export const DriverViewRequestDialog = ({
         }
         departureTime={request.needed_from}
       />
+
+      {/* Confirmation dialog before final check-out (#9) */}
+      <AlertDialog open={confirmCheckOutOpen} onOpenChange={setConfirmCheckOutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to finish this trip?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will check you out, mark the trip as <strong>completed</strong>, and free up the
+              vehicle. You won't be able to undo this.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={checkOut.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                checkOut.mutate(undefined, {
+                  onSettled: () => setConfirmCheckOutOpen(false),
+                });
+              }}
+              disabled={checkOut.isPending}
+              className="bg-warning hover:bg-warning/90"
+            >
+              {checkOut.isPending ? "Finishing…" : "Yes, finish trip"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
