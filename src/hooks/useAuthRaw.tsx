@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
-import { trackSession, updateSessionActivity } from "@/lib/sessionTracker";
+import { trackSession, updateSessionActivity, endSession } from "@/lib/sessionTracker";
 import { recordLoginEvent } from "@/hooks/useLoginHistory";
 
 interface UserProfile {
@@ -192,11 +192,14 @@ export function useAuthRaw() {
   }, [user]);
 
   const signOut = async () => {
+    // Close the active session row before clearing auth state.
+    try { await endSession("logout"); } catch (e) { console.warn(e); }
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setProfile(null);
     setRoles([]);
+    sessionTrackedRef.current = null;
   };
 
   const signIn = async (email: string, password: string) => {
