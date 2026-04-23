@@ -1039,6 +1039,35 @@ const RouteHistory = () => {
               visible={showEventMarkers && hasData}
             />
 
+            {/* Trip overview fallback — full-size animated map shown
+                when GPS telemetry is missing for the selected day. */}
+            {!hasData && !telemetryLoading && hasFallbackTrips && selectedVehicle && (
+              <TripOverviewMap
+                trips={(tripsForDay || []).map((t: any): TripOverviewItem => ({
+                  id: t.id,
+                  request_number: t.request_number,
+                  status: t.status,
+                  departure_lat: t.departure_lat,
+                  departure_lng: t.departure_lng,
+                  destination_lat: t.destination_lat,
+                  destination_lng: t.destination_lng,
+                  departure_place: t.departure_place,
+                  destination: t.destination,
+                  driver_checked_in_at: t.driver_checked_in_at,
+                  driver_checked_out_at: t.driver_checked_out_at,
+                  needed_from: t.needed_from,
+                  needed_until: t.needed_until,
+                  driver_checkin_odometer: t.driver_checkin_odometer,
+                  driver_checkout_odometer: t.driver_checkout_odometer,
+                  driver_name: t.assigned_driver
+                    ? `${t.assigned_driver.first_name || ""} ${t.assigned_driver.last_name || ""}`.trim() || null
+                    : null,
+                }))}
+                vehiclePlate={selectedVehicleData?.plate_number || null}
+                selectedDateLabel={format(parseISO(selectedDate), "PPP")}
+              />
+            )}
+
             {/* Playback Controls */}
             <Card className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[600px] max-w-[calc(100%-3rem)] bg-card/95 backdrop-blur z-10">
               <CardContent className="pt-6">
