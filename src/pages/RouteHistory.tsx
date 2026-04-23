@@ -1335,6 +1335,37 @@ const RouteHistory = () => {
                       <p className="text-muted-foreground/70">
                         The GPS device may not have transmitted data on {format(parseISO(selectedDate), "PPP")}.
                       </p>
+
+                      {/* Last-known position quick access */}
+                      {latestPosition && latestSeenLabel && (
+                        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+                          <div className="flex items-center justify-center gap-1.5 text-foreground font-medium">
+                            <MapPinned className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                            Last known position {latestSeenLabel}
+                          </div>
+                          <div className="flex flex-wrap justify-center gap-2">
+                            <Button size="sm" variant="default" onClick={jumpToLatestData} className="h-7 text-xs">
+                              Jump to that day
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setFollowLive(true)} className="h-7 text-xs gap-1">
+                              <Radio className="h-3 w-3 text-destructive" />
+                              Show on map (Live)
+                            </Button>
+                            {mapInstance && (
+                              <Button size="sm" variant="ghost" onClick={jumpToLatestPosition} className="h-7 text-xs">
+                                Pan map only
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {!latestPosition && (
+                        <p className="text-muted-foreground/70 italic">
+                          This device has not transmitted any GPS data yet.
+                        </p>
+                      )}
+
                       {(availableDates?.length || 0) > 0 ? (
                         <div className="space-y-2">
                           <p className="flex items-center justify-center gap-1 text-foreground font-medium">
@@ -1354,7 +1385,7 @@ const RouteHistory = () => {
                             ))}
                           </div>
                         </div>
-                      ) : (
+                      ) : !latestPosition ? null : (
                         <p className="flex items-center justify-center gap-1">
                           <Info className="h-3 w-3" aria-hidden="true" />
                           Try selecting a different date
