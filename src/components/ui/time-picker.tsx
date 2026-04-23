@@ -100,6 +100,11 @@ export function TimePicker({
     return () => clearInterval(id);
   }, [eatNow12Display]);
 
+  const currentEatPeriod = React.useCallback((): "AM" | "PM" => {
+    const [hour] = eatNow24().split(":").map(Number);
+    return Number.isFinite(hour) && hour >= 12 ? "PM" : "AM";
+  }, [eatNow24]);
+
   const setNowTime = () => {
     const [h, mRaw] = eatNow24().split(":").map(Number);
     let m = mRaw;
@@ -121,11 +126,21 @@ export function TimePicker({
     [minuteStep],
   );
 
+  // Local fallback for period when no hour is selected yet.
+  const [localPeriod, setLocalPeriod] = React.useState<"AM" | "PM">(() => currentEatPeriod());
+  const effectivePeriod: "AM" | "PM" = h12 ? period : localPeriod;
+
+  React.useEffect(() => {
+    if (open && !value) {
+      setLocalPeriod(currentEatPeriod());
+    }
+  }, [open, value, currentEatPeriod]);
+
   // Both hour and minute must be explicitly chosen — never silently default
   // the missing component, which would let users submit a half-picked time
   // that bypasses "End time required" validation.
   const setHour = (h: string) => {
-    const h24 = h12To24(h, period);
+    const h24 = h12To24(h, effectivePeriod);
     onChange(mm ? `${h24}:${mm}` : `${h24}:`);
   };
   const setMinute = (m: string) => {
@@ -140,17 +155,12 @@ export function TimePicker({
     if (!h12) {
       // No hour yet — just remember the period by writing a placeholder we
       // can read back. Keep value empty until user picks an hour.
-      // We achieve this by storing nothing and relying on local fallback below.
       setLocalPeriod(p);
       return;
     }
     const h24 = h12To24(h12, p);
     onChange(mm ? `${h24}:${mm}` : `${h24}:`);
   };
-
-  // Local fallback for period when no hour is selected yet.
-  const [localPeriod, setLocalPeriod] = React.useState<"AM" | "PM">("AM");
-  const effectivePeriod: "AM" | "PM" = h12 ? period : localPeriod;
 
   // Trigger display: "HH:MM AM" 12h, or partial markers if half-picked.
   const display = React.useMemo(() => {
