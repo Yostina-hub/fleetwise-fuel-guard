@@ -57,6 +57,7 @@ const TripManagement = () => {
   const { requests: legacyRequests, loading: loadingLegacy, submitRequest, cancelRequest } = useTripRequests();
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
   const { isSuperAdmin, hasRole, hasPermission, loading: permsLoading } = usePermissions();
+  const { user: authUser } = useAuthContext();
 
   // ── Current system data source ─────────────────────────────────────
   // The Trips tab now mirrors the unified `vehicle_requests` flow that
