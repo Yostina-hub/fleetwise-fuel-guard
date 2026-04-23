@@ -77,6 +77,8 @@ import { useTranslation } from "react-i18next";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { PageDateRangeProvider, usePageDateRange } from "@/contexts/PageDateRangeContext";
+import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
 
 type StatusKey = "all" | "pending" | "approved" | "assigned" | "completed" | "rejected" | "cancelled";
 
@@ -103,6 +105,7 @@ const VehicleRequests = () => {
   const { isDriverOnly, driverId, userId, loading: scopeLoading } = useDriverScope();
   const vrScope = useVehicleRequestScope();
   const queryClient = useQueryClient();
+  const { startISO, endISO } = usePageDateRange();
 
   // Drivers don't manage requests — they consume their assigned trips on the
   // Driver Portal. Redirect once we know they're driver-only.
@@ -253,12 +256,26 @@ const VehicleRequests = () => {
     enabled: !!organizationId,
   });
 
+  // Date-range scoped requests — drives KPIs and tab counts so all summary
+  // numbers reflect the picker on top of the page.
+  const dateScopedRequests = useMemo(() => {
+    const startMs = new Date(startISO).getTime();
+    const endMs = new Date(endISO).getTime();
+    return requests.filter((r: any) => {
+      const ref = r.needed_from || r.created_at;
+      if (!ref) return true;
+      const t = new Date(ref).getTime();
+      if (Number.isNaN(t)) return true;
+      return t >= startMs && t <= endMs;
+    });
+  }, [requests, startISO, endISO]);
+
   // counts per status (for tab badges)
   const counts = useMemo(() => {
-    const c: Record<string, number> = { all: requests.length };
-    for (const r of requests) c[r.status] = (c[r.status] || 0) + 1;
+    const c: Record<string, number> = { all: dateScopedRequests.length };
+    for (const r of dateScopedRequests) c[r.status] = (c[r.status] || 0) + 1;
     return c;
-  }, [requests]);
+  }, [dateScopedRequests]);
 
   // distinct pools (for filter dropdown)
   const poolOptions = useMemo(() => {
@@ -270,10 +287,19 @@ const VehicleRequests = () => {
   // filtered list
   const filtered = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
+    const startMs = new Date(startISO).getTime();
+    const endMs = new Date(endISO).getTime();
     return requests.filter((r: any) => {
       if (activeStatus !== "all" && r.status !== activeStatus) return false;
       if (typeFilter !== "all" && r.request_type !== typeFilter) return false;
       if (poolFilter !== "all" && r.pool_name !== poolFilter) return false;
+      // Date range — match on `needed_from` (trip date) and fall back to
+      // `created_at` for drafts that don't yet have a scheduled date.
+      const ref = r.needed_from || r.created_at;
+      if (ref) {
+        const t = new Date(ref).getTime();
+        if (!Number.isNaN(t) && (t < startMs || t > endMs)) return false;
+      }
       if (!q) return true;
       const haystack = [
         r.request_number,
@@ -291,7 +317,7 @@ const VehicleRequests = () => {
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [requests, activeStatus, debouncedSearch, typeFilter, poolFilter]);
+  }, [requests, activeStatus, debouncedSearch, typeFilter, poolFilter, startISO, endISO]);
 
   // sorted (apply on top of filtered)
   const sorted = useMemo(() => {
@@ -694,8 +720,9 @@ const VehicleRequests = () => {
           </div>
         </div>
 
-        <VehicleRequestKPI requests={requests} />
+        <PageDateRangeFilter hint="Filters KPIs and the table below" />
 
+        <VehicleRequestKPI requests={dateScopedRequests} />
 
         {/* Pool Supervisor Review now lives at /pool-supervisors */}
 
@@ -1373,4 +1400,10 @@ function SortableTh({
   );
 }
 
-export default VehicleRequests;
+const VehicleRequestsPage = () => (
+  <PageDateRangeProvider>
+    <VehicleRequests />
+  </PageDateRangeProvider>
+);
+
+export default VehicleRequestsPage;
