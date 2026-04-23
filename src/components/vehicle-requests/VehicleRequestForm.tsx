@@ -1167,46 +1167,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         </div>
       </div>
 
-      {/* Segmented pill tabs (mirrors BasicInfoTabs in the registration form) */}
-      <LayoutGroup id="vehicle-request-tabs">
-        <div className="px-3 md:px-5 py-3">
-          <div role="tablist" className="relative inline-flex flex-wrap gap-1 p-1 rounded-full border bg-muted/50 backdrop-blur">
-            {TABS.map(t => {
-              const isActive = activeTab === t.id;
-              const Icon = t.icon;
-              const done = !!tabComplete[t.id];
-              return (
-                <button
-                  key={t.id}
-                  role="tab"
-                  type="button"
-                  aria-selected={isActive}
-                  onClick={() => setActiveTab(t.id as any)}
-                  className={`relative z-10 px-4 py-2 rounded-full text-xs md:text-sm font-medium inline-flex items-center gap-2 transition-colors ${
-                    isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {isActive && (
-                    <motion.span
-                      layoutId="vr-tabs-pill"
-                      className="absolute inset-0 rounded-full bg-gradient-to-r from-primary to-secondary shadow-md shadow-primary/40"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{t.label}</span>
-                    {done && <CheckCircle2 className="w-3 h-3" />}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground pl-2">
-            {TABS.find(t => t.id === activeTab)?.hint}
-          </p>
-        </div>
-      </LayoutGroup>
     </div>
   );
 
@@ -1351,7 +1311,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         <div className="space-y-6">
 
           {/* TYPE SECTION */}
-          <section className={`rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in ${activeTab === "type" ? "" : "hidden"}`}>
+          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
             <div className="flex items-center gap-2.5 pb-3 border-b border-border">
               <Layers className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Operation Type</h3>
@@ -1396,7 +1356,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE SECTION */}
-          <section className={`rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in ${activeTab === "schedule" ? "" : "hidden"}`}>
+          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
             <div className="flex items-center gap-2.5 pb-3 border-b border-border">
               <CalendarDays className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Schedule</h3>
@@ -1562,7 +1522,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* ROUTE SECTION */}
-          <section className={`rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in ${activeTab === "route" ? "" : "hidden"}`}>
+          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
             <div className="flex items-center gap-2.5 pb-3 border-b border-border">
               <Route className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Route</h3>
@@ -1708,7 +1668,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* RESOURCES SECTION */}
-          <section className={`rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in ${activeTab === "resources" ? "" : "hidden"}`}>
+          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
             <div className="flex items-center gap-2.5 pb-3 border-b border-border">
               <Car className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Vehicle &amp; Pool</h3>
@@ -2070,7 +2030,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* DETAILS SECTION */}
-          <section className={`rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in ${activeTab === "details" ? "" : "hidden"}`}>
+          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
             <div className="flex items-center gap-2.5 pb-3 border-b border-border">
               <FileText className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">Purpose &amp; Submit</h3>
@@ -2199,39 +2159,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                 {t('common.cancel', 'Cancel')}
               </Button>
-              {tabIndex > 0 && (
-                <Button variant="outline" size="sm" onClick={goPrev} className="gap-1.5">
-                  <ChevronLeft className="w-4 h-4" />
-                  Previous
-                </Button>
-              )}
-              {tabIndex < TABS.length - 1 ? (
-                <Button size="sm" onClick={goNext} className="gap-1.5">
-                  Next
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={handleSubmit}
-                  // Only hard-disable for in-flight submit or the rating gate.
-                  // Field-level issues are surfaced via the toast in handleSubmit
-                  // so the user always gets actionable feedback instead of a
-                  // silently disabled button.
-                  disabled={createMutation.isPending || hasPendingRatings}
-                  title={
-                    hasPendingRatings
-                      ? "Rate your previous trips before submitting"
-                      : !canSubmit
-                        ? "Some required fields are missing — click to see what's needed"
-                        : undefined
-                  }
-                  className="gap-1.5"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  {createMutation.isPending ? "Submitting..." : "Submit Request"}
-                </Button>
-              )}
+              <Button
+                size="sm"
+                onClick={handleSubmit}
+                disabled={createMutation.isPending || hasPendingRatings}
+                title={
+                  hasPendingRatings
+                    ? "Rate your previous trips before submitting"
+                    : !canSubmit
+                      ? "Some required fields are missing — click to see what's needed"
+                      : undefined
+                }
+                className="gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                {createMutation.isPending ? "Submitting..." : "Submit Request"}
+              </Button>
             </div>
           </div>
         );
