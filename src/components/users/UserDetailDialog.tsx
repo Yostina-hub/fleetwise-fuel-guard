@@ -71,7 +71,7 @@ interface UserDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   user: UserProfile | null;
   onUserUpdated: () => void;
-  initialTab?: "profile" | "hr" | "roles";
+  initialTab?: "profile" | "hr" | "roles" | "activity";
 }
 
 interface ProfileExtras {
