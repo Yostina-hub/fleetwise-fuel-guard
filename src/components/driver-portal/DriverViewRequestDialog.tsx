@@ -28,7 +28,18 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { RouteMapPreview } from "@/components/vehicle-requests/RouteMapPreview";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -97,6 +108,8 @@ interface Props {
   onPostTrip: () => void;
   onReportIssue: () => void;
   onRequestFuel: () => void;
+  /** Called after the driver successfully checks out / completes the trip. */
+  onCompleted?: () => void;
 }
 
 const StatusPill = ({ status }: { status?: string | null }) => {
@@ -140,6 +153,7 @@ export const DriverViewRequestDialog = ({
   onPostTrip,
   onReportIssue,
   onRequestFuel,
+  onCompleted,
 }: Props) => {
   const queryClient = useQueryClient();
   const [notes, setNotes] = useState("");
@@ -147,6 +161,7 @@ export const DriverViewRequestDialog = ({
   const [completionRemark, setCompletionRemark] = useState("");
   const [completionRemarkError, setCompletionRemarkError] = useState<string | null>(null);
   const [navMapOpen, setNavMapOpen] = useState(false);
+  const [confirmCheckOutOpen, setConfirmCheckOutOpen] = useState(false);
 
   const checkedIn = !!request?.driver_checked_in_at;
   const checkedOut = !!request?.driver_checked_out_at;
@@ -375,6 +390,8 @@ export const DriverViewRequestDialog = ({
       setCompletionRemarkError(null);
       refresh();
       onClose();
+      // Notify the parent so it can switch to the trip history tab (#10/#11).
+      onCompleted?.();
     },
     onError: (e: any) => toast.error(e.message || "Check-out failed"),
   });
@@ -630,6 +647,32 @@ export const DriverViewRequestDialog = ({
           )}
         </div>
 
+        {/* Inline route preview — always visible to the driver */}
+        {(departureLat != null || departurePlace || request.destination) && (
+          <div className="rounded-lg border overflow-hidden">
+            <div className="px-3 py-2 border-b bg-muted/40 flex items-center gap-2">
+              <Navigation className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-semibold">Route Preview</span>
+              <span className="text-[11px] text-muted-foreground ml-auto truncate">
+                {departurePlace || "Start"} → {request.destination || "Destination"}
+              </span>
+            </div>
+            <RouteMapPreview
+              departure={{
+                lat: departureLat ?? null,
+                lng: departureLng ?? null,
+                label: departurePlace || poolLocation || "Start",
+              }}
+              destination={{
+                lat: null,
+                lng: null,
+                label: request.destination || "Destination",
+              }}
+              heightPx={220}
+            />
+          </div>
+        )}
+
         <Separator />
 
         {/* Rejection banner */}
@@ -782,7 +825,7 @@ export const DriverViewRequestDialog = ({
                   </div>
                   <Button
                     className="w-full gap-2 bg-warning hover:bg-warning/90"
-                    onClick={() => checkOut.mutate()}
+                    onClick={() => setConfirmCheckOutOpen(true)}
                     disabled={checkOut.isPending || !completionRemark.trim() || !!completionRemarkError}
                   >
                     <StopCircle className="w-4 h-4" />
@@ -821,6 +864,34 @@ export const DriverViewRequestDialog = ({
         }
         departureTime={request.needed_from}
       />
+
+      {/* Confirmation dialog before final check-out (#9) */}
+      <AlertDialog open={confirmCheckOutOpen} onOpenChange={setConfirmCheckOutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to finish this trip?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will check you out, mark the trip as <strong>completed</strong>, and free up the
+              vehicle. You won't be able to undo this.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={checkOut.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                checkOut.mutate(undefined, {
+                  onSettled: () => setConfirmCheckOutOpen(false),
+                });
+              }}
+              disabled={checkOut.isPending}
+              className="bg-warning hover:bg-warning/90"
+            >
+              {checkOut.isPending ? "Finishing…" : "Yes, finish trip"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
