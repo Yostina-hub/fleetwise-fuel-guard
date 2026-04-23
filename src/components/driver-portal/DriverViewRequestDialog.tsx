@@ -750,7 +750,7 @@ export const DriverViewRequestDialog = ({
                     disabled={checkIn.isPending || !!notesError}
                   >
                     <PlayCircle className="w-4 h-4" />
-                    {checkIn.isPending ? "Checking in…" : "Check In Now"}
+                    {checkIn.isPending ? "Starting…" : "Start Now"}
                   </Button>
                 </div>
               </>
