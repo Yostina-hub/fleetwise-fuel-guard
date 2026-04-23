@@ -112,20 +112,14 @@ export const DriverNavigateMapDialog = ({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [useFallbackMap, setUseFallbackMap] = useState(false);
 
-  const fallbackMapUrl = (() => {
+  const fallbackViewport = (() => {
     // Use OpenStreetMap's free, no-key, CSP-friendly embed.
-    // Format: https://www.openstreetmap.org/export/embed.html?bbox=minLng,minLat,maxLng,maxLat&layer=mapnik&marker=lat,lng
-    const buildOsmEmbed = (
-      bbox: [number, number, number, number],
-      marker?: { lat: number; lng: number },
-    ) => {
+    // Format: https://www.openstreetmap.org/export/embed.html?bbox=minLng,minLat,maxLng,maxLat&layer=mapnik
+    const buildOsmEmbed = (bbox: [number, number, number, number]) => {
       const params = new URLSearchParams({
         bbox: bbox.join(","),
         layer: "mapnik",
       });
-      if (marker) {
-        params.set("marker", `${marker.lat},${marker.lng}`);
-      }
       return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
     };
 
@@ -134,19 +128,49 @@ export const DriverNavigateMapDialog = ({
       const maxLng = Math.max(origin.lng, destination.lng) + 0.05;
       const minLat = Math.min(origin.lat, destination.lat) - 0.05;
       const maxLat = Math.max(origin.lat, destination.lat) + 0.05;
-      return buildOsmEmbed([minLng, minLat, maxLng, maxLat], destination);
+      const bbox: [number, number, number, number] = [minLng, minLat, maxLng, maxLat];
+      return { bbox, url: buildOsmEmbed(bbox) };
     }
 
     const point = destination || origin;
     if (point) {
       const d = 0.05;
-      return buildOsmEmbed(
-        [point.lng - d, point.lat - d, point.lng + d, point.lat + d],
-        point,
-      );
+      const bbox: [number, number, number, number] = [point.lng - d, point.lat - d, point.lng + d, point.lat + d];
+      return { bbox, url: buildOsmEmbed(bbox) };
     }
 
     return null;
+  })();
+
+  const fallbackMarkers = (() => {
+    if (!fallbackViewport) return [] as Array<{ key: string; label: string; top: string; left: string; kind: "start" | "end" }>;
+
+    const [minLng, minLat, maxLng, maxLat] = fallbackViewport.bbox;
+    const lngSpan = Math.max(maxLng - minLng, 0.0001);
+    const latSpan = Math.max(maxLat - minLat, 0.0001);
+    const toPercent = (value: number, min: number, span: number) => Math.min(92, Math.max(8, ((value - min) / span) * 100));
+    const points = [
+      origin
+        ? {
+            key: "origin",
+            label: origin.label,
+            left: `${toPercent(origin.lng, minLng, lngSpan)}%`,
+            top: `${100 - toPercent(origin.lat, minLat, latSpan)}%`,
+            kind: "start" as const,
+          }
+        : null,
+      destination
+        ? {
+            key: "destination",
+            label: destination.label,
+            left: `${toPercent(destination.lng, minLng, lngSpan)}%`,
+            top: `${100 - toPercent(destination.lat, minLat, latSpan)}%`,
+            kind: "end" as const,
+          }
+        : null,
+    ].filter(Boolean);
+
+    return points;
   })();
 
   // Resolve coordinates when the dialog opens
@@ -203,8 +227,10 @@ export const DriverNavigateMapDialog = ({
     if (!open || mapLoaded) return;
 
     const timer = setTimeout(() => {
-      setUseFallbackMap(true);
-    }, 1800);
+      if (!map.current || !map.current.isStyleLoaded()) {
+        setUseFallbackMap(true);
+      }
+    }, 4500);
 
     return () => clearTimeout(timer);
   }, [open, mapLoaded, origin, destination, departurePlace, destinationPlace]);
@@ -746,14 +772,32 @@ export const DriverNavigateMapDialog = ({
             ref={containerRef}
             className={`absolute inset-0 ${useFallbackMap ? "pointer-events-none opacity-0" : ""}`}
           />
-          {useFallbackMap && fallbackMapUrl && (
-            <iframe
-              title="Trip map"
-              src={fallbackMapUrl}
-              className="absolute inset-0 h-full w-full border-0 bg-muted"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+          {useFallbackMap && fallbackViewport?.url && (
+            <>
+              <iframe
+                title="Trip map"
+                src={fallbackViewport.url}
+                className="absolute inset-0 h-full w-full border-0 bg-muted"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <div className="pointer-events-none absolute inset-0 z-[1]">
+                {fallbackMarkers.map((marker) => (
+                  <div
+                    key={marker.key}
+                    className="absolute -translate-x-1/2 -translate-y-1/2"
+                    style={{ left: marker.left, top: marker.top }}
+                    title={marker.label}
+                  >
+                    <div
+                      className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-background text-[11px] font-bold text-primary-foreground shadow-md ${marker.kind === "start" ? "bg-success" : "bg-destructive"}`}
+                    >
+                      {marker.kind === "start" ? "A" : "B"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
           {mapError && !resolving && (
             <div className="absolute left-3 right-3 top-3 z-10 rounded-md border border-destructive/40 bg-background/90 px-3 py-2 text-xs text-destructive shadow-sm backdrop-blur-sm">
