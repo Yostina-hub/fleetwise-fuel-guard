@@ -121,10 +121,8 @@ const RouteHistory = () => {
     setSearchParams(params, { replace: true });
   }, [selectedVehicle, selectedDate, today, setSearchParams]);
 
-  // Live mode is only supported for today's date
-  useEffect(() => {
-    if (!isToday) setFollowLive(false);
-  }, [isToday]);
+  // Live mode follows the latest known position. Toggling Live also snaps
+  // the date to today (handled in the click handler), so no auto-disable here.
 
   // Fetch vehicles with assigned driver info.
   // For driver-only users, scope to vehicles they have actually used so the
