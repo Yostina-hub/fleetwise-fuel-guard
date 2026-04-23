@@ -149,6 +149,7 @@ const VehicleRequests = () => {
   const [showDelete, setShowDelete] = useState<any>(null);
   const [showEdit, setShowEdit] = useState<any>(null);
   const [showMultiAssign, setShowMultiAssign] = useState<any>(null);
+  const [showQuickAssign, setShowQuickAssign] = useState<any>(null);
   const [showImport, setShowImport] = useState(false);
 
   // View mode — "requests" (default table) or "assignments" (pool supervisor
