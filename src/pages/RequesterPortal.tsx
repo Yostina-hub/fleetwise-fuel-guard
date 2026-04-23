@@ -177,18 +177,21 @@ const RequesterPortalInner = () => {
     enabled: !!user && !!organizationId && !vrScope.loading,
   });
 
-  // Realtime — refresh on any change to my requests
+  // Realtime — refresh on any change to relevant requests. Admin/operator
+  // tiers subscribe to the whole org so newly-filed requests by anyone show
+  // up live; self/driver tiers only need their own rows.
   useEffect(() => {
     if (!user) return;
+    const wideScope = vrScope.tier === "all" || vrScope.tier === "operator";
     const ch = supabase
-      .channel(`my-vehicle-requests-${user.id}`)
+      .channel(`my-vehicle-requests-${user.id}-${vrScope.tier}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "vehicle_requests",
-          filter: `requester_id=eq.${user.id}`,
+          ...(wideScope ? {} : { filter: `requester_id=eq.${user.id}` }),
         },
         () => qc.invalidateQueries({ queryKey: ["my-vehicle-requests"] }),
       )
@@ -196,7 +199,7 @@ const RequesterPortalInner = () => {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [user, qc]);
+  }, [user, qc, vrScope.tier]);
 
   // Deep-link from notifications: `/my-requests?rate=<request-id>` opens the
   // RateTripDialog for that completed trip. We fetch the row so the dialog
