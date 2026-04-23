@@ -491,15 +491,41 @@ function KPICard({
   icon: Icon,
   tone,
   sub,
+  active,
+  onClick,
 }: {
   label: string;
   value: number;
   icon: typeof Hourglass;
   tone: string;
   sub?: string;
+  active?: boolean;
+  onClick?: () => void;
 }) {
+  const interactive = typeof onClick === "function";
   return (
-    <Card className="border-border">
+    <Card
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-pressed={interactive ? !!active : undefined}
+      onClick={onClick}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+      className={cn(
+        "border-border transition-all",
+        interactive &&
+          "cursor-pointer hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        active && "border-primary ring-2 ring-primary/40 shadow-md",
+      )}
+    >
       <CardContent className="p-4 flex items-center gap-3">
         <div className={cn("h-10 w-10 rounded-lg border flex items-center justify-center shrink-0", tone)}>
           <Icon className="h-4 w-4" aria-hidden="true" />
