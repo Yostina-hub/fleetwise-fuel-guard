@@ -455,6 +455,17 @@ export const VehicleRequestsPanel = () => {
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </Button>
+                          {canAssign(r) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-primary hover:text-primary"
+                              title={r.status === "assigned" ? "Re-assign vehicle / driver" : "Assign vehicle / driver"}
+                              onClick={() => setShowDetail(r)}
+                            >
+                              <UserPlus className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
                           {canCancel(r) && (
                             <Button
                               size="sm"
