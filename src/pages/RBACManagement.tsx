@@ -319,6 +319,22 @@ const RBACManagement = () => {
     return Array.from(resourceMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [permissions]);
 
+  // Collapsible resource groups for the permission matrix
+  const [collapsedResources, setCollapsedResources] = useState<Set<string>>(new Set());
+  const toggleResource = useCallback((resource: string) => {
+    setCollapsedResources((prev) => {
+      const next = new Set(prev);
+      if (next.has(resource)) next.delete(resource);
+      else next.add(resource);
+      return next;
+    });
+  }, []);
+  const expandAllResources = useCallback(() => setCollapsedResources(new Set()), []);
+  const collapseAllResources = useCallback(
+    () => setCollapsedResources(new Set(resources.map(([r]) => r))),
+    [resources]
+  );
+
   const isPermEnabled = (role: string, permId: string) => {
     if (role === "super_admin") return true;
     return roleMappings.some((m) => m.role === role && m.permission_id === permId);
