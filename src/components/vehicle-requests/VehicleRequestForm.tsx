@@ -1089,17 +1089,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     </div>
   );
 
-  /** Section header matching the reference Register-Vehicle layout: a soft
-   *  rounded icon tile + title, sitting above a 3-column grid of fields.
-   *  Keeps the form scannable without feeling like a wizard. */
-  const SectionHeader = ({ icon: Icon, title }: { icon: any; title: string }) => (
-    <div className="flex items-center gap-2 pb-2 border-b border-border/60">
-      <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary/10 text-primary">
-        <Icon className="w-4 h-4" />
-      </span>
-      <h4 className="text-base font-semibold tracking-tight text-foreground">{title}</h4>
-    </div>
-  );
+  /** No-op: section headers removed for a fully flat form. Kept as a null
+   *  component so existing call sites compile without churn. */
+  const SectionHeader = (_: { icon: any; title: string }) => null;
 
   const body = (
     <>
