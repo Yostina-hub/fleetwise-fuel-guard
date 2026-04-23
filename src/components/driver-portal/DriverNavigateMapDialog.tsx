@@ -411,29 +411,37 @@ export const DriverNavigateMapDialog = ({
         map.current.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 600 });
       }
 
-      // Draw route only when we have both endpoints + Lemat key
-      if (origin && destination && lematReady) {
-        const apiKey = sessionStorage.getItem("lemat_api_key") || "";
-        if (!apiKey) return;
+      // Draw the real driving route between origin and destination using the
+      // server-side `route-directions` edge function (same path used by the
+      // Vehicle Request map). Going through the edge function avoids the
+      // browser CORS / mixed-content issues that block direct calls to the
+      // Lemat directions endpoint from the Lovable preview origin.
+      if (origin && destination) {
         try {
-          const coords = `${origin.lng},${origin.lat};${destination.lng},${destination.lat}`;
-          const res = await fetch(
-            `https://lemat.goffice.et/api/v1/directions?coords=${coords}&profile=driving`,
-            { headers: { "X-Api-Key": apiKey } },
+          const { data, error } = await supabase.functions.invoke(
+            "route-directions",
+            {
+              body: {
+                coordinates: [
+                  [origin.lng, origin.lat],
+                  [destination.lng, destination.lat],
+                ],
+              },
+            },
           );
-          if (!res.ok) return;
-          const json = await res.json();
-          const route = json?.data?.routes?.[0];
-          if (!route?.geometry?.coordinates) return;
-
-          if (typeof route.distance === "number") {
-            setDistanceKm(Math.round((route.distance / 1000) * 10) / 10);
+          if (error || !data?.ok || !Array.isArray(data?.geometry) || data.geometry.length < 2) {
+            return;
           }
-          if (typeof route.duration === "number") {
-            setDurationMin(Math.round(route.duration / 60));
+
+          if (typeof data.distance_m === "number") {
+            setDistanceKm(Math.round((data.distance_m / 1000) * 10) / 10);
+          }
+          if (typeof data.duration_s === "number") {
+            setDurationMin(Math.round(data.duration_s / 60));
           }
 
           if (!map.current) return;
+          const routeCoords = data.geometry as [number, number][];
           const addRoute = () => {
             if (!map.current) return;
             if (map.current.getLayer("trip-route"))
@@ -447,7 +455,7 @@ export const DriverNavigateMapDialog = ({
                 properties: {},
                 geometry: {
                   type: "LineString",
-                  coordinates: route.geometry.coordinates,
+                  coordinates: routeCoords,
                 },
               },
             });
@@ -462,6 +470,20 @@ export const DriverNavigateMapDialog = ({
                 "line-opacity": 0.85,
               },
             });
+
+            // Re-fit bounds to include the full driving path so the entire
+            // route is visible — not just the two endpoint markers.
+            const bounds = new maplibregl.LngLatBounds();
+            routeCoords.forEach((c) => bounds.extend(c));
+            try {
+              map.current.fitBounds(bounds, {
+                padding: 80,
+                maxZoom: 14,
+                duration: 600,
+              });
+            } catch {
+              /* ignore */
+            }
           };
 
           if (map.current.isStyleLoaded()) {
