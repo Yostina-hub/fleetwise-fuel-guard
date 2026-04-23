@@ -31,12 +31,19 @@ export interface SuggestedVehicle {
   specific_pool: string | null;
   seating_capacity: number | null;
   assigned_driver_id: string | null;
+  /** Display name of the driver permanently assigned to this vehicle (vehicles.assigned_driver_id). */
+  assigned_driver_name: string | null;
   distance_km: number | null;
   has_gps: boolean;
   in_geofence: boolean;
   in_pool: boolean;
   is_idle: boolean;
   is_top_pick: boolean;
+  /** Active trip currently using this vehicle, if any. */
+  active_trip_id: string | null;
+  active_trip_status: string | null;
+  /** Human availability summary used by the picker UI. */
+  availability: "available" | "busy" | "maintenance" | "inactive";
 }
 
 interface Args {
