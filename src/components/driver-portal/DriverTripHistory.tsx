@@ -65,6 +65,8 @@ const DriverTripHistory = ({ driverId }: DriverTripHistoryProps) => {
     queryKey: ["driver-trip-history", driverId, range],
     queryFn: async () => {
       if (!driverId) return [];
+
+      // 1) Telemetry-derived trips
       let q = supabase
         .from("trips")
         .select(
@@ -77,9 +79,68 @@ const DriverTripHistory = ({ driverId }: DriverTripHistoryProps) => {
         .order("start_time", { ascending: false })
         .limit(500);
       if (fromDate) q = q.gte("start_time", fromDate);
-      const { data, error } = await q;
+      const { data: tripRows, error } = await q;
       if (error) throw error;
-      return (data as any[]) || [];
+
+      // 2) Completed vehicle requests (driver self check-in/out flow).
+      //    These never produce a `trips` row, so we synthesize one so the
+      //    history tab always reflects what the driver actually did.
+      let rq = (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          `id, request_number, status, purpose,
+           departure_place, destination,
+           driver_checked_in_at, driver_checked_out_at,
+           driver_checkin_odometer, driver_checkout_odometer,
+           driver_checkout_notes, completed_at,
+           assigned_vehicle:assigned_vehicle_id(plate_number, make, model)`
+        )
+        .eq("assigned_driver_id", driverId)
+        .not("driver_checked_out_at", "is", null)
+        .order("driver_checked_out_at", { ascending: false })
+        .limit(500);
+      if (fromDate) rq = rq.gte("driver_checked_out_at", fromDate);
+      const { data: requestRows } = await rq;
+
+      const synthesized = (requestRows || []).map((r: any) => {
+        const start = r.driver_checked_in_at || r.completed_at || r.driver_checked_out_at;
+        const end = r.driver_checked_out_at || r.completed_at;
+        const distance =
+          r.driver_checkin_odometer != null && r.driver_checkout_odometer != null
+            ? Math.max(0, Number(r.driver_checkout_odometer) - Number(r.driver_checkin_odometer))
+            : null;
+        const durationMinutes =
+          start && end ? Math.max(0, (new Date(end).getTime() - new Date(start).getTime()) / 60000) : null;
+        return {
+          id: `vr-${r.id}`,
+          source: "request" as const,
+          start_time: start,
+          end_time: end,
+          start_location: r.departure_place ? { name: r.departure_place } : null,
+          end_location: r.destination ? { name: r.destination } : null,
+          distance_km: distance,
+          duration_minutes: durationMinutes,
+          avg_speed_kmh:
+            distance != null && durationMinutes && durationMinutes > 0
+              ? (distance / (durationMinutes / 60))
+              : null,
+          max_speed_kmh: null,
+          fuel_consumed_liters: null,
+          idle_time_minutes: null,
+          status: r.status === "closed" ? "completed" : (r.status || "completed"),
+          vehicle: r.assigned_vehicle || null,
+          request_number: r.request_number,
+          driver_checkout_notes: r.driver_checkout_notes,
+        };
+      });
+
+      const all = [...((tripRows as any[]) || []), ...synthesized];
+      all.sort((a, b) => {
+        const ta = a.start_time ? new Date(a.start_time).getTime() : 0;
+        const tb = b.start_time ? new Date(b.start_time).getTime() : 0;
+        return tb - ta;
+      });
+      return all;
     },
     enabled: !!driverId,
   });

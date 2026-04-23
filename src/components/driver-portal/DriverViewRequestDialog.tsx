@@ -182,6 +182,7 @@ export const DriverViewRequestDialog = ({
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["driver-portal-self"] });
     queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] });
+    queryClient.invalidateQueries({ queryKey: ["driver-trip-history"] });
     queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
   };
 
