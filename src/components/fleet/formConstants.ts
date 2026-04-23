@@ -277,6 +277,23 @@ export const ASSIGNED_LOCATIONS = [
   { group: "Region", value: "region_nr_mekelle",         label: "NR - Mekelle" },
 ];
 
+/**
+ * Corporate pool parents — used to render the Corporate sub-pools as a
+ * grouped (FOM I / FOM II / ZemenGEBEYA) cascade in selectors and to
+ * reconstruct the visual hierarchy on detail/list views.
+ */
+export const CORPORATE_POOL_PARENTS = [
+  { value: "corp_fom1",        label: "FOM I" },
+  { value: "corp_fom2",        label: "FOM II" },
+  { value: "corp_zemengebeya", label: "ZemenGEBEYA Logistics" },
+] as const;
+
+/** Sub-pools nested under a corporate parent (FOM I / FOM II / ...). */
+export const getCorporateSubPools = (parentValue: string) =>
+  ASSIGNED_LOCATIONS.filter(
+    (l) => l.group === "Corporate" && (l as any).parent === parentValue,
+  );
+
 // Backward-compatibility alias — kept so legacy edit forms still compile.
 // New code should use ASSIGNED_POOLS instead.
 export const ROUTE_TYPES = [
