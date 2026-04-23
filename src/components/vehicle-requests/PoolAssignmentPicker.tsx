@@ -69,19 +69,32 @@ export const PoolAssignmentPicker = ({
     poolName: request.pool_name,
   });
 
-  // Auto-pin top suggestion on first load (supervisor can override).
+  // Auto-pin top *available* suggestion on first load (supervisor can override).
   useEffect(() => {
-    if (!vehicleId && vehicles[0]?.id) setVehicleId(vehicles[0].id);
+    if (!vehicleId) {
+      const top =
+        vehicles.find((v: any) => v.in_pool && v.availability === "available") ||
+        vehicles.find((v: any) => v.availability === "available") ||
+        vehicles[0];
+      if (top?.id) setVehicleId(top.id);
+    }
   }, [vehicles, vehicleId]);
   useEffect(() => {
     if (!driverId) {
-      // Auto-suggest driver assigned to the chosen vehicle if any
+      // Auto-suggest driver permanently assigned to the chosen vehicle if any
       const v = vehicles.find((x) => x.id === vehicleId);
       if (v?.assigned_driver_id) {
-        setDriverId(v.assigned_driver_id);
-        return;
+        // Make sure the assigned driver is actually available (not on another trip)
+        const drv = drivers.find((d) => d.id === v.assigned_driver_id);
+        if (drv && drv.availability === "available") {
+          setDriverId(drv.id);
+          return;
+        }
       }
-      const top = drivers.find((d) => d.in_pool && !d.is_busy) || drivers[0];
+      const top =
+        drivers.find((d: any) => d.in_pool && d.availability === "available") ||
+        drivers.find((d: any) => d.availability === "available") ||
+        drivers[0];
       if (top?.id) setDriverId(top.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,28 +116,28 @@ export const PoolAssignmentPicker = ({
   const otherDrivers = drivers.filter((d) => !d.in_pool);
 
   // Cross-pool resource map for decision-making.
-  // Groups vehicles by pool (or "Unassigned"), counting idle vs busy.
+  // Groups vehicles by pool (or "Unassigned"), counting available vs busy.
   const vehiclesByPool = useMemo(() => {
-    const map = new Map<string, { total: number; idle: number; busy: number }>();
-    vehicles.forEach((v) => {
+    const map = new Map<string, { total: number; available: number; busy: number }>();
+    vehicles.forEach((v: any) => {
       const key = v.specific_pool || "Unassigned";
-      const cur = map.get(key) || { total: 0, idle: 0, busy: 0 };
+      const cur = map.get(key) || { total: 0, available: 0, busy: 0 };
       cur.total += 1;
-      if (v.is_idle) cur.idle += 1;
+      if (v.availability === "available") cur.available += 1;
       else cur.busy += 1;
       map.set(key, cur);
     });
     return Array.from(map.entries()).sort((a, b) => {
-      // Requested pool first, then by idle desc
+      // Requested pool first, then by available desc
       if (request.pool_name) {
         if (a[0] === request.pool_name) return -1;
         if (b[0] === request.pool_name) return 1;
       }
-      return b[1].idle - a[1].idle;
+      return b[1].available - a[1].available;
     });
   }, [vehicles, request.pool_name]);
 
-  const totalIdle = vehicles.filter((v) => v.is_idle).length;
+  const totalAvailable = vehicles.filter((v: any) => v.availability === "available").length;
 
   return (
     <div className="space-y-3">
@@ -143,7 +156,7 @@ export const PoolAssignmentPicker = ({
             <span className="text-muted-foreground">No pool specified — choose any vehicle</span>
           )}
           <span className="text-muted-foreground/80">
-            • {inPoolVehicles.length} in-pool / {totalIdle} idle of {vehicles.length} active vehicles
+            • {inPoolVehicles.length} in-pool / {totalAvailable} available of {vehicles.length} vehicles
             • {inPoolDrivers.length} pool drivers / {drivers.length} total
           </span>
         </div>
@@ -156,7 +169,7 @@ export const PoolAssignmentPicker = ({
             </span>
             {vehiclesByPool.map(([pool, stats]) => {
               const isRequested = pool === request.pool_name;
-              const exhausted = stats.idle === 0;
+              const exhausted = stats.available === 0;
               return (
                 <div
                   key={pool}
@@ -168,7 +181,7 @@ export const PoolAssignmentPicker = ({
                         ? "border-border/30 bg-muted/40 opacity-70"
                         : "border-border/40 bg-background",
                   )}
-                  title={`${stats.idle} idle / ${stats.busy} busy / ${stats.total} total`}
+                  title={`${stats.available} available / ${stats.busy} busy / ${stats.total} total`}
                 >
                   <span className="font-mono font-semibold">{pool}</span>
                   <span
@@ -177,7 +190,7 @@ export const PoolAssignmentPicker = ({
                       exhausted ? "text-muted-foreground" : "text-emerald-600",
                     )}
                   >
-                    {stats.idle}
+                    {stats.available}
                   </span>
                   <span className="text-muted-foreground">/{stats.total}</span>
                 </div>
@@ -210,7 +223,7 @@ export const PoolAssignmentPicker = ({
                     <Loader2 className="w-3 h-3 animate-spin" /> Loading suggestions…
                   </span>
                 ) : selectedVehicle ? (
-                  <span className="flex items-center gap-1.5 truncate">
+                  <span className="flex items-center gap-1.5 truncate w-full">
                     <span className="font-mono font-semibold">
                       {selectedVehicle.plate_number}
                     </span>
@@ -220,6 +233,14 @@ export const PoolAssignmentPicker = ({
                     {selectedVehicle.is_top_pick && (
                       <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
                     )}
+                    <span
+                      className={cn(
+                        "text-[9px] px-1.5 py-0 rounded border ml-auto shrink-0",
+                        AVAILABILITY_STYLES[(selectedVehicle as any).availability] || AVAILABILITY_STYLES.inactive,
+                      )}
+                    >
+                      {AVAILABILITY_LABELS[(selectedVehicle as any).availability] || (selectedVehicle as any).availability}
+                    </span>
                   </span>
                 ) : (
                   <span className="text-muted-foreground">Select vehicle…</span>
@@ -256,11 +277,11 @@ export const PoolAssignmentPicker = ({
                       groups.get(k)!.push(v);
                     });
                     return Array.from(groups.entries()).map(([poolKey, items]) => {
-                      const idleCount = items.filter((x) => x.is_idle).length;
+                      const availCount = items.filter((x: any) => x.availability === "available").length;
                       return (
                         <CommandGroup
                           key={poolKey}
-                          heading={`${poolKey} — ${idleCount} idle / ${items.length}`}
+                          heading={`${poolKey} — ${availCount} available / ${items.length}`}
                         >
                           {items.slice(0, 30).map((v) => (
                             <VehicleRow
@@ -308,23 +329,28 @@ export const PoolAssignmentPicker = ({
                     <Loader2 className="w-3 h-3 animate-spin" /> Loading…
                   </span>
                 ) : selectedDriver ? (
-                  <span className="flex items-center gap-1.5 truncate">
-                    <span className="font-medium">
+                  <span className="flex items-center gap-1.5 truncate w-full">
+                    <span className="font-medium truncate">
                       {selectedDriver.first_name} {selectedDriver.last_name}
                     </span>
+                    {(selectedDriver as any).assigned_vehicle_plate && (
+                      <span className="text-[10px] text-muted-foreground font-mono truncate">
+                        · {(selectedDriver as any).assigned_vehicle_plate}
+                      </span>
+                    )}
                     {selectedDriver.in_pool && (
-                      <Badge variant="secondary" className="text-[9px] py-0 h-4">
+                      <Badge variant="secondary" className="text-[9px] py-0 h-4 shrink-0">
                         pool
                       </Badge>
                     )}
-                    {selectedDriver.is_busy && (
-                      <Badge
-                        variant="outline"
-                        className="text-[9px] py-0 h-4 text-amber-600 border-amber-500/30"
-                      >
-                        busy
-                      </Badge>
-                    )}
+                    <span
+                      className={cn(
+                        "text-[9px] px-1.5 py-0 rounded border ml-auto shrink-0",
+                        AVAILABILITY_STYLES[(selectedDriver as any).availability] || AVAILABILITY_STYLES.inactive,
+                      )}
+                    >
+                      {AVAILABILITY_LABELS[(selectedDriver as any).availability] || (selectedDriver as any).availability}
+                    </span>
                   </span>
                 ) : (
                   <span className="text-muted-foreground">Select driver…</span>
@@ -404,6 +430,25 @@ export const PoolAssignmentPicker = ({
 
 // ── Row renderers ─────────────────────────────────────────────────────────
 
+const AVAILABILITY_STYLES: Record<string, string> = {
+  available: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
+  busy: "bg-amber-500/10 text-amber-600 border-amber-500/30",
+  on_trip: "bg-amber-500/10 text-amber-600 border-amber-500/30",
+  maintenance: "bg-destructive/10 text-destructive border-destructive/30",
+  off_duty: "bg-muted text-muted-foreground border-border",
+  suspended: "bg-destructive/10 text-destructive border-destructive/30",
+  inactive: "bg-muted text-muted-foreground border-border",
+};
+const AVAILABILITY_LABELS: Record<string, string> = {
+  available: "Available",
+  busy: "Busy",
+  on_trip: "On trip",
+  maintenance: "Maintenance",
+  off_duty: "Off duty",
+  suspended: "Suspended",
+  inactive: "Inactive",
+};
+
 const VehicleRow = ({
   v,
   selected,
@@ -412,9 +457,12 @@ const VehicleRow = ({
   v: any;
   selected: boolean;
   onSelect: () => void;
-}) => (
+}) => {
+  const availCls = AVAILABILITY_STYLES[v.availability] || AVAILABILITY_STYLES.inactive;
+  const availLabel = AVAILABILITY_LABELS[v.availability] || v.availability;
+  return (
   <CommandItem
-    value={`${v.plate_number} ${v.make ?? ""} ${v.model ?? ""} ${v.specific_pool ?? ""}`}
+    value={`${v.plate_number} ${v.make ?? ""} ${v.model ?? ""} ${v.specific_pool ?? ""} ${v.assigned_driver_name ?? ""}`}
     onSelect={onSelect}
     className="flex items-center justify-between gap-2"
   >
@@ -426,25 +474,28 @@ const VehicleRow = ({
         )}
       />
       <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-mono text-xs font-semibold">{v.plate_number}</span>
           {v.is_top_pick && (
             <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
           )}
+          <span className={cn("text-[9px] px-1.5 py-0 rounded border", availCls)}>
+            {availLabel}
+          </span>
           {v.in_geofence && (
             <Badge variant="outline" className="text-[9px] py-0 h-4 border-emerald-500/40 text-emerald-600">
               <MapPin className="w-2.5 h-2.5 mr-0.5" /> in zone
-            </Badge>
-          )}
-          {v.is_idle === false && (
-            <Badge variant="outline" className="text-[9px] py-0 h-4 text-amber-600 border-amber-500/30">
-              busy
             </Badge>
           )}
         </div>
         <div className="text-[11px] text-muted-foreground truncate">
           {v.make} {v.model}
           {v.seating_capacity ? ` • ${v.seating_capacity} seats` : ""}
+          {v.assigned_driver_name && (
+            <span className="ml-1">
+              • <User className="inline w-2.5 h-2.5 -mt-0.5" /> {v.assigned_driver_name}
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -464,7 +515,8 @@ const VehicleRow = ({
       )}
     </div>
   </CommandItem>
-);
+  );
+};
 
 const DriverRow = ({
   d,
@@ -474,9 +526,12 @@ const DriverRow = ({
   d: any;
   selected: boolean;
   onSelect: () => void;
-}) => (
+}) => {
+  const availCls = AVAILABILITY_STYLES[d.availability] || AVAILABILITY_STYLES.inactive;
+  const availLabel = AVAILABILITY_LABELS[d.availability] || d.availability;
+  return (
   <CommandItem
-    value={`${d.first_name ?? ""} ${d.last_name ?? ""} ${d.phone ?? ""}`}
+    value={`${d.first_name ?? ""} ${d.last_name ?? ""} ${d.phone ?? ""} ${d.assigned_vehicle_plate ?? ""}`}
     onSelect={onSelect}
     className="flex items-center justify-between gap-2"
   >
@@ -488,15 +543,23 @@ const DriverRow = ({
         )}
       />
       <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs font-medium truncate">
             {d.first_name} {d.last_name}
           </span>
           {d.is_top_pick && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
+          <span className={cn("text-[9px] px-1.5 py-0 rounded border", availCls)}>
+            {availLabel}
+          </span>
         </div>
-        {d.phone && (
-          <div className="text-[11px] text-muted-foreground truncate">{d.phone}</div>
-        )}
+        <div className="text-[11px] text-muted-foreground truncate">
+          {d.assigned_vehicle_plate ? (
+            <span><Truck className="inline w-2.5 h-2.5 -mt-0.5" /> {d.assigned_vehicle_plate}</span>
+          ) : (
+            <span className="italic">No vehicle assigned</span>
+          )}
+          {d.phone && <span> • {d.phone}</span>}
+        </div>
       </div>
     </div>
     <div className="flex items-center gap-1 shrink-0">
@@ -505,15 +568,10 @@ const DriverRow = ({
           pool
         </Badge>
       )}
-      {d.is_busy && (
-        <Badge variant="outline" className="text-[9px] py-0 h-4 text-amber-600 border-amber-500/30">
-          {d.status}
-        </Badge>
-      )}
     </div>
   </CommandItem>
-);
-
+  );
+};
 const VehicleHints = ({
   v,
   requestPool,

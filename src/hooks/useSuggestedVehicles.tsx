@@ -31,12 +31,19 @@ export interface SuggestedVehicle {
   specific_pool: string | null;
   seating_capacity: number | null;
   assigned_driver_id: string | null;
+  /** Display name of the driver permanently assigned to this vehicle (vehicles.assigned_driver_id). */
+  assigned_driver_name: string | null;
   distance_km: number | null;
   has_gps: boolean;
   in_geofence: boolean;
   in_pool: boolean;
   is_idle: boolean;
   is_top_pick: boolean;
+  /** Active trip currently using this vehicle, if any. */
+  active_trip_id: string | null;
+  active_trip_status: string | null;
+  /** Human availability summary used by the picker UI. */
+  availability: "available" | "busy" | "maintenance" | "inactive";
 }
 
 interface Args {
@@ -68,14 +75,16 @@ export const useSuggestedVehicles = ({
     enabled: enabled && !!organizationId,
     staleTime: 30_000,
     queryFn: async (): Promise<SuggestedVehicle[]> => {
-      // 1. All active vehicles in the org — never filter by pool here, only rank.
+      // 1. All vehicles in the org — never filter by pool here, only rank.
+      //    We also no longer filter by status: we want supervisors to *see*
+      //    maintenance/inactive vehicles (greyed out) so they understand the
+      //    real fleet picture instead of an empty list.
       const { data: vehicles, error } = await supabase
         .from("vehicles")
         .select(
           "id, plate_number, make, model, status, specific_pool, seating_capacity, assigned_driver_id",
         )
         .eq("organization_id", organizationId!)
-        .eq("status", "active")
         .limit(500);
       if (error) throw error;
 
@@ -101,15 +110,34 @@ export const useSuggestedVehicles = ({
       // 3. Idle check — vehicles already assigned to an in-flight trip are busy.
       const { data: activeTrips } = await (supabase as any)
         .from("vehicle_requests")
-        .select("assigned_vehicle_id, status")
+        .select("id, assigned_vehicle_id, status")
         .eq("organization_id", organizationId!)
         .in("status", ["assigned", "in_progress", "checked_out"])
         .in("assigned_vehicle_id", ids);
-      const busyIds = new Set<string>(
-        (activeTrips || [])
-          .map((t: any) => t.assigned_vehicle_id)
-          .filter(Boolean),
-      );
+      const tripByVehicle = new Map<string, { id: string; status: string }>();
+      (activeTrips || []).forEach((t: any) => {
+        if (t.assigned_vehicle_id) {
+          tripByVehicle.set(t.assigned_vehicle_id, { id: t.id, status: t.status });
+        }
+      });
+
+      // 3b. Resolve names of permanently-assigned drivers.
+      const driverIds = Array.from(
+        new Set(list.map((v) => v.assigned_driver_id).filter(Boolean)),
+      ) as string[];
+      const driverNameMap = new Map<string, string>();
+      if (driverIds.length) {
+        const { data: drv } = await supabase
+          .from("drivers")
+          .select("id, first_name, last_name")
+          .in("id", driverIds);
+        (drv || []).forEach((d: any) => {
+          driverNameMap.set(
+            d.id,
+            `${d.first_name ?? ""} ${d.last_name ?? ""}`.trim() || "Driver",
+          );
+        });
+      }
 
       // 4. Active geofences (only needed if we have pickup coords)
       let pickupFence: GeofenceLite | null = null;
@@ -145,26 +173,46 @@ export const useSuggestedVehicles = ({
           v.seating_capacity == null ||
           v.seating_capacity >= passengers;
         const in_pool = !!(poolName && v.specific_pool === poolName);
+        const trip = tripByVehicle.get(v.id);
+        const is_idle = !trip;
+        let availability: SuggestedVehicle["availability"] = "available";
+        if (v.status === "maintenance") availability = "maintenance";
+        else if (v.status && v.status !== "active") availability = "inactive";
+        else if (trip) availability = "busy";
         return {
           ...v,
           distance_km,
           has_gps: !!tele,
           in_geofence,
           in_pool,
-          is_idle: !busyIds.has(v.id),
+          is_idle,
           is_top_pick: false,
+          assigned_driver_name: v.assigned_driver_id
+            ? driverNameMap.get(v.assigned_driver_id) ?? null
+            : null,
+          active_trip_id: trip?.id ?? null,
+          active_trip_status: trip?.status ?? null,
+          availability,
           // Capacity mismatch: heavily down-rank
           _capacityPenalty: fitsCapacity ? 0 : 1000,
         } as SuggestedVehicle & { _capacityPenalty: number };
       });
 
-      // 6. Sort: in-pool first → idle → in-geofence → has-GPS+distance → roster.
+      // 6. Sort: available first (in-pool > idle > geofence > distance), then busy, then maintenance/inactive.
+      const availabilityRank: Record<string, number> = {
+        available: 0,
+        busy: 1,
+        maintenance: 2,
+        inactive: 3,
+      };
       scored.sort((a: any, b: any) => {
         if (a._capacityPenalty !== b._capacityPenalty) {
           return a._capacityPenalty - b._capacityPenalty;
         }
+        const ra = availabilityRank[a.availability] ?? 9;
+        const rb = availabilityRank[b.availability] ?? 9;
+        if (ra !== rb) return ra - rb;
         if (a.in_pool !== b.in_pool) return a.in_pool ? -1 : 1;
-        if (a.is_idle !== b.is_idle) return a.is_idle ? -1 : 1;
         if (a.in_geofence !== b.in_geofence) return a.in_geofence ? -1 : 1;
         if (a.has_gps !== b.has_gps) return a.has_gps ? -1 : 1;
         if (a.has_gps && b.has_gps) {
@@ -173,8 +221,9 @@ export const useSuggestedVehicles = ({
         return (a.plate_number || "").localeCompare(b.plate_number || "");
       });
 
-      // Mark top pick
-      if (scored.length) scored[0].is_top_pick = true;
+      // Mark top pick — the first *available* vehicle (not just first row).
+      const topAvailable = scored.find((v: any) => v.availability === "available");
+      if (topAvailable) (topAvailable as any).is_top_pick = true;
       // Strip internal field
       return scored.map(({ _capacityPenalty, ...v }: any) => v);
     },

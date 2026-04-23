@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,8 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [selectedDriver, setSelectedDriver] = useState("");
   const [reason, setReason] = useState("");
+  /** Two-step pool selector — mirrors the Vehicle Request form. */
+  const [targetCategory, setTargetCategory] = useState<string>("");
   const [targetPool, setTargetPool] = useState("");
 
   const { data: pools = [] } = useQuery({
@@ -40,6 +42,23 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
     },
     enabled: !!organizationId && open,
   });
+
+  // Categories actually present in this org (corporate/zone/region) excluding the
+  // current request's own category+pool combo.
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    pools.forEach((p: any) => p.category && set.add(p.category));
+    return Array.from(set).sort();
+  }, [pools]);
+
+  // Pools for the chosen category, excluding the request's source pool.
+  const poolsInCategory = useMemo(() => {
+    return pools.filter(
+      (p: any) =>
+        p.category === targetCategory &&
+        !(p.category === request.pool_category && p.name === request.pool_name),
+    );
+  }, [pools, targetCategory, request.pool_category, request.pool_name]);
 
   // Vehicles in target pool with live status
   const { data: poolVehicles = [] } = useQuery({
@@ -75,6 +94,7 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
 
   const assignMutation = useMutation({
     mutationFn: async () => {
+      if (!targetCategory) throw new Error("Select a target pool category");
       if (!targetPool) throw new Error("Select a target pool");
       if (!selectedVehicle) throw new Error("Select a vehicle");
       if (!selectedDriver) throw new Error("Select a driver — required so the request shows in the Driver Portal.");
@@ -100,6 +120,7 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
           actual_assignment_minutes: mins,
           cross_pool_assignment: true,
           original_pool_name: request.pool_name || null,
+          pool_category: targetCategory,
           pool_name: targetPool || request.pool_name,
           purpose: (request.purpose || "") + `\n[Cross-pool: ${reason}]`,
         })
@@ -116,6 +137,12 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
   });
 
   // Reset selections when target pool changes
+  const handleCategoryChange = (val: string) => {
+    setTargetCategory(val);
+    setTargetPool("");
+    setSelectedVehicle("");
+    setSelectedDriver("");
+  };
   const handlePoolChange = (val: string) => {
     setTargetPool(val);
     setSelectedVehicle("");
@@ -140,7 +167,7 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowRight className="w-5 h-5 text-amber-500" />
@@ -166,16 +193,58 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
             </div>
           )}
 
-          <div>
-            <Label>Target Pool *</Label>
-            <Select value={targetPool} onValueChange={handlePoolChange}>
-              <SelectTrigger><SelectValue placeholder="Select target pool" /></SelectTrigger>
-              <SelectContent>
-                {pools.filter((p: any) => p.name !== request.pool_name).map((p: any) => (
-                  <SelectItem key={p.id} value={p.name}>{p.category} / {p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Step 1 — Pool Category (corporate / zone / region) */}
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <Label>Target Pool Category *</Label>
+              <Select value={targetCategory} onValueChange={handleCategoryChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.length === 0 && (
+                    <div className="px-2 py-3 text-xs text-muted-foreground">
+                      No pool categories configured
+                    </div>
+                  )}
+                  {categories.map((c: string) => (
+                    <SelectItem key={c} value={c}>
+                      {c.charAt(0).toUpperCase() + c.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Step 2 — specific Pool within the chosen category */}
+            <div>
+              <Label>Target Pool *</Label>
+              <Select
+                value={targetPool}
+                onValueChange={handlePoolChange}
+                disabled={!targetCategory}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      targetCategory ? "Select pool" : "Pick a category first"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {targetCategory && poolsInCategory.length === 0 && (
+                    <div className="px-2 py-3 text-xs text-muted-foreground">
+                      No other pools in this category
+                    </div>
+                  )}
+                  {poolsInCategory.map((p: any) => (
+                    <SelectItem key={p.id} value={p.name}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div>
