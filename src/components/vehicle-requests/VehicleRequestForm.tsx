@@ -1069,87 +1069,23 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   };
 
 
-  const TABS = [
-    { id: "type", label: "Type", icon: Sparkles, hint: "Operation" },
-    { id: "schedule", label: "Schedule", icon: CalendarDays, hint: "When" },
-    { id: "route", label: "Route", icon: MapPin, hint: "Where" },
-    { id: "resources", label: "Resources", icon: Layers, hint: "Vehicles & Pool" },
-    { id: "details", label: "Details", icon: FileText, hint: "Purpose & Submit" },
-  ] as const;
-  const tabIndex = TABS.findIndex(t => t.id === activeTab);
-  const goNext = () => {
-    if (activeTab === "schedule") {
-      const ctx = form as any;
-      const scheduleChecks = isDaily
-        ? ([
-            ["date", form.date],
-            ["start_time", form.start_time],
-            ["end_time", form.end_time],
-          ] as const)
-        : ([
-            ["start_date", form.start_date],
-            ["end_date", form.end_date],
-            ...(isProject ? ([["project_number", form.project_number]] as const) : []),
-          ] as const);
-
-      const firstInvalid = scheduleChecks.find(([field, value]) => {
-        const msg = validation.validateField(field as any, value, ctx);
-        if (msg) handleBlur(field as any, value, ctx);
-        return !!msg;
-      });
-
-      if (firstInvalid) {
-        const [field, value] = firstInvalid;
-        const msg = validation.validateField(field as any, value, ctx);
-        toast.error(msg || "Please complete the schedule fields.");
-        requestAnimationFrame(() => {
-          const anchor = fieldAnchors.current[field as keyof typeof fieldAnchors.current];
-          anchor?.scrollIntoView({ behavior: "smooth", block: "center" });
-        });
-        return;
-      }
-    }
-
-    setActiveTab(TABS[Math.min(tabIndex + 1, TABS.length - 1)].id as any);
-  };
-  const goPrev = () => setActiveTab(TABS[Math.max(tabIndex - 1, 0)].id as any);
-
-  // Per-tab completion indicators
-  const tabComplete: Record<string, boolean> = {
-    type: !!form.request_type,
-    schedule: isDaily ? !!form.date : !!form.start_date,
-    route: !!form.departure_place || !!form.destination,
-    resources: !!form.num_vehicles && !!form.passengers && !!form.vehicle_type && !!form.cargo_load && (!isUpgrade || !!form.vehicle_type_justification?.trim()),
-    details: !!form.purpose && !!form.purpose_category,
-  };
-
-  // Overall completion across the 5 tabs (drives the header progress bar).
-  const overallPct = useMemo(() => {
-    const vals = Object.values(tabComplete);
-    const filled = vals.filter(Boolean).length;
-    return vals.length ? Math.round((filled / vals.length) * 100) : 0;
-  }, [tabComplete]);
-
   const HeaderInner = (
-    <div className="relative rounded-2xl border bg-card/60 backdrop-blur-xl shadow-sm overflow-hidden">
-      {/* Title row + completion meter */}
-      <div className="flex items-center justify-between gap-3 px-4 md:px-5 py-3 border-b">
-        <div>
-          <h3 className="text-base font-semibold tracking-tight">Vehicle Request</h3>
-          <p className="text-xs text-muted-foreground">Complete the sections below to submit your trip</p>
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2.5">
+        <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+          <Car className="h-4 w-4 text-primary" />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Complete</span>
-          <span className="text-sm font-semibold tabular-nums w-10 text-right">{overallPct}%</span>
-          <div className="w-24 h-1.5 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-primary to-secondary transition-all"
-              style={{ width: `${overallPct}%` }}
-            />
-          </div>
+        <div>
+          <h3 className="text-sm font-semibold tracking-tight">New Vehicle Request</h3>
+          <p className="text-xs text-muted-foreground">Fill in the fields below and submit.</p>
         </div>
       </div>
-
+      {savedAt && (
+        <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <CheckCircle2 className="w-3 h-3 text-success" />
+          Auto-saved {new Date(savedAt).toLocaleTimeString()}
+        </span>
+      )}
     </div>
   );
 
