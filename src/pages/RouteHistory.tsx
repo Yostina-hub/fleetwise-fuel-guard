@@ -315,6 +315,40 @@ const RouteHistory = () => {
   const routeHistory = telemetryData || [];
   const hasData = routeHistory.length > 0;
 
+  // Fallback when GPS telemetry is missing for the selected date:
+  // pull any vehicle_requests this vehicle ran that day so we can at least
+  // show start → destination markers + an animated "trip overview" map.
+  const { data: tripsForDay } = useQuery({
+    queryKey: ["route-history-trips-for-day", selectedVehicle, selectedDate],
+    enabled: !!selectedVehicle && !!selectedDate && !telemetryLoading && !hasData,
+    queryFn: async () => {
+      const { startISO, endISO } = getDayBoundsISO(selectedDate);
+      const { data } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          `id, request_number, status,
+           departure_place, departure_lat, departure_lng,
+           destination, destination_lat, destination_lng,
+           needed_from, needed_until,
+           driver_checked_in_at, driver_checked_out_at,
+           driver_checkin_odometer, driver_checkout_odometer,
+           assigned_driver:assigned_driver_id(first_name, last_name)`
+        )
+        .eq("assigned_vehicle_id", selectedVehicle)
+        .or(
+          [
+            `and(driver_checked_in_at.gte.${startISO},driver_checked_in_at.lte.${endISO})`,
+            `and(driver_checked_out_at.gte.${startISO},driver_checked_out_at.lte.${endISO})`,
+            `and(needed_from.gte.${startISO},needed_from.lte.${endISO})`,
+          ].join(",")
+        )
+        .order("needed_from", { ascending: true })
+        .limit(20);
+      return (data || []) as any[];
+    },
+  });
+  const hasFallbackTrips = (tripsForDay?.length || 0) > 0;
+
   // Suggest dates with telemetry for the selected vehicle (last 14 days)
   const { data: availableDates } = useQuery({
     queryKey: ["route-history-available-dates", selectedVehicle],
