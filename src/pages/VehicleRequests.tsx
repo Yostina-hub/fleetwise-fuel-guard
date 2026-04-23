@@ -730,6 +730,28 @@ const VehicleRequests = () => {
                 </Can>
               </>
             )}
+            {canManageAll && (
+              <Button
+                variant={viewMode === "assignments" ? "default" : "outline"}
+                size="sm"
+                className="gap-1.5 h-9"
+                onClick={() =>
+                  setViewMode((m) => (m === "assignments" ? "requests" : "assignments"))
+                }
+                title="Pool supervisor workspace — review approved requests and allocate vehicles + drivers"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                Assignments
+                {awaitingAssignmentCount > 0 && (
+                  <Badge
+                    variant={viewMode === "assignments" ? "secondary" : "destructive"}
+                    className="ml-1 h-4 min-w-[1rem] px-1 text-[10px]"
+                  >
+                    {awaitingAssignmentCount}
+                  </Badge>
+                )}
+              </Button>
+            )}
             <Can resource="vehicle_requests" action="create">
               <Button
                 size="sm"
