@@ -32,6 +32,7 @@ import { deriveVisibility } from "./visibility";
 import { RouteMapPreview } from "./RouteMapPreview";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
+import { useCan } from "@/hooks/useCan";
 
 import { useDepartments } from "@/hooks/useDepartments";
 import {
@@ -280,8 +281,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   // Mandatory rating gate — block new requests until prior completed trips are rated.
   // The DB also enforces this with a trigger; the UI gives immediate feedback.
-  const { data: pendingRatings = [] } = usePendingRatings(open);
-  const hasPendingRatings = pendingRatings.length > 0;
+  // Roles granted `vehicle_requests.bypass_rating_gate` on the RBAC matrix
+  // (super admins, org admins, fleet managers by default) skip this gate
+  // entirely so administrative users are never blocked from filing requests.
+  const { allowed: canBypassRatingGate } = useCan("vehicle_requests", "bypass_rating_gate");
+  const { data: pendingRatings = [] } = usePendingRatings(open && !canBypassRatingGate);
+  const hasPendingRatings = !canBypassRatingGate && pendingRatings.length > 0;
 
   // Default duration (in days) per request type — used to auto-derive end_date
   // dynamically from start_date so requesters don't have to compute it manually.
