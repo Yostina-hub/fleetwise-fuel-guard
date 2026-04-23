@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useDriverScores } from "@/hooks/useDriverScores";
 import { useFleetPassengerFeedback } from "@/hooks/useDriverPassengerFeedback";
+import { CumulativeDriverRatingsTab } from "./CumulativeDriverRatingsTab";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useVehicles } from "@/hooks/useVehicles";
 import { 
@@ -420,7 +421,15 @@ export const DriverScoringTab = () => {
             <History className="w-4 h-4" />
             Score History
           </TabsTrigger>
+          <TabsTrigger value="cumulative" className="gap-2">
+            <Award className="w-4 h-4" />
+            Cumulative Ratings
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="cumulative">
+          <CumulativeDriverRatingsTab />
+        </TabsContent>
 
         <TabsContent value="rankings">
           <Card>
