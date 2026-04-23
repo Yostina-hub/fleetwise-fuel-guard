@@ -290,7 +290,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     }
   }, [onBehalfOf, onBehalfDraftKey]);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
   const fieldAnchors = useRef<Partial<Record<"date" | "start_time" | "end_time" | "start_date" | "end_date" | "project_number", HTMLDivElement | null>>>({});
 
   // Mandatory rating gate — block new requests until prior completed trips are rated.
