@@ -273,10 +273,19 @@ const VehicleRequests = () => {
   // filtered list
   const filtered = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
+    const startMs = new Date(startISO).getTime();
+    const endMs = new Date(endISO).getTime();
     return requests.filter((r: any) => {
       if (activeStatus !== "all" && r.status !== activeStatus) return false;
       if (typeFilter !== "all" && r.request_type !== typeFilter) return false;
       if (poolFilter !== "all" && r.pool_name !== poolFilter) return false;
+      // Date range — match on `needed_from` (trip date) and fall back to
+      // `created_at` for drafts that don't yet have a scheduled date.
+      const ref = r.needed_from || r.created_at;
+      if (ref) {
+        const t = new Date(ref).getTime();
+        if (!Number.isNaN(t) && (t < startMs || t > endMs)) return false;
+      }
       if (!q) return true;
       const haystack = [
         r.request_number,
@@ -294,7 +303,7 @@ const VehicleRequests = () => {
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [requests, activeStatus, debouncedSearch, typeFilter, poolFilter]);
+  }, [requests, activeStatus, debouncedSearch, typeFilter, poolFilter, startISO, endISO]);
 
   // sorted (apply on top of filtered)
   const sorted = useMemo(() => {
