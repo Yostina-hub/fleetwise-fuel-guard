@@ -1,14 +1,15 @@
 /**
- * TimePicker — friendly 24h time selector.
+ * TimePicker — friendly 12h time selector (AM/PM) with 24h value contract.
  *
- * Replaces the native <input type="time"> which renders inconsistently
- * across browsers (tiny icon, low contrast on dark themes, hidden minutes).
+ * Why 12h UI: Ethiopian fleet operators read time on a 12-hour clock
+ * ("8:00 night" = 20:00). The picker shows hours 1–12 + AM/PM, while the
+ * stored value remains "HH:MM" in 24-hour format so downstream logic
+ * (Day/Night auto-classification, validation, DB writes) is unchanged.
  *
  * UX:
- *  - Trigger button shows the time large + clock icon, themed.
- *  - Popover with two scrollable lists (Hours 00–23, Minutes 00–55 in 5-min steps).
- *  - Falls back to free typing via the trigger's keyboard input is NOT supported;
- *    if a user needs an exact minute, they can pick the nearest 5 then type.
+ *  - Trigger button shows formatted time (e.g. "08:30 PM") + clock icon.
+ *  - Popover with three columns: Hours (01–12), Minutes (step), AM/PM.
+ *  - "Use current time" reads Africa/Addis_Ababa (EAT) live time.
  *
  * Value contract: "HH:MM" string (24h). Empty string = unset.
  */
@@ -20,7 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TimePickerProps {
-  value: string; // "HH:MM"
+  value: string; // "HH:MM" 24h
   onChange: (v: string) => void;
   onBlur?: () => void;
   placeholder?: string;
@@ -32,6 +33,32 @@ interface TimePickerProps {
 }
 
 const pad = (n: number) => n.toString().padStart(2, "0");
+
+/** 24h "HH:MM" → { h12: "01".."12", m: "MM", period: "AM"|"PM" } */
+const to12h = (value: string) => {
+  if (!value) return { h12: "", m: "", period: "AM" as "AM" | "PM" };
+  const [hStr = "", mStr = ""] = value.split(":");
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  const hasH = Number.isFinite(h);
+  const hasM = Number.isFinite(m);
+  const period: "AM" | "PM" = hasH ? (h >= 12 ? "PM" : "AM") : "AM";
+  let h12 = "";
+  if (hasH) {
+    const v = h % 12 === 0 ? 12 : h % 12;
+    h12 = pad(v);
+  }
+  return { h12, m: hasM ? pad(m) : "", period };
+};
+
+/** "01".."12" + AM/PM → 24h "HH" string */
+const h12To24 = (h12: string, period: "AM" | "PM") => {
+  const n = parseInt(h12, 10);
+  if (!Number.isFinite(n)) return "";
+  const base = n % 12; // 12 → 0
+  const h = period === "PM" ? base + 12 : base;
+  return pad(h);
+};
 
 export function TimePicker({
   value,
@@ -48,7 +75,7 @@ export function TimePicker({
   // Live current time in Africa/Addis_Ababa (EAT, UTC+3) — fleet operates on
   // Ethiopian local time so the hint and the "Use current time" shortcut
   // always reflect EAT regardless of the user's device timezone.
-  const eatNow = React.useCallback(() => {
+  const eatNow24 = React.useCallback(() => {
     const dtf = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Africa/Addis_Ababa",
       hour: "2-digit",
@@ -57,50 +84,80 @@ export function TimePicker({
     });
     return dtf.format(new Date()); // "HH:MM"
   }, []);
-  const [now, setNow] = React.useState<string>(eatNow);
+  const eatNow12Display = React.useCallback(() => {
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Africa/Addis_Ababa",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+    return dtf.format(new Date()); // e.g. "08:30 PM"
+  }, []);
+
+  const [now12, setNow12] = React.useState<string>(eatNow12Display);
   React.useEffect(() => {
-    const id = setInterval(() => setNow(eatNow()), 30_000);
+    const id = setInterval(() => setNow12(eatNow12Display()), 30_000);
     return () => clearInterval(id);
-  }, [eatNow]);
+  }, [eatNow12Display]);
 
   const setNowTime = () => {
-    const [h, mRaw] = eatNow().split(":").map(Number);
+    const [h, mRaw] = eatNow24().split(":").map(Number);
     let m = mRaw;
     if (minuteStep > 1) {
-      // round to nearest step so the selected value matches a list entry
       m = Math.round(mRaw / minuteStep) * minuteStep;
       if (m === 60) m = 0;
     }
     onChange(`${pad(h)}:${pad(m)}`);
   };
 
-  // Parse partials too: "14:" (hour only) or ":30" (minute only) so users
-  // can see which half they still need to pick.
-  const [hh, mm] = React.useMemo(() => {
-    if (!value) return ["", ""] as const;
-    const [h = "", m = ""] = value.split(":");
-    const hNum = h ? parseInt(h, 10) : NaN;
-    const mNum = m ? parseInt(m, 10) : NaN;
-    return [
-      Number.isFinite(hNum) ? pad(hNum) : "",
-      Number.isFinite(mNum) ? pad(mNum) : "",
-    ] as const;
-  }, [value]);
+  const { h12, m: mm, period } = React.useMemo(() => to12h(value), [value]);
 
-  const hours = React.useMemo(() => Array.from({ length: 24 }, (_, i) => pad(i)), []);
+  const hours12 = React.useMemo(
+    () => Array.from({ length: 12 }, (_, i) => pad(i + 1)),
+    [],
+  );
   const minutes = React.useMemo(
     () => Array.from({ length: Math.ceil(60 / minuteStep) }, (_, i) => pad(i * minuteStep)),
     [minuteStep],
   );
 
   // Both hour and minute must be explicitly chosen — never silently default
-  // the missing component to "00", which would let users submit a half-picked
-  // time that looks complete (e.g. picking "14" → "14:00") and bypass the
-  // "End time required" validation.
-  const setHour = (h: string) => onChange(mm ? `${h}:${mm}` : `${h}:`);
-  const setMinute = (m: string) => onChange(hh ? `${hh}:${m}` : `:${m}`);
+  // the missing component, which would let users submit a half-picked time
+  // that bypasses "End time required" validation.
+  const setHour = (h: string) => {
+    const h24 = h12To24(h, period);
+    onChange(mm ? `${h24}:${mm}` : `${h24}:`);
+  };
+  const setMinute = (m: string) => {
+    if (h12) {
+      const h24 = h12To24(h12, period);
+      onChange(`${h24}:${m}`);
+    } else {
+      onChange(`:${m}`);
+    }
+  };
+  const setPeriod = (p: "AM" | "PM") => {
+    if (!h12) {
+      // No hour yet — just remember the period by writing a placeholder we
+      // can read back. Keep value empty until user picks an hour.
+      // We achieve this by storing nothing and relying on local fallback below.
+      setLocalPeriod(p);
+      return;
+    }
+    const h24 = h12To24(h12, p);
+    onChange(mm ? `${h24}:${mm}` : `${h24}:`);
+  };
 
-  const display = hh && mm ? `${hh}:${mm}` : (hh || mm) ? `${hh || "--"}:${mm || "--"}` : "";
+  // Local fallback for period when no hour is selected yet.
+  const [localPeriod, setLocalPeriod] = React.useState<"AM" | "PM">("AM");
+  const effectivePeriod: "AM" | "PM" = h12 ? period : localPeriod;
+
+  // Trigger display: "HH:MM AM" 12h, or partial markers if half-picked.
+  const display = React.useMemo(() => {
+    if (h12 && mm) return `${h12}:${mm} ${period}`;
+    if (h12 || mm) return `${h12 || "--"}:${mm || "--"} ${effectivePeriod}`;
+    return "";
+  }, [h12, mm, period, effectivePeriod]);
 
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) onBlur?.(); }}>
@@ -120,14 +177,14 @@ export function TimePicker({
           <Clock className="h-4 w-4 shrink-0 text-primary" />
           <span className="flex-1 text-left">{display || placeholder}</span>
           <span className="ml-auto text-[10px] font-sans font-normal text-muted-foreground tabular-nums">
-            now {now} EAT
+            now {now12} EAT
           </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
         <div className="flex items-center justify-between gap-2 border-b px-2 py-1.5 bg-muted/30">
           <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Now <span className="font-mono text-foreground tabular-nums">{now}</span> <span className="text-muted-foreground/80">EAT</span>
+            Now <span className="font-mono text-foreground tabular-nums">{now12}</span> <span className="text-muted-foreground/80">EAT</span>
           </span>
           <button
             type="button"
@@ -140,18 +197,18 @@ export function TimePicker({
         <div className="flex">
           <div className="border-r">
             <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center bg-muted/40">
-              Hour (24h)
+              Hour
             </div>
             <ScrollArea className="h-56 w-16">
               <div className="p-1">
-                {hours.map((h) => (
+                {hours12.map((h) => (
                   <button
                     key={h}
                     type="button"
                     onClick={() => setHour(h)}
                     className={cn(
                       "w-full rounded px-2 py-1.5 text-sm font-mono text-center transition-colors",
-                      h === hh
+                      h === h12
                         ? "bg-primary text-primary-foreground font-semibold"
                         : "hover:bg-accent",
                     )}
@@ -162,7 +219,7 @@ export function TimePicker({
               </div>
             </ScrollArea>
           </div>
-          <div>
+          <div className="border-r">
             <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center bg-muted/40">
               Min
             </div>
@@ -186,11 +243,33 @@ export function TimePicker({
               </div>
             </ScrollArea>
           </div>
+          <div>
+            <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center bg-muted/40">
+              AM/PM
+            </div>
+            <div className="h-56 w-16 p-1 flex flex-col gap-1">
+              {(["AM", "PM"] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPeriod(p)}
+                  className={cn(
+                    "w-full rounded px-2 py-2 text-sm font-mono text-center transition-colors",
+                    p === effectivePeriod
+                      ? "bg-primary text-primary-foreground font-semibold"
+                      : "hover:bg-accent",
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
         <div className="flex items-center justify-between border-t px-2 py-1.5 bg-muted/20">
           <button
             type="button"
-            onClick={() => { onChange(""); }}
+            onClick={() => { onChange(""); setLocalPeriod("AM"); }}
             className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
           >
             Clear
