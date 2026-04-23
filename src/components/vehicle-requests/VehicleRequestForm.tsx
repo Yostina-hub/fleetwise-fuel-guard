@@ -290,7 +290,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     }
   }, [onBehalfOf, onBehalfDraftKey]);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"type" | "schedule" | "route" | "resources" | "details">("type");
   const fieldAnchors = useRef<Partial<Record<"date" | "start_time" | "end_time" | "start_date" | "end_date" | "project_number", HTMLDivElement | null>>>({});
 
   // Mandatory rating gate — block new requests until prior completed trips are rated.
@@ -1003,19 +1002,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       const firstField = Object.keys(result.errors)[0];
       const firstMsg = (result.errors as any)[firstField];
       toast.error(firstMsg || "Please fix the highlighted fields before submitting.");
-      // Jump to the first tab containing an error
-      const tabForField: Record<string, typeof activeTab> = {
-        request_type: "type",
-        date: "schedule", start_time: "schedule", end_time: "schedule",
-        start_date: "schedule", end_date: "schedule", project_number: "schedule",
-        departure_place: "route", destination: "route", trip_type: "route",
-        num_vehicles: "resources", passengers: "resources", vehicle_type: "resources",
-        priority: "resources", pool_category: "resources", pool_name: "resources",
-        contact_phone: "resources",
-        purpose: "details",
-      };
-      const target = tabForField[firstField];
-      if (target) setActiveTab(target);
       requestAnimationFrame(() => {
         const anchor = fieldAnchors.current[firstField as keyof typeof fieldAnchors.current];
         anchor?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1039,7 +1025,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       );
       if (violation) {
         toast.error(violation);
-        setActiveTab("schedule");
         return;
       }
     }
@@ -1047,14 +1032,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // Resource-aware demand shaping.
     if (!form.purpose_category) {
       toast.error("Select a business purpose category. Personal use of fleet vehicles is not permitted.");
-      setActiveTab("details");
       return;
     }
     if (isUpgrade && !form.vehicle_type_justification?.trim()) {
       toast.error(
         `You picked ${chosenProfile?.label || "a larger vehicle"} but ${recommendation?.label} is sufficient. Please add a justification.`
       );
-      setActiveTab("resources");
       return;
     }
 
@@ -1086,98 +1069,34 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   };
 
 
-  const TABS = [
-    { id: "type", label: "Type", icon: Sparkles, hint: "Operation" },
-    { id: "schedule", label: "Schedule", icon: CalendarDays, hint: "When" },
-    { id: "route", label: "Route", icon: MapPin, hint: "Where" },
-    { id: "resources", label: "Resources", icon: Layers, hint: "Vehicles & Pool" },
-    { id: "details", label: "Details", icon: FileText, hint: "Purpose & Submit" },
-  ] as const;
-  const tabIndex = TABS.findIndex(t => t.id === activeTab);
-  const goNext = () => {
-    if (activeTab === "schedule") {
-      const ctx = form as any;
-      const scheduleChecks = isDaily
-        ? ([
-            ["date", form.date],
-            ["start_time", form.start_time],
-            ["end_time", form.end_time],
-          ] as const)
-        : ([
-            ["start_date", form.start_date],
-            ["end_date", form.end_date],
-            ...(isProject ? ([["project_number", form.project_number]] as const) : []),
-          ] as const);
-
-      const firstInvalid = scheduleChecks.find(([field, value]) => {
-        const msg = validation.validateField(field as any, value, ctx);
-        if (msg) handleBlur(field as any, value, ctx);
-        return !!msg;
-      });
-
-      if (firstInvalid) {
-        const [field, value] = firstInvalid;
-        const msg = validation.validateField(field as any, value, ctx);
-        toast.error(msg || "Please complete the schedule fields.");
-        requestAnimationFrame(() => {
-          const anchor = fieldAnchors.current[field as keyof typeof fieldAnchors.current];
-          anchor?.scrollIntoView({ behavior: "smooth", block: "center" });
-        });
-        return;
-      }
-    }
-
-    setActiveTab(TABS[Math.min(tabIndex + 1, TABS.length - 1)].id as any);
-  };
-  const goPrev = () => setActiveTab(TABS[Math.max(tabIndex - 1, 0)].id as any);
-
-  // Per-tab completion indicators
-  const tabComplete: Record<string, boolean> = {
-    type: !!form.request_type,
-    schedule: isDaily ? !!form.date : !!form.start_date,
-    route: !!form.departure_place || !!form.destination,
-    resources: !!form.num_vehicles && !!form.passengers && !!form.vehicle_type && !!form.cargo_load && (!isUpgrade || !!form.vehicle_type_justification?.trim()),
-    details: !!form.purpose && !!form.purpose_category,
-  };
-
-  // Overall completion across the 5 tabs (drives the header progress bar).
-  const overallPct = useMemo(() => {
-    const vals = Object.values(tabComplete);
-    const filled = vals.filter(Boolean).length;
-    return vals.length ? Math.round((filled / vals.length) * 100) : 0;
-  }, [tabComplete]);
-
   const HeaderInner = (
-    <div className="relative rounded-2xl border bg-card/60 backdrop-blur-xl shadow-sm overflow-hidden">
-      {/* Title row + completion meter */}
-      <div className="flex items-center justify-between gap-3 px-4 md:px-5 py-3 border-b">
-        <div>
-          <h3 className="text-base font-semibold tracking-tight">Vehicle Request</h3>
-          <p className="text-xs text-muted-foreground">Complete the sections below to submit your trip</p>
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2.5">
+        <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+          <Car className="h-4 w-4 text-primary" />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Complete</span>
-          <span className="text-sm font-semibold tabular-nums w-10 text-right">{overallPct}%</span>
-          <div className="w-24 h-1.5 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-primary to-secondary transition-all"
-              style={{ width: `${overallPct}%` }}
-            />
-          </div>
+        <div>
+          <h3 className="text-sm font-semibold tracking-tight">New Vehicle Request</h3>
+          <p className="text-xs text-muted-foreground">Fill in the fields below and submit.</p>
         </div>
       </div>
-
+      {savedAt && (
+        <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <CheckCircle2 className="w-3 h-3 text-success" />
+          Auto-saved {new Date(savedAt).toLocaleTimeString()}
+        </span>
+      )}
     </div>
   );
 
   const body = (
     <>
       {embedded ? (
-        <div className="px-6 sm:px-8 pt-6 pb-5 border-b border-border bg-card">
+        <div className="px-5 sm:px-6 py-3 border-b border-border bg-card">
           {HeaderInner}
         </div>
       ) : (
-        <div className="px-6 sm:px-8 pt-6 pb-5 border-b border-border bg-card sticky top-0 z-10">
+        <div className="px-5 sm:px-6 py-3 border-b border-border bg-card sticky top-0 z-10">
           <DialogHeader>
             <DialogTitle className="sr-only">Vehicle Request</DialogTitle>
             <DialogDescription className="sr-only">
@@ -1188,7 +1107,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         </div>
       )}
 
-      <div className={`${embedded ? "px-1" : "px-6 sm:px-8"} pt-6 pb-2 space-y-5`}>
+      <div className={`${embedded ? "px-1" : "px-5 sm:px-6"} pt-4 pb-2 space-y-4`}>
         {/* Draft restored notice */}
         {restoredAt && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs animate-fade-in">
@@ -1205,14 +1124,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             >
               Discard draft
             </Button>
-          </div>
-        )}
-
-        {/* Auto-save indicator (always visible while typing) */}
-        {!restoredAt && savedAt && (
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground -mt-2">
-            <CheckCircle2 className="w-3 h-3 text-success" />
-            Draft auto-saved {new Date(savedAt).toLocaleTimeString()}
           </div>
         )}
 
@@ -1308,10 +1219,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
         {/* Tabbed form — only the active section is rendered (matches the registration form's BasicInfoTabs UX) */}
-        <div className="space-y-5">
-
+        <div className="space-y-4">
           {/* TYPE SECTION */}
-          <section className="space-y-4 animate-fade-in">
+          <section className="space-y-3">
             <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
               <SelectTrigger className="w-full sm:max-w-md">
                 <SelectValue placeholder="Select operation type…" />
@@ -1328,7 +1238,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE SECTION */}
-          <section className="space-y-4 animate-fade-in">
+          <section className="space-y-3">
             {/* Working-hours policy banner — Project / operational only */}
             {isProject && workingHoursPolicy && (() => {
               const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -1490,7 +1400,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* ROUTE SECTION */}
-          <section className="space-y-4 animate-fade-in">
+          <section className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <LocationPickerField
                 label="Departure Place"
@@ -1632,7 +1542,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* RESOURCES SECTION */}
-          <section className="space-y-4 animate-fade-in">
+          <section className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <VRField
                 id="vr-num-vehicles"
@@ -1990,7 +1900,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* DETAILS SECTION */}
-          <section className="space-y-4 animate-fade-in">
+          <section className="space-y-3">
             <div>
               <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                 Business Purpose Category <span className="text-destructive">*</span>
@@ -2137,7 +2047,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         return embedded ? (
           <div className="pt-4 border-t border-border/60 mt-4">{FooterInner}</div>
         ) : (
-          <DialogFooter className="px-6 sm:px-8 py-4 mt-6 bg-muted/30 border-t border-border/60 sm:justify-between sticky bottom-0 z-10">
+          <DialogFooter className="px-5 sm:px-6 py-3 mt-4 bg-muted/30 border-t border-border/60 sm:justify-between sticky bottom-0 z-10">
             {FooterInner}
           </DialogFooter>
         );
@@ -2179,7 +2089,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[94vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="max-w-3xl max-h-[94vh] overflow-y-auto p-0 gap-0">
         {isDriverOnly ? blockedBody : body}
       </DialogContent>
     </Dialog>
