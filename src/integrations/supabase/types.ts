@@ -14530,6 +14530,7 @@ export type Database = {
           organization_id: string
           primary_color: string | null
           push_notifications_enabled: boolean | null
+          requester_rating_required: boolean
           secondary_color: string | null
           sms_gateway_config: Json | null
           smtp_host: string | null
@@ -14578,6 +14579,7 @@ export type Database = {
           organization_id: string
           primary_color?: string | null
           push_notifications_enabled?: boolean | null
+          requester_rating_required?: boolean
           secondary_color?: string | null
           sms_gateway_config?: Json | null
           smtp_host?: string | null
@@ -14626,6 +14628,7 @@ export type Database = {
           organization_id?: string
           primary_color?: string | null
           push_notifications_enabled?: boolean | null
+          requester_rating_required?: boolean
           secondary_color?: string | null
           sms_gateway_config?: Json | null
           smtp_host?: string | null

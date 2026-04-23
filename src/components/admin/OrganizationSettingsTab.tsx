@@ -40,6 +40,7 @@ const OrganizationSettingsTab = () => {
     distance_unit: "km",
     enable_2fa: false,
     enforce_2fa: false,
+    requester_rating_required: false,
   });
 
   // Sync form data when settings load
@@ -55,6 +56,7 @@ const OrganizationSettingsTab = () => {
         distance_unit: settings.distance_unit || "km",
         enable_2fa: settings.enable_2fa || false,
         enforce_2fa: settings.enforce_2fa || false,
+        requester_rating_required: settings.requester_rating_required || false,
       });
     }
   }, [settings]);
@@ -224,6 +226,30 @@ const OrganizationSettingsTab = () => {
               checked={formData.enforce_2fa}
               onCheckedChange={(checked) => setFormData({ ...formData, enforce_2fa: checked })}
               disabled={!formData.enable_2fa}
+            />
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Vehicle Requests</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="requester_rating_required">Mandatory Requester Rating</Label>
+              <p className="text-sm text-muted-foreground">
+                When enabled, requesters must submit a star rating to close a completed vehicle request.
+                When disabled, rating is optional and can be skipped.
+              </p>
+            </div>
+            <Switch
+              id="requester_rating_required"
+              checked={formData.requester_rating_required}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, requester_rating_required: checked })
+              }
             />
           </div>
         </div>
