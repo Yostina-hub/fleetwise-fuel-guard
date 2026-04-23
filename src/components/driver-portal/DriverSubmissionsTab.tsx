@@ -187,7 +187,43 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
           )}
         </TabsContent>
 
-        <TabsContent value="vehicle">
+        <TabsContent value="incidents">
+          {isLoading ? (
+            <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" /></div>
+          ) : incidents && incidents.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Incident #</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Severity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {incidents.map((r: any) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-mono text-xs">{r.incident_number}</TableCell>
+                    <TableCell className="capitalize">{(r.incident_type || "—").replace(/_/g, " ")}</TableCell>
+                    <TableCell>
+                      <Badge variant={r.severity === "critical" || r.severity === "high" ? "destructive" : "outline"} className="capitalize">
+                        {r.severity}
+                      </Badge>
+                    </TableCell>
+                    <TableCell><Badge variant={statusVariant(r.status)}>{r.status?.replace(/_/g, " ")}</Badge></TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate">{r.location || "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{format(new Date(r.incident_time || r.created_at), "MMM dd HH:mm")}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-6">No incidents reported</p>
+          )}
+        </TabsContent>
+
           {isLoading ? (
             <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" /></div>
           ) : vehicles && vehicles.length > 0 ? (
