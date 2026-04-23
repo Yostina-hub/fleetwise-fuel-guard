@@ -7,21 +7,27 @@ import {
 import { Label } from "@/components/ui/label";
 import {
   MapPin, Clock, Users, Send, CheckCircle, XCircle, Truck, Package,
-  MessageSquare, History, Shield, Ban, RefreshCw, Gauge, LogIn, LogOut, User
+  MessageSquare, History, Shield, Ban, RefreshCw, Gauge, LogIn, LogOut, User, Route as RouteIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { ApprovalFlowViewer } from "@/components/scheduling/ApprovalFlowViewer";
 import { VehicleRecommendations } from "@/components/scheduling/VehicleRecommendations";
+import { RouteMapPreview } from "@/components/vehicle-requests/RouteMapPreview";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  draft: { bg: "bg-muted", text: "text-muted-foreground", label: "Draft" },
-  submitted: { bg: "bg-warning/15", text: "text-warning", label: "Pending Approval" },
-  approved: { bg: "bg-success/15", text: "text-success", label: "Approved" },
-  scheduled: { bg: "bg-secondary/15", text: "text-secondary", label: "Scheduled" },
-  dispatched: { bg: "bg-purple-500/15", text: "text-purple-600", label: "Dispatched" },
-  in_service: { bg: "bg-primary/15", text: "text-primary", label: "In Service" },
-  completed: { bg: "bg-success/15", text: "text-success", label: "Completed" },
-  rejected: { bg: "bg-destructive/15", text: "text-destructive", label: "Rejected" },
+  draft:       { bg: "bg-muted",            text: "text-muted-foreground", label: "Draft" },
+  pending:     { bg: "bg-warning/15",       text: "text-warning",          label: "Pending Approval" },
+  submitted:   { bg: "bg-warning/15",       text: "text-warning",          label: "Pending Approval" },
+  approved:    { bg: "bg-success/15",       text: "text-success",          label: "Approved" },
+  scheduled:   { bg: "bg-secondary/15",     text: "text-secondary",        label: "Scheduled" },
+  assigned:    { bg: "bg-secondary/15",     text: "text-secondary",        label: "Assigned" },
+  dispatched:  { bg: "bg-purple-500/15",    text: "text-purple-600",       label: "Dispatched" },
+  in_service:  { bg: "bg-primary/15",       text: "text-primary",          label: "On Trip" },
+  in_progress: { bg: "bg-primary/15",       text: "text-primary",          label: "On Trip" },
+  completed:   { bg: "bg-success/15",       text: "text-success",          label: "Completed" },
+  closed:      { bg: "bg-success/15",       text: "text-success",          label: "Completed" },
+  rejected:    { bg: "bg-destructive/15",   text: "text-destructive",      label: "Rejected" },
+  cancelled:   { bg: "bg-muted",            text: "text-muted-foreground", label: "Cancelled" },
 };
 
 interface TripDetailPanelProps {
