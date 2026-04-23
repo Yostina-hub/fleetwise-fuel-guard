@@ -1312,10 +1312,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
           {/* TYPE SECTION */}
           <section className="space-y-4 animate-fade-in">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Layers className="w-4 h-4 text-primary" />
-              Operation Type
-            </h3>
             <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
               <SelectTrigger className="w-full sm:max-w-md">
                 <SelectValue placeholder="Select operation type…" />
