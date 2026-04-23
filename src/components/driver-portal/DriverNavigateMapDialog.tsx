@@ -699,7 +699,7 @@ export const DriverNavigateMapDialog = ({
 
         <div className="relative flex-1 min-h-[420px] rounded-lg overflow-hidden border">
           <div
-            ref={setContainerEl}
+            ref={containerRef}
             className={`absolute inset-0 ${useFallbackMap ? "pointer-events-none opacity-0" : ""}`}
           />
           {useFallbackMap && fallbackMapUrl && (
