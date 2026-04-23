@@ -36,6 +36,16 @@ export function usePendingRatings(enabled = true) {
     enabled: enabled && !!user?.id && !!organizationId,
     staleTime: 30_000,
     queryFn: async (): Promise<PendingRatingTrip[]> => {
+      // Respect org-level toggle. When mandatory rating is OFF, no trips are
+      // considered "pending" — the gate is fully relaxed and the blocker UI
+      // disappears. The DB trigger now mirrors this behavior server-side.
+      const { data: orgSettings } = await (supabase as any)
+        .from("organization_settings")
+        .select("requester_rating_required")
+        .eq("organization_id", organizationId!)
+        .maybeSingle();
+      if (!orgSettings?.requester_rating_required) return [];
+
       const { data: ratingRows, error: ratingError } = await (supabase as any)
         .from("vehicle_request_ratings")
         .select("vehicle_request_id")
