@@ -224,6 +224,7 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
           )}
         </TabsContent>
 
+        <TabsContent value="vehicle">
           {isLoading ? (
             <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" /></div>
           ) : vehicles && vehicles.length > 0 ? (
