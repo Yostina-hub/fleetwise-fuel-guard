@@ -299,6 +299,16 @@ const VehicleRequests = () => {
     return c;
   }, [dateScopedRequests]);
 
+  // Pool-supervisor backlog: approved requests still awaiting vehicle/driver
+  // allocation. Drives the "Assignments" toggle badge.
+  const awaitingAssignmentCount = useMemo(
+    () =>
+      requests.filter(
+        (r: any) => r.status === "approved" && r.pool_review_status !== "reviewed",
+      ).length,
+    [requests],
+  );
+
   // distinct pools (for filter dropdown)
   const poolOptions = useMemo(() => {
     const set = new Set<string>();
