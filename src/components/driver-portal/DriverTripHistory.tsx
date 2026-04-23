@@ -321,28 +321,99 @@ const DriverTripHistory = ({ driverId }: DriverTripHistoryProps) => {
           {isLoading ? (
             <div className="p-6 space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
+                <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
           ) : totalItems === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Activity className="w-10 h-10 mx-auto mb-2 opacity-40" />
               <p className="text-sm">No trips in {RANGE_LABEL[range].toLowerCase()}</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Trips appear here automatically after you complete a check-out.
+              </p>
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* ----- Mobile / narrow: card list (≤ md) ----- */}
+              <ul className="md:hidden divide-y divide-border/40">
+                {paginated.map((t) => (
+                  <li
+                    key={t.id}
+                    className="px-4 py-3 hover:bg-muted/30 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/route-history?tripId=${t.id}`)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold truncate">
+                            {t.start_time
+                              ? format(new Date(t.start_time), "MMM d, yyyy · HH:mm")
+                              : "—"}
+                          </p>
+                          {getStatusBadge(t.status)}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {t.start_time
+                            ? formatDistanceToNow(new Date(t.start_time), { addSuffix: true })
+                            : ""}
+                        </p>
+                        <div className="flex items-start gap-1.5 mt-2 text-xs text-foreground/90">
+                          <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                          <span className="line-clamp-2 break-words">
+                            {formatTripLocation(t.start_location) || "—"}
+                            <span className="text-muted-foreground"> → </span>
+                            {formatTripLocation(t.end_location) || "—"}
+                          </span>
+                        </div>
+                        {t.vehicle && (
+                          <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                            <Car className="w-3 h-3" />
+                            <span className="font-medium text-foreground">
+                              {t.vehicle.plate_number}
+                            </span>
+                            {(t.vehicle as any).make && (
+                              <span>· {(t.vehicle as any).make} {(t.vehicle as any).model || ""}</span>
+                            )}
+                          </div>
+                        )}
+                        <div className="grid grid-cols-3 gap-2 mt-3">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Distance</p>
+                            <p className="text-xs font-semibold">
+                              {t.distance_km != null ? `${Number(t.distance_km).toFixed(1)} km` : "—"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Duration</p>
+                            <p className="text-xs font-semibold">{formatDuration(t.duration_minutes)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Avg speed</p>
+                            <p className="text-xs font-semibold">
+                              {t.avg_speed_kmh ? `${Number(t.avg_speed_kmh).toFixed(0)} km/h` : "—"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              {/* ----- Desktop: table (≥ md) ----- */}
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Start</TableHead>
                       <TableHead>Route</TableHead>
                       <TableHead>Vehicle</TableHead>
-                      <TableHead>Distance</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Avg / Max Speed</TableHead>
-                      <TableHead>Fuel</TableHead>
-                      <TableHead>Idle</TableHead>
+                      <TableHead className="text-right">Distance</TableHead>
+                      <TableHead className="text-right">Duration</TableHead>
+                      <TableHead className="text-right">Avg / Max</TableHead>
+                      <TableHead className="text-right">Fuel</TableHead>
+                      <TableHead className="text-right">Idle</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
@@ -352,26 +423,24 @@ const DriverTripHistory = ({ driverId }: DriverTripHistoryProps) => {
                       <TableRow
                         key={t.id}
                         className="cursor-pointer"
-                        onClick={() =>
-                          navigate(`/route-history?tripId=${t.id}`)
-                        }
+                        onClick={() => navigate(`/route-history?tripId=${t.id}`)}
                       >
                         <TableCell className="whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                             <div>
                               <p className="text-xs font-medium">
-                                {format(new Date(t.start_time), "MMM d, HH:mm")}
+                                {t.start_time ? format(new Date(t.start_time), "MMM d, HH:mm") : "—"}
                               </p>
                               <p className="text-[10px] text-muted-foreground">
-                                {formatDistanceToNow(new Date(t.start_time), {
-                                  addSuffix: true,
-                                })}
+                                {t.start_time
+                                  ? formatDistanceToNow(new Date(t.start_time), { addSuffix: true })
+                                  : ""}
                               </p>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-[220px]">
+                        <TableCell className="max-w-[260px]">
                           <div className="flex items-center gap-1 text-xs">
                             <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
                             <span className="truncate">
@@ -384,43 +453,33 @@ const DriverTripHistory = ({ driverId }: DriverTripHistoryProps) => {
                           {t.vehicle ? (
                             <div className="flex items-center gap-1 text-xs">
                               <Car className="w-3 h-3 text-muted-foreground" />
-                              <span className="font-medium">
-                                {t.vehicle.plate_number}
-                              </span>
+                              <span className="font-medium">{t.vehicle.plate_number}</span>
                             </div>
                           ) : (
                             "—"
                           )}
                         </TableCell>
-                        <TableCell>
-                          {t.distance_km
-                            ? `${Number(t.distance_km).toFixed(1)} km`
-                            : "—"}
+                        <TableCell className="text-right whitespace-nowrap">
+                          {t.distance_km != null ? `${Number(t.distance_km).toFixed(1)} km` : "—"}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
                           {formatDuration(t.duration_minutes)}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-xs">
+                        <TableCell className="text-right whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1 text-xs">
                             <Gauge className="w-3 h-3 text-muted-foreground" />
-                            {t.avg_speed_kmh
-                              ? `${Number(t.avg_speed_kmh).toFixed(0)}`
-                              : "—"}
+                            {t.avg_speed_kmh ? `${Number(t.avg_speed_kmh).toFixed(0)}` : "—"}
                             {" / "}
-                            {t.max_speed_kmh
-                              ? `${Number(t.max_speed_kmh).toFixed(0)} km/h`
-                              : "—"}
+                            {t.max_speed_kmh ? `${Number(t.max_speed_kmh).toFixed(0)} km/h` : "—"}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
                           {t.fuel_consumed_liters
                             ? `${Number(t.fuel_consumed_liters).toFixed(1)} L`
                             : "—"}
                         </TableCell>
-                        <TableCell>
-                          {t.idle_time_minutes
-                            ? `${Math.round(t.idle_time_minutes)}m`
-                            : "—"}
+                        <TableCell className="text-right whitespace-nowrap">
+                          {t.idle_time_minutes ? `${Math.round(t.idle_time_minutes)}m` : "—"}
                         </TableCell>
                         <TableCell>{getStatusBadge(t.status)}</TableCell>
                         <TableCell>
