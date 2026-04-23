@@ -2080,6 +2080,89 @@ export type Database = {
           },
         ]
       }
+      cross_pool_borrow_requests: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          reason: string | null
+          requested_by: string | null
+          requested_driver_id: string | null
+          requested_vehicle_id: string | null
+          responded_at: string | null
+          responded_by: string | null
+          response_notes: string | null
+          source_pool: string
+          status: string
+          target_pool: string
+          updated_at: string
+          vehicle_request_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          reason?: string | null
+          requested_by?: string | null
+          requested_driver_id?: string | null
+          requested_vehicle_id?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response_notes?: string | null
+          source_pool: string
+          status?: string
+          target_pool: string
+          updated_at?: string
+          vehicle_request_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          reason?: string | null
+          requested_by?: string | null
+          requested_driver_id?: string | null
+          requested_vehicle_id?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response_notes?: string | null
+          source_pool?: string
+          status?: string
+          target_pool?: string
+          updated_at?: string
+          vehicle_request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cross_pool_borrow_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_pool_borrow_requests_requested_driver_id_fkey"
+            columns: ["requested_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_pool_borrow_requests_requested_vehicle_id_fkey"
+            columns: ["requested_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_pool_borrow_requests_vehicle_request_id_fkey"
+            columns: ["vehicle_request_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_role_permissions: {
         Row: {
           created_at: string
@@ -26683,6 +26766,7 @@ export type Database = {
           processed: number
         }[]
       }
+      cpbr_is_same_org: { Args: { _org: string }; Returns: boolean }
       create_telemetry_partition: {
         Args: { p_date: string }
         Returns: undefined

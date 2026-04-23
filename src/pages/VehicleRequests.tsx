@@ -63,6 +63,7 @@ import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPo
 // table via the "Assignments" view-mode toggle (no separate page needed).
 import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
 import { ConsolidationPanel } from "@/components/vehicle-requests/ConsolidationPanel";
+import { OpsMapView } from "@/components/vehicle-requests/OpsMapView";
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
 
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
@@ -153,16 +154,18 @@ const VehicleRequests = () => {
   // workspace with consolidation + per-request review/assign panels).
   // Synced to URL ?view=assignments so the legacy /pool-supervisors redirect
   // can deep-link straight into this mode.
-  const [viewMode, setViewMode] = useState<"requests" | "assignments">(() => {
+  const [viewMode, setViewMode] = useState<"requests" | "assignments" | "ops_map">(() => {
     if (typeof window === "undefined") return "requests";
-    return new URLSearchParams(window.location.search).get("view") === "assignments"
-      ? "assignments"
-      : "requests";
+    const v = new URLSearchParams(window.location.search).get("view");
+    if (v === "assignments") return "assignments";
+    if (v === "ops_map") return "ops_map";
+    return "requests";
   });
   useEffect(() => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
     if (viewMode === "assignments") url.searchParams.set("view", "assignments");
+    else if (viewMode === "ops_map") url.searchParams.set("view", "ops_map");
     else url.searchParams.delete("view");
     window.history.replaceState({}, "", url.toString());
   }, [viewMode]);
@@ -750,26 +753,40 @@ const VehicleRequests = () => {
               </>
             )}
             {canManageAll && (
-              <Button
-                variant={viewMode === "assignments" ? "default" : "outline"}
-                size="sm"
-                className="gap-1.5 h-9"
-                onClick={() =>
-                  setViewMode((m) => (m === "assignments" ? "requests" : "assignments"))
-                }
-                title="Pool supervisor workspace — review approved requests and allocate vehicles + drivers"
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                Assignments
-                {awaitingAssignmentCount > 0 && (
-                  <Badge
-                    variant={viewMode === "assignments" ? "secondary" : "destructive"}
-                    className="ml-1 h-4 min-w-[1rem] px-1 text-[10px]"
-                  >
-                    {awaitingAssignmentCount}
-                  </Badge>
-                )}
-              </Button>
+              <>
+                <Button
+                  variant={viewMode === "assignments" ? "default" : "outline"}
+                  size="sm"
+                  className="gap-1.5 h-9"
+                  onClick={() =>
+                    setViewMode((m) => (m === "assignments" ? "requests" : "assignments"))
+                  }
+                  title="Pool supervisor workspace — review approved requests and allocate vehicles + drivers"
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  Assignments
+                  {awaitingAssignmentCount > 0 && (
+                    <Badge
+                      variant={viewMode === "assignments" ? "secondary" : "destructive"}
+                      className="ml-1 h-4 min-w-[1rem] px-1 text-[10px]"
+                    >
+                      {awaitingAssignmentCount}
+                    </Badge>
+                  )}
+                </Button>
+                <Button
+                  variant={viewMode === "ops_map" ? "default" : "outline"}
+                  size="sm"
+                  className="gap-1.5 h-9"
+                  onClick={() =>
+                    setViewMode((m) => (m === "ops_map" ? "requests" : "ops_map"))
+                  }
+                  title="Operations control map — pool demand, idle vehicles, merge suggestions, cross-pool borrow"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Ops Map
+                </Button>
+              </>
             )}
             <Can resource="vehicle_requests" action="create">
               <Button
@@ -817,7 +834,37 @@ const VehicleRequests = () => {
           </div>
         )}
 
+        {/* ============== OPS MAP WORKSPACE ============== */}
+        {viewMode === "ops_map" && canManageAll && organizationId && (
+          <div className="space-y-4 animate-fade-in">
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                  <div>
+                    <div className="font-medium">Operations Control Map</div>
+                    <div className="text-xs text-muted-foreground">
+                      Live view of pending routes, idle vehicles by pool, merge candidates, and cross-pool borrow suggestions.
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => setViewMode("requests")}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Back to Requests
+                </Button>
+              </CardContent>
+            </Card>
+            <OpsMapView organizationId={organizationId} />
+          </div>
+        )}
+
         {/* ============== MAIN PANEL ============== */}
+
         <Card id="vehicle-requests-table" className="overflow-hidden border-border/60 shadow-sm scroll-mt-20">
           <CardHeader className="pb-3 border-b bg-muted/30">
             <div className="flex flex-col gap-4">
