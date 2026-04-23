@@ -52,6 +52,9 @@ const DriverPortal = () => {
   // Dialog states
   const [showMaintenance, setShowMaintenance] = useState(false);
   const [showFuel, setShowFuel] = useState(false);
+  // On-road refuel — opened from inside an active trip view (separate from
+  // the standalone "Request Fuel" quick action which still uses the main form).
+  const [showOnRoadFuel, setShowOnRoadFuel] = useState(false);
   const [reportIncidentContext, setReportIncidentContext] = useState<{
     vehicleId?: string | null;
     tripId?: string | null;
