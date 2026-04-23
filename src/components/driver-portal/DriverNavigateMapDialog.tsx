@@ -92,7 +92,7 @@ export const DriverNavigateMapDialog = ({
   vehicleLabel,
   departureTime,
 }: Props) => {
-  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const liveMarkerRef = useRef<maplibregl.Marker | null>(null);
@@ -212,11 +212,12 @@ export const DriverNavigateMapDialog = ({
   // Initialize / tear down the map using the hardened preview-safe style loader
   // and a resize observer so the viewport stays correct inside the dialog.
   useEffect(() => {
-    if (!open || !containerEl || map.current) return;
+    if (!open || !containerRef.current || map.current) return;
     // Do not block map creation on the Lemat key hook.
     // In preview the key fetch can lag or fail, and waiting here leaves the
     // dialog as a blank panel because MapLibre never mounts at all.
 
+    const container = containerRef.current;
     let disposed = false;
     let resizeObserver: ResizeObserver | null = null;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -233,12 +234,12 @@ export const DriverNavigateMapDialog = ({
     const waitForSizedContainer = async () => {
       for (let i = 0; i < 12; i += 1) {
         if (disposed) return false;
-        if (containerEl.clientWidth > 0 && containerEl.clientHeight > 0) {
+        if (container.clientWidth > 0 && container.clientHeight > 0) {
           return true;
         }
         await new Promise((resolve) => window.setTimeout(resolve, 60));
       }
-      return containerEl.clientWidth > 0 && containerEl.clientHeight > 0;
+      return container.clientWidth > 0 && container.clientHeight > 0;
     };
 
     const initMap = async () => {
@@ -250,13 +251,13 @@ export const DriverNavigateMapDialog = ({
         }
 
         const initialStyle = getPreviewSafeMapStyle(defaultMapStyle);
-        if (disposed || !containerEl || map.current) return;
+        if (disposed || map.current) return;
 
-        containerEl.style.width = "100%";
-        containerEl.style.height = "100%";
+        container.style.width = "100%";
+        container.style.height = "100%";
 
         const nextMap = new maplibregl.Map({
-          container: containerEl,
+          container,
           style: initialStyle,
           center: [38.7578, 9.03],
           zoom: 11,
@@ -298,7 +299,7 @@ export const DriverNavigateMapDialog = ({
 
         if (typeof ResizeObserver !== "undefined") {
           resizeObserver = new ResizeObserver(() => forceResize());
-          resizeObserver.observe(containerEl);
+          resizeObserver.observe(container);
         }
       } catch (err) {
         setMapLoaded(false);
@@ -324,7 +325,7 @@ export const DriverNavigateMapDialog = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [open, containerEl, defaultMapStyle, lematApiKey]);
+  }, [open, defaultMapStyle, lematApiKey]);
 
   // Poll the latest GPS position for the assigned vehicle every 10s
   useEffect(() => {
@@ -698,7 +699,7 @@ export const DriverNavigateMapDialog = ({
 
         <div className="relative flex-1 min-h-[420px] rounded-lg overflow-hidden border">
           <div
-            ref={setContainerEl}
+            ref={containerRef}
             className={`absolute inset-0 ${useFallbackMap ? "pointer-events-none opacity-0" : ""}`}
           />
           {useFallbackMap && fallbackMapUrl && (
