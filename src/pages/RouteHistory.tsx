@@ -787,7 +787,7 @@ const RouteHistory = () => {
 
           {/* Driver Info Badge */}
           {selectedVehicle && (
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
               <User className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm text-muted-foreground">Driver:</span>
               {assignedDriver ? (
@@ -797,6 +797,12 @@ const RouteHistory = () => {
                 </Badge>
               ) : (
                 <span className="text-sm text-muted-foreground italic">Not assigned</span>
+              )}
+              {latestSeenLabel && (
+                <Badge variant="outline" className="gap-1 ml-2">
+                  <Radio className="h-3 w-3 text-destructive" />
+                  Last seen {latestSeenLabel}
+                </Badge>
               )}
             </div>
           )}
