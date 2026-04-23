@@ -1034,6 +1034,12 @@ const DriverPortal = () => {
             })
           }
           onRequestFuel={() => setShowFuel(true)}
+          onCompleted={() => {
+            // After a successful check-out, jump straight to the
+            // trip history so the driver can see the completed trip.
+            setActiveTab("history");
+            queryClient.invalidateQueries({ queryKey: ["driver-trip-history"] });
+          }}
         />
 
         <ReportTripIncidentDialog
