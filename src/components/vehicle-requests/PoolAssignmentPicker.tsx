@@ -316,23 +316,28 @@ export const PoolAssignmentPicker = ({
                     <Loader2 className="w-3 h-3 animate-spin" /> Loading…
                   </span>
                 ) : selectedDriver ? (
-                  <span className="flex items-center gap-1.5 truncate">
-                    <span className="font-medium">
+                  <span className="flex items-center gap-1.5 truncate w-full">
+                    <span className="font-medium truncate">
                       {selectedDriver.first_name} {selectedDriver.last_name}
                     </span>
+                    {(selectedDriver as any).assigned_vehicle_plate && (
+                      <span className="text-[10px] text-muted-foreground font-mono truncate">
+                        · {(selectedDriver as any).assigned_vehicle_plate}
+                      </span>
+                    )}
                     {selectedDriver.in_pool && (
-                      <Badge variant="secondary" className="text-[9px] py-0 h-4">
+                      <Badge variant="secondary" className="text-[9px] py-0 h-4 shrink-0">
                         pool
                       </Badge>
                     )}
-                    {selectedDriver.is_busy && (
-                      <Badge
-                        variant="outline"
-                        className="text-[9px] py-0 h-4 text-amber-600 border-amber-500/30"
-                      >
-                        busy
-                      </Badge>
-                    )}
+                    <span
+                      className={cn(
+                        "text-[9px] px-1.5 py-0 rounded border ml-auto shrink-0",
+                        AVAILABILITY_STYLES[(selectedDriver as any).availability] || AVAILABILITY_STYLES.inactive,
+                      )}
+                    >
+                      {AVAILABILITY_LABELS[(selectedDriver as any).availability] || (selectedDriver as any).availability}
+                    </span>
                   </span>
                 ) : (
                   <span className="text-muted-foreground">Select driver…</span>
