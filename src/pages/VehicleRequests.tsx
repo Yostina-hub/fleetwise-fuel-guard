@@ -1400,4 +1400,10 @@ function SortableTh({
   );
 }
 
-export default VehicleRequests;
+const VehicleRequestsPage = () => (
+  <PageDateRangeProvider>
+    <VehicleRequests />
+  </PageDateRangeProvider>
+);
+
+export default VehicleRequestsPage;
