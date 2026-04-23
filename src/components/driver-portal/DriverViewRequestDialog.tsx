@@ -158,6 +158,7 @@ export const DriverViewRequestDialog = ({
   const [completionRemark, setCompletionRemark] = useState("");
   const [completionRemarkError, setCompletionRemarkError] = useState<string | null>(null);
   const [navMapOpen, setNavMapOpen] = useState(false);
+  const [confirmCheckOutOpen, setConfirmCheckOutOpen] = useState(false);
 
   const checkedIn = !!request?.driver_checked_in_at;
   const checkedOut = !!request?.driver_checked_out_at;
