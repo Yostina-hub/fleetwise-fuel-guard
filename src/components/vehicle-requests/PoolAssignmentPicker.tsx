@@ -277,11 +277,11 @@ export const PoolAssignmentPicker = ({
                       groups.get(k)!.push(v);
                     });
                     return Array.from(groups.entries()).map(([poolKey, items]) => {
-                      const idleCount = items.filter((x) => x.is_idle).length;
+                      const availCount = items.filter((x: any) => x.availability === "available").length;
                       return (
                         <CommandGroup
                           key={poolKey}
-                          heading={`${poolKey} — ${idleCount} idle / ${items.length}`}
+                          heading={`${poolKey} — ${availCount} available / ${items.length}`}
                         >
                           {items.slice(0, 30).map((v) => (
                             <VehicleRow
