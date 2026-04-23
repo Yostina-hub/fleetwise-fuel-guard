@@ -46,8 +46,6 @@ interface TripDetailPanelProps {
 export const TripDetailPanel = ({
   trip, open, onOpenChange, onSubmit, onApprove, onReject, onAssign, onCancel, onChangeStatus
 }: TripDetailPanelProps) => {
-  const status = STATUS_STYLES[trip?.status] || STATUS_STYLES.draft;
-
   if (!trip) return null;
 
   const canCancel = ["draft", "submitted", "pending", "approved"].includes(trip.status);
