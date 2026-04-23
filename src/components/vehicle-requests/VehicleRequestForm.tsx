@@ -2089,7 +2089,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[94vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="max-w-3xl max-h-[94vh] overflow-y-auto p-0 gap-0">
         {isDriverOnly ? blockedBody : body}
       </DialogContent>
     </Dialog>
