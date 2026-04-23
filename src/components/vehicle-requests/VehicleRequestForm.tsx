@@ -212,7 +212,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   // Persist in-progress form per (user, source) so progress isn't lost on
   // accidental close, refresh, navigation, or browser crash.
-  const draftKey = user?.id ? `vehicle-request:${user.id}:${source ?? "default"}` : null;
+  // Versioned to invalidate stale drafts created before the AM/PM picker fix,
+  // which could restore 04:03 when the requester meant 4:03 PM.
+  const draftKey = user?.id ? `vehicle-request:v2:${user.id}:${source ?? "default"}` : null;
   const initialWithPrefill = useMemo(() => ({
     ...initialForm,
     ...(prefill?.purpose ? { purpose: String(prefill.purpose) } : {}),
