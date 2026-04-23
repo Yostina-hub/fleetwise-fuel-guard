@@ -27,6 +27,7 @@ import {
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { useApprovals } from "@/hooks/useApprovals";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { QuickTripRequest } from "@/components/trips/QuickTripRequest";
 import { TripStatsBar } from "@/components/trips/TripStatsBar";
 import { TripDetailPanel } from "@/components/trips/TripDetailPanel";
