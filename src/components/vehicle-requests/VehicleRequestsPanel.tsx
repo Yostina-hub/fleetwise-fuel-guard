@@ -9,7 +9,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ClipboardList, Plus, Clock, CheckCircle, Truck, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, X, Ban, Trash2 } from "lucide-react";
+import { ClipboardList, Plus, Clock, CheckCircle, Truck, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, X, Ban, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
@@ -262,6 +262,9 @@ export const VehicleRequestsPanel = () => {
 
   const canCancel = (r: any) => ["pending", "approved", "assigned"].includes(r.status);
   const canDelete = (r: any) => ["pending", "cancelled", "rejected"].includes(r.status);
+  // Assign is offered while the request is pending/approved (pre-assignment)
+  // and again for assigned rows so dispatchers can re-assign if needed.
+  const canAssign = (r: any) => ["pending", "approved", "assigned"].includes(r.status);
   // (asc/desc/none) and toggles direction on subsequent clicks.
   const SortHeader = ({
     label,
@@ -452,6 +455,17 @@ export const VehicleRequestsPanel = () => {
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </Button>
+                          {canAssign(r) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-primary hover:text-primary"
+                              title={r.status === "assigned" ? "Re-assign vehicle / driver" : "Assign vehicle / driver"}
+                              onClick={() => setShowDetail(r)}
+                            >
+                              <UserPlus className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
                           {canCancel(r) && (
                             <Button
                               size="sm"
