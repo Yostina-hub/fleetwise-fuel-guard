@@ -45,30 +45,33 @@ export function TimePicker({
 }: TimePickerProps) {
   const [open, setOpen] = React.useState(false);
 
-  // Live current time (24h) — refreshed every 30s while mounted so the hint
-  // and "Now" button always reflect the user's actual clock.
-  const [now, setNow] = React.useState<string>(() => {
-    const d = new Date();
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  });
-  React.useEffect(() => {
-    const tick = () => {
-      const d = new Date();
-      setNow(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
-    };
-    const id = setInterval(tick, 30_000);
-    return () => clearInterval(id);
+  // Live current time in Africa/Addis_Ababa (EAT, UTC+3) — fleet operates on
+  // Ethiopian local time so the hint and the "Use current time" shortcut
+  // always reflect EAT regardless of the user's device timezone.
+  const eatNow = React.useCallback(() => {
+    const dtf = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Addis_Ababa",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    return dtf.format(new Date()); // "HH:MM"
   }, []);
+  const [now, setNow] = React.useState<string>(eatNow);
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(eatNow()), 30_000);
+    return () => clearInterval(id);
+  }, [eatNow]);
 
   const setNowTime = () => {
-    const d = new Date();
-    let m = d.getMinutes();
+    const [h, mRaw] = eatNow().split(":").map(Number);
+    let m = mRaw;
     if (minuteStep > 1) {
       // round to nearest step so the selected value matches a list entry
-      m = Math.round(m / minuteStep) * minuteStep;
+      m = Math.round(mRaw / minuteStep) * minuteStep;
       if (m === 60) m = 0;
     }
-    onChange(`${pad(d.getHours())}:${pad(m)}`);
+    onChange(`${pad(h)}:${pad(m)}`);
   };
 
   // Parse partials too: "14:" (hour only) or ":30" (minute only) so users
@@ -117,14 +120,14 @@ export function TimePicker({
           <Clock className="h-4 w-4 shrink-0 text-primary" />
           <span className="flex-1 text-left">{display || placeholder}</span>
           <span className="ml-auto text-[10px] font-sans font-normal text-muted-foreground tabular-nums">
-            now {now}
+            now {now} EAT
           </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
         <div className="flex items-center justify-between gap-2 border-b px-2 py-1.5 bg-muted/30">
           <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Now <span className="font-mono text-foreground tabular-nums">{now}</span>
+            Now <span className="font-mono text-foreground tabular-nums">{now}</span> <span className="text-muted-foreground/80">EAT</span>
           </span>
           <button
             type="button"
