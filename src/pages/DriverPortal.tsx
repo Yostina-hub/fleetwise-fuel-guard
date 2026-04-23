@@ -1044,7 +1044,7 @@ const DriverPortal = () => {
               location: viewRequest?.destination_place ?? viewRequest?.departure_place ?? null,
             })
           }
-          onRequestFuel={() => setShowFuel(true)}
+          onRequestFuel={() => setShowOnRoadFuel(true)}
           onCompleted={() => {
             // After a successful check-out, jump straight to the
             // trip history so the driver can see the completed trip.
@@ -1062,6 +1062,21 @@ const DriverPortal = () => {
           vehicleId={reportIncidentContext?.vehicleId ?? vehicle?.id ?? null}
           tripId={reportIncidentContext?.tripId ?? null}
           location={reportIncidentContext?.location ?? null}
+        />
+
+        {/* On-road refuel — uses the active trip context (request + vehicle). */}
+        <OnRoadFuelRequestDialog
+          open={showOnRoadFuel}
+          onOpenChange={setShowOnRoadFuel}
+          request={viewRequest ?? activeRequest ?? null}
+          driverId={driverId}
+          driverName={driverName}
+          driverPhone={driver?.phone}
+          lastOdometerKm={
+            viewRequest?.driver_checkin_odometer ??
+            (vehicle as any)?.odometer_km ??
+            null
+          }
         />
       </div>
     </Layout>
