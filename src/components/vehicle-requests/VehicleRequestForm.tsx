@@ -1308,14 +1308,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
         {/* Tabbed form — only the active section is rendered (matches the registration form's BasicInfoTabs UX) */}
-        <div className="space-y-6">
+        <div className="space-y-5">
 
           {/* TYPE SECTION */}
-          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
-            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
-              <Layers className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold text-foreground">Operation Type</h3>
-            </div>
+          <section className="space-y-4 animate-fade-in">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Layers className="w-4 h-4 text-primary" />
+              Operation Type
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
               {[
                 { v: "daily_operation", title: "Daily Operation", desc: "Day-shift trip (6:00 AM – 8:00 PM EAT)", icon: Clock },
@@ -1356,11 +1356,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE SECTION */}
-          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
-            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
-              <CalendarDays className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold text-foreground">Schedule</h3>
-            </div>
+          <section className="space-y-4 animate-fade-in pt-4 border-t border-border/40">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-primary" />
+              Schedule
+            </h3>
             {/* Working-hours policy banner — Project / operational only */}
             {isProject && workingHoursPolicy && (() => {
               const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -1522,11 +1522,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* ROUTE SECTION */}
-          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
-            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
-              <Route className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold text-foreground">Route</h3>
-            </div>
+          <section className="space-y-4 animate-fade-in pt-4 border-t border-border/40">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Route className="w-4 h-4 text-primary" />
+              Route
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <LocationPickerField
                 label="Departure Place"
@@ -1668,11 +1668,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* RESOURCES SECTION */}
-          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
-            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
-              <Car className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold text-foreground">Vehicle &amp; Pool</h3>
-            </div>
+          <section className="space-y-4 animate-fade-in pt-4 border-t border-border/40">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Car className="w-4 h-4 text-primary" />
+              Vehicle &amp; Pool
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <VRField
                 id="vr-num-vehicles"
@@ -2030,11 +2030,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* DETAILS SECTION */}
-          <section className="rounded-lg border border-border bg-card p-5 sm:p-6 space-y-5 shadow-sm animate-fade-in">
-            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
-              <FileText className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold text-foreground">Purpose &amp; Submit</h3>
-            </div>
+          <section className="space-y-4 animate-fade-in pt-4 border-t border-border/40">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <FileText className="w-4 h-4 text-primary" />
+              Purpose &amp; Submit
+            </h3>
             <div>
               <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                 Business Purpose Category <span className="text-destructive">*</span>
