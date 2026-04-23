@@ -36,6 +36,7 @@ import RequestLicenseRenewalDialog from "@/components/driver-portal/RequestLicen
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
 import DriverViewRequestDialog from "@/components/driver-portal/DriverViewRequestDialog";
 import ReportTripIncidentDialog from "@/components/driver-portal/ReportTripIncidentDialog";
+import { OnRoadFuelRequestDialog } from "@/components/driver-portal/OnRoadFuelRequestDialog";
 import { IdCard } from "lucide-react";
 import { formatTripLocation } from "@/lib/formatTripLocation";
 
