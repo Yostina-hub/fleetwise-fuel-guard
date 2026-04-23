@@ -459,7 +459,7 @@ export const DriverNavigateMapDialog = ({
                     }
                   : undefined
               }
-              heightPx={Math.max(340, window.innerHeight > 900 ? 420 : 360)}
+              heightPx={360}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
