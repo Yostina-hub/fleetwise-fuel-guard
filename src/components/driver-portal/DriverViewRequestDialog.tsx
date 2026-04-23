@@ -390,6 +390,8 @@ export const DriverViewRequestDialog = ({
       setCompletionRemarkError(null);
       refresh();
       onClose();
+      // Notify the parent so it can switch to the trip history tab (#10/#11).
+      onCompleted?.();
     },
     onError: (e: any) => toast.error(e.message || "Check-out failed"),
   });
