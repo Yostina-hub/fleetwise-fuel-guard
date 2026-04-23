@@ -788,19 +788,18 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
 
           {/* Ungrouped requests — professional table */}
           {ungrouped.length > 0 && (
-            <div className="rounded-md border overflow-hidden">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead className="w-8" />
-                    <TableHead>Request #</TableHead>
-                    <TableHead>Requester</TableHead>
-                    <TableHead>Route</TableHead>
-                    <TableHead>Needed From</TableHead>
-                    <TableHead className="text-center">Pax</TableHead>
-                    <TableHead>Pool</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Request #</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Requester</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Route</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Needed From</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide text-center">Pax</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Pool</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide">Type</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wide text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>{ungrouped.map(renderTableRow)}</TableBody>
