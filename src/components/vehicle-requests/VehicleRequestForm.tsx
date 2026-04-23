@@ -1228,7 +1228,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <section className="space-y-3">
             <SectionHeader icon={Sparkles} title="Operation Type" />
             <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
-              <SelectTrigger className="w-full sm:max-w-md">
+              <SelectTrigger className="w-full md:w-72">
                 <SelectValue placeholder="Select operation type…" />
               </SelectTrigger>
               <SelectContent>
@@ -1275,7 +1275,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               </>
             ) : (
-              <div className={`grid grid-cols-1 gap-3`}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div ref={(node) => { fieldAnchors.current.start_date = node; }}>
                   <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime error={!!getError("start_date")} />
                   <FieldError field="start_date" />
@@ -1315,7 +1315,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* ROUTE SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={MapPin} title="Route" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <LocationPickerField
                 label="Departure Place"
                 value={form.departure_place}
