@@ -224,6 +224,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     values: form,
     setValues: setForm,
     restoredAt,
+    savedAt,
     clear: clearDraft,
   } = useFormDraft<typeof initialForm>(draftKey, initialWithPrefill);
 
@@ -1177,6 +1178,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             >
               Discard draft
             </Button>
+          </div>
+        )}
+
+        {/* Auto-save indicator (always visible while typing) */}
+        {!restoredAt && savedAt && (
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground -mt-2">
+            <CheckCircle2 className="w-3 h-3 text-success" />
+            Draft auto-saved {new Date(savedAt).toLocaleTimeString()}
           </div>
         )}
 
