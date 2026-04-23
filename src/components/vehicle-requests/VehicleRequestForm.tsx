@@ -1328,11 +1328,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE SECTION */}
-          <section className="space-y-4 animate-fade-in pt-4 border-t border-border/40">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-primary" />
-              Schedule
-            </h3>
+          <section className="space-y-4 animate-fade-in">
             {/* Working-hours policy banner — Project / operational only */}
             {isProject && workingHoursPolicy && (() => {
               const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -1494,11 +1490,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* ROUTE SECTION */}
-          <section className="space-y-4 animate-fade-in pt-4 border-t border-border/40">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Route className="w-4 h-4 text-primary" />
-              Route
-            </h3>
+          <section className="space-y-4 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <LocationPickerField
                 label="Departure Place"
@@ -1640,11 +1632,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* RESOURCES SECTION */}
-          <section className="space-y-4 animate-fade-in pt-4 border-t border-border/40">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Car className="w-4 h-4 text-primary" />
-              Vehicle &amp; Pool
-            </h3>
+          <section className="space-y-4 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <VRField
                 id="vr-num-vehicles"
@@ -2002,11 +1990,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* DETAILS SECTION */}
-          <section className="space-y-4 animate-fade-in pt-4 border-t border-border/40">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <FileText className="w-4 h-4 text-primary" />
-              Purpose &amp; Submit
-            </h3>
+          <section className="space-y-4 animate-fade-in">
             <div>
               <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                 Business Purpose Category <span className="text-destructive">*</span>
