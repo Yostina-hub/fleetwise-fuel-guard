@@ -22463,6 +22463,69 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_events: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          event_category: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          occurred_at: string
+          organization_id: string | null
+          path: string | null
+          resource_id: string | null
+          resource_type: string | null
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          event_category?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          organization_id?: string | null
+          path?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          event_category?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          organization_id?: string | null
+          path?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activity_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "user_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permission_overrides: {
         Row: {
           created_at: string
@@ -22568,39 +22631,71 @@ export type Database = {
       }
       user_sessions: {
         Row: {
+          active_seconds: number
           browser: string | null
           created_at: string | null
           device_type: string | null
+          ended_at: string | null
+          ended_reason: string | null
+          event_count: number
           id: string
           ip_address: string | null
           is_active: boolean | null
           last_active_at: string | null
+          last_path: string | null
+          organization_id: string | null
           os: string | null
+          page_count: number
+          started_at: string
           user_id: string
         }
         Insert: {
+          active_seconds?: number
           browser?: string | null
           created_at?: string | null
           device_type?: string | null
+          ended_at?: string | null
+          ended_reason?: string | null
+          event_count?: number
           id?: string
           ip_address?: string | null
           is_active?: boolean | null
           last_active_at?: string | null
+          last_path?: string | null
+          organization_id?: string | null
           os?: string | null
+          page_count?: number
+          started_at?: string
           user_id: string
         }
         Update: {
+          active_seconds?: number
           browser?: string | null
           created_at?: string | null
           device_type?: string | null
+          ended_at?: string | null
+          ended_reason?: string | null
+          event_count?: number
           id?: string
           ip_address?: string | null
           is_active?: boolean | null
           last_active_at?: string | null
+          last_path?: string | null
+          organization_id?: string | null
           os?: string | null
+          page_count?: number
+          started_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicle_calendar: {
         Row: {
@@ -26618,6 +26713,26 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_activity_summary: {
+        Row: {
+          active_seconds_30d: number | null
+          last_active_at: string | null
+          last_session_at: string | null
+          organization_id: string | null
+          sessions_30d: number | null
+          total_seconds_30d: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
