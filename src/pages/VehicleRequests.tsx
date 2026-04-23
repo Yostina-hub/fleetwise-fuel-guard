@@ -881,25 +881,32 @@ const VehicleRequests = () => {
         {/* ============== MAIN PANEL ============== */}
 
         <Card id="vehicle-requests-table" className="overflow-hidden border-border/60 shadow-sm scroll-mt-20">
-          <CardHeader className="pb-3 border-b bg-muted/30">
+          <CardHeader className="pb-4 border-b bg-gradient-to-b from-muted/40 to-transparent">
             <div className="flex flex-col gap-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-blue-500" />
-                  All Requests
-                  <Badge variant="secondary" className="ml-1 text-[10px]">
-                    {filtered.length}
-                  </Badge>
-                </CardTitle>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-blue-500" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-bold leading-tight">
+                      All Requests
+                    </CardTitle>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {filtered.length} of {requests.length} requests
+                      {activeStatus !== "all" && ` · filtered by ${activeStatus}`}
+                    </p>
+                  </div>
+                </div>
                 {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={clearFilters}>
-                    <X className="w-3 h-3" /> Clear filters
+                  <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={clearFilters}>
+                    <X className="w-3.5 h-3.5" /> Clear filters
                   </Button>
                 )}
               </div>
 
-              {/* Modern segmented status tabs */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
+              {/* Segmented status tabs — clean pill group with clear active state */}
+              <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/60 border border-border/40 overflow-x-auto scrollbar-thin w-full md:w-auto">
                 {STATUS_TABS.map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeStatus === tab.key;
@@ -909,25 +916,24 @@ const VehicleRequests = () => {
                       key={tab.key}
                       onClick={() => setActiveStatus(tab.key)}
                       className={cn(
-                        "group relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 border",
+                        "relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-150",
                         isActive
-                          ? "bg-gradient-to-br border-transparent shadow-md text-foreground " + tab.tone
-                          : "bg-background/60 border-border/60 text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/60",
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/50",
                       )}
                     >
-                      <Icon className={cn("w-3.5 h-3.5", isActive && "scale-110")} />
+                      <Icon className={cn("w-3.5 h-3.5", isActive && "text-primary")} />
                       <span>{tab.label}</span>
                       <span
                         className={cn(
-                          "ml-0.5 inline-flex items-center justify-center text-[10px] font-bold rounded-full min-w-[1.25rem] h-5 px-1.5",
-                          isActive ? "bg-background/80 text-foreground" : "bg-muted text-muted-foreground",
+                          "inline-flex items-center justify-center text-[10px] font-bold rounded-md min-w-[1.25rem] h-4 px-1.5 tabular-nums",
+                          isActive
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground",
                         )}
                       >
                         {count}
                       </span>
-                      {isActive && (
-                        <span className="absolute -bottom-px left-1/2 -translate-x-1/2 h-0.5 w-8 bg-gradient-to-r from-blue-500 to-violet-500 rounded-full" />
-                      )}
                     </button>
                   );
                 })}
