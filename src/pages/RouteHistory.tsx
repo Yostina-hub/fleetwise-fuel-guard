@@ -49,6 +49,7 @@ import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useDriverScope } from "@/hooks/useDriverScope";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 
 import { useTranslation } from 'react-i18next';
@@ -80,6 +81,7 @@ const getDayBoundsISO = (dateStr: string) => {
 const RouteHistory = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
+  const { isDriverOnly, driverId, loading: scopeLoading } = useDriverScope();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
@@ -123,10 +125,45 @@ const RouteHistory = () => {
     if (!isToday) setFollowLive(false);
   }, [isToday]);
 
-  // Fetch vehicles with assigned driver info
+  // Fetch vehicles with assigned driver info.
+  // For driver-only users, scope to vehicles they have actually used so the
+  // dropdown only shows trips that are theirs (not the entire org fleet).
   const { data: vehicles, isLoading: vehiclesLoading, isError: vehiclesError } = useQuery({
-    queryKey: ["vehicles-with-drivers", organizationId],
+    queryKey: ["vehicles-with-drivers", organizationId, isDriverOnly, driverId],
     queryFn: async () => {
+      if (isDriverOnly) {
+        if (!driverId) return [];
+
+        // Vehicles the driver has either been assigned to or completed a request with.
+        const [assignedRes, requestsRes] = await Promise.all([
+          supabase
+            .from("vehicles")
+            .select("id, plate_number, make, model, assigned_driver_id")
+            .eq("organization_id", organizationId!)
+            .eq("assigned_driver_id", driverId),
+          (supabase as any)
+            .from("vehicle_requests")
+            .select(
+              "assigned_vehicle_id, assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model, assigned_driver_id)"
+            )
+            .eq("assigned_driver_id", driverId)
+            .not("assigned_vehicle_id", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(100),
+        ]);
+
+        const map = new Map<string, any>();
+        (assignedRes.data || []).forEach((v: any) => map.set(v.id, v));
+        (requestsRes.data || []).forEach((r: any) => {
+          if (r.assigned_vehicle && !map.has(r.assigned_vehicle.id)) {
+            map.set(r.assigned_vehicle.id, r.assigned_vehicle);
+          }
+        });
+        return Array.from(map.values()).sort((a, b) =>
+          (a.plate_number || "").localeCompare(b.plate_number || "")
+        );
+      }
+
       const { data, error } = await supabase
         .from("vehicles")
         .select("id, plate_number, make, model, assigned_driver_id")
@@ -135,8 +172,43 @@ const RouteHistory = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!organizationId,
+    enabled: !!organizationId && !scopeLoading,
   });
+
+  // Driver-only: load recent journeys (vehicle + checkout date) for quick selection.
+  const { data: driverRecentTrips } = useQuery({
+    queryKey: ["route-history-driver-recent", driverId],
+    queryFn: async () => {
+      if (!driverId) return [];
+      const { data } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          `id, request_number, departure_place, destination,
+           driver_checked_in_at, driver_checked_out_at,
+           assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model)`
+        )
+        .eq("assigned_driver_id", driverId)
+        .not("driver_checked_out_at", "is", null)
+        .order("driver_checked_out_at", { ascending: false })
+        .limit(10);
+      return data || [];
+    },
+    enabled: isDriverOnly && !!driverId,
+  });
+
+  // Auto-select most recent vehicle/date for driver-only users when nothing
+  // is selected yet, so the page is immediately useful instead of blank.
+  useEffect(() => {
+    if (!isDriverOnly || selectedVehicle) return;
+    const recent = driverRecentTrips?.[0];
+    if (recent?.assigned_vehicle?.id) {
+      setSelectedVehicle(recent.assigned_vehicle.id);
+      const checkoutAt = recent.driver_checked_out_at || recent.driver_checked_in_at;
+      if (checkoutAt) {
+        setSelectedDate(format(new Date(checkoutAt), "yyyy-MM-dd"));
+      }
+    }
+  }, [isDriverOnly, selectedVehicle, driverRecentTrips]);
 
   // Fetch driver info for selected vehicle
   const selectedVehicleData = vehicles?.find(v => v.id === selectedVehicle);
@@ -664,6 +736,50 @@ const RouteHistory = () => {
               />
             </div>
           </div>
+
+          {/* Driver-only: quick-pick strip of recent journeys */}
+          {isDriverOnly && (driverRecentTrips?.length || 0) > 0 && (
+            <div className="mt-4">
+              <Label className="text-sm font-medium mb-2 block">My Recent Journeys</Label>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {driverRecentTrips!.map((trip: any) => {
+                  const tripDate = trip.driver_checked_out_at || trip.driver_checked_in_at;
+                  if (!tripDate || !trip.assigned_vehicle?.id) return null;
+                  const dateStr = format(new Date(tripDate), "yyyy-MM-dd");
+                  const isActive =
+                    selectedVehicle === trip.assigned_vehicle.id && selectedDate === dateStr;
+                  return (
+                    <button
+                      key={trip.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedVehicle(trip.assigned_vehicle.id);
+                        setSelectedDate(dateStr);
+                      }}
+                      className={`shrink-0 rounded-lg border px-3 py-2 text-left transition-colors ${
+                        isActive
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-card hover:bg-accent"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <Navigation className="h-3 w-3 text-primary" />
+                        {trip.assigned_vehicle.plate_number}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        {format(new Date(tripDate), "MMM d, HH:mm")}
+                      </div>
+                      {(trip.departure_place || trip.destination) && (
+                        <div className="text-[10px] text-muted-foreground truncate max-w-[180px]">
+                          {trip.departure_place || "—"} → {trip.destination || "—"}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Map and Controls */}
@@ -1037,8 +1153,12 @@ const RouteHistory = () => {
                 <div className="text-center py-12 text-muted-foreground" role="status">
                   <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" aria-hidden="true" />
                   <p className="text-sm font-medium mb-2">
-                    {!selectedVehicle 
-                      ? "Select a vehicle to view route history" 
+                    {!selectedVehicle
+                      ? isDriverOnly
+                        ? (driverRecentTrips?.length || 0) > 0
+                          ? "Pick one of your recent journeys above to replay"
+                          : "You haven't completed any trips yet"
+                        : "Select a vehicle to view route history"
                       : "No route data found for the selected date"}
                   </p>
                   {selectedVehicle && (
