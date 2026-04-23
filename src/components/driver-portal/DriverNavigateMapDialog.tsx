@@ -92,7 +92,7 @@ export const DriverNavigateMapDialog = ({
   vehicleLabel,
   departureTime,
 }: Props) => {
-  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const liveMarkerRef = useRef<maplibregl.Marker | null>(null);
