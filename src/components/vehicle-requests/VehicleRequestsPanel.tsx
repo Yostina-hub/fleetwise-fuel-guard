@@ -9,7 +9,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ClipboardList, Plus, Clock, CheckCircle, Truck, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, X, Ban, Trash2 } from "lucide-react";
+import { ClipboardList, Plus, Clock, CheckCircle, Truck, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, X, Ban, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
@@ -262,6 +262,9 @@ export const VehicleRequestsPanel = () => {
 
   const canCancel = (r: any) => ["pending", "approved", "assigned"].includes(r.status);
   const canDelete = (r: any) => ["pending", "cancelled", "rejected"].includes(r.status);
+  // Assign is offered while the request is pending/approved (pre-assignment)
+  // and again for assigned rows so dispatchers can re-assign if needed.
+  const canAssign = (r: any) => ["pending", "approved", "assigned"].includes(r.status);
   // (asc/desc/none) and toggles direction on subsequent clicks.
   const SortHeader = ({
     label,
