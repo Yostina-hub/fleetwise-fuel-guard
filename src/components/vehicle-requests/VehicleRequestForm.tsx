@@ -1180,6 +1180,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </div>
         )}
 
+        {/* Auto-save indicator (always visible while typing) */}
+        {!restoredAt && savedAt && (
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground -mt-2">
+            <CheckCircle2 className="w-3 h-3 text-success" />
+            Draft auto-saved {new Date(savedAt).toLocaleTimeString()}
+          </div>
+        )}
+
         {/* Manager/admin: file on behalf of any user or driver */}
         {canFileOnBehalf && (
           <div className="rounded-lg border border-dashed border-primary/30 bg-gradient-to-r from-primary/10 to-transparent p-3 flex items-center gap-2 flex-wrap">
