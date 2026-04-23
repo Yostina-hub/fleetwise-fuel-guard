@@ -12,9 +12,7 @@
  * (`organization_settings.default_map_style`) so super-admins can pick
  * "streets" / "satellite" / "dark" once and have it applied everywhere.
  */
-import { useEffect, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,9 +31,7 @@ import {
   Radio,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { useDefaultMapStyle } from "@/hooks/useDefaultMapStyle";
-import { createLematTransformRequest, getPreviewSafeMapStyle } from "@/lib/lemat";
+import { RouteMapPreview } from "@/components/vehicle-requests/RouteMapPreview";
 
 interface Props {
   open: boolean;
@@ -92,13 +88,6 @@ export const DriverNavigateMapDialog = ({
   vehicleLabel,
   departureTime,
 }: Props) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const map = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<maplibregl.Marker[]>([]);
-  const liveMarkerRef = useRef<maplibregl.Marker | null>(null);
-  const { ready: lematReady, apiKey: lematApiKey } = useLematApiKey();
-  const defaultMapStyle = useDefaultMapStyle();
-
   const [resolving, setResolving] = useState(false);
   const [origin, setOrigin] = useState<ResolvedPoint | null>(null);
   const [destination, setDestination] = useState<ResolvedPoint | null>(null);
@@ -108,70 +97,6 @@ export const DriverNavigateMapDialog = ({
   const [insight, setInsight] = useState<string | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
   const [insightError, setInsightError] = useState<string | null>(null);
-  const [mapError, setMapError] = useState<string | null>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [useFallbackMap, setUseFallbackMap] = useState(false);
-
-  const fallbackViewport = (() => {
-    // Use OpenStreetMap's free, no-key, CSP-friendly embed.
-    // Format: https://www.openstreetmap.org/export/embed.html?bbox=minLng,minLat,maxLng,maxLat&layer=mapnik
-    const buildOsmEmbed = (bbox: [number, number, number, number]) => {
-      const params = new URLSearchParams({
-        bbox: bbox.join(","),
-        layer: "mapnik",
-      });
-      return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
-    };
-
-    if (origin && destination) {
-      const minLng = Math.min(origin.lng, destination.lng) - 0.05;
-      const maxLng = Math.max(origin.lng, destination.lng) + 0.05;
-      const minLat = Math.min(origin.lat, destination.lat) - 0.05;
-      const maxLat = Math.max(origin.lat, destination.lat) + 0.05;
-      const bbox: [number, number, number, number] = [minLng, minLat, maxLng, maxLat];
-      return { bbox, url: buildOsmEmbed(bbox) };
-    }
-
-    const point = destination || origin;
-    if (point) {
-      const d = 0.05;
-      const bbox: [number, number, number, number] = [point.lng - d, point.lat - d, point.lng + d, point.lat + d];
-      return { bbox, url: buildOsmEmbed(bbox) };
-    }
-
-    return null;
-  })();
-
-  const fallbackMarkers = (() => {
-    if (!fallbackViewport) return [] as Array<{ key: string; label: string; top: string; left: string; kind: "start" | "end" }>;
-
-    const [minLng, minLat, maxLng, maxLat] = fallbackViewport.bbox;
-    const lngSpan = Math.max(maxLng - minLng, 0.0001);
-    const latSpan = Math.max(maxLat - minLat, 0.0001);
-    const toPercent = (value: number, min: number, span: number) => Math.min(92, Math.max(8, ((value - min) / span) * 100));
-    const points = [
-      origin
-        ? {
-            key: "origin",
-            label: origin.label,
-            left: `${toPercent(origin.lng, minLng, lngSpan)}%`,
-            top: `${100 - toPercent(origin.lat, minLat, latSpan)}%`,
-            kind: "start" as const,
-          }
-        : null,
-      destination
-        ? {
-            key: "destination",
-            label: destination.label,
-            left: `${toPercent(destination.lng, minLng, lngSpan)}%`,
-            top: `${100 - toPercent(destination.lat, minLat, latSpan)}%`,
-            kind: "end" as const,
-          }
-        : null,
-    ].filter(Boolean);
-
-    return points;
-  })();
 
   // Resolve coordinates when the dialog opens
   useEffect(() => {
