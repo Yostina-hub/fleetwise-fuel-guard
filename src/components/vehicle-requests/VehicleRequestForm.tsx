@@ -1225,7 +1225,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         {/* Single-page form — flat, professionally aligned */}
         <div className="space-y-4">
           {/* TYPE SECTION */}
-          <section className="space-y-2.5">
+          <section className="space-y-3">
             <SectionHeader icon={Sparkles} title="Operation Type" />
             <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
               <SelectTrigger className="w-full sm:max-w-md">
@@ -1243,11 +1243,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE SECTION */}
-          <section className="space-y-2.5">
+          <section className="space-y-3">
             <SectionHeader icon={CalendarDays} title="Schedule" />
             {isDaily ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div className="" ref={(node) => { fieldAnchors.current.date = node; }}>
                     <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }} required minDate={new Date()} hideTime error={!!getError("date")} />
                     <FieldError field="date" />
@@ -1275,7 +1275,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               </>
             ) : (
-              <div className={`grid grid-cols-1 gap-5`}>
+              <div className={`grid grid-cols-1 gap-3`}>
                 <div ref={(node) => { fieldAnchors.current.start_date = node; }}>
                   <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime error={!!getError("start_date")} />
                   <FieldError field="start_date" />
@@ -1313,9 +1313,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* ROUTE SECTION */}
-          <section className="space-y-2.5">
+          <section className="space-y-3">
             <SectionHeader icon={MapPin} title="Route" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <LocationPickerField
                 label="Departure Place"
                 value={form.departure_place}
@@ -1456,9 +1456,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* RESOURCES SECTION */}
-          <section className="space-y-2.5">
+          <section className="space-y-3">
             <SectionHeader icon={Layers} title="Vehicle & Resources" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <VRField
                 id="vr-num-vehicles"
                 label={
@@ -1815,7 +1815,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* DETAILS SECTION */}
-          <section className="space-y-2.5">
+          <section className="space-y-3">
             <SectionHeader icon={FileText} title="Purpose & Details" />
             <div>
               <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
