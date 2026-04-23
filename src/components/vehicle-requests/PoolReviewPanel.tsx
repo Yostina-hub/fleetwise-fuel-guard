@@ -32,15 +32,22 @@ import {
   ScrollText,
   Zap,
   Loader2,
-  ChevronDown,
-  ChevronRight,
   MapPin,
+  MoreHorizontal,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { PoolAssignmentPicker } from "./PoolAssignmentPicker";
+import { QuickAssignDialog } from "./QuickAssignDialog";
 
 const sendAssignmentSMS = async (request: any, vehicleId: string, driverId?: string) => {
   try {
