@@ -781,6 +781,41 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.start_date, form.request_type, isDaily]);
 
+  // Auto-switch between Daily and Nighttime based on the entered times.
+  // Rule: if start OR end time falls after 11:30 (NIGHT_THRESHOLD), this is a
+  // Night Operation. Otherwise Day Operation. Only auto-toggles when the user
+  // is currently on one of these two types — never overrides Project / Field /
+  // Group / Messenger selections (those are explicit operational choices).
+  useEffect(() => {
+    if (form.request_type !== "daily_operation" && form.request_type !== "nighttime_operation") return;
+    const toMin = (t: string) => {
+      if (!t) return null;
+      const [h, m] = t.split(":").map(Number);
+      if (Number.isNaN(h) || Number.isNaN(m)) return null;
+      return h * 60 + m;
+    };
+    const startMin = toMin(form.start_time);
+    const endMin = toMin(form.end_time);
+    if (startMin == null && endMin == null) return; // wait for input
+    const NIGHT_THRESHOLD = 11 * 60 + 30; // 11:30
+    const isNight =
+      (startMin != null && startMin > NIGHT_THRESHOLD) ||
+      (endMin != null && endMin > NIGHT_THRESHOLD);
+    const desired = isNight ? "nighttime_operation" : "daily_operation";
+    if (desired !== form.request_type) {
+      setForm((f) => ({ ...f, request_type: desired }));
+      toast.message(
+        isNight ? "Switched to Nighttime Operation" : "Switched to Daily Operation",
+        {
+          description: isNight
+            ? "Times fall after 11:30 — this trip is now categorized as Nighttime."
+            : "Times fall before 11:30 — this trip is now categorized as Daily.",
+        }
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.start_time, form.end_time, form.request_type]);
+
   // Professional, descriptive validation (per-field, on blur + on submit).
   const validation = useVehicleRequestValidation();
   const { getError, handleBlur, validateAll, errorCount } = validation;
@@ -1425,22 +1460,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                       <Moon className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                       <div className="text-muted-foreground space-y-1.5 flex-1">
                         <div>
-                          <span className="font-medium text-foreground">Night Operation:</span>{" "}
+                          <span className="font-medium text-foreground">Night Operation (auto):</span>{" "}
                           {isNightByStart
-                            ? <>Start time is after <span className="font-medium">11:30</span>, so this trip will be categorized as a <span className="font-medium text-foreground">Night Operation</span>.</>
-                            : <>End time is after <span className="font-medium">11:30</span>, so this trip will be categorized as a <span className="font-medium text-foreground">Night Operation</span>.</>}
+                            ? <>Start time is after <span className="font-medium">11:30</span> — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>
+                            : <>End time is after <span className="font-medium">11:30</span> — request type was automatically switched to <span className="font-medium text-foreground">Nighttime Operation</span>.</>}
                         </div>
                         <div>
                           The dispatch team will manage this request <span className="font-medium text-foreground">after 8:00 PM</span>.
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => update("request_type", "nighttime_operation")}
-                          className="inline-flex items-center gap-1 text-warning underline-offset-2 hover:underline font-medium"
-                        >
-                          <Moon className="w-3 h-3" />
-                          Switch request type to Nighttime Operation
-                        </button>
                       </div>
                     </div>
                   );
