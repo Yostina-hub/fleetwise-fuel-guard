@@ -308,6 +308,7 @@ export const DriverViewRequestDialog = ({
       setNotes("");
       setNotesError(null);
       refresh();
+      onClose();
     },
     onError: (e: any) => toast.error(e.message || "Check-in failed"),
   });
