@@ -338,6 +338,13 @@ const DriverPortal = () => {
         () => queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] }))
       .on("postgres_changes", { event: "*", schema: "public", table: "vehicle_request_assignments", filter: `driver_id=eq.${driverId}` },
         () => queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] }))
+      // Listen to trips table so "Recently Completed" updates the moment a trip
+      // is inserted/updated/completed for this driver.
+      .on("postgres_changes", { event: "*", schema: "public", table: "trips", filter: `driver_id=eq.${driverId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] });
+          queryClient.invalidateQueries({ queryKey: ["driver-trip-history"] });
+        })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [driverId, organizationId, queryClient]);
