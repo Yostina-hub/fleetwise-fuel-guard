@@ -736,6 +736,50 @@ const RouteHistory = () => {
               />
             </div>
           </div>
+
+          {/* Driver-only: quick-pick strip of recent journeys */}
+          {isDriverOnly && (driverRecentTrips?.length || 0) > 0 && (
+            <div className="mt-4">
+              <Label className="text-sm font-medium mb-2 block">My Recent Journeys</Label>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {driverRecentTrips!.map((trip: any) => {
+                  const tripDate = trip.driver_checked_out_at || trip.driver_checked_in_at;
+                  if (!tripDate || !trip.assigned_vehicle?.id) return null;
+                  const dateStr = format(new Date(tripDate), "yyyy-MM-dd");
+                  const isActive =
+                    selectedVehicle === trip.assigned_vehicle.id && selectedDate === dateStr;
+                  return (
+                    <button
+                      key={trip.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedVehicle(trip.assigned_vehicle.id);
+                        setSelectedDate(dateStr);
+                      }}
+                      className={`shrink-0 rounded-lg border px-3 py-2 text-left transition-colors ${
+                        isActive
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-card hover:bg-accent"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <Navigation className="h-3 w-3 text-primary" />
+                        {trip.assigned_vehicle.plate_number}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        {format(new Date(tripDate), "MMM d, HH:mm")}
+                      </div>
+                      {(trip.departure_place || trip.destination) && (
+                        <div className="text-[10px] text-muted-foreground truncate max-w-[180px]">
+                          {trip.departure_place || "—"} → {trip.destination || "—"}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Map and Controls */}
