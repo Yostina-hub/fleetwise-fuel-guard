@@ -150,7 +150,10 @@ export function ConfirmAndRateDialog({
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
 
-  const [phase, setPhase] = React.useState<Phase>("confirm");
+  // Phase always starts (and stays) on "rate" — the confirm-only step was
+  // removed per product feedback. The rating mutation now also writes the
+  // requester_confirmed_at fields so the trip is closed in one go.
+  const [phase, setPhase] = React.useState<Phase>("rate");
   const [confirmNotes, setConfirmNotes] = React.useState("");
   const [scores, setScores] = React.useState<Scores>({
     driver: 0,
