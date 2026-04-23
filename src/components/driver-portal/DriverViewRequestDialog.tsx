@@ -820,7 +820,7 @@ export const DriverViewRequestDialog = ({
                   </div>
                   <Button
                     className="w-full gap-2 bg-warning hover:bg-warning/90"
-                    onClick={() => checkOut.mutate()}
+                    onClick={() => setConfirmCheckOutOpen(true)}
                     disabled={checkOut.isPending || !completionRemark.trim() || !!completionRemarkError}
                   >
                     <StopCircle className="w-4 h-4" />
