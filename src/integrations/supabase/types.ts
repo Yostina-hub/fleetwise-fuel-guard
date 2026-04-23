@@ -23731,6 +23731,7 @@ export type Database = {
           driver_checked_out_at: string | null
           driver_checkin_notes: string | null
           driver_checkin_odometer: number | null
+          driver_checkout_notes: string | null
           driver_checkout_odometer: number | null
           driver_rating: number | null
           end_time: string | null
@@ -23827,6 +23828,7 @@ export type Database = {
           driver_checked_out_at?: string | null
           driver_checkin_notes?: string | null
           driver_checkin_odometer?: number | null
+          driver_checkout_notes?: string | null
           driver_checkout_odometer?: number | null
           driver_rating?: number | null
           end_time?: string | null
@@ -23923,6 +23925,7 @@ export type Database = {
           driver_checked_out_at?: string | null
           driver_checkin_notes?: string | null
           driver_checkin_odometer?: number | null
+          driver_checkout_notes?: string | null
           driver_checkout_odometer?: number | null
           driver_rating?: number | null
           end_time?: string | null
