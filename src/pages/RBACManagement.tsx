@@ -85,22 +85,31 @@ interface LocationOption {
   parent?: string;
 }
 
+// Mirrors the `app_role` Postgres enum. Keep in sync with src/lib/workflow-engine/appRoles.ts.
 const ALL_ROLES = [
-  { value: "super_admin", label: "Super Admin", description: "Full system access across all organizations", color: "text-destructive", tier: 1 },
-  { value: "org_admin", label: "Org Admin", description: "Full access within their organization", color: "text-primary", tier: 2 },
-  { value: "fleet_owner", label: "Fleet Owner", description: "Owner-level visibility into fleet operations", color: "text-violet-400", tier: 3 },
-  { value: "operations_manager", label: "Ops Manager", description: "Manages day-to-day fleet operations", color: "text-indigo-400", tier: 3 },
-  { value: "fleet_manager", label: "Fleet Manager", description: "Manages vehicles, routes, and schedules", color: "text-blue-400", tier: 4 },
-  { value: "dispatcher", label: "Dispatcher", description: "Assigns jobs and monitors live fleet", color: "text-sky-400", tier: 4 },
-  { value: "fuel_controller", label: "Fuel Controller", description: "Monitors and manages fuel operations", color: "text-yellow-400", tier: 4 },
-  { value: "maintenance_lead", label: "Maintenance Lead", description: "Oversees maintenance and work orders", color: "text-orange-400", tier: 4 },
-  { value: "operator", label: "Operator", description: "Day-to-day fleet operations", color: "text-cyan-400", tier: 5 },
-  { value: "driver", label: "Driver", description: "Trips, logbooks, and incidents", color: "text-emerald-400", tier: 5 },
-  { value: "technician", label: "Technician", description: "Maintenance and inspections", color: "text-amber-400", tier: 5 },
-  { value: "mechanic", label: "Mechanic", description: "Hands-on vehicle repairs", color: "text-orange-400", tier: 5 },
-  { value: "user", label: "User", description: "Basic end-user with view-only access", color: "text-slate-400", tier: 6 },
-  { value: "auditor", label: "Auditor", description: "Read-only compliance and audit access", color: "text-purple-400", tier: 6 },
-  { value: "viewer", label: "Viewer", description: "Read-only access to dashboards", color: "text-muted-foreground", tier: 6 },
+  { value: "super_admin",            label: "Super Admin",            description: "Full system access across all organizations", color: "text-destructive", tier: 1 },
+  { value: "org_admin",              label: "Org Admin",              description: "Full access within their organization", color: "text-primary", tier: 2 },
+  { value: "fleet_owner",            label: "Fleet Owner",            description: "Owner-level visibility into fleet operations", color: "text-violet-400", tier: 3 },
+  { value: "operations_manager",     label: "Ops Manager",            description: "Manages day-to-day fleet operations", color: "text-indigo-400", tier: 3 },
+  { value: "fleet_manager",          label: "Fleet Manager",          description: "Manages vehicles, routes, and schedules", color: "text-blue-400", tier: 4 },
+  { value: "dispatcher",             label: "Dispatcher",             description: "Assigns jobs and monitors live fleet", color: "text-sky-400", tier: 4 },
+  { value: "fuel_controller",        label: "Fuel Controller",        description: "Monitors and manages fuel operations", color: "text-yellow-400", tier: 4 },
+  { value: "maintenance_lead",       label: "Maintenance Lead",       description: "Oversees maintenance and work orders", color: "text-orange-400", tier: 4 },
+  { value: "maintenance_manager",    label: "Maint. Manager",         description: "Workshop / fleet maintenance manager", color: "text-orange-300", tier: 4 },
+  { value: "maintenance_supervisor", label: "Maint. Supervisor",      description: "Supervises maintenance jobs", color: "text-orange-300", tier: 4 },
+  { value: "finance_manager",        label: "Finance Manager",        description: "Approves & disburses payments", color: "text-green-400", tier: 4 },
+  { value: "sourcing_manager",       label: "Sourcing Manager",       description: "Procurement & supplier management", color: "text-teal-400", tier: 4 },
+  { value: "transport_authority",    label: "Transport Authority",    description: "Vehicle registration / Bolo authority", color: "text-pink-400", tier: 4 },
+  { value: "insurance_admin",        label: "Insurance Admin",        description: "Insurance policies & renewals", color: "text-rose-400", tier: 4 },
+  { value: "inspection_center",      label: "Inspection Center",      description: "Annual / roadworthy inspection center", color: "text-fuchsia-400", tier: 4 },
+  { value: "operator",               label: "Operator",               description: "Day-to-day fleet operations", color: "text-cyan-400", tier: 5 },
+  { value: "driver",                 label: "Driver",                 description: "Trips, logbooks, and incidents", color: "text-emerald-400", tier: 5 },
+  { value: "technician",             label: "Technician",             description: "Maintenance and inspections", color: "text-amber-400", tier: 5 },
+  { value: "mechanic",               label: "Mechanic",               description: "Hands-on vehicle repairs", color: "text-orange-400", tier: 5 },
+  { value: "supplier",               label: "Supplier",               description: "External supplier portal access", color: "text-lime-400", tier: 5 },
+  { value: "user",                   label: "User",                   description: "Basic end-user with view-only access", color: "text-slate-400", tier: 6 },
+  { value: "auditor",                label: "Auditor",                description: "Read-only compliance and audit access", color: "text-purple-400", tier: 6 },
+  { value: "viewer",                 label: "Viewer",                 description: "Read-only access to dashboards", color: "text-muted-foreground", tier: 6 },
 ];
 
 const RESOURCE_ICONS: Record<string, React.ReactNode> = {
@@ -246,24 +255,42 @@ const RBACManagement = () => {
       const toAdd = roleMappings.filter((m) => !origSet.has(`${m.role}:${m.permission_id}`));
       const toRemove = originalMappings.filter((m) => !currSet.has(`${m.role}:${m.permission_id}`));
 
+      // Group removals by role so we can issue ONE delete per role using `.in()`.
+      // The previous per-row loop was slow and could leave the matrix in a half-saved
+      // state if any single delete failed mid-way through.
+      const removalsByRole = new Map<string, string[]>();
       for (const rm of toRemove) {
+        const list = removalsByRole.get(rm.role) || [];
+        list.push(rm.permission_id);
+        removalsByRole.set(rm.role, list);
+      }
+
+      for (const [role, permIds] of removalsByRole) {
         const { error } = await supabase
           .from("role_permissions")
           .delete()
-          .eq("role", rm.role as any)
-          .eq("permission_id", rm.permission_id);
+          .eq("role", role as any)
+          .in("permission_id", permIds);
         if (error) throw error;
       }
 
       if (toAdd.length > 0) {
+        // Use upsert so retries / duplicate runs don't blow up on the unique
+        // (role, permission_id) constraint.
         const { error } = await supabase
           .from("role_permissions")
-          .insert(toAdd.map((m) => ({ role: m.role as any, permission_id: m.permission_id })));
+          .upsert(
+            toAdd.map((m) => ({ role: m.role as any, permission_id: m.permission_id })),
+            { onConflict: "role,permission_id", ignoreDuplicates: true },
+          );
         if (error) throw error;
       }
 
       setOriginalMappings([...roleMappings]);
-      toast({ title: "Permissions Saved", description: `Updated ${toAdd.length + toRemove.length} permission mappings.` });
+      toast({
+        title: "Permissions Saved",
+        description: `Updated ${toAdd.length + toRemove.length} permission mapping${toAdd.length + toRemove.length === 1 ? "" : "s"}.`,
+      });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
