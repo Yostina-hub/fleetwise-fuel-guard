@@ -156,7 +156,7 @@ export const PoolAssignmentPicker = ({
             <span className="text-muted-foreground">No pool specified — choose any vehicle</span>
           )}
           <span className="text-muted-foreground/80">
-            • {inPoolVehicles.length} in-pool / {totalIdle} idle of {vehicles.length} active vehicles
+            • {inPoolVehicles.length} in-pool / {totalAvailable} available of {vehicles.length} vehicles
             • {inPoolDrivers.length} pool drivers / {drivers.length} total
           </span>
         </div>
@@ -169,7 +169,7 @@ export const PoolAssignmentPicker = ({
             </span>
             {vehiclesByPool.map(([pool, stats]) => {
               const isRequested = pool === request.pool_name;
-              const exhausted = stats.idle === 0;
+              const exhausted = stats.available === 0;
               return (
                 <div
                   key={pool}
@@ -181,7 +181,7 @@ export const PoolAssignmentPicker = ({
                         ? "border-border/30 bg-muted/40 opacity-70"
                         : "border-border/40 bg-background",
                   )}
-                  title={`${stats.idle} idle / ${stats.busy} busy / ${stats.total} total`}
+                  title={`${stats.available} available / ${stats.busy} busy / ${stats.total} total`}
                 >
                   <span className="font-mono font-semibold">{pool}</span>
                   <span
@@ -190,7 +190,7 @@ export const PoolAssignmentPicker = ({
                       exhausted ? "text-muted-foreground" : "text-emerald-600",
                     )}
                   >
-                    {stats.idle}
+                    {stats.available}
                   </span>
                   <span className="text-muted-foreground">/{stats.total}</span>
                 </div>
