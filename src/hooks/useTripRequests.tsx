@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useDriverScope } from "./useDriverScope";
+import { logActivity } from "@/lib/sessionTracker";
 
 export const useTripRequests = () => {
   const { toast } = useToast();
@@ -94,8 +95,14 @@ export const useTripRequests = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["trip-requests"] });
+      logActivity({
+        event_type: "request_created",
+        event_category: "trip_request",
+        resource_type: "trip_request",
+        resource_id: data?.id ?? null,
+      }).catch(() => {});
       toast({ title: "Success", description: "Trip request created successfully" });
     },
     onError: (error: any) => {
@@ -148,9 +155,15 @@ export const useTripRequests = () => {
 
       return request;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["trip-requests"] });
       queryClient.invalidateQueries({ queryKey: ["pending-approvals"] });
+      logActivity({
+        event_type: "request_submitted",
+        event_category: "trip_request",
+        resource_type: "trip_request",
+        resource_id: data?.id ?? null,
+      }).catch(() => {});
       toast({ title: "Success", description: "Trip request submitted for approval" });
     },
     onError: (error: any) => {

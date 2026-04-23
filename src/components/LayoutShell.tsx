@@ -22,6 +22,7 @@ import { Outlet } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { LayoutNestedContext } from "@/contexts/LayoutNestedContext";
 import { Loader2 } from "lucide-react";
+import RouteActivityTracker from "@/components/activity/RouteActivityTracker";
 
 const InnerFallback = () => (
   <div className="flex items-center justify-center py-24">
@@ -31,6 +32,7 @@ const InnerFallback = () => (
 
 const LayoutShell = () => (
   <Layout>
+    <RouteActivityTracker />
     <LayoutNestedContext.Provider value={true}>
       <Suspense fallback={<InnerFallback />}>
         <Outlet />
