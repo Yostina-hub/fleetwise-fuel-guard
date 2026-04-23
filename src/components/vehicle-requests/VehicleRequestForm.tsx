@@ -1316,43 +1316,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Layers className="w-4 h-4 text-primary" />
               Operation Type
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
-              {[
-                { v: "daily_operation", title: "Daily Operation", desc: "Day-shift trip (6:00 AM – 8:00 PM EAT)", icon: Clock },
-                { v: "nighttime_operation", title: "Nighttime Operation", desc: "Night-shift trip — from 8:00 PM EAT (8:00 night)", icon: Moon },
-                { v: "project_operation", title: "Project Operation", desc: "Multi-day, project-coded assignment", icon: Layers },
-                { v: "field_operation", title: "Field Operation", desc: "Extended off-base or field deployment", icon: Route },
-                { v: "group_operation", title: "Group Operation", desc: "Shared trip for a group of passengers", icon: Users },
-                { v: "messenger_service", title: "Messenger Service", desc: "Motorcycle courier — packages & documents", icon: Bike },
-              ].map(({ v, title, desc, icon: Icon }) => {
-                const active = form.request_type === v;
-                return (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => update("request_type", v)}
-                    className={`group relative text-left rounded-xl border p-4 transition-all ${
-                      active
-                        ? "border-primary/60 bg-primary/[0.04] shadow-sm ring-1 ring-primary/20"
-                        : "border-border bg-card hover:border-border hover:bg-muted/30"
-                    }`}
-                  >
-                    <div
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 transition-colors ${
-                        active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="font-medium text-sm text-foreground">{title}</div>
-                    <div className="text-xs text-muted-foreground mt-1 leading-snug">{desc}</div>
-                    {active && (
-                      <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-primary" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
+              <SelectTrigger className="w-full sm:max-w-md">
+                <SelectValue placeholder="Select operation type…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily_operation">Daily Operation</SelectItem>
+                <SelectItem value="nighttime_operation">Nighttime Operation</SelectItem>
+                <SelectItem value="project_operation">Project Operation</SelectItem>
+                <SelectItem value="field_operation">Field Operation</SelectItem>
+                <SelectItem value="group_operation">Group Operation</SelectItem>
+                <SelectItem value="messenger_service">Messenger Service</SelectItem>
+              </SelectContent>
+            </Select>
           </section>
 
           {/* SCHEDULE SECTION */}
