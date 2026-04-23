@@ -45,6 +45,32 @@ export function TimePicker({
 }: TimePickerProps) {
   const [open, setOpen] = React.useState(false);
 
+  // Live current time (24h) — refreshed every 30s while mounted so the hint
+  // and "Now" button always reflect the user's actual clock.
+  const [now, setNow] = React.useState<string>(() => {
+    const d = new Date();
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+  React.useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      setNow(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
+    };
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const setNowTime = () => {
+    const d = new Date();
+    let m = d.getMinutes();
+    if (minuteStep > 1) {
+      // round to nearest step so the selected value matches a list entry
+      m = Math.round(m / minuteStep) * minuteStep;
+      if (m === 60) m = 0;
+    }
+    onChange(`${pad(d.getHours())}:${pad(m)}`);
+  };
+
   // Parse partials too: "14:" (hour only) or ":30" (minute only) so users
   // can see which half they still need to pick.
   const [hh, mm] = React.useMemo(() => {
@@ -89,14 +115,29 @@ export function TimePicker({
           )}
         >
           <Clock className="h-4 w-4 shrink-0 text-primary" />
-          {display || placeholder}
+          <span className="flex-1 text-left">{display || placeholder}</span>
+          <span className="ml-auto text-[10px] font-sans font-normal text-muted-foreground tabular-nums">
+            now {now}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+        <div className="flex items-center justify-between gap-2 border-b px-2 py-1.5 bg-muted/30">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Now <span className="font-mono text-foreground tabular-nums">{now}</span>
+          </span>
+          <button
+            type="button"
+            onClick={setNowTime}
+            className="text-xs font-medium text-primary hover:underline px-2 py-0.5"
+          >
+            Use current time
+          </button>
+        </div>
         <div className="flex">
           <div className="border-r">
             <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center bg-muted/40">
-              Hour
+              Hour (24h)
             </div>
             <ScrollArea className="h-56 w-16">
               <div className="p-1">
