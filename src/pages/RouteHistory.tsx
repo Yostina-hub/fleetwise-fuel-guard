@@ -49,6 +49,7 @@ import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useDriverScope } from "@/hooks/useDriverScope";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 
 import { useTranslation } from 'react-i18next';
