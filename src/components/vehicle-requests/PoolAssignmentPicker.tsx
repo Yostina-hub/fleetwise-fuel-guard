@@ -440,9 +440,9 @@ export const PoolAssignmentPicker = ({
         title="Confirm assignment"
         description={
           selectedVehicle
-            ? `Assign ${selectedVehicle.plate_number} (${selectedVehicle.make ?? ""} ${selectedVehicle.model ?? ""}).trim()${
+            ? `Assign ${selectedVehicle.plate_number} (${[selectedVehicle.make, selectedVehicle.model].filter(Boolean).join(" ")})${
                 selectedDriver
-                  ? ` with driver ${selectedDriver.first_name ?? ""} ${selectedDriver.last_name ?? ""}`
+                  ? ` with driver ${[selectedDriver.first_name, selectedDriver.last_name].filter(Boolean).join(" ")}`
                   : " without a driver"
               } to request ${request.request_number ?? ""}? The requester will be notified.`
             : "Assign this vehicle to the request? The requester will be notified."
