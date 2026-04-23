@@ -404,6 +404,25 @@ export const PoolAssignmentPicker = ({
 
 // ── Row renderers ─────────────────────────────────────────────────────────
 
+const AVAILABILITY_STYLES: Record<string, string> = {
+  available: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
+  busy: "bg-amber-500/10 text-amber-600 border-amber-500/30",
+  on_trip: "bg-amber-500/10 text-amber-600 border-amber-500/30",
+  maintenance: "bg-destructive/10 text-destructive border-destructive/30",
+  off_duty: "bg-muted text-muted-foreground border-border",
+  suspended: "bg-destructive/10 text-destructive border-destructive/30",
+  inactive: "bg-muted text-muted-foreground border-border",
+};
+const AVAILABILITY_LABELS: Record<string, string> = {
+  available: "Available",
+  busy: "Busy",
+  on_trip: "On trip",
+  maintenance: "Maintenance",
+  off_duty: "Off duty",
+  suspended: "Suspended",
+  inactive: "Inactive",
+};
+
 const VehicleRow = ({
   v,
   selected,
@@ -412,9 +431,12 @@ const VehicleRow = ({
   v: any;
   selected: boolean;
   onSelect: () => void;
-}) => (
+}) => {
+  const availCls = AVAILABILITY_STYLES[v.availability] || AVAILABILITY_STYLES.inactive;
+  const availLabel = AVAILABILITY_LABELS[v.availability] || v.availability;
+  return (
   <CommandItem
-    value={`${v.plate_number} ${v.make ?? ""} ${v.model ?? ""} ${v.specific_pool ?? ""}`}
+    value={`${v.plate_number} ${v.make ?? ""} ${v.model ?? ""} ${v.specific_pool ?? ""} ${v.assigned_driver_name ?? ""}`}
     onSelect={onSelect}
     className="flex items-center justify-between gap-2"
   >
@@ -426,25 +448,28 @@ const VehicleRow = ({
         )}
       />
       <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-mono text-xs font-semibold">{v.plate_number}</span>
           {v.is_top_pick && (
             <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
           )}
+          <span className={cn("text-[9px] px-1.5 py-0 rounded border", availCls)}>
+            {availLabel}
+          </span>
           {v.in_geofence && (
             <Badge variant="outline" className="text-[9px] py-0 h-4 border-emerald-500/40 text-emerald-600">
               <MapPin className="w-2.5 h-2.5 mr-0.5" /> in zone
-            </Badge>
-          )}
-          {v.is_idle === false && (
-            <Badge variant="outline" className="text-[9px] py-0 h-4 text-amber-600 border-amber-500/30">
-              busy
             </Badge>
           )}
         </div>
         <div className="text-[11px] text-muted-foreground truncate">
           {v.make} {v.model}
           {v.seating_capacity ? ` • ${v.seating_capacity} seats` : ""}
+          {v.assigned_driver_name && (
+            <span className="ml-1">
+              • <User className="inline w-2.5 h-2.5 -mt-0.5" /> {v.assigned_driver_name}
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -464,7 +489,8 @@ const VehicleRow = ({
       )}
     </div>
   </CommandItem>
-);
+  );
+};
 
 const DriverRow = ({
   d,
@@ -474,9 +500,12 @@ const DriverRow = ({
   d: any;
   selected: boolean;
   onSelect: () => void;
-}) => (
+}) => {
+  const availCls = AVAILABILITY_STYLES[d.availability] || AVAILABILITY_STYLES.inactive;
+  const availLabel = AVAILABILITY_LABELS[d.availability] || d.availability;
+  return (
   <CommandItem
-    value={`${d.first_name ?? ""} ${d.last_name ?? ""} ${d.phone ?? ""}`}
+    value={`${d.first_name ?? ""} ${d.last_name ?? ""} ${d.phone ?? ""} ${d.assigned_vehicle_plate ?? ""}`}
     onSelect={onSelect}
     className="flex items-center justify-between gap-2"
   >
@@ -488,15 +517,23 @@ const DriverRow = ({
         )}
       />
       <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs font-medium truncate">
             {d.first_name} {d.last_name}
           </span>
           {d.is_top_pick && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
+          <span className={cn("text-[9px] px-1.5 py-0 rounded border", availCls)}>
+            {availLabel}
+          </span>
         </div>
-        {d.phone && (
-          <div className="text-[11px] text-muted-foreground truncate">{d.phone}</div>
-        )}
+        <div className="text-[11px] text-muted-foreground truncate">
+          {d.assigned_vehicle_plate ? (
+            <span><Truck className="inline w-2.5 h-2.5 -mt-0.5" /> {d.assigned_vehicle_plate}</span>
+          ) : (
+            <span className="italic">No vehicle assigned</span>
+          )}
+          {d.phone && <span> • {d.phone}</span>}
+        </div>
       </div>
     </div>
     <div className="flex items-center gap-1 shrink-0">
@@ -505,15 +542,10 @@ const DriverRow = ({
           pool
         </Badge>
       )}
-      {d.is_busy && (
-        <Badge variant="outline" className="text-[9px] py-0 h-4 text-amber-600 border-amber-500/30">
-          {d.status}
-        </Badge>
-      )}
     </div>
   </CommandItem>
-);
-
+  );
+};
 const VehicleHints = ({
   v,
   requestPool,
