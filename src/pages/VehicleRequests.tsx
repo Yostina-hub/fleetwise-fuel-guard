@@ -722,7 +722,7 @@ const VehicleRequests = () => {
 
         <PageDateRangeFilter hint="Filters KPIs and the table below" />
 
-        <VehicleRequestKPI requests={requests} />
+        <VehicleRequestKPI requests={dateScopedRequests} />
 
         {/* Pool Supervisor Review now lives at /pool-supervisors */}
 
