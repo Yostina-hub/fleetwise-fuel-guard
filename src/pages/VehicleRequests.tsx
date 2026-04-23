@@ -51,6 +51,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  UserCheck,
 } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
@@ -58,7 +59,10 @@ import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/Vehicl
 import { RequesterFeedbackDialog } from "@/components/vehicle-requests/RequesterFeedbackDialog";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
 import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
-// PoolReviewPanel moved to its own page at /pool-supervisors
+// Pool-supervisor functionality is now embedded inline below the requests
+// table via the "Assignments" view-mode toggle (no separate page needed).
+import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
+import { ConsolidationPanel } from "@/components/vehicle-requests/ConsolidationPanel";
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
 
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
