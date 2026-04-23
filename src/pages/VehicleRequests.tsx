@@ -51,6 +51,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  UserCheck,
 } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
@@ -58,7 +59,10 @@ import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/Vehicl
 import { RequesterFeedbackDialog } from "@/components/vehicle-requests/RequesterFeedbackDialog";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
 import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
-// PoolReviewPanel moved to its own page at /pool-supervisors
+// Pool-supervisor functionality is now embedded inline below the requests
+// table via the "Assignments" view-mode toggle (no separate page needed).
+import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
+import { ConsolidationPanel } from "@/components/vehicle-requests/ConsolidationPanel";
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
 
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
@@ -144,6 +148,24 @@ const VehicleRequests = () => {
   const [showEdit, setShowEdit] = useState<any>(null);
   const [showMultiAssign, setShowMultiAssign] = useState<any>(null);
   const [showImport, setShowImport] = useState(false);
+
+  // View mode — "requests" (default table) or "assignments" (pool supervisor
+  // workspace with consolidation + per-request review/assign panels).
+  // Synced to URL ?view=assignments so the legacy /pool-supervisors redirect
+  // can deep-link straight into this mode.
+  const [viewMode, setViewMode] = useState<"requests" | "assignments">(() => {
+    if (typeof window === "undefined") return "requests";
+    return new URLSearchParams(window.location.search).get("view") === "assignments"
+      ? "assignments"
+      : "requests";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (viewMode === "assignments") url.searchParams.set("view", "assignments");
+    else url.searchParams.delete("view");
+    window.history.replaceState({}, "", url.toString());
+  }, [viewMode]);
 
   // filters / search / pagination
   const [activeStatus, setActiveStatus] = useState<StatusKey>("all");
@@ -276,6 +298,16 @@ const VehicleRequests = () => {
     for (const r of dateScopedRequests) c[r.status] = (c[r.status] || 0) + 1;
     return c;
   }, [dateScopedRequests]);
+
+  // Pool-supervisor backlog: approved requests still awaiting vehicle/driver
+  // allocation. Drives the "Assignments" toggle badge.
+  const awaitingAssignmentCount = useMemo(
+    () =>
+      requests.filter(
+        (r: any) => r.status === "approved" && r.pool_review_status !== "reviewed",
+      ).length,
+    [requests],
+  );
 
   // distinct pools (for filter dropdown)
   const poolOptions = useMemo(() => {
@@ -708,6 +740,28 @@ const VehicleRequests = () => {
                 </Can>
               </>
             )}
+            {canManageAll && (
+              <Button
+                variant={viewMode === "assignments" ? "default" : "outline"}
+                size="sm"
+                className="gap-1.5 h-9"
+                onClick={() =>
+                  setViewMode((m) => (m === "assignments" ? "requests" : "assignments"))
+                }
+                title="Pool supervisor workspace — review approved requests and allocate vehicles + drivers"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                Assignments
+                {awaitingAssignmentCount > 0 && (
+                  <Badge
+                    variant={viewMode === "assignments" ? "secondary" : "destructive"}
+                    className="ml-1 h-4 min-w-[1rem] px-1 text-[10px]"
+                  >
+                    {awaitingAssignmentCount}
+                  </Badge>
+                )}
+              </Button>
+            )}
             <Can resource="vehicle_requests" action="create">
               <Button
                 size="sm"
@@ -724,7 +778,35 @@ const VehicleRequests = () => {
 
         <VehicleRequestKPI requests={dateScopedRequests} />
 
-        {/* Pool Supervisor Review now lives at /pool-supervisors */}
+        {/* ============== ASSIGNMENTS WORKSPACE (formerly /pool-supervisors) ============== */}
+        {viewMode === "assignments" && canManageAll && organizationId && (
+          <div className="space-y-4 animate-fade-in" data-assignments-workspace>
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <UserCheck className="w-4 h-4 text-primary shrink-0" />
+                  <div>
+                    <div className="font-medium">Assignment Workspace</div>
+                    <div className="text-xs text-muted-foreground">
+                      Review approved requests and allocate a vehicle + driver from your pool.
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => setViewMode("requests")}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Back to Requests
+                </Button>
+              </CardContent>
+            </Card>
+            <ConsolidationPanel organizationId={organizationId} />
+            <PoolReviewPanel requests={requests} organizationId={organizationId} />
+          </div>
+        )}
 
         {/* ============== MAIN PANEL ============== */}
         <Card id="vehicle-requests-table" className="overflow-hidden border-border/60 shadow-sm scroll-mt-20">
@@ -1027,6 +1109,31 @@ const VehicleRequests = () => {
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </Button>
+                              {/* Assign — pool supervisors / admins on approved rows
+                                  awaiting vehicle+driver allocation. Opens the
+                                  Assignments workspace where the row is reviewed. */}
+                              {canManageAll &&
+                                r.status === "approved" &&
+                                r.pool_review_status !== "reviewed" && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => {
+                                      setViewMode("assignments");
+                                      // Scroll the assignments workspace into view on the
+                                      // next paint so the user lands on it directly.
+                                      setTimeout(() => {
+                                        document
+                                          .querySelector("[data-assignments-workspace]")
+                                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                      }, 50);
+                                    }}
+                                    title="Assign vehicle & driver from pool"
+                                  >
+                                    <UserCheck className="w-3.5 h-3.5 text-primary" />
+                                  </Button>
+                                )}
                               {/* Feedback — only the requester who filed the row */}
                               {r.status === "completed" &&
                                 !r.requester_rating &&
