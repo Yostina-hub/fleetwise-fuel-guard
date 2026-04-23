@@ -69,19 +69,32 @@ export const PoolAssignmentPicker = ({
     poolName: request.pool_name,
   });
 
-  // Auto-pin top suggestion on first load (supervisor can override).
+  // Auto-pin top *available* suggestion on first load (supervisor can override).
   useEffect(() => {
-    if (!vehicleId && vehicles[0]?.id) setVehicleId(vehicles[0].id);
+    if (!vehicleId) {
+      const top =
+        vehicles.find((v: any) => v.in_pool && v.availability === "available") ||
+        vehicles.find((v: any) => v.availability === "available") ||
+        vehicles[0];
+      if (top?.id) setVehicleId(top.id);
+    }
   }, [vehicles, vehicleId]);
   useEffect(() => {
     if (!driverId) {
-      // Auto-suggest driver assigned to the chosen vehicle if any
+      // Auto-suggest driver permanently assigned to the chosen vehicle if any
       const v = vehicles.find((x) => x.id === vehicleId);
       if (v?.assigned_driver_id) {
-        setDriverId(v.assigned_driver_id);
-        return;
+        // Make sure the assigned driver is actually available (not on another trip)
+        const drv = drivers.find((d) => d.id === v.assigned_driver_id);
+        if (drv && drv.availability === "available") {
+          setDriverId(drv.id);
+          return;
+        }
       }
-      const top = drivers.find((d) => d.in_pool && !d.is_busy) || drivers[0];
+      const top =
+        drivers.find((d: any) => d.in_pool && d.availability === "available") ||
+        drivers.find((d: any) => d.availability === "available") ||
+        drivers[0];
       if (top?.id) setDriverId(top.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
