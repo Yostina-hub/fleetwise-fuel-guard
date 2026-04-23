@@ -1058,16 +1058,38 @@ const RouteHistory = () => {
                      <SkipForward className="h-4 w-4" aria-hidden="true" />
                    </Button>
 
-                   <Button
-                     variant={followLive ? "default" : "outline"}
-                     size="sm"
-                     className="ml-4"
-                     onClick={() => setFollowLive((v) => !v)}
-                     disabled={!selectedVehicle || !isToday}
-                     aria-label={followLive ? "Live mode enabled" : "Enable live mode"}
-                   >
-                     Live
-                   </Button>
+                   <TooltipProvider>
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                         <Button
+                           variant={followLive ? "default" : "outline"}
+                           size="sm"
+                           className={`ml-4 gap-1.5 ${followLive ? "animate-pulse" : ""}`}
+                           onClick={() => {
+                             // Live: snap to today's date and follow latest position.
+                             if (!followLive) {
+                               setSelectedDate(today);
+                               setIsPlaying(false);
+                               setPlaybackProgress(100);
+                             }
+                             setFollowLive((v) => !v);
+                           }}
+                           disabled={!selectedVehicle}
+                           aria-label={followLive ? "Live mode enabled" : "Enable live mode"}
+                         >
+                           <Radio className={`h-3.5 w-3.5 ${followLive ? "text-destructive-foreground" : "text-destructive"}`} />
+                           Live
+                         </Button>
+                       </TooltipTrigger>
+                       <TooltipContent side="top" className="max-w-xs text-xs">
+                         {followLive
+                           ? "Following latest position. Auto-refresh every 15s."
+                           : latestSeenLabel
+                             ? `Show latest position. Last seen ${latestSeenLabel}.`
+                             : "No telemetry yet for this vehicle."}
+                       </TooltipContent>
+                     </Tooltip>
+                   </TooltipProvider>
 
                    <Button variant="outline" size="sm" className="ml-2" disabled aria-label={`Current playback speed: ${playbackSpeed}x`}>
                      {playbackSpeed}x Speed
