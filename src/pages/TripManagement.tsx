@@ -27,6 +27,7 @@ import {
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { useApprovals } from "@/hooks/useApprovals";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { QuickTripRequest } from "@/components/trips/QuickTripRequest";
 import { TripStatsBar } from "@/components/trips/TripStatsBar";
 import { TripDetailPanel } from "@/components/trips/TripDetailPanel";
@@ -56,6 +57,7 @@ const TripManagement = () => {
   const { requests: legacyRequests, loading: loadingLegacy, submitRequest, cancelRequest } = useTripRequests();
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
   const { isSuperAdmin, hasRole, hasPermission, loading: permsLoading } = usePermissions();
+  const { user: authUser } = useAuthContext();
 
   // ── Current system data source ─────────────────────────────────────
   // The Trips tab now mirrors the unified `vehicle_requests` flow that
@@ -99,22 +101,22 @@ const TripManagement = () => {
   const requests = vehicleRequests;
   const loading = loadingVR;
 
-  // Resolve driver record for current user (only used when isDriverOnly)
+  // Resolve driver record for current user (only used when isDriverOnly).
+  // Uses the AuthContext user (which honors super-admin impersonation) rather
+  // than `supabase.auth.getUser()` so impersonated drivers resolve correctly.
   const { data: driverSelf, isLoading: driverLoading } = useQuery({
-    queryKey: ["trip-mgmt-driver-self", organizationId],
+    queryKey: ["trip-mgmt-driver-self", organizationId, authUser?.id],
     queryFn: async () => {
-      if (!organizationId) return null;
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return null;
+      if (!organizationId || !authUser?.id) return null;
       const { data } = await supabase
         .from("drivers")
         .select("id, first_name, last_name")
         .eq("organization_id", organizationId)
-        .eq("user_id", u.user.id)
+        .eq("user_id", authUser.id)
         .maybeSingle();
       return data;
     },
-    enabled: !!organizationId,
+    enabled: !!organizationId && !!authUser?.id,
   });
 
   // RBAC role groups
