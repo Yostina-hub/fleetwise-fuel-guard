@@ -81,6 +81,7 @@ const getDayBoundsISO = (dateStr: string) => {
 const RouteHistory = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
+  const { isDriverOnly, driverId, loading: scopeLoading } = useDriverScope();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
