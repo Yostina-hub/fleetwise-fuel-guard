@@ -1200,6 +1200,7 @@ const RouteHistory = () => {
                  </div>
               </CardContent>
             </Card>
+            )}
           </div>
 
           {/* Stats Panel */}
