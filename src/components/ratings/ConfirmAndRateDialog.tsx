@@ -169,7 +169,7 @@ export function ConfirmAndRateDialog({
   React.useEffect(() => {
     if (!open) {
       const t = setTimeout(() => {
-        setPhase("confirm");
+        setPhase("rate");
         setConfirmNotes("");
         setScores({ driver: 0, vehicle: 0, punctuality: 0, overall: 0 });
         setComment("");
@@ -301,6 +301,10 @@ export function ConfirmAndRateDialog({
         .update({
           rated_at: new Date().toISOString(),
           requester_feedback: comment.trim() || null,
+          // Mark as confirmed at the same time — the standalone confirm
+          // step was removed, so submitting the rating closes the loop.
+          requester_confirmed_at: new Date().toISOString(),
+          requester_confirmed_by: actingRequesterId,
         })
         .eq("id", request.id)
         .eq("requester_id", actingRequesterId);
