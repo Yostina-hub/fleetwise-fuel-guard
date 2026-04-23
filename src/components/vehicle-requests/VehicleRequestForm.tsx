@@ -1219,10 +1219,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
 
         {/* Tabbed form — only the active section is rendered (matches the registration form's BasicInfoTabs UX) */}
-        <div className="space-y-5">
-
+        <div className="space-y-4">
           {/* TYPE SECTION */}
-          <section className="space-y-4 animate-fade-in">
+          <section className="space-y-3">
             <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
               <SelectTrigger className="w-full sm:max-w-md">
                 <SelectValue placeholder="Select operation type…" />
@@ -1239,7 +1238,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE SECTION */}
-          <section className="space-y-4 animate-fade-in">
+          <section className="space-y-3">
             {/* Working-hours policy banner — Project / operational only */}
             {isProject && workingHoursPolicy && (() => {
               const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -1401,7 +1400,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* ROUTE SECTION */}
-          <section className="space-y-4 animate-fade-in">
+          <section className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <LocationPickerField
                 label="Departure Place"
@@ -1543,7 +1542,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* RESOURCES SECTION */}
-          <section className="space-y-4 animate-fade-in">
+          <section className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <VRField
                 id="vr-num-vehicles"
@@ -1901,7 +1900,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* DETAILS SECTION */}
-          <section className="space-y-4 animate-fade-in">
+          <section className="space-y-3">
             <div>
               <Label className="text-primary font-medium text-sm mb-1.5 flex items-center gap-1.5">
                 Business Purpose Category <span className="text-destructive">*</span>
