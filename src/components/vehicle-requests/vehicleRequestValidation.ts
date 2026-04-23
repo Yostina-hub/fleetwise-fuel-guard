@@ -121,10 +121,12 @@ export function validateVRField(
 ): string | undefined {
   const isProject = ctx.request_type === "project_operation";
   const isNighttime = ctx.request_type === "nighttime_operation";
-  // Nighttime is a single-day variant of Daily (uses `date` + start/end times)
-  // but locked to a 02:00–12:00 window to match the night-shift policy.
+  // Nighttime is a single-day variant of Daily (uses `date` + start/end times).
+  // Operational window (EAT, 24h): start ≥ 20:00 (8:00 night) OR start < 06:00,
+  // end ≤ 06:00 (next morning) OR end > 20:00. This matches the auto-switcher
+  // in VehicleRequestForm.tsx so a trip categorized as Night never fails the
+  // window check it was just classified by.
   const isDaily = ctx.request_type === "daily_operation" || isNighttime;
-  const NIGHT_WINDOW = { start: "02:00", end: "12:00" };
 
   switch (field) {
     case "request_type": {
@@ -148,8 +150,8 @@ export function validateVRField(
       const v = sanitizeText(value);
       if (!v) return "Start time is required.";
       if (!HHMM_RE.test(v)) return "Start time must use 24-hour HH:MM format (e.g. 08:30).";
-      if (isNighttime && (v < NIGHT_WINDOW.start || v >= NIGHT_WINDOW.end)) {
-        return `Nighttime operations must start between ${NIGHT_WINDOW.start} and ${NIGHT_WINDOW.end}.`;
+      if (isNighttime && !(v >= "20:00" || v < "06:00")) {
+        return "Nighttime operations must start at or after 20:00 (8:00 night) or before 06:00 EAT.";
       }
       // If the trip date is today, reject times already in the past on the
       // requester's machine clock — we cannot schedule a trip for a moment
@@ -175,12 +177,19 @@ export function validateVRField(
       const v = sanitizeText(value);
       if (!v) return "End time is required.";
       if (!HHMM_RE.test(v)) return "End time must use 24-hour HH:MM format (e.g. 17:00).";
-      if (isNighttime && (v <= NIGHT_WINDOW.start || v > NIGHT_WINDOW.end)) {
-        return `Nighttime operations must end by ${NIGHT_WINDOW.end} (and after ${NIGHT_WINDOW.start}).`;
+      if (isNighttime && !(v <= "06:00" || v > "20:00")) {
+        return "Nighttime operations must end by 06:00 (next morning) or after 20:00 EAT.";
       }
       const start = sanitizeText(ctx.start_time);
-      if (start && HHMM_RE.test(start) && v <= start)
-        return `End time (${v}) must be later than start time (${start}). A trip needs at least 1 minute.`;
+      // For night ops the trip can cross midnight, so equal-time / earlier end
+      // is only invalid when both times sit on the same side of midnight.
+      if (start && HHMM_RE.test(start) && v <= start) {
+        const startsAtNight = start >= "20:00";
+        const endsAtNight = v >= "20:00";
+        const sameSide = !isNighttime || startsAtNight === endsAtNight;
+        if (sameSide)
+          return `End time (${v}) must be later than start time (${start}). A trip needs at least 1 minute.`;
+      }
       return;
     }
 
