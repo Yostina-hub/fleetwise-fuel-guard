@@ -696,6 +696,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       setForm(initialWithPrefill);
       clearDraft();
       setOnBehalfOf(null);
+      // Activity tracking: capture which user filed which request
+      import("@/lib/sessionTracker").then(({ logActivity }) =>
+        logActivity({
+          event_type: "request_submitted",
+          event_category: "vehicle_request",
+          resource_type: "vehicle_request",
+          resource_id: data?.id ?? null,
+          metadata: { on_behalf_of: onBehalfOf?.id ?? null, source },
+        }),
+      ).catch(() => { /* non-blocking */ });
       onSubmitted?.({ id: data?.id });
     },
     onError: (err: any) => {
