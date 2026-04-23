@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
+import ConfirmActionDialog from "@/components/users/ConfirmActionDialog";
 
 interface Props {
   request: any;
@@ -28,6 +29,7 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
   /** Two-step pool selector — mirrors the Vehicle Request form. */
   const [targetCategory, setTargetCategory] = useState<string>("");
   const [targetPool, setTargetPool] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { data: pools = [] } = useQuery({
     queryKey: ["fleet-pools", organizationId],
@@ -329,7 +331,7 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button
-              onClick={() => assignMutation.mutate()}
+              onClick={() => setConfirmOpen(true)}
               disabled={!selectedVehicle || !selectedDriver || !reason.trim() || assignMutation.isPending}
               className="bg-amber-600 hover:bg-amber-700"
             >
@@ -337,6 +339,20 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
             </Button>
           </div>
         </DialogFooter>
+
+        <ConfirmActionDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title="Confirm cross-pool assignment"
+          description={`Borrow a vehicle from ${targetCategory ? `${targetCategory} / ` : ""}${targetPool || "another pool"} for request ${request.request_number ?? ""}? This action will reassign the request and notify the requester.`}
+          confirmLabel="Assign Cross-Pool"
+          loading={assignMutation.isPending}
+          variant="destructive"
+          onConfirm={() => {
+            setConfirmOpen(false);
+            assignMutation.mutate();
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
