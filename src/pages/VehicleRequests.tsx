@@ -804,7 +804,20 @@ const VehicleRequests = () => {
 
         <PageDateRangeFilter hint="Filters KPIs and the table below" />
 
-        <VehicleRequestKPI requests={dateScopedRequests} />
+        <VehicleRequestKPI
+          requests={dateScopedRequests}
+          activeStatus={activeStatus}
+          onStatusChange={(s) => {
+            setActiveStatus(s);
+            if (viewMode !== "requests") setViewMode("requests");
+            // Scroll the table into view so users see the filter applied.
+            setTimeout(() => {
+              document
+                .getElementById("vehicle-requests-table")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 50);
+          }}
+        />
 
         {/* ============== ASSIGNMENTS WORKSPACE (formerly /pool-supervisors) ============== */}
         {viewMode === "assignments" && canManageAll && organizationId && (
