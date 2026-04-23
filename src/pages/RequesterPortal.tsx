@@ -143,26 +143,38 @@ const RequesterPortalInner = () => {
   // (e.g. user picks 00:00 local time which serializes as the previous UTC
   // day after timezone normalization).
   const { data: requests = [], isLoading, refetch } = useQuery({
-    queryKey: ["my-vehicle-requests", organizationId, user?.id, startISO, endISO],
+    queryKey: [
+      "my-vehicle-requests",
+      organizationId,
+      user?.id,
+      vrScope.tier,
+      vrScope.driverId,
+      startISO,
+      endISO,
+    ],
     queryFn: async () => {
       if (!user || !organizationId) return [];
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from("vehicle_requests")
         .select(
           "*, assigned_vehicle:assigned_vehicle_id(plate_number, make, model), assigned_driver:assigned_driver_id(first_name, last_name)",
         )
         .eq("organization_id", organizationId)
-        .eq("requester_id", user.id)
         .or(
           `and(needed_from.gte.${startISO},needed_from.lte.${endISO}),` +
             `and(needed_from.is.null,created_at.gte.${startISO},created_at.lte.${endISO}),` +
             `and(created_at.gte.${startISO},created_at.lte.${endISO})`,
         )
         .order("created_at", { ascending: false });
+      // Apply role-based row scoping. Admin/operator tiers see the full org
+      // queue (so super_admins can monitor pending requests across users);
+      // driver/self tiers stay restricted to their own filed requests.
+      query = applyVRScope(query, vrScope);
+      const { data, error } = await query;
       if (error) throw error;
       return (data ?? []) as RequestDetail[];
     },
-    enabled: !!user && !!organizationId,
+    enabled: !!user && !!organizationId && !vrScope.loading,
   });
 
   // Realtime — refresh on any change to my requests
