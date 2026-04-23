@@ -153,6 +153,7 @@ export const DriverViewRequestDialog = ({
   onPostTrip,
   onReportIssue,
   onRequestFuel,
+  onCompleted,
 }: Props) => {
   const queryClient = useQueryClient();
   const [notes, setNotes] = useState("");
