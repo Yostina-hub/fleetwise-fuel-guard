@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { combineDateAndTime, splitDateTime } from "@/components/ui/date-time-picker";
 import type { RequestDetail } from "./RequestDetailDrawer";
 
 interface Props {
@@ -32,12 +33,27 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-// Convert ISO timestamp → value usable by <input type="datetime-local">.
+// Convert ISO timestamp → value usable by <input type="datetime-local">,
+// expressed in the active org timezone (so what the user sees here matches
+// what they originally picked when creating the request, regardless of the
+// browser's local timezone).
 const toLocalInput = (iso: string | null | undefined) => {
   if (!iso) return "";
-  const d = new Date(iso);
+  const { date, time } = splitDateTime(iso);
+  if (!date) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${time}`;
+};
+
+// Reverse of `toLocalInput` — turn the picker value back into an ISO that
+// represents the chosen wall-clock time *in the org's timezone*.
+const fromLocalInput = (value: string): string | null => {
+  if (!value) return null;
+  const [datePart, timePart = "00:00"] = value.split("T");
+  const [y, m, d] = datePart.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const date = new Date(y, m - 1, d);
+  return combineDateAndTime(date, timePart.slice(0, 5)) ?? null;
 };
 
 export function EditRequestDialog({ request, open, onOpenChange }: Props) {
@@ -73,12 +89,16 @@ export function EditRequestDialog({ request, open, onOpenChange }: Props) {
       if (!purpose.trim()) throw new Error("Purpose is required.");
       if (!neededFrom) throw new Error("Needed-from date is required.");
 
+      const fromIso = fromLocalInput(neededFrom);
+      if (!fromIso) throw new Error("Invalid needed-from date.");
+      const untilIso = neededUntil ? fromLocalInput(neededUntil) : null;
+
       const payload: Record<string, any> = {
         purpose: purpose.trim(),
         departure_place: departure.trim() || null,
         destination: destination.trim() || null,
-        needed_from: new Date(neededFrom).toISOString(),
-        needed_until: neededUntil ? new Date(neededUntil).toISOString() : null,
+        needed_from: fromIso,
+        needed_until: untilIso,
         passengers: passengers ? parseInt(passengers, 10) : null,
         updated_at: new Date().toISOString(),
       };

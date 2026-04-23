@@ -183,7 +183,7 @@ export function DateTimePicker({
  * Africa/Addis_Ababa (the default for this fleet). This keeps date/time inputs
  * stable regardless of the browser's locale (e.g. a Lovable preview running in UTC).
  */
-function getActiveTimezone(): string {
+export function getActiveTimezone(): string {
   if (typeof window !== "undefined") {
     const fromStorage = window.localStorage?.getItem("org_timezone");
     if (fromStorage) return fromStorage;
@@ -235,3 +235,49 @@ export function splitDateTime(iso?: string | null): { date: Date | undefined; ti
   const localDate = new Date(Number(get("year")), Number(get("month")) - 1, Number(get("day")));
   return { date: localDate, time: `${get("hour")}:${get("minute")}` };
 }
+
+/**
+ * Format an ISO timestamp in the active org timezone. Mirrors common date-fns
+ * tokens we use across the app (MMM, dd, HH, mm, yyyy) so callers can drop in
+ * patterns like "MMM dd, HH:mm" without shifting to the browser's local zone.
+ *
+ * This is the canonical way to display any timestamp the user picked in a form
+ * — using `format(new Date(iso), …)` from date-fns would re-interpret the value
+ * in the browser's timezone (e.g. UTC in the Lovable preview) and show the
+ * wrong hour to the user.
+ */
+export function formatInOrgTz(
+  iso: string | Date | null | undefined,
+  pattern: string = "MMM dd, HH:mm",
+): string {
+  if (!iso) return "—";
+  const d = iso instanceof Date ? iso : new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  const tz = getActiveTimezone();
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hour12: false,
+    year: "numeric", month: "short", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    weekday: "short",
+  });
+  const parts = dtf.formatToParts(d);
+  const get = (t: string) => parts.find(p => p.type === t)?.value ?? "";
+  const map: Record<string, string> = {
+    yyyy: get("year"),
+    MMM: get("month"),
+    MM: String(new Date(`${get("month")} 1, 2000`).getMonth() + 1).padStart(2, "0"),
+    dd: get("day"),
+    EEE: get("weekday"),
+    HH: get("hour") === "24" ? "00" : get("hour"),
+    mm: get("minute"),
+    ss: get("second"),
+  };
+  // Replace longest tokens first to avoid partial overlaps (e.g. "MM" vs "MMM").
+  const tokens = Object.keys(map).sort((a, b) => b.length - a.length);
+  let out = pattern;
+  for (const tk of tokens) {
+    out = out.split(tk).join(map[tk]);
+  }
+  return out;
+}
+
