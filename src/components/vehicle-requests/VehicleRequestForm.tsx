@@ -1337,12 +1337,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 iconColor="text-red-500"
               />
             </div>
-            {/* Combined route preview map — A → numbered stops → B */}
-            <RouteMapPreview
-              departure={{ lat: form.departure_lat, lng: form.departure_lng, label: form.departure_place }}
-              destination={{ lat: form.destination_lat, lng: form.destination_lng, label: form.destination }}
-              stops={form.stops.map((s) => ({ lat: s.lat, lng: s.lng, label: s.name }))}
-            />
+            {/* Inline route preview map removed — keeps the form compact.
+                Users still pick locations via the map dialog on each field. */}
             {/* Coordinate previews intentionally removed — the map picker
                 already auto-fills a human-readable place name, and showing
                 raw lat/lng under the route fields looked unprofessional. */}
