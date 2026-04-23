@@ -46,6 +46,7 @@ import {
   Keyboard
 } from "lucide-react";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
+import { RouteMapPreview } from "@/components/vehicle-requests/RouteMapPreview";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -314,6 +315,40 @@ const RouteHistory = () => {
 
   const routeHistory = telemetryData || [];
   const hasData = routeHistory.length > 0;
+
+  // Fallback when GPS telemetry is missing for the selected date:
+  // pull any vehicle_requests this vehicle ran that day so we can at least
+  // show start → destination markers + an animated "trip overview" map.
+  const { data: tripsForDay } = useQuery({
+    queryKey: ["route-history-trips-for-day", selectedVehicle, selectedDate],
+    enabled: !!selectedVehicle && !!selectedDate && !telemetryLoading && !hasData,
+    queryFn: async () => {
+      const { startISO, endISO } = getDayBoundsISO(selectedDate);
+      const { data } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          `id, request_number, status,
+           departure_place, departure_lat, departure_lng,
+           destination, destination_lat, destination_lng,
+           needed_from, needed_until,
+           driver_checked_in_at, driver_checked_out_at,
+           driver_checkin_odometer, driver_checkout_odometer,
+           assigned_driver:assigned_driver_id(first_name, last_name)`
+        )
+        .eq("assigned_vehicle_id", selectedVehicle)
+        .or(
+          [
+            `and(driver_checked_in_at.gte.${startISO},driver_checked_in_at.lte.${endISO})`,
+            `and(driver_checked_out_at.gte.${startISO},driver_checked_out_at.lte.${endISO})`,
+            `and(needed_from.gte.${startISO},needed_from.lte.${endISO})`,
+          ].join(",")
+        )
+        .order("needed_from", { ascending: true })
+        .limit(20);
+      return (data || []) as any[];
+    },
+  });
+  const hasFallbackTrips = (tripsForDay?.length || 0) > 0;
 
   // Suggest dates with telemetry for the selected vehicle (last 14 days)
   const { data: availableDates } = useQuery({
@@ -1334,10 +1369,86 @@ const RouteHistory = () => {
                           ? "Pick one of your recent journeys above to replay"
                           : "You haven't completed any trips yet"
                         : "Select a vehicle to view route history"
-                      : "No route data found for the selected date"}
+                      : hasFallbackTrips
+                        ? "No GPS telemetry — showing trip overview from manifest"
+                        : "No route data found for the selected date"}
                   </p>
                   {selectedVehicle && (
-                    <div className="text-xs space-y-3 max-w-md mx-auto">
+                    <div className="text-xs space-y-3 max-w-2xl mx-auto">
+                      {/* Trip overview fallback — start → destination per trip */}
+                      {hasFallbackTrips && (
+                        <div className="space-y-3 text-left">
+                          {tripsForDay!.map((t: any) => {
+                            const driverName = t.assigned_driver
+                              ? `${t.assigned_driver.first_name || ""} ${t.assigned_driver.last_name || ""}`.trim()
+                              : null;
+                            const distance =
+                              t.driver_checkin_odometer != null && t.driver_checkout_odometer != null
+                                ? Math.max(0, Number(t.driver_checkout_odometer) - Number(t.driver_checkin_odometer))
+                                : null;
+                            const startTs = t.driver_checked_in_at || t.needed_from;
+                            const endTs = t.driver_checked_out_at || t.needed_until;
+                            return (
+                              <Card key={t.id} className="overflow-hidden">
+                                <CardHeader className="py-2 px-3 bg-muted/40 flex-row items-center gap-2 space-y-0">
+                                  <Navigation className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+                                  <span className="text-xs font-mono">{t.request_number}</span>
+                                  <Badge variant="outline" className="text-[10px] capitalize">
+                                    {String(t.status || "").replace(/_/g, " ")}
+                                  </Badge>
+                                  {driverName && (
+                                    <span className="text-[11px] text-muted-foreground ml-auto">
+                                      {driverName}
+                                    </span>
+                                  )}
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                  <RouteMapPreview
+                                    departure={{
+                                      lat: t.departure_lat ?? null,
+                                      lng: t.departure_lng ?? null,
+                                      label: t.departure_place || "Start",
+                                    }}
+                                    destination={{
+                                      lat: t.destination_lat ?? null,
+                                      lng: t.destination_lng ?? null,
+                                      label: t.destination || "Destination",
+                                    }}
+                                    heightPx={220}
+                                  />
+                                  <div className="px-3 py-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                                    <div>
+                                      <p className="text-muted-foreground">Start</p>
+                                      <p className="font-medium">
+                                        {startTs ? format(parseISO(startTs), "HH:mm") : "—"}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground">End</p>
+                                      <p className="font-medium">
+                                        {endTs ? format(parseISO(endTs), "HH:mm") : "—"}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground">Distance</p>
+                                      <p className="font-medium">
+                                        {distance != null ? `${distance.toFixed(1)} km` : "—"}
+                                      </p>
+                                    </div>
+                                    <div className="truncate">
+                                      <p className="text-muted-foreground">Route</p>
+                                      <p className="font-medium truncate">
+                                        {(t.departure_place || "—") + " → " + (t.destination || "—")}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       <p className="text-muted-foreground/70">
                         The GPS device may not have transmitted data on {format(parseISO(selectedDate), "PPP")}.
                       </p>
