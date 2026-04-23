@@ -343,6 +343,63 @@ const RouteHistory = () => {
     enabled: !!selectedVehicle && !hasData && !telemetryLoading,
   });
 
+  // Latest known position for the selected vehicle (across all history).
+  // Used by Live mode and to show "last seen" badge / jump-to buttons even
+  // when the selected date has no data.
+  const { data: latestPosition, refetch: refetchLatestPosition } = useQuery({
+    queryKey: ["route-history-latest-position", selectedVehicle],
+    queryFn: async () => {
+      if (!selectedVehicle) return null;
+      const { data, error } = await supabase
+        .from("vehicle_telemetry")
+        .select("latitude, longitude, speed_kmh, fuel_level_percent, heading, engine_on, last_communication_at")
+        .eq("vehicle_id", selectedVehicle)
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+        .order("last_communication_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!selectedVehicle,
+    refetchInterval: followLive ? 15_000 : false,
+  });
+
+  const latestSeenLabel = latestPosition?.last_communication_at
+    ? formatDistanceToNow(parseISO(latestPosition.last_communication_at), { addSuffix: true })
+    : null;
+
+  const jumpToLatestData = useCallback(() => {
+    if (!latestPosition?.last_communication_at) return;
+    const dateStr = format(parseISO(latestPosition.last_communication_at), "yyyy-MM-dd");
+    setSelectedDate(dateStr);
+    setFollowLive(false);
+  }, [latestPosition]);
+
+  const jumpToLatestPosition = useCallback(() => {
+    if (!latestPosition?.latitude || !latestPosition?.longitude || !mapInstance) return;
+    mapInstance.flyTo({
+      center: [latestPosition.longitude, latestPosition.latitude],
+      zoom: 15,
+      duration: 1200,
+    });
+  }, [latestPosition, mapInstance]);
+
+  // When Live is toggled on, immediately fly to the latest known position
+  // and refetch so the user sees a marker right away.
+  useEffect(() => {
+    if (!followLive) return;
+    refetchLatestPosition();
+    if (latestPosition?.latitude && latestPosition?.longitude && mapInstance) {
+      mapInstance.flyTo({
+        center: [latestPosition.longitude, latestPosition.latitude],
+        zoom: 15,
+        duration: 1000,
+      });
+    }
+  }, [followLive, mapInstance, latestPosition, refetchLatestPosition]);
+
   // Auto-start playback when navigating from Trip Replay action
   useEffect(() => {
     if (autoplayRequested && hasData && !autoplayTriggered.current) {
