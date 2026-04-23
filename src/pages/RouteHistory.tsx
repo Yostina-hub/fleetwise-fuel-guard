@@ -212,8 +212,54 @@ const RouteHistory = () => {
 
   // Fetch driver info for selected vehicle
   const selectedVehicleData = vehicles?.find(v => v.id === selectedVehicle);
-  
-  const { data: assignedDriver } = useQuery({
+
+  // Resolve the most relevant driver for the selected vehicle/date.
+  // Order of precedence:
+  //   1. If a driver-only user is viewing, the driver they checked-in/out for that vehicle on that date.
+  //   2. The driver currently assigned to the vehicle.
+  //   3. The driver from the most recent vehicle_request for this vehicle on the selected date.
+  const { data: tripDriver } = useQuery({
+    queryKey: [
+      "route-history-trip-driver",
+      selectedVehicle,
+      selectedDate,
+      isDriverOnly ? driverId : null,
+    ],
+    queryFn: async () => {
+      if (!selectedVehicle) return null;
+      const { startISO, endISO } = getDayBoundsISO(selectedDate);
+
+      const baseQuery = (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          `assigned_driver_id,
+           assigned_driver:assigned_driver_id(id, first_name, last_name, phone)`
+        )
+        .eq("assigned_vehicle_id", selectedVehicle)
+        .not("assigned_driver_id", "is", null)
+        .or(
+          `and(driver_checked_in_at.gte.${startISO},driver_checked_in_at.lte.${endISO}),` +
+            `and(driver_checked_out_at.gte.${startISO},driver_checked_out_at.lte.${endISO})`
+        )
+        .order("driver_checked_in_at", { ascending: false })
+        .limit(1);
+
+      const { data } = await baseQuery;
+      const row = data?.[0];
+      if (!row?.assigned_driver) return null;
+      const d = row.assigned_driver;
+      return {
+        id: d.id,
+        first_name: d.first_name,
+        last_name: d.last_name,
+        phone: d.phone,
+        name: `${d.first_name || ""} ${d.last_name || ""}`.trim() || "Driver",
+      };
+    },
+    enabled: !!selectedVehicle && !!selectedDate,
+  });
+
+  const { data: vehicleAssignedDriver } = useQuery({
     queryKey: ["driver", selectedVehicleData?.assigned_driver_id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -224,11 +270,13 @@ const RouteHistory = () => {
       if (error) throw error;
       return {
         ...data,
-        name: `${data.first_name} ${data.last_name}`.trim()
+        name: `${data.first_name || ""} ${data.last_name || ""}`.trim() || "Driver",
       };
     },
     enabled: !!selectedVehicleData?.assigned_driver_id,
   });
+
+  const assignedDriver = tripDriver || vehicleAssignedDriver || null;
 
   // Fetch telemetry for selected vehicle and date - paginated to bypass 1000 row limit
   const { data: telemetryData, isLoading: telemetryLoading, isError: telemetryError } = useQuery({
@@ -267,6 +315,32 @@ const RouteHistory = () => {
 
   const routeHistory = telemetryData || [];
   const hasData = routeHistory.length > 0;
+
+  // Suggest dates with telemetry for the selected vehicle (last 14 days)
+  const { data: availableDates } = useQuery({
+    queryKey: ["route-history-available-dates", selectedVehicle],
+    queryFn: async () => {
+      if (!selectedVehicle) return [];
+      const fourteenDaysAgo = new Date();
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      const { data } = await supabase
+        .from("vehicle_telemetry")
+        .select("last_communication_at")
+        .eq("vehicle_id", selectedVehicle)
+        .gte("last_communication_at", fourteenDaysAgo.toISOString())
+        .order("last_communication_at", { ascending: false })
+        .limit(500);
+
+      const set = new Set<string>();
+      (data || []).forEach((r: any) => {
+        if (r.last_communication_at) {
+          set.add(format(new Date(r.last_communication_at), "yyyy-MM-dd"));
+        }
+      });
+      return Array.from(set).slice(0, 7);
+    },
+    enabled: !!selectedVehicle && !hasData && !telemetryLoading,
+  });
 
   // Auto-start playback when navigating from Trip Replay action
   useEffect(() => {
@@ -1162,14 +1236,35 @@ const RouteHistory = () => {
                       : "No route data found for the selected date"}
                   </p>
                   {selectedVehicle && (
-                    <div className="text-xs space-y-1 max-w-xs mx-auto">
-                      <p className="flex items-center justify-center gap-1">
-                        <Info className="h-3 w-3" aria-hidden="true" />
-                        Try selecting a different date
-                      </p>
+                    <div className="text-xs space-y-3 max-w-md mx-auto">
                       <p className="text-muted-foreground/70">
-                        The GPS device may not have transmitted data on {format(parseISO(selectedDate), "PPP")}
+                        The GPS device may not have transmitted data on {format(parseISO(selectedDate), "PPP")}.
                       </p>
+                      {(availableDates?.length || 0) > 0 ? (
+                        <div className="space-y-2">
+                          <p className="flex items-center justify-center gap-1 text-foreground font-medium">
+                            <Info className="h-3 w-3" aria-hidden="true" />
+                            Recent dates with route data
+                          </p>
+                          <div className="flex flex-wrap justify-center gap-2">
+                            {availableDates!.map((d) => (
+                              <button
+                                key={d}
+                                type="button"
+                                onClick={() => setSelectedDate(d)}
+                                className="rounded-md border border-border bg-card hover:bg-accent hover:border-primary/50 transition-colors px-2.5 py-1 text-xs"
+                              >
+                                {format(parseISO(d), "MMM d")}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="flex items-center justify-center gap-1">
+                          <Info className="h-3 w-3" aria-hidden="true" />
+                          Try selecting a different date
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
