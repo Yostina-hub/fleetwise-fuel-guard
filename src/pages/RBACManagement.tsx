@@ -85,22 +85,31 @@ interface LocationOption {
   parent?: string;
 }
 
+// Mirrors the `app_role` Postgres enum. Keep in sync with src/lib/workflow-engine/appRoles.ts.
 const ALL_ROLES = [
-  { value: "super_admin", label: "Super Admin", description: "Full system access across all organizations", color: "text-destructive", tier: 1 },
-  { value: "org_admin", label: "Org Admin", description: "Full access within their organization", color: "text-primary", tier: 2 },
-  { value: "fleet_owner", label: "Fleet Owner", description: "Owner-level visibility into fleet operations", color: "text-violet-400", tier: 3 },
-  { value: "operations_manager", label: "Ops Manager", description: "Manages day-to-day fleet operations", color: "text-indigo-400", tier: 3 },
-  { value: "fleet_manager", label: "Fleet Manager", description: "Manages vehicles, routes, and schedules", color: "text-blue-400", tier: 4 },
-  { value: "dispatcher", label: "Dispatcher", description: "Assigns jobs and monitors live fleet", color: "text-sky-400", tier: 4 },
-  { value: "fuel_controller", label: "Fuel Controller", description: "Monitors and manages fuel operations", color: "text-yellow-400", tier: 4 },
-  { value: "maintenance_lead", label: "Maintenance Lead", description: "Oversees maintenance and work orders", color: "text-orange-400", tier: 4 },
-  { value: "operator", label: "Operator", description: "Day-to-day fleet operations", color: "text-cyan-400", tier: 5 },
-  { value: "driver", label: "Driver", description: "Trips, logbooks, and incidents", color: "text-emerald-400", tier: 5 },
-  { value: "technician", label: "Technician", description: "Maintenance and inspections", color: "text-amber-400", tier: 5 },
-  { value: "mechanic", label: "Mechanic", description: "Hands-on vehicle repairs", color: "text-orange-400", tier: 5 },
-  { value: "user", label: "User", description: "Basic end-user with view-only access", color: "text-slate-400", tier: 6 },
-  { value: "auditor", label: "Auditor", description: "Read-only compliance and audit access", color: "text-purple-400", tier: 6 },
-  { value: "viewer", label: "Viewer", description: "Read-only access to dashboards", color: "text-muted-foreground", tier: 6 },
+  { value: "super_admin",            label: "Super Admin",            description: "Full system access across all organizations", color: "text-destructive", tier: 1 },
+  { value: "org_admin",              label: "Org Admin",              description: "Full access within their organization", color: "text-primary", tier: 2 },
+  { value: "fleet_owner",            label: "Fleet Owner",            description: "Owner-level visibility into fleet operations", color: "text-violet-400", tier: 3 },
+  { value: "operations_manager",     label: "Ops Manager",            description: "Manages day-to-day fleet operations", color: "text-indigo-400", tier: 3 },
+  { value: "fleet_manager",          label: "Fleet Manager",          description: "Manages vehicles, routes, and schedules", color: "text-blue-400", tier: 4 },
+  { value: "dispatcher",             label: "Dispatcher",             description: "Assigns jobs and monitors live fleet", color: "text-sky-400", tier: 4 },
+  { value: "fuel_controller",        label: "Fuel Controller",        description: "Monitors and manages fuel operations", color: "text-yellow-400", tier: 4 },
+  { value: "maintenance_lead",       label: "Maintenance Lead",       description: "Oversees maintenance and work orders", color: "text-orange-400", tier: 4 },
+  { value: "maintenance_manager",    label: "Maint. Manager",         description: "Workshop / fleet maintenance manager", color: "text-orange-300", tier: 4 },
+  { value: "maintenance_supervisor", label: "Maint. Supervisor",      description: "Supervises maintenance jobs", color: "text-orange-300", tier: 4 },
+  { value: "finance_manager",        label: "Finance Manager",        description: "Approves & disburses payments", color: "text-green-400", tier: 4 },
+  { value: "sourcing_manager",       label: "Sourcing Manager",       description: "Procurement & supplier management", color: "text-teal-400", tier: 4 },
+  { value: "transport_authority",    label: "Transport Authority",    description: "Vehicle registration / Bolo authority", color: "text-pink-400", tier: 4 },
+  { value: "insurance_admin",        label: "Insurance Admin",        description: "Insurance policies & renewals", color: "text-rose-400", tier: 4 },
+  { value: "inspection_center",      label: "Inspection Center",      description: "Annual / roadworthy inspection center", color: "text-fuchsia-400", tier: 4 },
+  { value: "operator",               label: "Operator",               description: "Day-to-day fleet operations", color: "text-cyan-400", tier: 5 },
+  { value: "driver",                 label: "Driver",                 description: "Trips, logbooks, and incidents", color: "text-emerald-400", tier: 5 },
+  { value: "technician",             label: "Technician",             description: "Maintenance and inspections", color: "text-amber-400", tier: 5 },
+  { value: "mechanic",               label: "Mechanic",               description: "Hands-on vehicle repairs", color: "text-orange-400", tier: 5 },
+  { value: "supplier",               label: "Supplier",               description: "External supplier portal access", color: "text-lime-400", tier: 5 },
+  { value: "user",                   label: "User",                   description: "Basic end-user with view-only access", color: "text-slate-400", tier: 6 },
+  { value: "auditor",                label: "Auditor",                description: "Read-only compliance and audit access", color: "text-purple-400", tier: 6 },
+  { value: "viewer",                 label: "Viewer",                 description: "Read-only access to dashboards", color: "text-muted-foreground", tier: 6 },
 ];
 
 const RESOURCE_ICONS: Record<string, React.ReactNode> = {
