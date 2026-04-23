@@ -14,6 +14,7 @@ import { Shield, Trash2, Plus, Save, Loader2, Mail, Phone, Calendar, Building, I
 import { format } from "date-fns";
 import type { UserProfile } from "./UserTable";
 import { Link } from "react-router-dom";
+import UserActivitySummary from "./UserActivitySummary";
 
 const ROLES = [
   { value: "super_admin", label: "Super Admin" },
@@ -120,7 +121,7 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
   const [savingHR, setSavingHR] = useState(false);
   const [newRole, setNewRole] = useState("");
   const [roleLoading, setRoleLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "hr" | "roles">(initialTab);
+  const [activeTab, setActiveTab] = useState<"profile" | "hr" | "roles" | "activity">(initialTab);
 
   // Load profile extras from DB whenever the dialog opens for a user
   useEffect(() => {
@@ -301,11 +302,12 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "profile" | "hr" | "roles")} className="mt-2">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "profile" | "hr" | "roles" | "activity")} className="mt-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="profile">Identity</TabsTrigger>
             <TabsTrigger value="hr">Employment</TabsTrigger>
             <TabsTrigger value="roles">Roles</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4 mt-4">
@@ -506,6 +508,10 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="activity" className="space-y-4 mt-4">
+            <UserActivitySummary userId={user.id} />
           </TabsContent>
         </Tabs>
       </DialogContent>
