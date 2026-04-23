@@ -797,22 +797,30 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
 
           {/* Ungrouped requests — professional table */}
           {ungrouped.length > 0 && (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-muted/50">
-                  <TableRow>
-                    <TableHead className="text-[11px] uppercase tracking-wide">Request #</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wide">Requester</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wide">Route</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wide">Needed From</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wide text-center">Pax</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wide">Pool</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wide">Type</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wide text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>{ungrouped.map(renderTableRow)}</TableBody>
-              </Table>
+            <div>
+              {groups.length > 0 && showConsolidated && (
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5" />
+                  Individual Requests ({ungrouped.length})
+                </div>
+              )}
+              <div className="rounded-lg border border-border/60 overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow className="border-b-2 border-border/60 hover:bg-transparent">
+                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold h-10">Request #</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold h-10">Requester</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold h-10">Route</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold h-10">Needed From</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold h-10 text-center">Pax</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold h-10">Pool</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold h-10">Type</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold h-10 text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>{ungrouped.map(renderTableRow)}</TableBody>
+                </Table>
+              </div>
             </div>
           )}
         </CardContent>
