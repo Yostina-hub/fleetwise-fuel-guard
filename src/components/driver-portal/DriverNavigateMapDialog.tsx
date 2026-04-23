@@ -373,15 +373,40 @@ export const DriverNavigateMapDialog = ({
       if (destination) points.push(destination);
       if (points.length === 0) return;
 
-      // Add markers
-      if (origin) {
+      // Add Start (A) / Destination (B) markers — same visual language as the
+      // Vehicle Request route preview: green "A" for departure, red "B" for
+      // destination, white border, soft shadow.
+      const buildEndpointMarker = (kind: "start" | "end") => {
         const el = document.createElement("div");
-        el.style.cssText =
-          "width:18px;height:18px;border-radius:9999px;background:hsl(var(--success));border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);";
-        const marker = new maplibregl.Marker({ element: el })
+        el.style.display = "flex";
+        el.style.alignItems = "center";
+        el.style.justifyContent = "center";
+        el.style.width = "26px";
+        el.style.height = "26px";
+        el.style.borderRadius = "50%";
+        el.style.fontSize = "11px";
+        el.style.fontWeight = "700";
+        el.style.color = "#fff";
+        el.style.border = "2px solid #fff";
+        el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.35)";
+        el.style.cursor = "pointer";
+        if (kind === "start") {
+          el.style.background = "hsl(142 71% 45%)";
+          el.style.zIndex = "2";
+          el.textContent = "A";
+        } else {
+          el.style.background = "hsl(0 84% 60%)";
+          el.style.zIndex = "3";
+          el.textContent = "B";
+        }
+        return el;
+      };
+
+      if (origin) {
+        const marker = new maplibregl.Marker({ element: buildEndpointMarker("start") })
           .setLngLat([origin.lng, origin.lat])
           .setPopup(
-            new maplibregl.Popup({ offset: 14 }).setHTML(
+            new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(
               `<strong>Start</strong><br/>${origin.label}`,
             ),
           )
@@ -389,13 +414,10 @@ export const DriverNavigateMapDialog = ({
         markersRef.current.push(marker);
       }
       if (destination) {
-        const el = document.createElement("div");
-        el.style.cssText =
-          "width:18px;height:18px;border-radius:9999px;background:hsl(var(--destructive));border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);";
-        const marker = new maplibregl.Marker({ element: el })
+        const marker = new maplibregl.Marker({ element: buildEndpointMarker("end") })
           .setLngLat([destination.lng, destination.lat])
           .setPopup(
-            new maplibregl.Popup({ offset: 14 }).setHTML(
+            new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(
               `<strong>Destination</strong><br/>${destination.label}`,
             ),
           )
