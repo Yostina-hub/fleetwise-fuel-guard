@@ -1,37 +1,23 @@
-/**
- * DriverNavigateMapDialog
- * -----------------------
- * In-app navigation map for the driver. Shows the trip's departure point
- * (green pin), destination (red pin), and — when GPS data is available —
- * the live position of the assigned vehicle (blue pulsing dot, polled
- * every 10s). Draws a driving route between origin and destination via
- * Lemat directions and (optionally) summarises the trip with an AI
- * briefing produced by the `trip-route-ai-insight` edge function.
- *
- * Map style follows the organization-wide default
- * (`organization_settings.default_map_style`) so super-admins can pick
- * "streets" / "satellite" / "dark" once and have it applied everywhere.
- */
 import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { RouteMapPreview } from "@/components/vehicle-requests/RouteMapPreview";
+import { supabase } from "@/integrations/supabase/client";
 import {
+  ExternalLink,
+  Loader2,
   MapPin,
   Navigation,
-  Loader2,
-  ExternalLink,
-  Sparkles,
   Radio,
+  Sparkles,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { RouteMapPreview } from "@/components/vehicle-requests/RouteMapPreview";
 
 interface Props {
   open: boolean;
@@ -51,12 +37,13 @@ interface ResolvedPoint {
   label: string;
 }
 
-// Forward-geocode a free-text place via the existing lemat-search-geocode edge
-// function. Returns the first hit or null.
 const forwardGeocode = async (q: string): Promise<ResolvedPoint | null> => {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) return null;
+
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-search-geocode?q=${encodeURIComponent(q)}&countrycodes=et&limit=1`;
     const res = await fetch(url, {
       headers: {
@@ -64,14 +51,22 @@ const forwardGeocode = async (q: string): Promise<ResolvedPoint | null> => {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
     });
+
     if (!res.ok) return null;
+
     const json = await res.json();
     const hit = Array.isArray(json) ? json[0] : json?.results?.[0] || json?.[0];
     if (!hit) return null;
+
     const lat = Number(hit.lat ?? hit.latitude);
     const lng = Number(hit.lon ?? hit.lng ?? hit.longitude);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-    return { lat, lng, label: hit.display_name || q };
+
+    return {
+      lat,
+      lng,
+      label: hit.display_name || q,
+    };
   } catch {
     return null;
   }
@@ -98,15 +93,13 @@ export const DriverNavigateMapDialog = ({
   const [insightLoading, setInsightLoading] = useState(false);
   const [insightError, setInsightError] = useState<string | null>(null);
 
-  // Resolve coordinates when the dialog opens
   useEffect(() => {
     if (!open) return;
+
     let cancelled = false;
+
     (async () => {
       setResolving(true);
-      setMapLoaded(false);
-      setUseFallbackMap(false);
-      setMapError(null);
       setOrigin(null);
       setDestination(null);
       setDistanceKm(null);
@@ -114,7 +107,6 @@ export const DriverNavigateMapDialog = ({
       setInsight(null);
       setInsightError(null);
 
-      // Origin
       let resolvedOrigin: ResolvedPoint | null = null;
       if (
         departureLat != null &&
@@ -131,395 +123,118 @@ export const DriverNavigateMapDialog = ({
         resolvedOrigin = await forwardGeocode(departurePlace.trim());
       }
 
-      // Destination
-      let resolvedDest: ResolvedPoint | null = null;
+      let resolvedDestination: ResolvedPoint | null = null;
       if (destinationPlace?.trim()) {
-        resolvedDest = await forwardGeocode(destinationPlace.trim());
+        resolvedDestination = await forwardGeocode(destinationPlace.trim());
       }
 
-      if (!cancelled) {
-        setOrigin(resolvedOrigin);
-        setDestination(resolvedDest);
-        setResolving(false);
-      }
+      if (cancelled) return;
+      setOrigin(resolvedOrigin);
+      setDestination(resolvedDestination);
+      setResolving(false);
     })();
+
     return () => {
       cancelled = true;
     };
   }, [open, departurePlace, departureLat, departureLng, destinationPlace]);
 
   useEffect(() => {
-    if (!open || mapLoaded) return;
-
-    const timer = setTimeout(() => {
-      if (!map.current || !map.current.isStyleLoaded()) {
-        setUseFallbackMap(true);
-      }
-    }, 4500);
-
-    return () => clearTimeout(timer);
-  }, [open, mapLoaded, origin, destination, departurePlace, destinationPlace]);
-
-  // Initialize / tear down the map using the hardened preview-safe style loader
-  // and a resize observer so the viewport stays correct inside the dialog.
-  useEffect(() => {
-    if (!open || !containerRef.current || map.current) return;
-    // Do not block map creation on the Lemat key hook.
-    // In preview the key fetch can lag or fail, and waiting here leaves the
-    // dialog as a blank panel because MapLibre never mounts at all.
-
-    const container = containerRef.current;
-    let disposed = false;
-    let resizeObserver: ResizeObserver | null = null;
-    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
-    let bootTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const forceResize = () => {
-      try {
-        map.current?.resize();
-      } catch {
-        // noop
-      }
-    };
-
-    const waitForSizedContainer = async () => {
-      for (let i = 0; i < 12; i += 1) {
-        if (disposed) return false;
-        if (container.clientWidth > 0 && container.clientHeight > 0) {
-          return true;
-        }
-        await new Promise((resolve) => window.setTimeout(resolve, 60));
-      }
-      return container.clientWidth > 0 && container.clientHeight > 0;
-    };
-
-    const initMap = async () => {
-      try {
-        setMapError(null);
-        const hasSize = await waitForSizedContainer();
-        if (!hasSize) {
-          throw new Error("Map container did not become ready in time");
-        }
-
-        const initialStyle = getPreviewSafeMapStyle(defaultMapStyle);
-        if (disposed || map.current) return;
-
-        container.style.width = "100%";
-        container.style.height = "100%";
-
-        const nextMap = new maplibregl.Map({
-          container,
-          style: initialStyle,
-          center: [38.7578, 9.03],
-          zoom: 11,
-          attributionControl: false,
-          transformRequest: createLematTransformRequest(lematApiKey),
-        });
-        map.current = nextMap;
-
-        nextMap.addControl(new maplibregl.NavigationControl(), "top-right");
-        nextMap.addControl(new maplibregl.FullscreenControl(), "top-right");
-        nextMap.on("load", () => {
-          setMapLoaded(true);
-          setMapError(null);
-          setUseFallbackMap(false);
-          forceResize();
-        });
-        nextMap.on("style.load", () => {
-          setMapLoaded(true);
-          setMapError(null);
-          setUseFallbackMap(false);
-          forceResize();
-        });
-        nextMap.on("error", (event) => {
-          const failedUrl = (event?.error as { url?: string } | undefined)?.url || "";
-          const isStyleFailure =
-            failedUrl.includes("basemaps.cartocdn.com") ||
-            failedUrl.includes("tile.openstreetmap.org") ||
-            failedUrl.includes("arcgisonline.com");
-
-          if (isStyleFailure) {
-            setMapLoaded(false);
-            setMapError("Map tiles failed to load.");
-            setUseFallbackMap(true);
-          }
-          console.error("[DriverNavigateMap] maplibre error", event?.error || event);
-        });
-
-        resizeTimer = setTimeout(forceResize, 250);
-
-        if (typeof ResizeObserver !== "undefined") {
-          resizeObserver = new ResizeObserver(() => forceResize());
-          resizeObserver.observe(container);
-        }
-      } catch (err) {
-        setMapLoaded(false);
-        setMapError("Could not initialize the map.");
-        setUseFallbackMap(true);
-        console.error("[DriverNavigateMap] map initialization failed", err);
-      }
-    };
-
-    bootTimer = setTimeout(() => {
-      void initMap();
-    }, 120);
-
-    return () => {
-      disposed = true;
-      if (bootTimer) window.clearTimeout(bootTimer);
-      if (resizeTimer) window.clearTimeout(resizeTimer);
-      resizeObserver?.disconnect();
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
-      liveMarkerRef.current?.remove();
-      liveMarkerRef.current = null;
-      map.current?.remove();
-      map.current = null;
-    };
-  }, [open, defaultMapStyle, lematApiKey]);
-
-  // Poll the latest GPS position for the assigned vehicle every 10s
-  useEffect(() => {
     if (!open || !vehicleId) {
       setLivePos(null);
       return;
     }
+
     let cancelled = false;
+
     const fetchPos = async () => {
       const { data } = await (supabase as any)
         .from("vehicle_telemetry")
         .select("latitude, longitude, updated_at")
         .eq("vehicle_id", vehicleId)
         .maybeSingle();
+
       if (cancelled) return;
+
       const lat = Number(data?.latitude);
       const lng = Number(data?.longitude);
       if (Number.isFinite(lat) && Number.isFinite(lng)) {
         setLivePos({ lat, lng });
       }
     };
-    fetchPos();
-    const t = setInterval(fetchPos, 10_000);
+
+    void fetchPos();
+    const intervalId = window.setInterval(fetchPos, 10_000);
+
     return () => {
       cancelled = true;
-      clearInterval(t);
+      window.clearInterval(intervalId);
     };
   }, [open, vehicleId]);
 
-  // Render markers + route whenever resolved points change
   useEffect(() => {
-    if (!open || !map.current) return;
-
-    const renderEverything = async () => {
-      if (!map.current) return;
-
-      // Clear previous markers + route
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
-      if (map.current.getLayer("trip-route")) map.current.removeLayer("trip-route");
-      if (map.current.getSource("trip-route")) map.current.removeSource("trip-route");
-
-      const points: ResolvedPoint[] = [];
-      if (origin) points.push(origin);
-      if (destination) points.push(destination);
-      if (points.length === 0) return;
-
-      // Add Start (A) / Destination (B) markers — same visual language as the
-      // Vehicle Request route preview: green "A" for departure, red "B" for
-      // destination, white border, soft shadow.
-      const buildEndpointMarker = (kind: "start" | "end") => {
-        const el = document.createElement("div");
-        el.style.display = "flex";
-        el.style.alignItems = "center";
-        el.style.justifyContent = "center";
-        el.style.width = "26px";
-        el.style.height = "26px";
-        el.style.borderRadius = "50%";
-        el.style.fontSize = "11px";
-        el.style.fontWeight = "700";
-        el.style.color = "#fff";
-        el.style.border = "2px solid #fff";
-        el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.35)";
-        el.style.cursor = "pointer";
-        if (kind === "start") {
-          el.style.background = "hsl(142 71% 45%)";
-          el.style.zIndex = "2";
-          el.textContent = "A";
-        } else {
-          el.style.background = "hsl(0 84% 60%)";
-          el.style.zIndex = "3";
-          el.textContent = "B";
-        }
-        return el;
-      };
-
-      if (origin) {
-        const marker = new maplibregl.Marker({ element: buildEndpointMarker("start") })
-          .setLngLat([origin.lng, origin.lat])
-          .setPopup(
-            new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(
-              `<strong>Start</strong><br/>${origin.label}`,
-            ),
-          )
-          .addTo(map.current);
-        markersRef.current.push(marker);
-      }
-      if (destination) {
-        const marker = new maplibregl.Marker({ element: buildEndpointMarker("end") })
-          .setLngLat([destination.lng, destination.lat])
-          .setPopup(
-            new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(
-              `<strong>Destination</strong><br/>${destination.label}`,
-            ),
-          )
-          .addTo(map.current);
-        markersRef.current.push(marker);
-      }
-
-      // Fit map to all points
-      if (points.length === 1) {
-        map.current.flyTo({ center: [points[0].lng, points[0].lat], zoom: 14 });
-      } else {
-        const bounds = new maplibregl.LngLatBounds();
-        points.forEach((p) => bounds.extend([p.lng, p.lat]));
-        map.current.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 600 });
-      }
-
-      // Draw the real driving route between origin and destination using the
-      // server-side `route-directions` edge function (same path used by the
-      // Vehicle Request map). Going through the edge function avoids the
-      // browser CORS / mixed-content issues that block direct calls to the
-      // Lemat directions endpoint from the Lovable preview origin.
-      if (origin && destination) {
-        try {
-          const { data, error } = await supabase.functions.invoke(
-            "route-directions",
-            {
-              body: {
-                coordinates: [
-                  [origin.lng, origin.lat],
-                  [destination.lng, destination.lat],
-                ],
-              },
-            },
-          );
-          if (error || !data?.ok || !Array.isArray(data?.geometry) || data.geometry.length < 2) {
-            return;
-          }
-
-          if (typeof data.distance_m === "number") {
-            setDistanceKm(Math.round((data.distance_m / 1000) * 10) / 10);
-          }
-          if (typeof data.duration_s === "number") {
-            setDurationMin(Math.round(data.duration_s / 60));
-          }
-
-          if (!map.current) return;
-          const routeCoords = data.geometry as [number, number][];
-          const addRoute = () => {
-            if (!map.current) return;
-            if (map.current.getLayer("trip-route"))
-              map.current.removeLayer("trip-route");
-            if (map.current.getSource("trip-route"))
-              map.current.removeSource("trip-route");
-            map.current.addSource("trip-route", {
-              type: "geojson",
-              data: {
-                type: "Feature",
-                properties: {},
-                geometry: {
-                  type: "LineString",
-                  coordinates: routeCoords,
-                },
-              },
-            });
-            map.current.addLayer({
-              id: "trip-route",
-              type: "line",
-              source: "trip-route",
-              layout: { "line-join": "round", "line-cap": "round" },
-              paint: {
-                "line-color": "hsl(217, 91%, 55%)",
-                "line-width": 5,
-                "line-opacity": 0.85,
-              },
-            });
-
-            // Re-fit bounds to include the full driving path so the entire
-            // route is visible — not just the two endpoint markers.
-            const bounds = new maplibregl.LngLatBounds();
-            routeCoords.forEach((c) => bounds.extend(c));
-            try {
-              map.current.fitBounds(bounds, {
-                padding: 80,
-                maxZoom: 14,
-                duration: 600,
-              });
-            } catch {
-              /* ignore */
-            }
-          };
-
-          if (map.current.isStyleLoaded()) {
-            addRoute();
-          } else {
-            map.current.once("load", addRoute);
-          }
-        } catch {
-          // route is best-effort; markers already rendered
-        }
-      }
-    };
-
-    // Wait for the map style to be ready before drawing
-    if (map.current.isStyleLoaded()) {
-      renderEverything();
-    } else {
-      map.current.once("load", renderEverything);
+    if (!open || !origin || !destination) {
+      setDistanceKm(null);
+      setDurationMin(null);
+      return;
     }
-  }, [open, origin, destination, mapLoaded, lematReady]);
 
-  // Render / move the live vehicle marker whenever a new GPS sample arrives
-  useEffect(() => {
-    if (!open || !map.current || !livePos) return;
-    const apply = () => {
-      if (!map.current) return;
-      if (!liveMarkerRef.current) {
-        const el = document.createElement("div");
-        el.className = "live-vehicle-pulse";
-        el.style.cssText = [
-          "width:16px",
-          "height:16px",
-          "border-radius:9999px",
-          "background:hsl(217, 91%, 55%)",
-          "border:3px solid white",
-          "box-shadow:0 0 0 0 hsla(217, 91%, 55%, 0.7)",
-          "animation: live-vehicle-pulse 1.6s ease-out infinite",
-        ].join(";");
-        liveMarkerRef.current = new maplibregl.Marker({ element: el })
-          .setLngLat([livePos.lng, livePos.lat])
-          .setPopup(
-            new maplibregl.Popup({ offset: 14 }).setHTML(
-              `<strong>Live position</strong><br/>${vehicleLabel || "Vehicle"}`,
-            ),
-          )
-          .addTo(map.current);
-      } else {
-        liveMarkerRef.current.setLngLat([livePos.lng, livePos.lat]);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("route-directions", {
+          body: {
+            coordinates: [
+              [origin.lng, origin.lat],
+              [destination.lng, destination.lat],
+            ],
+          },
+        });
+
+        if (cancelled) return;
+        if (error || !data?.ok) {
+          setDistanceKm(null);
+          setDurationMin(null);
+          return;
+        }
+
+        setDistanceKm(
+          typeof data.distance_m === "number"
+            ? Math.round((data.distance_m / 1000) * 10) / 10
+            : null,
+        );
+        setDurationMin(
+          typeof data.duration_s === "number"
+            ? Math.round(data.duration_s / 60)
+            : null,
+        );
+      } catch {
+        if (!cancelled) {
+          setDistanceKm(null);
+          setDurationMin(null);
+        }
       }
+    })();
+
+    return () => {
+      cancelled = true;
     };
-    if (map.current.isStyleLoaded()) apply();
-    else map.current.once("load", apply);
-  }, [open, livePos, vehicleLabel]);
+  }, [open, origin, destination]);
 
   const requestInsight = async () => {
     if (!origin || !destination) return;
+
     setInsightLoading(true);
     setInsightError(null);
     setInsight(null);
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error("Not signed in");
+
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trip-route-ai-insight`;
       const res = await fetch(url, {
         method: "POST",
@@ -538,10 +253,12 @@ export const DriverNavigateMapDialog = ({
           departureTime,
         }),
       });
+
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(json?.error || `AI request failed (${res.status})`);
       }
+
       setInsight(json.insight || "No insight returned.");
     } catch (e: any) {
       setInsightError(e?.message || "Could not generate AI insight");
@@ -551,40 +268,51 @@ export const DriverNavigateMapDialog = ({
   };
 
   const openInGoogleMaps = () => {
-    // Prefer resolved coordinates; fall back to free-text places so the
-    // button still works while geocoding is in flight or failed.
     let url: string | null = null;
+
     if (origin && destination) {
       url = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
     } else if (origin || destination) {
-      const p = (destination || origin)!;
-      url = `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
+      const point = destination || origin;
+      if (point) {
+        url = `https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lng}`;
+      }
     } else if (departurePlace?.trim() || destinationPlace?.trim()) {
       const dest = destinationPlace?.trim();
       const orig = departurePlace?.trim();
-      if (dest && orig) {
-        url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(orig)}&destination=${encodeURIComponent(dest)}&travelmode=driving`;
-      } else {
-        url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((dest || orig)!)}`;
+      url =
+        dest && orig
+          ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(orig)}&destination=${encodeURIComponent(dest)}&travelmode=driving`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest || orig || "")}`;
+    }
+
+    if (!url) return;
+
+    try {
+      const opened = (window.top || window).open(url, "_blank", "noopener,noreferrer");
+      if (opened) return;
+    } catch {
+      // fall through
+    }
+
+    try {
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    } catch {
+      try {
+        window.top!.location.href = url;
+      } catch {
+        window.location.href = url;
       }
     }
-    if (!url) return;
-    try {
-      const w = (window.top || window).open(url, "_blank", "noopener,noreferrer");
-      if (w) return;
-    } catch { /* fall through */ }
-    try {
-      const a = document.createElement("a");
-      a.href = url;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch {
-      try { window.top!.location.href = url; } catch { window.location.href = url; }
-    }
   };
+
+  const hasResolvedPoint = Boolean(origin || destination);
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
@@ -595,74 +323,86 @@ export const DriverNavigateMapDialog = ({
             Trip Navigation
           </DialogTitle>
           <DialogDescription>
-            Start point, destination, and live vehicle position on the map.
+            Start point and destination for this trip.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Start / Destination header — mirrors the Vehicle Request form's
-            route picker styling: green MapPin for Departure, red MapPin for
-            Final Destination, with a clear uppercase label and the resolved
-            address shown prominently below. */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div className="rounded-lg border border-border bg-card p-3 flex items-start gap-3 shadow-sm">
-            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-green-500/10 ring-1 ring-green-500/30">
-              <MapPin className="w-4 h-4 text-green-500" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Departure Place
-              </p>
-              <p className="text-sm font-semibold text-foreground truncate" title={origin?.label || departurePlace || undefined}>
-                {origin?.label || departurePlace || "—"}
-              </p>
-              {origin && (
-                <p className="text-[11px] text-muted-foreground/80 mt-0.5 font-mono">
-                  {origin.lat.toFixed(4)}, {origin.lng.toFixed(4)}
+        <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+          <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-success/10 ring-1 ring-success/30">
+                <MapPin className="h-4 w-4 text-success" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Departure Place
                 </p>
-              )}
+                <p
+                  className="truncate text-sm font-semibold text-foreground"
+                  title={origin?.label || departurePlace || undefined}
+                >
+                  {origin?.label || departurePlace || "—"}
+                </p>
+                {origin && (
+                  <p className="mt-0.5 font-mono text-[11px] text-muted-foreground/80">
+                    {origin.lat.toFixed(4)}, {origin.lng.toFixed(4)}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-          <div className="rounded-lg border border-border bg-card p-3 flex items-start gap-3 shadow-sm">
-            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-red-500/10 ring-1 ring-red-500/30">
-              <MapPin className="w-4 h-4 text-red-500" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Final Destination
-              </p>
-              <p className="text-sm font-semibold text-foreground truncate" title={destination?.label || destinationPlace || undefined}>
-                {destination?.label || destinationPlace || "—"}
-              </p>
-              {destination && (
-                <p className="text-[11px] text-muted-foreground/80 mt-0.5 font-mono">
-                  {destination.lat.toFixed(4)}, {destination.lng.toFixed(4)}
+
+          <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-destructive/10 ring-1 ring-destructive/30">
+                <MapPin className="h-4 w-4 text-destructive" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Final Destination
                 </p>
-              )}
+                <p
+                  className="truncate text-sm font-semibold text-foreground"
+                  title={destination?.label || destinationPlace || undefined}
+                >
+                  {destination?.label || destinationPlace || "—"}
+                </p>
+                {destination && (
+                  <p className="mt-0.5 font-mono text-[11px] text-muted-foreground/80">
+                    {destination.lat.toFixed(4)}, {destination.lng.toFixed(4)}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         {(distanceKm != null || durationMin != null || livePos) && (
-          <div className="text-xs text-muted-foreground flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
             {distanceKm != null && (
-              <span>Distance: <strong className="text-foreground">{distanceKm} km</strong></span>
+              <span>
+                Distance: <strong className="text-foreground">{distanceKm} km</strong>
+              </span>
             )}
             {durationMin != null && (
-              <span>ETA: <strong className="text-foreground">~{durationMin} min</strong></span>
+              <span>
+                ETA: <strong className="text-foreground">~{durationMin} min</strong>
+              </span>
             )}
             {livePos && (
               <span className="inline-flex items-center gap-1 text-primary">
-                <Radio className="w-3 h-3 animate-pulse" /> Live GPS connected
+                <Radio className="h-3 w-3 animate-pulse" />
+                Live GPS connected
               </span>
             )}
           </div>
         )}
 
-        {/* AI insight panel */}
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <p className="text-sm font-medium flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-primary" /> AI Route Insight
+        <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="flex items-center gap-1.5 text-sm font-medium">
+              <Sparkles className="h-4 w-4 text-primary" />
+              AI Route Insight
             </p>
             <Button
               size="sm"
@@ -672,76 +412,61 @@ export const DriverNavigateMapDialog = ({
               className="h-7 text-xs"
             >
               {insightLoading ? (
-                <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Thinking…</>
-              ) : insight ? "Regenerate" : "Generate briefing"}
+                <>
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  Thinking…
+                </>
+              ) : insight ? (
+                "Regenerate"
+              ) : (
+                "Generate briefing"
+              )}
             </Button>
           </div>
-          {insightError && (
-            <p className="text-xs text-destructive">{insightError}</p>
-          )}
+          {insightError && <p className="text-xs text-destructive">{insightError}</p>}
           {insight ? (
-            <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-line">
+            <p className="whitespace-pre-line text-xs leading-relaxed text-foreground/90">
               {insight}
             </p>
           ) : !insightError ? (
             <p className="text-xs text-muted-foreground">
-              Generate a professional travel briefing — typical traffic, road
-              conditions, and refined ETA — based on the routed path
-              {livePos ? " and live vehicle position." : "."}
+              Generate a professional travel briefing based on the routed path.
             </p>
           ) : null}
         </div>
 
-        <div className="relative flex-1 min-h-[280px] sm:min-h-[340px] rounded-lg overflow-hidden border min-w-0 min-h-0">
-          <div
-            ref={containerRef}
-            className={`absolute inset-0 ${useFallbackMap ? "pointer-events-none opacity-0" : ""}`}
-          />
-          {useFallbackMap && fallbackViewport?.url && (
-            <>
-              <iframe
-                title="Trip map"
-                src={fallbackViewport.url}
-                className="absolute inset-0 h-full w-full border-0 bg-muted"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-              <div className="pointer-events-none absolute inset-0 z-[1]">
-                {fallbackMarkers.map((marker) => (
-                  <div
-                    key={marker.key}
-                    className="absolute -translate-x-1/2 -translate-y-1/2"
-                    style={{ left: marker.left, top: marker.top }}
-                    title={marker.label}
-                  >
-                    <div
-                      className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-background text-[11px] font-bold text-primary-foreground shadow-md ${marker.kind === "start" ? "bg-success" : "bg-destructive"}`}
-                    >
-                      {marker.kind === "start" ? "A" : "B"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-          {mapError && !resolving && (
-            <div className="absolute left-3 right-3 top-3 z-10 rounded-md border border-destructive/40 bg-background/90 px-3 py-2 text-xs text-destructive shadow-sm backdrop-blur-sm">
-              {mapError}
-            </div>
-          )}
-          {(resolving || (!origin && !destination)) && (
+        <div className="relative flex-1 min-h-[280px] min-w-0 overflow-hidden rounded-lg border sm:min-h-[340px]">
+          {resolving ? (
             <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
-              {resolving ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Resolving locations…
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="w-4 h-4" />
-                  No location data available for this trip.
-                </div>
-              )}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Resolving locations…
+              </div>
+            </div>
+          ) : hasResolvedPoint ? (
+            <RouteMapPreview
+              departure={
+                origin
+                  ? { lat: origin.lat, lng: origin.lng, label: origin.label }
+                  : undefined
+              }
+              destination={
+                destination
+                  ? {
+                      lat: destination.lat,
+                      lng: destination.lng,
+                      label: destination.label,
+                    }
+                  : undefined
+              }
+              heightPx={Math.max(340, window.innerHeight > 900 ? 420 : 360)}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4" />
+                No location data available for this trip.
+              </div>
             </div>
           )}
         </div>
@@ -753,19 +478,11 @@ export const DriverNavigateMapDialog = ({
             disabled={!origin && !destination && !departurePlace?.trim() && !destinationPlace?.trim()}
             className="gap-2"
           >
-            <ExternalLink className="w-4 h-4" /> Open in Google Maps
+            <ExternalLink className="h-4 w-4" />
+            Open in Google Maps
           </Button>
           <Button onClick={onClose}>Close</Button>
         </DialogFooter>
-
-        {/* Live vehicle pulse animation keyframes (scoped via tag) */}
-        <style>{`
-          @keyframes live-vehicle-pulse {
-            0%   { box-shadow: 0 0 0 0 hsla(217, 91%, 55%, 0.55); }
-            70%  { box-shadow: 0 0 0 14px hsla(217, 91%, 55%, 0); }
-            100% { box-shadow: 0 0 0 0 hsla(217, 91%, 55%, 0); }
-          }
-        `}</style>
       </DialogContent>
     </Dialog>
   );
