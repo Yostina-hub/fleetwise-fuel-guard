@@ -1153,8 +1153,12 @@ const RouteHistory = () => {
                 <div className="text-center py-12 text-muted-foreground" role="status">
                   <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" aria-hidden="true" />
                   <p className="text-sm font-medium mb-2">
-                    {!selectedVehicle 
-                      ? "Select a vehicle to view route history" 
+                    {!selectedVehicle
+                      ? isDriverOnly
+                        ? (driverRecentTrips?.length || 0) > 0
+                          ? "Pick one of your recent journeys above to replay"
+                          : "You haven't completed any trips yet"
+                        : "Select a vehicle to view route history"
                       : "No route data found for the selected date"}
                   </p>
                   {selectedVehicle && (
