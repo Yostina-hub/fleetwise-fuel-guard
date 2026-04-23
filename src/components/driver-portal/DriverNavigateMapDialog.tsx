@@ -648,23 +648,45 @@ export const DriverNavigateMapDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-          <div className="rounded-lg border border-success/30 bg-success/5 p-2 flex items-start gap-2">
-            <span className="mt-1 inline-block w-2.5 h-2.5 rounded-full bg-success shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase text-muted-foreground">Start</p>
-              <p className="font-medium truncate">
+        {/* Start / Destination header — mirrors the Vehicle Request form's
+            route picker styling: green MapPin for Departure, red MapPin for
+            Final Destination, with a clear uppercase label and the resolved
+            address shown prominently below. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div className="rounded-lg border border-border bg-card p-3 flex items-start gap-3 shadow-sm">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-green-500/10 ring-1 ring-green-500/30">
+              <MapPin className="w-4 h-4 text-green-500" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Departure Place
+              </p>
+              <p className="text-sm font-semibold text-foreground truncate" title={origin?.label || departurePlace || undefined}>
                 {origin?.label || departurePlace || "—"}
               </p>
+              {origin && (
+                <p className="text-[11px] text-muted-foreground/80 mt-0.5 font-mono">
+                  {origin.lat.toFixed(4)}, {origin.lng.toFixed(4)}
+                </p>
+              )}
             </div>
           </div>
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2 flex items-start gap-2">
-            <span className="mt-1 inline-block w-2.5 h-2.5 rounded-full bg-destructive shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase text-muted-foreground">Destination</p>
-              <p className="font-medium truncate">
+          <div className="rounded-lg border border-border bg-card p-3 flex items-start gap-3 shadow-sm">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-red-500/10 ring-1 ring-red-500/30">
+              <MapPin className="w-4 h-4 text-red-500" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Final Destination
+              </p>
+              <p className="text-sm font-semibold text-foreground truncate" title={destination?.label || destinationPlace || undefined}>
                 {destination?.label || destinationPlace || "—"}
               </p>
+              {destination && (
+                <p className="text-[11px] text-muted-foreground/80 mt-0.5 font-mono">
+                  {destination.lat.toFixed(4)}, {destination.lng.toFixed(4)}
+                </p>
+              )}
             </div>
           </div>
         </div>
