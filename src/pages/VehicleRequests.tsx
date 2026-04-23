@@ -70,6 +70,7 @@ import { DeallocateRequestDialog } from "@/components/vehicle-requests/Deallocat
 import { DeleteRequestDialog } from "@/components/vehicle-requests/DeleteRequestDialog";
 import { EditRequestDialog } from "@/components/vehicle-requests/EditRequestDialog";
 import { MultiVehicleAssignDialog } from "@/components/vehicle-requests/MultiVehicleAssignDialog";
+import { QuickAssignDialog } from "@/components/vehicle-requests/QuickAssignDialog";
 import BulkImportVehicleRequestsDialog from "@/components/vehicle-requests/BulkImportVehicleRequestsDialog";
 import * as XLSX from "xlsx";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
