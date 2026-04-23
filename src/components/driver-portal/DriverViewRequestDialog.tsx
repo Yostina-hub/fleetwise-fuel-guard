@@ -642,6 +642,32 @@ export const DriverViewRequestDialog = ({
           )}
         </div>
 
+        {/* Inline route preview — always visible to the driver */}
+        {(departureLat != null || departurePlace || request.destination) && (
+          <div className="rounded-lg border overflow-hidden">
+            <div className="px-3 py-2 border-b bg-muted/40 flex items-center gap-2">
+              <Navigation className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-semibold">Route Preview</span>
+              <span className="text-[11px] text-muted-foreground ml-auto truncate">
+                {departurePlace || "Start"} → {request.destination || "Destination"}
+              </span>
+            </div>
+            <RouteMapPreview
+              departure={{
+                lat: departureLat ?? null,
+                lng: departureLng ?? null,
+                label: departurePlace || poolLocation || "Start",
+              }}
+              destination={{
+                lat: null,
+                lng: null,
+                label: request.destination || "Destination",
+              }}
+              heightPx={220}
+            />
+          </div>
+        )}
+
         <Separator />
 
         {/* Rejection banner */}
