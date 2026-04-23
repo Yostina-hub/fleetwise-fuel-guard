@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { TrendingUp, Clock, Star, Target, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -67,43 +67,71 @@ export const VehicleRequestKPI = ({ requests, activeStatus = "all", onStatusChan
     return `${h}h ${m}m`;
   };
 
+  type TonePreset = {
+    iconBg: string;
+    iconText: string;
+    activeRing: string;
+    activeBg: string;
+    accent: string;
+  };
+
   const cards: Array<{
     key: string;
     label: string;
     value: string | number;
+    sublabel?: string;
     icon: any;
-    iconClass: string;
-    ringClass: string;
+    tone: TonePreset;
     filter: StatusFilter;
     title: string;
+    primary?: boolean;
   }> = [
     {
       key: "total",
       label: t("kpi.totalRequests", "Total Requests"),
       value: totalRequests,
+      sublabel: "in selected range",
       icon: FileText,
-      iconClass: "text-violet-500",
-      ringClass: "ring-violet-500/50",
+      primary: true,
+      tone: {
+        iconBg: "bg-violet-500/10",
+        iconText: "text-violet-500",
+        activeRing: "ring-violet-500/40",
+        activeBg: "bg-violet-500/5",
+        accent: "bg-violet-500",
+      },
       filter: "all",
       title: "Show all requests",
     },
     {
       key: "assignment",
-      label: t("kpi.avgAssignment", "Avg Assignment Time"),
+      label: t("kpi.avgAssignment", "Avg Assignment"),
       value: formatMinutes(avgAssignmentMinutes),
+      sublabel: "request → assigned",
       icon: Clock,
-      iconClass: "text-primary",
-      ringClass: "ring-primary/50",
+      tone: {
+        iconBg: "bg-primary/10",
+        iconText: "text-primary",
+        activeRing: "ring-primary/40",
+        activeBg: "bg-primary/5",
+        accent: "bg-primary",
+      },
       filter: "pending",
       title: "Show pending requests awaiting assignment",
     },
     {
       key: "completion",
-      label: t("kpi.avgCompletion", "Avg Completion Time"),
+      label: t("kpi.avgCompletion", "Avg Completion"),
       value: formatMinutes(avgCompletionMinutes),
+      sublabel: "request → done",
       icon: TrendingUp,
-      iconClass: "text-emerald-500",
-      ringClass: "ring-emerald-500/50",
+      tone: {
+        iconBg: "bg-emerald-500/10",
+        iconText: "text-emerald-500",
+        activeRing: "ring-emerald-500/40",
+        activeBg: "bg-emerald-500/5",
+        accent: "bg-emerald-500",
+      },
       filter: "completed",
       title: "Show completed requests",
     },
@@ -111,19 +139,31 @@ export const VehicleRequestKPI = ({ requests, activeStatus = "all", onStatusChan
       key: "sla",
       label: t("kpi.slaRate", "SLA Met Rate"),
       value: `${slaRate}%`,
+      sublabel: "within target",
       icon: Target,
-      iconClass: "text-blue-500",
-      ringClass: "ring-blue-500/50",
+      tone: {
+        iconBg: "bg-blue-500/10",
+        iconText: "text-blue-500",
+        activeRing: "ring-blue-500/40",
+        activeBg: "bg-blue-500/5",
+        accent: "bg-blue-500",
+      },
       filter: "completed",
       title: "Show completed requests (SLA basis)",
     },
     {
       key: "rating",
-      label: t("kpi.avgRating", "Avg Requester Rating"),
+      label: t("kpi.avgRating", "Requester Rating"),
       value: avgRating,
+      sublabel: `${ratedRequests.length} rated`,
       icon: Star,
-      iconClass: "text-amber-500",
-      ringClass: "ring-amber-500/50",
+      tone: {
+        iconBg: "bg-amber-500/10",
+        iconText: "text-amber-500",
+        activeRing: "ring-amber-500/40",
+        activeBg: "bg-amber-500/5",
+        accent: "bg-amber-500",
+      },
       filter: "completed",
       title: "Show completed (rated) requests",
     },
@@ -137,9 +177,6 @@ export const VehicleRequestKPI = ({ requests, activeStatus = "all", onStatusChan
         const isActive =
           clickable &&
           activeStatus === c.filter &&
-          // "all" only highlights the Total card; the other cards filtering
-          // to "completed" should only highlight when their own status is
-          // active (which is also "completed" — that's expected here).
           !(c.filter === "all" && c.key !== "total");
 
         const Wrapper: any = clickable ? "button" : "div";
@@ -151,25 +188,55 @@ export const VehicleRequestKPI = ({ requests, activeStatus = "all", onStatusChan
             aria-pressed={clickable ? isActive : undefined}
             title={clickable ? c.title : undefined}
             className={cn(
-              "text-left w-full",
+              "text-left w-full group",
               clickable &&
-                "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-lg"
+                "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-xl"
             )}
           >
             <Card
               className={cn(
-                "transition-all duration-200",
-                clickable && "hover:scale-[1.02] hover:shadow-md",
-                isActive && `ring-2 ${c.ringClass} shadow-md`
+                "relative overflow-hidden transition-all duration-200 border-border/60",
+                clickable && "hover:border-border hover:shadow-md hover:-translate-y-0.5",
+                isActive && `ring-2 ${c.tone.activeRing} ${c.tone.activeBg} shadow-md border-transparent`
               )}
             >
-              <CardContent className="p-3 flex items-center gap-3">
-                <Icon className={`w-5 h-5 ${c.iconClass}`} />
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground truncate">{c.label}</p>
-                  <p className="text-lg font-bold leading-tight">{c.value}</p>
+              {/* Top accent bar — visible on active, subtle on hover */}
+              <div
+                className={cn(
+                  "absolute top-0 left-0 right-0 h-0.5 transition-opacity",
+                  c.tone.accent,
+                  isActive ? "opacity-100" : "opacity-0 group-hover:opacity-60"
+                )}
+              />
+              <div className="p-3.5 flex items-start gap-3">
+                <div
+                  className={cn(
+                    "shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-transform",
+                    c.tone.iconBg,
+                    isActive && "scale-105"
+                  )}
+                >
+                  <Icon className={cn("w-4.5 h-4.5", c.tone.iconText)} strokeWidth={2.25} />
                 </div>
-              </CardContent>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate">
+                    {c.label}
+                  </p>
+                  <p
+                    className={cn(
+                      "font-bold leading-tight tabular-nums mt-0.5",
+                      c.primary ? "text-2xl" : "text-xl"
+                    )}
+                  >
+                    {c.value}
+                  </p>
+                  {c.sublabel && (
+                    <p className="text-[10px] text-muted-foreground/80 truncate mt-0.5">
+                      {c.sublabel}
+                    </p>
+                  )}
+                </div>
+              </div>
             </Card>
           </Wrapper>
         );
