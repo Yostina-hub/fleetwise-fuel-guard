@@ -212,8 +212,54 @@ const RouteHistory = () => {
 
   // Fetch driver info for selected vehicle
   const selectedVehicleData = vehicles?.find(v => v.id === selectedVehicle);
-  
-  const { data: assignedDriver } = useQuery({
+
+  // Resolve the most relevant driver for the selected vehicle/date.
+  // Order of precedence:
+  //   1. If a driver-only user is viewing, the driver they checked-in/out for that vehicle on that date.
+  //   2. The driver currently assigned to the vehicle.
+  //   3. The driver from the most recent vehicle_request for this vehicle on the selected date.
+  const { data: tripDriver } = useQuery({
+    queryKey: [
+      "route-history-trip-driver",
+      selectedVehicle,
+      selectedDate,
+      isDriverOnly ? driverId : null,
+    ],
+    queryFn: async () => {
+      if (!selectedVehicle) return null;
+      const { startISO, endISO } = getDayBoundsISO(selectedDate);
+
+      const baseQuery = (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          `assigned_driver_id,
+           assigned_driver:assigned_driver_id(id, first_name, last_name, phone)`
+        )
+        .eq("assigned_vehicle_id", selectedVehicle)
+        .not("assigned_driver_id", "is", null)
+        .or(
+          `and(driver_checked_in_at.gte.${startISO},driver_checked_in_at.lte.${endISO}),` +
+            `and(driver_checked_out_at.gte.${startISO},driver_checked_out_at.lte.${endISO})`
+        )
+        .order("driver_checked_in_at", { ascending: false })
+        .limit(1);
+
+      const { data } = await baseQuery;
+      const row = data?.[0];
+      if (!row?.assigned_driver) return null;
+      const d = row.assigned_driver;
+      return {
+        id: d.id,
+        first_name: d.first_name,
+        last_name: d.last_name,
+        phone: d.phone,
+        name: `${d.first_name || ""} ${d.last_name || ""}`.trim() || "Driver",
+      };
+    },
+    enabled: !!selectedVehicle && !!selectedDate,
+  });
+
+  const { data: vehicleAssignedDriver } = useQuery({
     queryKey: ["driver", selectedVehicleData?.assigned_driver_id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -224,11 +270,13 @@ const RouteHistory = () => {
       if (error) throw error;
       return {
         ...data,
-        name: `${data.first_name} ${data.last_name}`.trim()
+        name: `${data.first_name || ""} ${data.last_name || ""}`.trim() || "Driver",
       };
     },
     enabled: !!selectedVehicleData?.assigned_driver_id,
   });
+
+  const assignedDriver = tripDriver || vehicleAssignedDriver || null;
 
   // Fetch telemetry for selected vehicle and date - paginated to bypass 1000 row limit
   const { data: telemetryData, isLoading: telemetryLoading, isError: telemetryError } = useQuery({
