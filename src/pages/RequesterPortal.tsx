@@ -53,6 +53,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useVehicleRequestScope, applyVRScope } from "@/hooks/useVehicleRequestScope";
 import { format } from "date-fns";
 import { formatInOrgTz } from "@/components/ui/date-time-picker";
 import { cn } from "@/lib/utils";
