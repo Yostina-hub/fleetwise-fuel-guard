@@ -1109,6 +1109,31 @@ const VehicleRequests = () => {
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </Button>
+                              {/* Assign — pool supervisors / admins on approved rows
+                                  awaiting vehicle+driver allocation. Opens the
+                                  Assignments workspace where the row is reviewed. */}
+                              {canManageAll &&
+                                r.status === "approved" &&
+                                r.pool_review_status !== "reviewed" && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => {
+                                      setViewMode("assignments");
+                                      // Scroll the assignments workspace into view on the
+                                      // next paint so the user lands on it directly.
+                                      setTimeout(() => {
+                                        document
+                                          .querySelector("[data-assignments-workspace]")
+                                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                      }, 50);
+                                    }}
+                                    title="Assign vehicle & driver from pool"
+                                  >
+                                    <UserCheck className="w-3.5 h-3.5 text-primary" />
+                                  </Button>
+                                )}
                               {/* Feedback — only the requester who filed the row */}
                               {r.status === "completed" &&
                                 !r.requester_rating &&
