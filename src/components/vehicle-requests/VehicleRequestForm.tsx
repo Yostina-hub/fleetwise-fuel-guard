@@ -32,6 +32,7 @@ import { deriveVisibility } from "./visibility";
 import { RouteMapPreview } from "./RouteMapPreview";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
+import { useCan } from "@/hooks/useCan";
 
 import { useDepartments } from "@/hooks/useDepartments";
 import {
