@@ -50,7 +50,19 @@ export const TripDetailPanel = ({
 
   if (!trip) return null;
 
-  const canCancel = ["draft", "submitted", "approved"].includes(trip.status);
+  const canCancel = ["draft", "submitted", "pending", "approved"].includes(trip.status);
+  const startAt = trip.needed_from ?? trip.pickup_at;
+  const endAt   = trip.needed_until ?? trip.return_at;
+  const pickupName = trip.departure_place ?? trip.pool_name ?? trip.pool_location ?? trip.pickup_geofence?.name;
+  const dropName   = trip.destination ?? trip.drop_geofence?.name;
+  const status = STATUS_STYLES[trip.status] || STATUS_STYLES.draft;
+
+  // Build route-map points from whatever lat/lng the request has stored. The
+  // map is shown as soon as we have at least one resolvable point so the
+  // operations team gets visual context for assignment decisions.
+  const hasMapPoint =
+    (trip.departure_lat != null && trip.departure_lng != null) ||
+    (trip.destination_lat != null && trip.destination_lng != null);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -58,11 +70,16 @@ export const TripDetailPanel = ({
         {/* Hero Header */}
         <div className="relative px-6 pt-6 pb-4 bg-gradient-to-br from-primary/8 via-transparent to-secondary/5">
           <DialogHeader>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span className="font-mono text-lg font-bold text-primary">{trip.request_number}</span>
               <Badge className={`${status.bg} ${status.text} border-0`}>{status.label}</Badge>
+              {trip.driver_checked_in_at && !trip.driver_checked_out_at && (
+                <Badge variant="outline" className="border-primary/40 text-primary text-[10px] gap-1">
+                  <LogIn className="w-3 h-3" /> Driver checked in
+                </Badge>
+              )}
             </div>
-            <DialogTitle className="text-xl mt-2">{trip.purpose}</DialogTitle>
+            <DialogTitle className="text-xl mt-2">{trip.purpose || "(no purpose)"}</DialogTitle>
             <DialogDescription className="sr-only">Trip request details and actions</DialogDescription>
           </DialogHeader>
         </div>
@@ -70,23 +87,27 @@ export const TripDetailPanel = ({
         <div className="px-6 pb-6 space-y-5">
           {/* Key Info Grid */}
           <div className="grid grid-cols-2 gap-4">
-            <InfoBlock icon={<Clock className="w-4 h-4 text-primary" />} label="Pickup">
-              {format(new Date(trip.pickup_at), "MMM dd, yyyy HH:mm")}
-            </InfoBlock>
-            <InfoBlock icon={<Clock className="w-4 h-4 text-secondary" />} label="Return">
-              {format(new Date(trip.return_at), "MMM dd, yyyy HH:mm")}
-            </InfoBlock>
+            {startAt && (
+              <InfoBlock icon={<Clock className="w-4 h-4 text-primary" />} label="Pickup">
+                {format(new Date(startAt), "MMM dd, yyyy HH:mm")}
+              </InfoBlock>
+            )}
+            {endAt && (
+              <InfoBlock icon={<Clock className="w-4 h-4 text-secondary" />} label="Return">
+                {format(new Date(endAt), "MMM dd, yyyy HH:mm")}
+              </InfoBlock>
+            )}
             <InfoBlock icon={<MapPin className="w-4 h-4 text-primary" />} label="Pickup Location">
-              {trip.pickup_geofence?.name || "Not specified"}
+              {pickupName || "Not specified"}
             </InfoBlock>
             <InfoBlock icon={<MapPin className="w-4 h-4 text-destructive" />} label="Drop Location">
-              {trip.drop_geofence?.name || "Not specified"}
+              {dropName || "Not specified"}
             </InfoBlock>
             <InfoBlock icon={<Users className="w-4 h-4 text-secondary" />} label="Passengers">
               {trip.passenger_count || trip.passengers || 1}
             </InfoBlock>
             <InfoBlock icon={<Truck className="w-4 h-4 text-primary" />} label="Vehicle Class">
-              {trip.required_class || "Any"}
+              {trip.required_class || trip.vehicle_class || "Any"}
             </InfoBlock>
             {trip.cargo_weight_kg && (
               <InfoBlock icon={<Package className="w-4 h-4 text-warning" />} label="Cargo">
@@ -100,6 +121,29 @@ export const TripDetailPanel = ({
             )}
           </div>
 
+          {/* Route map preview — gives operations a quick spatial read on the
+              trip. Renders only when at least one endpoint has coordinates. */}
+          {hasMapPoint && (
+            <div>
+              <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                <RouteIcon className="w-3 h-3" /> Route Preview
+              </Label>
+              <RouteMapPreview
+                departure={{
+                  lat: trip.departure_lat ?? null,
+                  lng: trip.departure_lng ?? null,
+                  label: pickupName ?? "Pickup",
+                }}
+                destination={{
+                  lat: trip.destination_lat ?? null,
+                  lng: trip.destination_lng ?? null,
+                  label: dropName ?? "Destination",
+                }}
+                heightPx={220}
+              />
+            </div>
+          )}
+
           {/* Assigned vehicle / driver pill */}
           {(trip.assigned_vehicle || trip.assigned_driver) && (
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
@@ -111,6 +155,11 @@ export const TripDetailPanel = ({
                   <span className="flex items-center gap-1.5">
                     <Truck className="w-3.5 h-3.5 text-primary" />
                     <span className="font-mono font-medium">{trip.assigned_vehicle.plate_number}</span>
+                    {trip.assigned_vehicle.make && (
+                      <span className="text-xs text-muted-foreground">
+                        {trip.assigned_vehicle.make} {trip.assigned_vehicle.model}
+                      </span>
+                    )}
                   </span>
                 )}
                 {trip.assigned_driver && (
