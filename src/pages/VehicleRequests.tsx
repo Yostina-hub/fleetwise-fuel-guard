@@ -149,6 +149,24 @@ const VehicleRequests = () => {
   const [showMultiAssign, setShowMultiAssign] = useState<any>(null);
   const [showImport, setShowImport] = useState(false);
 
+  // View mode — "requests" (default table) or "assignments" (pool supervisor
+  // workspace with consolidation + per-request review/assign panels).
+  // Synced to URL ?view=assignments so the legacy /pool-supervisors redirect
+  // can deep-link straight into this mode.
+  const [viewMode, setViewMode] = useState<"requests" | "assignments">(() => {
+    if (typeof window === "undefined") return "requests";
+    return new URLSearchParams(window.location.search).get("view") === "assignments"
+      ? "assignments"
+      : "requests";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (viewMode === "assignments") url.searchParams.set("view", "assignments");
+    else url.searchParams.delete("view");
+    window.history.replaceState({}, "", url.toString());
+  }, [viewMode]);
+
   // filters / search / pagination
   const [activeStatus, setActiveStatus] = useState<StatusKey>("all");
   const [search, setSearch] = useState("");
