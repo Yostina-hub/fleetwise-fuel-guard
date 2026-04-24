@@ -37,6 +37,7 @@ import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
 import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetList";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
 import { OperatorToolsTabs } from "@/components/vehicle-requests/OperatorToolsTabs";
+import { AssignmentDetailsPanel } from "@/components/vehicle-requests/AssignmentDetailsPanel";
 import type { RequestAssignment } from "@/hooks/useRequestAssignments";
 import {
   getVehicleClassProfile,
