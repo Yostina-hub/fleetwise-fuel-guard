@@ -49,6 +49,7 @@ import {
   Car, MapPin, Calendar, Users, FileText, AlertTriangle,
   Gauge, Wrench, Fuel, Navigation, PlayCircle, StopCircle,
   Clock, Hash, Building2, ClipboardCheck, CheckCircle2, XCircle, UserCheck, RotateCcw,
+  Sparkles, Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -164,6 +165,9 @@ export const DriverViewRequestDialog = ({
   const [completionRemarkError, setCompletionRemarkError] = useState<string | null>(null);
   const [navMapOpen, setNavMapOpen] = useState(false);
   const [confirmCheckOutOpen, setConfirmCheckOutOpen] = useState(false);
+  const [aiEstimate, setAiEstimate] = useState<string | null>(null);
+  const [aiEstimateLoading, setAiEstimateLoading] = useState(false);
+  const [aiEstimateError, setAiEstimateError] = useState<string | null>(null);
 
   const checkedIn = !!request?.driver_checked_in_at;
   const checkedOut = !!request?.driver_checked_out_at;
@@ -202,8 +206,6 @@ export const DriverViewRequestDialog = ({
     queryClient.invalidateQueries({ queryKey: ["driver-trip-history"] });
     queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
   };
-
-
   // Hydrate latest request fields (requester, odometers, notes) so the
   // dialog always reflects the DB regardless of what the caller passed in.
   const { data: hydrated } = useQuery({
@@ -231,6 +233,77 @@ export const DriverViewRequestDialog = ({
   const poolLocation = hydrated?.pool_location ?? request?.pool_location ?? null;
   const assignedById = hydrated?.assigned_by ?? null;
   const assignedAt = hydrated?.assigned_at ?? request?.assigned_at ?? null;
+
+  // ---- AI route estimate (uses trip-route-ai-insight edge function) ----
+  // Reset when the dialog closes or the request changes.
+  useEffect(() => {
+    if (!open) {
+      setAiEstimate(null);
+      setAiEstimateError(null);
+      setAiEstimateLoading(false);
+    }
+  }, [open, request?.id]);
+
+  const requestAiEstimate = async () => {
+    if (!request) return;
+    const destLat = hydrated?.destination_lat ?? request?.destination_lat ?? null;
+    const destLng = hydrated?.destination_lng ?? request?.destination_lng ?? null;
+    const hasOrigin =
+      (departureLat != null && departureLng != null) || !!departurePlace;
+    const hasDest = (destLat != null && destLng != null) || !!request.destination;
+    if (!hasOrigin || !hasDest) {
+      setAiEstimateError("Origin and destination are required");
+      return;
+    }
+
+    setAiEstimateLoading(true);
+    setAiEstimateError(null);
+    setAiEstimate(null);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not signed in");
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trip-route-ai-insight`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          origin: {
+            lat: departureLat != null ? Number(departureLat) : 0,
+            lng: departureLng != null ? Number(departureLng) : 0,
+            label: departurePlace || "Departure",
+          },
+          destination: {
+            lat: destLat != null ? Number(destLat) : 0,
+            lng: destLng != null ? Number(destLng) : 0,
+            label: request.destination || "Destination",
+          },
+          vehicleLabel:
+            request.assigned_vehicle?.plate_number ||
+            request.assigned_vehicle?.make ||
+            null,
+          departureTime: request.needed_from || null,
+        }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json?.error || `AI request failed (${res.status})`);
+      }
+      setAiEstimate(json.insight || "No estimate returned.");
+    } catch (e: any) {
+      setAiEstimateError(e?.message || "Could not generate AI estimate");
+    } finally {
+      setAiEstimateLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -672,6 +745,47 @@ export const DriverViewRequestDialog = ({
               }}
               heightPx={220}
             />
+
+            {/* Inline AI route estimate */}
+            <div className="border-t bg-primary/5 p-3 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  AI Route Estimate
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={requestAiEstimate}
+                  disabled={aiEstimateLoading}
+                  className="h-7 text-xs gap-1"
+                >
+                  {aiEstimateLoading ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Estimating…
+                    </>
+                  ) : aiEstimate ? (
+                    "Regenerate"
+                  ) : (
+                    "Estimate Route"
+                  )}
+                </Button>
+              </div>
+              {aiEstimateError && (
+                <p className="text-xs text-destructive">{aiEstimateError}</p>
+              )}
+              {aiEstimate ? (
+                <p className="whitespace-pre-line text-xs leading-relaxed text-foreground/90">
+                  {aiEstimate}
+                </p>
+              ) : !aiEstimateError ? (
+                <p className="text-[11px] text-muted-foreground">
+                  Get an AI-generated travel briefing covering ETA hints, road
+                  conditions and driving tips for this trip.
+                </p>
+              ) : null}
+            </div>
           </div>
         )}
 
