@@ -931,8 +931,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       return `${h}h${m ? ` ${m}m` : ""}`;
     }
     if (form.start_date && form.end_date) {
-      const days = Math.max(1, Math.ceil((form.end_date.getTime() - form.start_date.getTime()) / 86_400_000) + 1);
-      return `${days} day${days > 1 ? "s" : ""}`;
+      const startMs = form.start_date instanceof Date ? form.start_date.getTime() : new Date(form.start_date as any).getTime();
+      const endMs = form.end_date instanceof Date ? form.end_date.getTime() : new Date(form.end_date as any).getTime();
+      if (Number.isFinite(startMs) && Number.isFinite(endMs)) {
+        const days = Math.max(1, Math.ceil((endMs - startMs) / 86_400_000) + 1);
+        return `${days} day${days > 1 ? "s" : ""}`;
+      }
     }
     return null;
   }, [isDaily, form.date, form.start_time, form.end_time, form.start_date, form.end_date]);
