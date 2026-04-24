@@ -2060,6 +2060,34 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         );
       })()}
 
+      {/* Submit confirmation — fires the createMutation only on explicit
+          user confirmation. Cancel just closes and leaves the form intact. */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit this vehicle request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {form.request_type === "project_operation"
+                ? "Project requests are routed to fleet & finance approvers and cannot be edited after submission."
+                : "Once submitted, this request goes into the dispatch queue. You can still cancel it from My Requests if plans change."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={createMutation.isPending}>
+              No, keep editing
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={createMutation.isPending}
+              onClick={() => {
+                setConfirmOpen(false);
+                createMutation.mutate();
+              }}
+            >
+              {createMutation.isPending ? "Submitting…" : "Yes, submit"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 
