@@ -935,7 +935,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   // Professional, descriptive validation (per-field, on blur + on submit).
   const validation = useVehicleRequestValidation();
-  const { getError, handleBlur, validateAll, errorCount } = validation;
+  const { getError, handleBlur, validateField, validateAll, errorCount } = validation;
 
   // Estimated duration (days for multi-day; hours for single-day) shown in the UI.
   const durationLabel = useMemo(() => {
