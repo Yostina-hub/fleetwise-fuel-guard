@@ -157,8 +157,8 @@ export const VehicleRequestCard = ({
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
             <Clock className="w-3 h-3 shrink-0" />
             <span>
-              {format(new Date(startAt), "MMM dd, HH:mm")}
-              {endAt && ` → ${format(new Date(endAt), "MMM dd HH:mm")}`}
+              {format(new Date(startAt), "MMM dd, h:mm a")}
+              {endAt && ` → ${format(new Date(endAt), "MMM dd h:mm a")}`}
             </span>
           </div>
         )}

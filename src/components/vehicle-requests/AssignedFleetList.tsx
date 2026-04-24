@@ -98,9 +98,9 @@ export const AssignedFleetList = ({ request, onCheckIn }: Props) => {
                   </td>
                   <td className="px-3 py-2">{statusBadge(a)}</td>
                   <td className="px-3 py-2 text-muted-foreground">
-                    {a.driver_checked_in_at ? format(new Date(a.driver_checked_in_at), "MMM dd, HH:mm") : "—"}
+                    {a.driver_checked_in_at ? format(new Date(a.driver_checked_in_at), "MMM dd, h:mm a") : "—"}
                     {a.driver_checked_out_at && (
-                      <div className="text-[10px]">out: {format(new Date(a.driver_checked_out_at), "MMM dd, HH:mm")}</div>
+                      <div className="text-[10px]">out: {format(new Date(a.driver_checked_out_at), "MMM dd, h:mm a")}</div>
                     )}
                   </td>
                   <td className="px-3 py-2 text-right">

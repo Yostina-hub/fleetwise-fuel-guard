@@ -61,7 +61,7 @@ const sendAssignmentSMS = async (request: any, vehicleId: string, driverId?: str
 
     // SMS to driver with trip details
     if (driverInfo?.data?.phone) {
-      const msg = `Trip Assignment ${request.request_number}: Vehicle ${vehicle?.plate_number || ""}. From ${request.departure_place || "—"} to ${request.destination || "—"} at ${format(new Date(request.needed_from), "MMM dd HH:mm")}. Purpose: ${(request.purpose || "").substring(0, 60)}`;
+      const msg = `Trip Assignment ${request.request_number}: Vehicle ${vehicle?.plate_number || ""}. From ${request.departure_place || "—"} to ${request.destination || "—"} at ${format(new Date(request.needed_from), "MMM dd h:mm a")}. Purpose: ${(request.purpose || "").substring(0, 60)}`;
       await supabase.functions.invoke("send-sms", { body: { to: driverInfo.data.phone, message: msg, type: "trip_assignment" } });
     }
 
@@ -500,7 +500,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
             <span className="capitalize">{r.pool_review_decision.replace("_", " ")}</span>
             {r.pool_reviewed_at && (
               <span className="text-muted-foreground font-normal">
-                · {format(new Date(r.pool_reviewed_at), "MMM dd, HH:mm")}
+                · {format(new Date(r.pool_reviewed_at), "MMM dd, h:mm a")}
               </span>
             )}
           </div>
@@ -588,7 +588,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         <TableCell>
           <div className="text-xs font-medium">{r.requester_name}</div>
           <div className="text-[10px] text-muted-foreground">
-            {format(new Date(r.created_at), "MMM dd, HH:mm")}
+            {format(new Date(r.created_at), "MMM dd, h:mm a")}
           </div>
         </TableCell>
         <TableCell>
@@ -600,7 +600,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
           </div>
         </TableCell>
         <TableCell className="text-xs whitespace-nowrap">
-          {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
+          {r.needed_from ? format(new Date(r.needed_from), "MMM dd, h:mm a") : "—"}
         </TableCell>
         <TableCell className="text-center text-xs">
           <Badge variant="outline" className="text-[10px]">

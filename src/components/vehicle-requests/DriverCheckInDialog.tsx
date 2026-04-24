@@ -155,7 +155,7 @@ export const DriverCheckInDialog = ({ request, open, onClose }: Props) => {
             <div className="flex items-center gap-2 text-sm">
               <Badge variant="default" className="bg-green-600">Checked In</Badge>
               <span className="text-muted-foreground text-xs">
-                {format(new Date(request.driver_checked_in_at), "MMM dd, HH:mm")}
+                {format(new Date(request.driver_checked_in_at), "MMM dd, h:mm a")}
               </span>
               {request.driver_checkin_odometer && (
                 <span className="text-xs text-muted-foreground">

@@ -298,7 +298,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
               vehiclePlate: vehicle?.plate_number || "N/A",
               departure: request.departure_place || "TBD",
               destination: request.destination || "TBD",
-              scheduledTime: format(new Date(request.needed_from), "MMM dd, HH:mm"),
+              scheduledTime: format(new Date(request.needed_from), "MMM dd, h:mm a"),
               appUrl: getAppUrl(),
             });
 
@@ -624,13 +624,13 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         <div className="bg-green-500/10 rounded-lg p-2 text-xs space-y-1">
           <div className="flex items-center gap-2">
             <LogIn className="w-3.5 h-3.5 text-green-500" />
-            <span>Checked in: {format(new Date(request.driver_checked_in_at), "MMM dd, HH:mm")}</span>
+            <span>Checked in: {format(new Date(request.driver_checked_in_at), "MMM dd, h:mm a")}</span>
             {request.driver_checkin_odometer && <span className="text-muted-foreground">| {request.driver_checkin_odometer} km</span>}
           </div>
           {request.driver_checked_out_at && (
             <div className="flex items-center gap-2">
               <LogIn className="w-3.5 h-3.5 text-amber-500 rotate-180" />
-              <span>Checked out: {format(new Date(request.driver_checked_out_at), "MMM dd, HH:mm")}</span>
+              <span>Checked out: {format(new Date(request.driver_checked_out_at), "MMM dd, h:mm a")}</span>
               {request.driver_checkout_odometer && <span className="text-muted-foreground">| {request.driver_checkout_odometer} km</span>}
             </div>
           )}
@@ -641,7 +641,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       {request.auto_closed && (
         <div className="flex items-center gap-2 text-xs bg-blue-500/10 rounded-lg p-2">
           <CheckCircle className="w-3.5 h-3.5 text-blue-500" />
-          <span>Auto-closed at destination geofence {request.auto_closed_at ? `on ${format(new Date(request.auto_closed_at), "MMM dd, HH:mm")}` : ""}</span>
+          <span>Auto-closed at destination geofence {request.auto_closed_at ? `on ${format(new Date(request.auto_closed_at), "MMM dd, h:mm a")}` : ""}</span>
         </div>
       )}
 
@@ -649,7 +649,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       {request.sms_notification_sent && (
         <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-lg p-2">
           <Send className="w-3.5 h-3.5 text-muted-foreground" />
-          <span>SMS sent {request.sms_sent_at ? format(new Date(request.sms_sent_at), "MMM dd, HH:mm") : ""}</span>
+          <span>SMS sent {request.sms_sent_at ? format(new Date(request.sms_sent_at), "MMM dd, h:mm a") : ""}</span>
         </div>
       )}
 
@@ -672,7 +672,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
                 <span>{a.approver_name}</span>
                 <Badge variant={a.status === "approved" ? "default" : "destructive"} className="text-[10px]">{a.status}</Badge>
               </div>
-              <span className="text-muted-foreground">{a.decision_at ? format(new Date(a.decision_at), "MMM dd, HH:mm") : "Pending"}</span>
+              <span className="text-muted-foreground">{a.decision_at ? format(new Date(a.decision_at), "MMM dd, h:mm a") : "Pending"}</span>
             </div>
           ))}
           {requestApprovals.some((a: any) => a.comments) && (
