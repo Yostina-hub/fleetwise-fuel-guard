@@ -1658,6 +1658,25 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
+                  No. Of Vehicles <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={allowsMultipleVehicles ? 50 : 1}
+                  value={allowsMultipleVehicles ? form.num_vehicles : "1"}
+                  onChange={e => update("num_vehicles", e.target.value)}
+                  onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
+                  disabled={!allowsMultipleVehicles}
+                  title={allowsMultipleVehicles ? undefined : "Only one vehicle allowed for this request type"}
+                  className={`h-9 text-sm ${!allowsMultipleVehicles ? "bg-muted/40" : ""} ${getError("num_vehicles") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                  aria-invalid={!!getError("num_vehicles")}
+                />
+                <FieldError field="num_vehicles" />
+              </div>
+
+              <div>
+                <Label className="text-primary font-medium text-sm mb-1 block">
                   Vehicle Type <span className="text-destructive">*</span>
                 </Label>
                 <Select
