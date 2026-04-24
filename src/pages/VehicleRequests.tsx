@@ -64,6 +64,7 @@ import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPo
 import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
 import { ConsolidationPanel } from "@/components/vehicle-requests/ConsolidationPanel";
 import { OpsMapView } from "@/components/vehicle-requests/OpsMapView";
+import { TripConsolidationWorkspace } from "@/components/vehicle-requests/TripConsolidationWorkspace";
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
 
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
