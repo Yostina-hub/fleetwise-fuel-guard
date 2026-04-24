@@ -1,7 +1,7 @@
 // AI-powered vehicle type suggestion for the Vehicle Request form.
 // Uses Lovable AI Gateway with tool-calling to return a structured pick from
 // the eligible list, plus a short rationale shown to the requester.
-import { corsHeaders } from "@supabase/supabase-js/cors";
+import { buildCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
 interface Body {
   purpose?: string;
