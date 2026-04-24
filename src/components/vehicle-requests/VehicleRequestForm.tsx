@@ -1497,6 +1497,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <SelectItem value="round_trip">Round Trip</SelectItem>
                 </SelectContent>
               </Select>
+              <FieldError field="trip_type" />
             </div>
           </section>
 
