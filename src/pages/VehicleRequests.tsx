@@ -894,6 +894,22 @@ const VehicleRequests = () => {
           </div>
         )}
 
+        {/* ============== TRIP CONSOLIDATION WORKSPACE ============== */}
+        {viewMode === "consolidation" && canManageAll && organizationId && (
+          <div className="space-y-4 animate-fade-in">
+            <TripConsolidationWorkspace organizationId={organizationId} />
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => setViewMode("requests")}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Back to Requests
+              </Button>
+            </div>
+
         {/* ============== MAIN PANEL ============== */}
 
         <Card id="vehicle-requests-table" className="overflow-hidden border-border/60 shadow-sm scroll-mt-20">
