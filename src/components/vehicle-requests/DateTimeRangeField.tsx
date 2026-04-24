@@ -26,6 +26,8 @@ interface Props {
   errorStart?: boolean;
   errorEnd?: boolean;
   minDate?: Date;
+  /** Optional whitelist of time-of-day ranges (minutes) the pickers may select. */
+  allowedTimeRanges?: Array<[number, number]>;
   className?: string;
 }
 
@@ -43,7 +45,7 @@ export const DateTimeRangeField: React.FC<Props> = ({
   date, startTime, endTime,
   onDateChange, onStartTimeChange, onEndTimeChange,
   onBlurDate, onBlurStart, onBlurEnd,
-  errorDate, errorStart, errorEnd, minDate, className,
+  errorDate, errorStart, errorEnd, minDate, allowedTimeRanges, className,
 }) => {
   const [open, setOpen] = React.useState(false);
   const hasError = errorDate || errorStart || errorEnd;
@@ -109,6 +111,7 @@ export const DateTimeRangeField: React.FC<Props> = ({
                   onChange={onStartTimeChange}
                   onBlur={onBlurStart}
                   ariaInvalid={!!errorStart}
+                  allowedRanges={allowedTimeRanges}
                 />
               </div>
               <div>
@@ -120,6 +123,7 @@ export const DateTimeRangeField: React.FC<Props> = ({
                   onChange={onEndTimeChange}
                   onBlur={onBlurEnd}
                   ariaInvalid={!!errorEnd}
+                  allowedRanges={allowedTimeRanges}
                 />
               </div>
               <button
