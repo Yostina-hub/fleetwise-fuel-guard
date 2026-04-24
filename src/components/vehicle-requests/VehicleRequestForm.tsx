@@ -1720,7 +1720,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Label>
                 <Select
                   value={form.vehicle_type}
-                  onValueChange={v => { update("vehicle_type", v); handleBlur("vehicle_type", v, { ...form, vehicle_type: v } as any); }}
+                  onValueChange={v => {
+                    // Mark as manually overridden ONLY if the user picked
+                    // something different from the live recommendation.
+                    // Picking the recommendation itself keeps auto-sync on.
+                    userPickedVehicleTypeRef.current =
+                      !!recommendation && v !== recommendation.value;
+                    update("vehicle_type", v);
+                    handleBlur("vehicle_type", v, { ...form, vehicle_type: v } as any);
+                  }}
                 >
                   <SelectTrigger
                     className={`h-9 text-sm ${getError("vehicle_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
