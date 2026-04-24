@@ -209,20 +209,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     !isSuperAdmin &&
     !roleNames.some((r) => r !== "driver");
 
-  // "File on behalf of" is permitted for managers + admins. This widens the
-  // capability beyond super_admin so dispatchers/supervisors can submit on
-  // behalf of drivers or staff who don't have system access. Every such
+  // "File on behalf of" is available to ALL authenticated users so anyone can
+  // submit a request for a colleague who lacks system access. Every such
   // submission is structurally audited via filed_by_user_id / filed_on_behalf.
-  const ON_BEHALF_ROLES = new Set([
-    "super_admin",
-    "org_admin",
-    "operations_manager",
-    "fleet_manager",
-    "dispatcher",
-    "supervisor",
-  ]);
-  const canFileOnBehalf =
-    isSuperAdmin || roleNames.some((r) => ON_BEHALF_ROLES.has(r));
+  const canFileOnBehalf = !!user;
 
   // Persist in-progress form per (user, source) so progress isn't lost on
   // accidental close, refresh, navigation, or browser crash.
