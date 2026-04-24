@@ -1469,7 +1469,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   field below to keep related quantity inputs side-by-side. */}
               <VRField
                 id="vr-trip-mode"
-                label="Trip Mode"
+                label="Trip Type"
                 icon={Route}
                 required
                 error={getError("trip_type")}
@@ -1482,7 +1482,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     className={`h-9 text-sm ${getError("trip_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
                     aria-invalid={!!getError("trip_type")}
                   >
-                    <SelectValue placeholder="Please select trip mode…" />
+                    <SelectValue placeholder="Please select trip type…" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="one_way">One Way Trip</SelectItem>
