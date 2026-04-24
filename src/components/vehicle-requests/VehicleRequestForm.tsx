@@ -1141,10 +1141,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
           <Car className="h-4 w-4 text-primary" />
         </div>
-        <div>
-          <h3 className="text-sm font-semibold tracking-tight">New Vehicle Request</h3>
-          <p className="text-xs text-muted-foreground">Fill in the fields below and submit.</p>
-        </div>
+        <h3 className="text-sm font-semibold tracking-tight">New Vehicle Request</h3>
       </div>
       {savedAt && (
         <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -1409,21 +1406,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <VRField
                 id="vr-num-vehicles"
-                label={
-                  <span className="inline-flex items-center gap-1.5">
-                    No. Of Vehicles
-                    {!allowsMultipleVehicles && (
-                      <Badge variant="outline" className="text-xs py-0 px-1.5">Locked at 1</Badge>
-                    )}
-                  </span>
-                }
+                label="No. Of Vehicles"
                 icon={Car}
                 error={getError("num_vehicles")}
-                tooltip={
-                  allowsMultipleVehicles
-                    ? "Project Operations support a fleet — request as many vehicles as needed."
-                    : "Daily & Field operations are limited to one vehicle. Switch to Project Operation to request more."
-                }
               >
                 <Input
                   type="number"
@@ -1441,11 +1426,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 label="No. Of Passengers"
                 icon={Users}
                 error={getError("passengers")}
-                tooltip={
-                  isPassengerVehicleType(form.vehicle_type)
-                    ? "Enter passengers excluding the driver (i.e. seats needed minus 1)."
-                    : "Not applicable — this vehicle class is for cargo or courier use (driver only). Stored as -1."
-                }
               >
                 {isPassengerVehicleType(form.vehicle_type) ? (
                   <Input
@@ -1458,24 +1438,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     className="h-9 text-sm"
                   />
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="text"
-                      value="N/A (driver only)"
-                      readOnly
-                      disabled
-                      className="h-9 text-sm bg-muted/40"
-                    />
-                    <Badge variant="outline" className="text-xs whitespace-nowrap">
-                      stored as -1
-                    </Badge>
-                  </div>
+                  <Input
+                    type="text"
+                    value="N/A"
+                    readOnly
+                    disabled
+                    className="h-9 text-sm bg-muted/40"
+                  />
                 )}
               </VRField>
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
+                <Label className="text-primary font-medium text-sm mb-1 block">
                   Cargo / Equipment <span className="text-destructive">*</span>
-                  <FieldHint>Required — helps recommend the smallest sufficient vehicle and reserve cargo capacity.</FieldHint>
                 </Label>
                 <Select
                   value={form.cargo_load}
@@ -1490,28 +1464,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <SelectContent>
                     {CARGO_LOAD_OPTIONS.map(c => (
                       <SelectItem key={c.value} value={c.value}>
-                        <div className="flex flex-col items-start">
-                          <span className="text-sm">{c.label}</span>
-                          <span className="text-xs text-muted-foreground">{c.description}</span>
-                        </div>
+                        <span className="text-sm">{c.label}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {!form.cargo_load && (
-                  <p className="text-xs text-destructive mt-1">
-                    Pick the cargo size — choose "None" if you're only carrying passengers.
-                  </p>
-                )}
               </div>
 
-              {/* Total cargo weight (kg) — validated against the chosen vehicle's max payload. */}
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
+                <Label className="text-primary font-medium text-sm mb-1 block">
                   Total Cargo Weight (kg)
-                  <FieldHint>
-                    Optional but recommended. The system blocks vehicles whose payload capacity is below this weight.
-                  </FieldHint>
                 </Label>
                 <div className="relative">
                   <Input
@@ -1530,102 +1492,37 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     kg
                   </span>
                 </div>
-                {chosenProfile && cargoWeightKgNum > 0 && (
-                  <p
-                    className={`text-xs mt-1 ${
-                      chosenProfile.maxPayloadKg >= cargoWeightKgNum
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-destructive"
-                    }`}
-                  >
-                    {chosenProfile.maxPayloadKg >= cargoWeightKgNum
-                      ? `✓ ${chosenProfile.label} carries up to ${chosenProfile.maxPayloadKg.toLocaleString()} kg — within capacity.`
-                      : `✗ ${chosenProfile.label} max payload is ${chosenProfile.maxPayloadKg.toLocaleString()} kg. Pick a larger class.`}
-                  </p>
-                )}
               </div>
 
-              {/* Resource-aware recommendation banner — pure derivation from passengers + cargo */}
-              {recommendation && (
-                <div className=" rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2 animate-fade-in">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Sparkles className="w-4 h-4 text-primary shrink-0" />
-                    <span className="text-sm font-medium text-foreground">Recommended for you:</span>
-                    <Badge className="gap-1.5">
-                      <Car className="w-3 h-3" /> {recommendation.label}
-                    </Badge>
-                    <Badge variant="outline" className={`text-xs ${COST_BAND_TONE[recommendation.costBand]}`}>
-                      {COST_BAND_LABELS[recommendation.costBand]}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      Fits {recommendation.capacity} people · {form.cargo_load} cargo
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Picking a larger class than needed wastes fleet capacity and costs more. You can override below if there's a real reason — please justify it for the approver.
-                  </p>
-                </div>
-              )}
-
-              <div className="">
-                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-2">
-                  Vehicle Type
-                  {recommendation && form.vehicle_type === recommendation.value && (
-                    <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 gap-1">
-                      <CheckCircle2 className="w-2.5 h-2.5" /> Matches recommendation
-                    </Badge>
-                  )}
-                  {isUpgrade && (
-                    <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-600 dark:text-amber-400">
-                      Upgrade — justification required
-                    </Badge>
-                  )}
-                </Label>
+              <div>
+                <Label className="text-primary font-medium text-sm mb-1 block">Vehicle Type</Label>
                 <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
                   <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
                   <SelectContent>
                     {eligibleVehicleTypes.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-muted-foreground">
-                        No vehicle class fits {form.passengers} passenger(s) with {form.cargo_load} cargo. Adjust the passenger count or cargo size, or contact dispatch.
+                        No vehicle class fits the selected passengers / cargo.
                       </div>
                     ) : (
-                      eligibleVehicleTypes.map(({ vt, profile }) => {
-                        const isRec = recommendation?.value === vt.value;
-                        return (
-                          <SelectItem key={vt.value} value={vt.value}>
-                            <div className="flex items-center gap-2 w-full">
-                              <span className="text-sm">{vt.label}</span>
-                              {profile && (
-                                <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${COST_BAND_TONE[profile.costBand]}`}>
-                                  {COST_BAND_LABELS[profile.costBand]}
-                                </Badge>
-                              )}
-                              {isRec && <span className="text-xs text-primary ml-auto">★ recommended</span>}
-                            </div>
-                          </SelectItem>
-                        );
-                      })
+                      eligibleVehicleTypes.map(({ vt }) => (
+                        <SelectItem key={vt.value} value={vt.value}>
+                          <span className="text-sm">{vt.label}</span>
+                        </SelectItem>
+                      ))
                     )}
                   </SelectContent>
                 </Select>
-                {/* Capacity / Cargo / Tier info intentionally not duplicated here —
-                    the recommendation banner above already surfaces this for the
-                    selected class. */}
               </div>
 
-              {/* Justification — only shown when over-spec'd */}
               {isUpgrade && (
-                <div className=" animate-fade-in">
-                  <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1 flex items-center gap-1.5">
-                    Why is {chosenProfile?.label} needed instead of {recommendation?.label}? <span className="text-destructive">*</span>
-                    <FieldHint tone="warning">
-                      Visible to your approver. Be specific — generic reasons may be rejected.
-                    </FieldHint>
+                <div className="md:col-span-2 lg:col-span-3">
+                  <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1 block">
+                    Justification <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
                     value={form.vehicle_type_justification}
                     onChange={(e) => update("vehicle_type_justification", e.target.value)}
-                    placeholder="e.g. Carrying bulky equipment that doesn't fit a sedan, or transporting senior leadership delegation."
+                    placeholder="Why is a larger vehicle needed?"
                     rows={2}
                     maxLength={500}
                   />
@@ -1643,11 +1540,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </div>
-              {/* Pool Category — mirrors Vehicle Registration form (Corporate / Zone / Region) */}
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
+                <Label className="text-primary font-medium text-sm mb-1 block">
                   Pool Category
-                  <FieldHint>Corporate / Zone / Region — determines which Assigned Locations you can pick.</FieldHint>
                 </Label>
                 <Select
                   value={form.pool_category}
@@ -1674,11 +1569,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Select>
               </div>
 
-              {/* Assigned Location — filtered by Pool Category */}
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
+                <Label className="text-primary font-medium text-sm mb-1 block">
                   Assigned Location
-                  <FieldHint>Filtered by Pool Category. Pick the operational pool the trip will be served from.</FieldHint>
                 </Label>
                 <Select
                   value={form.pool_name}
@@ -1740,12 +1633,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </div>
-              <div className="">
+              <div>
                 <VRField
                   id="vr-contact-phone"
-                  label="Contact Phone (during trip) *"
+                  label="Contact Phone *"
                   error={getError("contact_phone")}
-                  tooltip="Required. Dispatch needs to reach you while the trip is active."
                 >
                   <Input
                     type="tel"
@@ -1766,11 +1658,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <section className="space-y-3">
             <SectionHeader icon={FileText} title="Purpose & Details" />
             <div>
-              <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
-                Business Purpose Category <span className="text-destructive">*</span>
-                <FieldHint>
-                  Fleet vehicles are for business use only. Personal or family trips are not permitted.
-                </FieldHint>
+              <Label className="text-primary font-medium text-sm mb-1 block">
+                Business Purpose <span className="text-destructive">*</span>
               </Label>
               <Select value={form.purpose_category} onValueChange={(v) => update("purpose_category", v)}>
                 <SelectTrigger className="h-9 text-sm">
@@ -1784,21 +1673,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     if (items.length === 0) return null;
                     return (
                       <SelectGroup key={g.id}>
-                        <SelectLabel
-                          className={
-                            g.restricted
-                              ? "text-amber-600 dark:text-amber-400 text-xs uppercase tracking-wide"
-                              : "text-xs uppercase tracking-wide text-muted-foreground"
-                          }
-                        >
+                        <SelectLabel className="text-xs uppercase tracking-wide text-muted-foreground">
                           {g.label}
                         </SelectLabel>
                         {items.map((c) => (
                           <SelectItem key={c.value} value={c.value}>
-                            <div className="flex flex-col items-start">
-                              <span className="text-sm">{c.label}</span>
-                              <span className="text-xs text-muted-foreground">{c.description}</span>
-                            </div>
+                            <span className="text-sm">{c.label}</span>
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -1806,27 +1686,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   })}
                 </SelectContent>
               </Select>
-              {(() => {
-                const selected = BUSINESS_PURPOSE_CATEGORIES.find(
-                  (c) => c.value === form.purpose_category,
-                );
-                if (selected?.group === "social") {
-                  return (
-                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      Restricted use — requires additional approval and clear business justification in the description below.
-                    </p>
-                  );
-                }
-                return null;
-              })()}
             </div>
             <div>
-              <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
+              <Label className="text-primary font-medium text-sm mb-1 block">
                 Department / Division
-                <FieldHint>
-                  The unit this trip is charged to / belongs to. Helps approval routing & reporting.
-                </FieldHint>
               </Label>
               <Select
                 value={form.department_id || "__none__"}
@@ -1848,21 +1711,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             <VRField
               id="vr-purpose"
               label="Trip Description"
-              icon={FileText}
               required
               error={getError("purpose")}
-              filled={(form.purpose?.length || 0) >= 10}
-              hint={
-                <span className={(form.purpose?.length || 0) >= 1000 ? "text-destructive font-medium" : undefined}>
-                  {form.purpose?.length || 0}/1000 characters
-                </span>
-              }
             >
               <Textarea
                 value={form.purpose}
                 onChange={e => update("purpose", e.target.value.slice(0, 1000))}
                 onBlur={e => handleBlur("purpose", e.target.value, form as any)}
-                placeholder="Describe the purpose of this trip — what, where, and why (min 10 characters)…"
+                placeholder="Describe the trip purpose (min 10 characters)…"
                 rows={3}
                 maxLength={1000}
               />
