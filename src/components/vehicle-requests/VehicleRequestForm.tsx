@@ -1524,16 +1524,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </VRField>
               <VRField
                 id="vr-passengers"
-                label="No. Of Passengers"
+                label="Passengers"
                 icon={Users}
                 error={getError("passengers")}
               >
                 {/*
-                 * Passengers is enabled by default and stays editable for every
-                 * request type, including when cargo/equipment is selected.
-                 * It only becomes a read-only "N/A" when the user has explicitly
-                 * picked a non-passenger vehicle type (courier motorbike, cargo
-                 * truck, etc.) — selecting a cargo size alone must NOT disable it.
+                 * Two-option professional mode: "Passengers Only" (cargo
+                 * auto-cleared to none) vs "Passengers + Cargo" (user picks
+                 * cargo size & weight below). Becomes read-only "N/A" only
+                 * when a non-passenger vehicle type (courier/cargo truck) is
+                 * explicitly chosen.
                  */}
                 {form.vehicle_type && !isPassengerVehicleType(form.vehicle_type) ? (
                   <Input
@@ -1544,15 +1544,53 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     className="h-9 text-sm bg-muted/40"
                   />
                 ) : (
-                  <Input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={form.passengers === String(NON_PASSENGER_SENTINEL) ? "" : form.passengers}
-                    onChange={e => update("passengers", e.target.value)}
-                    onBlur={e => handleBlur("passengers", e.target.value, form as any)}
-                    className="h-9 text-sm"
-                  />
+                  <div className="space-y-2">
+                    <Select
+                      value={
+                        form.cargo_load && form.cargo_load !== "none"
+                          ? "passengers_cargo"
+                          : "passengers_only"
+                      }
+                      onValueChange={(mode) => {
+                        if (mode === "passengers_only") {
+                          setForm((f) => ({
+                            ...f,
+                            cargo_load: "none" as CargoLoad,
+                            cargo_weight_kg: "",
+                          }));
+                        } else {
+                          setForm((f) => ({
+                            ...f,
+                            cargo_load: (f.cargo_load && f.cargo_load !== "none"
+                              ? f.cargo_load
+                              : "small") as CargoLoad,
+                          }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="Select passenger type…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="passengers_only">
+                          <span className="text-sm">Passengers Only</span>
+                        </SelectItem>
+                        <SelectItem value="passengers_cargo">
+                          <span className="text-sm">Passengers + Cargo</span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      placeholder="No. of passengers"
+                      value={form.passengers === String(NON_PASSENGER_SENTINEL) ? "" : form.passengers}
+                      onChange={e => update("passengers", e.target.value)}
+                      onBlur={e => handleBlur("passengers", e.target.value, form as any)}
+                      className="h-9 text-sm"
+                    />
+                  </div>
                 )}
               </VRField>
               <div>
