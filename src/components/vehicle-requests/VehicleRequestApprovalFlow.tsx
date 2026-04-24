@@ -813,7 +813,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" disabled={!selectedVehicleId || !selectedDriver || assignMutation.isPending} onClick={() => assignMutation.mutate(selectedVehicleId)}>
+              <Button size="sm" disabled={!selectedVehicleId || !selectedDriver || assignMutation.isPending} onClick={() => assignMutation.mutate({ vehicleId: selectedVehicleId, driverId: selectedDriver })}>
                 <CheckCircle className="w-3.5 h-3.5 mr-1" /> {assignMutation.isPending ? "Assigning..." : "Assign"}
               </Button>
               {onCrossPool && (
