@@ -1574,7 +1574,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                           disabled
                           aria-label="Passengers not applicable"
                           title="Cargo Only — driver only"
-                          className="h-9 text-sm w-16 shrink-0 text-center px-1 bg-muted/40"
+                          className="h-9 text-sm w-14 shrink-0 text-center px-1 bg-muted/40"
                         />
                       ) : (
                         <Input
