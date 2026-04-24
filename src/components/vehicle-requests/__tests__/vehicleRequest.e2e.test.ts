@@ -82,8 +82,15 @@ describe("VR form validation — Daily Operation", () => {
     expect(r.errors.end_time).toMatch(/later than start/);
   });
 
-  it("rejects num_vehicles > 1 for daily", () => {
+  it("rejects num_vehicles > 1 for daily when passengers ≤ 25", () => {
     expect(validateVRField("num_vehicles", 3, base as any)).toMatch(/Project Operation/);
+  });
+
+  it("allows multi-vehicle for daily when passengers > single-vehicle capacity", () => {
+    // 30 passengers → ceil(30/25) = 2 vehicles allowed even on Daily.
+    expect(validateVRField("num_vehicles", 2, { ...base, passengers: 30 } as any)).toBeUndefined();
+    // But 3 vehicles for 30 passengers is still too many.
+    expect(validateVRField("num_vehicles", 3, { ...base, passengers: 30 } as any)).toMatch(/up to 2 vehicles/);
   });
 
   it("rejects too-short purpose", () => {

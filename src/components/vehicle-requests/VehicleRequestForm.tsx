@@ -660,7 +660,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         departure_lng: form.departure_lng,
         destination_lat: form.destination_lat,
         destination_lng: form.destination_lng,
-        num_vehicles: allowsMultipleVehicles ? safe.num_vehicles : 1,
+        // Honor passenger-driven multi-vehicle for non-Project ops too:
+        // Daily / Nighttime / Field can request more than 1 vehicle when the
+        // passenger count exceeds the largest single vehicle (25 seats).
+        num_vehicles: Math.min(Number(safe.num_vehicles) || 1, allowsMultipleVehicles ? 50 : Math.max(1, paxBasedMaxVehicles)),
         passengers: safe.passengers,
         vehicle_type: safe.vehicle_type || null,
         trip_type: safe.trip_type || null,
@@ -836,12 +839,34 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // of inline boolean spaghetti and makes the rules unit-testable.
   const visibility = useMemo(() => deriveVisibility(form.request_type), [form.request_type]);
   const { isNighttime, isDaily, isProject, isField, isMessenger, allowsMultipleVehicles } = visibility;
+  // Largest single vehicle (Midi-Bus) seats 25. Beyond that, even Daily /
+  // Nighttime / Field requests must use multiple vehicles — so we expose a
+  // passenger-driven cap that overrides the per-operation default of 1.
+  const SINGLE_VEHICLE_MAX_PAX = 25;
+  const paxBasedMaxVehicles = useMemo(() => {
+    const raw = parseInt(form.passengers);
+    if (!Number.isFinite(raw) || raw <= 0) return 1;
+    if (raw <= SINGLE_VEHICLE_MAX_PAX) return 1;
+    return Math.ceil(raw / SINGLE_VEHICLE_MAX_PAX);
+  }, [form.passengers]);
+  // Effective hard cap on `num_vehicles` for the current request:
+  //   - Project: always 50 (fleet-scale).
+  //   - Others : driven by passengers (≥1, and >1 only when pax > 25).
+  const effectiveMaxVehicles = allowsMultipleVehicles ? 50 : paxBasedMaxVehicles;
   useEffect(() => {
-    if (!allowsMultipleVehicles && form.num_vehicles !== "1") {
-      setForm((f) => ({ ...f, num_vehicles: "1" }));
+    const current = parseInt(form.num_vehicles) || 1;
+    if (current > effectiveMaxVehicles) {
+      setForm((f) => ({ ...f, num_vehicles: String(effectiveMaxVehicles) }));
+      return;
+    }
+    // Auto-suggest the minimum required count when passengers cross the
+    // single-vehicle threshold — so a Daily request for 30 passengers
+    // immediately reflects "2 vehicles" instead of failing validation.
+    if (!allowsMultipleVehicles && current < paxBasedMaxVehicles) {
+      setForm((f) => ({ ...f, num_vehicles: String(paxBasedMaxVehicles) }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowsMultipleVehicles]);
+  }, [allowsMultipleVehicles, effectiveMaxVehicles, paxBasedMaxVehicles]);
 
   // Messenger Service is courier-style: motorcycle/scooter/bicycle only,
   // no passengers (driver only). When the user picks Messenger we force the
@@ -1713,15 +1738,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 required
                 error={getError("num_vehicles")}
               >
-                <Input
-                  type="number"
-                  min={1}
-                  max={allowsMultipleVehicles ? 50 : 100}
-                  value={form.num_vehicles}
-                  onChange={e => update("num_vehicles", e.target.value)}
-                  onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
-                  className="h-9 text-sm"
-                />
+                <div>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={effectiveMaxVehicles}
+                    value={form.num_vehicles}
+                    onChange={e => update("num_vehicles", e.target.value)}
+                    onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
+                    className="h-9 text-sm"
+                  />
+                  {!allowsMultipleVehicles && paxBasedMaxVehicles > 1 && (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {parseInt(form.passengers) || 0} passengers exceed a single vehicle's 25-seat limit — up to {paxBasedMaxVehicles} vehicles allowed.
+                    </p>
+                  )}
+                </div>
               </VRField>
 
               <div>
