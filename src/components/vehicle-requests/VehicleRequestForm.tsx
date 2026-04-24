@@ -1703,6 +1703,31 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
                 <FieldError field="vehicle_type" />
+                <AiVehicleTypeSuggestion
+                  context={{
+                    purpose: form.purpose,
+                    purpose_category: form.purpose_category,
+                    destination: form.destination,
+                    departure_place: form.departure_place,
+                    passengers:
+                      parseInt(form.passengers) === NON_PASSENGER_SENTINEL
+                        ? 0
+                        : parseInt(form.passengers) || 1,
+                    cargo_load: (form.cargo_load || "none") as any,
+                    cargo_weight_kg: cargoWeightKgNum || null,
+                    is_messenger: isMessenger,
+                    rule_recommendation: recommendation?.value || null,
+                  }}
+                  eligibleTypes={eligibleVehicleTypes.map((e) => ({
+                    value: e.vt.value,
+                    label: e.vt.label,
+                  }))}
+                  currentValue={form.vehicle_type}
+                  onApply={(v) => {
+                    update("vehicle_type", v);
+                    handleBlur("vehicle_type", v, { ...form, vehicle_type: v } as any);
+                  }}
+                />
               </div>
 
               {isUpgrade && (
