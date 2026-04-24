@@ -718,7 +718,23 @@ const DriverPortal = () => {
                                           size="sm"
                                           variant={checkedIn ? "outline" : "default"}
                                           className="gap-1 h-8"
-                                          onClick={() => setActiveAssignment({ request: r, assignment: a })}
+                                          onClick={() => {
+                                            // If we have a real per-vehicle assignment row (has vehicle_id),
+                                            // open the assignment-level check-in dialog. Otherwise (single-vehicle
+                                            // parent request), open the request dialog which has the proper
+                                            // inline check-in/out flow for the parent record.
+                                            if (a?.vehicle_id) {
+                                              setActiveAssignment({ request: r, assignment: a });
+                                            } else {
+                                              setViewRequest({
+                                                ...r,
+                                                assigned_vehicle: v,
+                                                assigned_vehicle_id: v?.id,
+                                                driver_checked_in_at: a?.driver_checked_in_at,
+                                                driver_checked_out_at: a?.driver_checked_out_at,
+                                              });
+                                            }
+                                          }}
                                         >
                                           {checkedIn ? (
                                             <><StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> Out</>
