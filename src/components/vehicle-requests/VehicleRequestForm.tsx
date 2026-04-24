@@ -1290,34 +1290,29 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <section className="space-y-3">
             <SectionHeader icon={CalendarDays} title="Schedule" />
             {isDaily ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <div className="" ref={(node) => { fieldAnchors.current.date = node; }}>
-                    <DateTimePicker label="Date" date={form.date} onDateChange={d => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }} required minDate={new Date()} hideTime error={!!getError("date")} />
-                    <FieldError field="date" />
-                  </div>
-                  <div ref={(node) => { fieldAnchors.current.start_time = node; }}>
-                    <Label className="text-primary font-medium text-sm mb-1 block">Start Time <span className="text-destructive">*</span></Label>
-                    <TimePicker
-                      value={form.start_time}
-                      onChange={v => update("start_time", v)}
-                      onBlur={() => handleBlur("start_time", form.start_time, form as any)}
-                      ariaInvalid={!!getError("start_time")}
-                    />
-                    <FieldError field="start_time" />
-                  </div>
-                  <div ref={(node) => { fieldAnchors.current.end_time = node; }}>
-                    <Label className="text-primary font-medium text-sm mb-1 block">End Time <span className="text-destructive">*</span></Label>
-                    <TimePicker
-                      value={form.end_time}
-                      onChange={v => update("end_time", v)}
-                      onBlur={() => handleBlur("end_time", form.end_time, form as any)}
-                      ariaInvalid={!!getError("end_time")}
-                    />
-                    <FieldError field="end_time" />
-                  </div>
+              <div
+                ref={(node) => { fieldAnchors.current.date = node; fieldAnchors.current.start_time = node; fieldAnchors.current.end_time = node; }}
+              >
+                <DateTimeRangeField
+                  date={form.date}
+                  startTime={form.start_time}
+                  endTime={form.end_time}
+                  onDateChange={(d) => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }}
+                  onStartTimeChange={(v) => update("start_time", v)}
+                  onEndTimeChange={(v) => update("end_time", v)}
+                  onBlurStart={() => handleBlur("start_time", form.start_time, form as any)}
+                  onBlurEnd={() => handleBlur("end_time", form.end_time, form as any)}
+                  errorDate={!!getError("date")}
+                  errorStart={!!getError("start_time")}
+                  errorEnd={!!getError("end_time")}
+                  minDate={new Date()}
+                />
+                <div className="space-y-0.5 mt-1">
+                  <FieldError field="date" />
+                  <FieldError field="start_time" />
+                  <FieldError field="end_time" />
                 </div>
-              </>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div ref={(node) => { fieldAnchors.current.start_date = node; }}>
