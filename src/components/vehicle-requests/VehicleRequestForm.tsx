@@ -870,14 +870,13 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.start_date, form.request_type, isDaily]);
 
-  // Auto-switch between Daily and Nighttime based on Ethiopian operational hours.
+  // Auto-switch between Daily and Nighttime based on the trip's clock window.
   //
-  // Local convention (Ethiopia, EAT / UTC+3):
-  //   • Night Operation begins at "8:00 in the night" on the Ethiopian 12-hour
-  //     clock — that is 20:00 in the 24-hour clock used by the form.
-  //   • Day Operation runs from 06:00 (sunrise) up to 20:00 EAT.
+  // Definition (per operations policy):
+  //   • Night Request: 8:00 PM – 6:00 AM (any part of the trip touching this window)
+  //   • Day Request:   everything else (fully inside 6:00 AM – 8:00 PM)
   //
-  // Rule (24h, EAT):
+  // Rule (24h):
   //   • Day:   06:00 ≤ start AND end ≤ 20:00
   //   • Night: start < 06:00  OR  start ≥ 20:00  OR  end > 20:00  OR  end ≤ 06:00
   //
@@ -894,8 +893,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     const startMin = toMin(form.start_time);
     const endMin = toMin(form.end_time);
     if (startMin == null && endMin == null) return; // wait for input
-    const DAY_START = 6 * 60;    // 06:00 EAT (sunrise)
-    const NIGHT_START = 20 * 60; // 20:00 EAT = "8:00 night" on Ethiopian 12h clock
+    const DAY_START = 6 * 60;    // 06:00
+    const NIGHT_START = 20 * 60; // 20:00 (8:00 PM)
     const isNight =
       (startMin != null && (startMin < DAY_START || startMin >= NIGHT_START)) ||
       (endMin   != null && (endMin   > NIGHT_START || endMin   <= DAY_START));
@@ -903,11 +902,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     if (desired !== form.request_type) {
       setForm((f) => ({ ...f, request_type: desired }));
       toast.message(
-        isNight ? "Switched to Nighttime Operation" : "Switched to Daily Operation",
+        isNight ? "Switched to Night Request" : "Switched to Day Request",
         {
           description: isNight
-            ? "Trip falls outside 6:00 AM – 8:00 PM EAT (after 8:00 PM) — categorized as Nighttime."
-            : "Trip is within 6:00 AM – 8:00 PM EAT — categorized as Daily.",
+            ? "Trip touches 8:00 PM – 6:00 AM — categorized as Night Request."
+            : "Trip is fully within 6:00 AM – 8:00 PM — categorized as Day Request.",
         }
       );
     }
