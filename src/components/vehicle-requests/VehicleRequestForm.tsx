@@ -280,6 +280,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // reopens so a fresh form re-engages live sync.
   const userTouchedDateRef = useRef(false);
   const userTouchedStartTimeRef = useRef(false);
+  // Tracks whether the user has manually overridden the auto-recommended
+  // vehicle type. While false, the form keeps `vehicle_type` in sync with
+  // the recommendation as passengers/cargo change (so reducing passengers
+  // from 30 → 4 downgrades bus → sedan instead of "sticking" on the bus).
+  const userPickedVehicleTypeRef = useRef(false);
+
 
   // Auto-sync Date and Start Time to the machine's current clock whenever the
   // form is opened, and keep them ticking live (every 30s) until the user
