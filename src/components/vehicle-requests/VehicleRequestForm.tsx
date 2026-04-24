@@ -1517,7 +1517,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     ? "passengers_cargo"
                     : "passengers_only";
                 const switchMode = (next: "passengers_only" | "passengers_cargo" | "cargo_only") => {
-                  if (next === mode) return;
+                  setTripTypeTouched(true);
+                  if (next === mode && tripTypeTouched) return;
                   setForm((f) => {
                     const base = {
                       ...f,
@@ -1557,7 +1558,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     required
                     error={passengersError}
                   >
-                    <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
+                    <Select value={tripTypeTouched ? mode : ""} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
                       <SelectTrigger className="h-9 text-sm">
                         <SelectValue placeholder="Please select trip type…" />
                       </SelectTrigger>
