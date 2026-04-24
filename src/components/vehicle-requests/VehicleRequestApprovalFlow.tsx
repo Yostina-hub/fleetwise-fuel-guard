@@ -36,6 +36,7 @@ import { notifyFleetOpsRequestApproved } from "@/services/fleetApprovalPushServi
 import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
 import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetList";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
+import { PoolAssignmentPicker } from "@/components/vehicle-requests/PoolAssignmentPicker";
 import type { RequestAssignment } from "@/hooks/useRequestAssignments";
 import {
   getVehicleClassProfile,
@@ -237,8 +238,12 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
   });
 
   const assignMutation = useMutation({
-    mutationFn: async (vehicleId: string) => {
-      if (!selectedDriver) {
+    // Accepts an explicit driverId so the PoolAssignmentPicker (which owns its
+    // own driver selection state) can drive this mutation directly. Falling
+    // back to `selectedDriver` keeps any legacy callers working.
+    mutationFn: async ({ vehicleId, driverId }: { vehicleId: string; driverId?: string }) => {
+      const finalDriverId = driverId || selectedDriver;
+      if (!finalDriverId) {
         throw new Error("Please select a driver — required so the request shows in the Driver Portal.");
       }
       const user = (await supabase.auth.getUser()).data.user;
@@ -246,10 +251,15 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       const updates: any = {
         status: "assigned",
         assigned_vehicle_id: vehicleId,
-        assigned_driver_id: selectedDriver,
+        assigned_driver_id: finalDriverId,
         assigned_at: new Date().toISOString(),
         actual_assignment_minutes: mins,
         assigned_by: user!.id,
+        // Mirror QuickAssignDialog so pool-review state stays consistent across
+        // every entry point that can assign a vehicle.
+        pool_review_status: "reviewed",
+        pool_reviewed_at: new Date().toISOString(),
+        pool_reviewer_id: user!.id,
       };
       await (supabase as any).from("vehicle_requests").update(updates).eq("id", request.id);
 
@@ -260,12 +270,10 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       }).eq("id", vehicleId);
 
       // Update driver status to on_trip
-      if (selectedDriver) {
-        await (supabase as any).from("drivers").update({
-          status: "on_trip",
-          updated_at: new Date().toISOString(),
-        }).eq("id", selectedDriver);
-      }
+      await (supabase as any).from("drivers").update({
+        status: "on_trip",
+        updated_at: new Date().toISOString(),
+      }).eq("id", finalDriverId);
 
       // Get assigned vehicle plate
       const { data: vehicle } = await (supabase as any)
@@ -275,40 +283,38 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         .single();
 
       // Send in-app notifications
-      await sendInAppNotifications(vehicleId);
+      await sendInAppNotifications(vehicleId, finalDriverId);
 
       // Send SMS to driver AND requester
-      if (selectedDriver) {
-        const driver = drivers.find((d: any) => d.id === selectedDriver);
-        if (driver?.phone) {
-          try {
-            // Get requester phone for dual notification
-            const { data: reqProfile } = await supabase
-              .from("profiles")
-              .select("phone")
-              .eq("id", request.requester_id)
-              .single();
+      const driver = drivers.find((d: any) => d.id === finalDriverId);
+      if (driver?.phone) {
+        try {
+          // Get requester phone for dual notification
+          const { data: reqProfile } = await supabase
+            .from("profiles")
+            .select("phone")
+            .eq("id", request.requester_id)
+            .single();
 
-            await notifyAssignmentSms({
-              driverPhone: driver.phone,
-              driverName: `${driver.first_name} ${driver.last_name}`,
-              requesterPhone: reqProfile?.phone || undefined,
-              requesterName: request.requester_name,
-              requestNumber: request.request_number,
-              vehiclePlate: vehicle?.plate_number || "N/A",
-              departure: request.departure_place || "TBD",
-              destination: request.destination || "TBD",
-              scheduledTime: format(new Date(request.needed_from), "MMM dd, h:mm a"),
-              appUrl: getAppUrl(),
-            });
+          await notifyAssignmentSms({
+            driverPhone: driver.phone,
+            driverName: `${driver.first_name} ${driver.last_name}`,
+            requesterPhone: reqProfile?.phone || undefined,
+            requesterName: request.requester_name,
+            requestNumber: request.request_number,
+            vehiclePlate: vehicle?.plate_number || "N/A",
+            departure: request.departure_place || "TBD",
+            destination: request.destination || "TBD",
+            scheduledTime: format(new Date(request.needed_from), "MMM dd, h:mm a"),
+            appUrl: getAppUrl(),
+          });
 
-            await (supabase as any).from("vehicle_requests").update({
-              sms_notification_sent: true,
-              sms_sent_at: new Date().toISOString(),
-            }).eq("id", request.id);
-          } catch (e) {
-            console.error("Assignment SMS failed:", e);
-          }
+          await (supabase as any).from("vehicle_requests").update({
+            sms_notification_sent: true,
+            sms_sent_at: new Date().toISOString(),
+          }).eq("id", request.id);
+        } catch (e) {
+          console.error("Assignment SMS failed:", e);
         }
       }
     },
@@ -321,8 +327,32 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     onError: (err: any) => toast.error(err.message),
   });
 
+  // Mark pool unavailable — same behavior as QuickAssignDialog so the View
+  // dialog can also flag a request when no vehicles in the pool can serve it.
+  const unavailableMutation = useMutation({
+    mutationFn: async () => {
+      const user = (await supabase.auth.getUser()).data.user;
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update({
+          pool_review_status: "unavailable",
+          pool_reviewer_id: user!.id,
+          pool_reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", request.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.info("Marked as no vehicles available");
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
+      onClose();
+    },
+    onError: (err: any) => toast.error(err?.message || "Failed to update"),
+  });
+
   // Send in-app notifications on assignment
-  const sendInAppNotifications = async (vehicleId: string) => {
+  const sendInAppNotifications = async (vehicleId: string, driverId?: string) => {
     try {
       const { data: vehicle } = await (supabase as any)
         .from("vehicles")
@@ -342,8 +372,9 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       }
 
       // Notify driver in-app (find user_id from driver profile)
-      if (selectedDriver) {
-        const driver = drivers.find((d: any) => d.id === selectedDriver);
+      const targetDriverId = driverId || selectedDriver;
+      if (targetDriverId) {
+        const driver = drivers.find((d: any) => d.id === targetDriverId);
         if (driver) {
           const { data: driverProfile } = await supabase
             .from("profiles")
@@ -722,98 +753,27 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
           </>
         )}
         {request.status === "approved" && canManageAll && (
-          <div className="space-y-2 w-full">
-            {/* Smart suggestions */}
-            {suggested.length > 0 && (
-              <div className="rounded-md border bg-muted/30 p-2 space-y-1.5">
-                <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-primary" />
-                    Suggested vehicles
-                  </span>
-                  <span>Closest GPS · pool roster fallback</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {suggested.slice(0, 3).map((s) => {
-                    const isSel = selectedVehicleId === s.id;
-                    return (
-                      <button
-                        type="button"
-                        key={s.id}
-                        onClick={() => {
-                          setSelectedVehicleId(s.id);
-                          if (s.assigned_driver_id) setSelectedDriver(s.assigned_driver_id);
-                        }}
-                        className={`text-[11px] rounded border px-2 py-1 flex items-center gap-1.5 transition ${
-                          isSel
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border bg-background hover:bg-accent"
-                        }`}
-                      >
-                        {s.is_top_pick && <Sparkles className="w-3 h-3 text-primary" />}
-                        {s.in_geofence && <MapPin className="w-3 h-3 text-success" />}
-                        <span className="font-medium">{s.plate_number}</span>
-                        <span className="text-muted-foreground">
-                          {s.distance_km != null ? `${s.distance_km} km` : "no GPS"}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs flex items-center gap-1 mb-1"><Truck className="w-3 h-3" /> Vehicle</Label>
-                <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select vehicle..." /></SelectTrigger>
-                  <SelectContent>
-                    {/* Top suggestions first, then the rest */}
-                    {suggested.slice(0, 5).map((s) => (
-                      <SelectItem key={`sug-${s.id}`} value={s.id} className="text-xs">
-                        <span className="flex items-center gap-1">
-                          {s.is_top_pick && <Sparkles className="w-3 h-3 text-primary" />}
-                          {s.in_geofence && <MapPin className="w-3 h-3 text-success" />}
-                          {s.plate_number} - {s.make} {s.model}
-                          {s.distance_km != null && (
-                            <span className="text-muted-foreground ml-1">· {s.distance_km} km</span>
-                          )}
-                        </span>
-                      </SelectItem>
-                    ))}
-                    {available
-                      .filter((v) => !suggested.slice(0, 5).some((s) => s.id === v.id))
-                      .slice(0, 30)
-                      .map((v) => (
-                        <SelectItem key={v.id} value={v.id} className="text-xs">
-                          {v.plate_number} - {v.make} {v.model}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs flex items-center gap-1 mb-1"><UserCheck className="w-3 h-3" /> Driver</Label>
-                <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select driver..." /></SelectTrigger>
-                  <SelectContent>
-                    {drivers.map((d: any) => (
-                      <SelectItem key={d.id} value={d.id} className="text-xs">{d.first_name} {d.last_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" disabled={!selectedVehicleId || !selectedDriver || assignMutation.isPending} onClick={() => assignMutation.mutate(selectedVehicleId)}>
-                <CheckCircle className="w-3.5 h-3.5 mr-1" /> {assignMutation.isPending ? "Assigning..." : "Assign"}
-              </Button>
-              {onCrossPool && (
+          <div className="w-full space-y-2">
+            {/* Unified pool-aware picker — same component used by the standalone
+                Assign dialog (QuickAssignDialog), so the View dialog now has
+                full feature parity: ranked GPS suggestions, geofence hints,
+                cross-pool resource matrix, mark-unavailable, etc. */}
+            <PoolAssignmentPicker
+              request={request}
+              organizationId={request.organization_id}
+              isAssigning={assignMutation.isPending}
+              onAssign={(vehicleId, driverId) =>
+                assignMutation.mutate({ vehicleId, driverId })
+              }
+              onUnavailable={() => unavailableMutation.mutate()}
+            />
+            {onCrossPool && (
+              <div className="flex justify-end">
                 <Button size="sm" variant="outline" onClick={onCrossPool}>
                   <Shuffle className="w-3.5 h-3.5 mr-1" /> Cross-Pool
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
         {request.status === "assigned" && (
