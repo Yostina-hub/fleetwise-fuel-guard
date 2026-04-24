@@ -1980,7 +1980,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               className="gap-1.5"
             >
               <CheckCircle2 className="w-4 h-4" />
-              {createMutation.isPending ? "Submitting..." : "Submit Request"}
+              {createMutation.isPending ? "Submitting..." : "Submit"}
             </Button>
           </div>
         );
