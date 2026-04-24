@@ -1026,20 +1026,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recommendation?.value, isMessenger]);
 
-  // Keep `passengers` in sync with the chosen vehicle_type. Cargo / courier
-  // classes (anything not in PASSENGER_VEHICLE_VALUES) store -1 to mean
-  // "not applicable" — driver only, no passenger seats requested.
-  useEffect(() => {
-    if (!form.vehicle_type) return;
-    const isPax = isPassengerVehicleType(form.vehicle_type);
-    const current = parseInt(form.passengers);
-    if (!isPax && current !== NON_PASSENGER_SENTINEL) {
-      setForm((f) => ({ ...f, passengers: String(NON_PASSENGER_SENTINEL) }));
-    } else if (isPax && current === NON_PASSENGER_SENTINEL) {
-      setForm((f) => ({ ...f, passengers: "1" }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.vehicle_type]);
+  // Passenger count is driven by the chosen Trip Type (Passengers Only /
+  // Passengers + Cargo / Cargo Only), not by the currently selected vehicle.
+  // We intentionally do NOT force passengers back to N/A just because a
+  // non-passenger vehicle is temporarily selected; the eligibility effect
+  // below will clear or replace incompatible vehicle types automatically.
 
   // If the previously chosen vehicle type no longer fits the updated
   // passengers/cargo combo, snap back to the recommendation so the form
@@ -1530,7 +1521,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                  * Becomes read-only "N/A" only when a non-passenger vehicle
                  * type (courier/cargo truck) is explicitly chosen.
                  */
-                const nonPaxVehicle = !!form.vehicle_type && !isPassengerVehicleType(form.vehicle_type);
                 const passengersIsNA = form.passengers === String(NON_PASSENGER_SENTINEL);
                 const hasCargo = !!form.cargo_load && form.cargo_load !== "none";
                 const mode: "passengers_only" | "passengers_cargo" | "cargo_only" = passengersIsNA
@@ -1567,13 +1557,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     };
                   });
                 };
-                // Suppress the passengers validation error whenever the
-                // field is rendered as a non-editable "N/A" — there's no
-                // human-correctable mistake to flag (the cargo/courier
-                // vehicle simply doesn't carry passengers). Only show the
-                // error on the live numeric input.
                 const passengersError =
-                  nonPaxVehicle || mode === "cargo_only"
+                  mode === "cargo_only"
                     ? undefined
                     : getError("passengers");
                 return (
@@ -1583,12 +1568,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     icon={Users}
                     error={passengersError}
                   >
-                    {/*
-                     * Trip Type select stays available even for
-                     * cargo/courier vehicles — only the passenger count
-                     * box collapses to "N/A" when the vehicle physically
-                     * can't carry passengers (or in Cargo Only mode).
-                     */}
                     <div className="flex items-stretch gap-1.5">
                       <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
                         <SelectTrigger className="h-9 text-sm flex-1 min-w-0">
@@ -1600,14 +1579,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                           <SelectItem value="cargo_only">Cargo Only</SelectItem>
                         </SelectContent>
                       </Select>
-                      {nonPaxVehicle || mode === "cargo_only" ? (
+                      {mode === "cargo_only" ? (
                         <Input
                           type="text"
                           value="N/A"
                           readOnly
                           disabled
                           aria-label="Passengers not applicable"
-                          title={nonPaxVehicle ? "Cargo/courier vehicle — driver only" : "Cargo Only — driver only"}
+                          title="Cargo Only — driver only"
                           className="h-9 text-sm w-16 shrink-0 text-center px-1 bg-muted/40"
                         />
                       ) : (
