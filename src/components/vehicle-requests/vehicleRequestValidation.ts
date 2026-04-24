@@ -526,10 +526,12 @@ export function validateVehicleRequestForm(values: VRFormValues): {
     "priority",
     "contact_phone",
     "cargo_weight_kg",
+    "stops",
   ];
   const errors: Partial<Record<VRFieldName, string>> = {};
   for (const f of fields) {
-    const msg = validateVRField(f, (values as any)[f], values);
+    const raw = f === "stops" ? (values as any).stops : (values as any)[f];
+    const msg = validateVRField(f, raw, values);
     if (msg) errors[f] = msg;
   }
   return { valid: Object.keys(errors).length === 0, errors };
