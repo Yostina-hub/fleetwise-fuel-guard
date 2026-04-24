@@ -1410,7 +1410,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div
                   ref={(node) => { fieldAnchors.current.start_date = node; fieldAnchors.current.end_date = node; }}
                 >
@@ -1504,7 +1504,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* RESOURCES SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={Layers} title="Vehicle & Resources" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
               <VRField
                 id="vr-num-vehicles"
                 label="No. Of Vehicles"
