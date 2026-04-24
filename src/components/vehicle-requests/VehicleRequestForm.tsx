@@ -1583,45 +1583,48 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     icon={Users}
                     error={passengersError}
                   >
-                    {nonPaxVehicle ? (
-                      <Input
-                        type="text"
-                        value="N/A"
-                        readOnly
-                        disabled
-                        className="h-9 text-sm bg-muted/40"
-                      />
-                    ) : (
-                      // Trip Type select + compact passenger count nested
-                      // together so they share one cell. The number input
-                      // sits to the right of the select (≈64px wide) and
-                      // is hidden / disabled in Cargo Only mode.
-                      <div className="flex items-stretch gap-1.5">
-                        <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
-                          <SelectTrigger className="h-9 text-sm flex-1 min-w-0">
-                            <SelectValue placeholder="Select trip type…" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="passengers_only">Passengers Only</SelectItem>
-                            <SelectItem value="passengers_cargo">Passengers + Cargo</SelectItem>
-                            <SelectItem value="cargo_only">Cargo Only</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    {/*
+                     * Trip Type select stays available even for
+                     * cargo/courier vehicles — only the passenger count
+                     * box collapses to "N/A" when the vehicle physically
+                     * can't carry passengers (or in Cargo Only mode).
+                     */}
+                    <div className="flex items-stretch gap-1.5">
+                      <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
+                        <SelectTrigger className="h-9 text-sm flex-1 min-w-0">
+                          <SelectValue placeholder="Select trip type…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="passengers_only">Passengers Only</SelectItem>
+                          <SelectItem value="passengers_cargo">Passengers + Cargo</SelectItem>
+                          <SelectItem value="cargo_only">Cargo Only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {nonPaxVehicle || mode === "cargo_only" ? (
+                        <Input
+                          type="text"
+                          value="N/A"
+                          readOnly
+                          disabled
+                          aria-label="Passengers not applicable"
+                          title={nonPaxVehicle ? "Cargo/courier vehicle — driver only" : "Cargo Only — driver only"}
+                          className="h-9 text-sm w-16 shrink-0 text-center px-1 bg-muted/40"
+                        />
+                      ) : (
                         <Input
                           type="number"
                           min={1}
                           max={100}
                           aria-label="Number of passengers"
-                          title={mode === "cargo_only" ? "Driver only — no passengers" : "Number of passengers"}
+                          title="Number of passengers"
                           placeholder="Pax"
-                          value={mode === "cargo_only" || passengersIsNA ? "" : form.passengers}
+                          value={passengersIsNA ? "" : form.passengers}
                           onChange={e => update("passengers", e.target.value)}
                           onBlur={e => handleBlur("passengers", e.target.value, form as any)}
-                          disabled={mode === "cargo_only"}
                           className="h-9 text-sm w-16 shrink-0 text-center px-1"
                         />
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </VRField>
                 );
               })()}
