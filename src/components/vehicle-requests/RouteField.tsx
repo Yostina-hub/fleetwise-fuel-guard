@@ -183,6 +183,20 @@ export const RouteField: React.FC<Props> = ({
             </div>
           )}
 
+          {/* Add intermediate stop — appears between stops and final destination
+              so the action is visually anchored to where the new row will land. */}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="w-full h-8 text-xs"
+            onClick={() => onStopsChange([...stops, { name: "", lat: null, lng: null }])}
+            disabled={stops.length >= 10}
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Add intermediate stop{stops.length >= 10 ? " (max 10)" : ""}
+          </Button>
+
           {/* Destination */}
           <div>
             <Label className="text-xs font-medium text-muted-foreground mb-1 block">
