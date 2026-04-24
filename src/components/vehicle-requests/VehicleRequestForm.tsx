@@ -1590,19 +1590,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                           className="h-9 text-sm w-16 shrink-0 text-center px-1"
                         />
                       )}
-                      <Input
-                        type="number"
-                        min={1}
-                        max={allowsMultipleVehicles ? 50 : 1}
-                        aria-label="Number of vehicles"
-                        title={allowsMultipleVehicles ? "Number of vehicles" : "Only one vehicle allowed for this request type"}
-                        placeholder="Veh"
-                        value={allowsMultipleVehicles ? form.num_vehicles : "1"}
-                        onChange={e => update("num_vehicles", e.target.value)}
-                        onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
-                        disabled={!allowsMultipleVehicles}
-                        className={`h-9 text-sm w-14 shrink-0 text-center px-1 ${!allowsMultipleVehicles ? "bg-muted/40" : ""}`}
-                      />
                     </div>
                   </VRField>
                 );
