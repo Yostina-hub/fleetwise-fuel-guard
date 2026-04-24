@@ -1317,22 +1317,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <FieldError field="end_time" />
                   </div>
                 </div>
-                {/* Day/Night classification rule notice (issues #65/#66) */}
-                <div
-                  className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs leading-relaxed text-muted-foreground flex gap-2 items-start"
-                  role="note"
-                  aria-label="Day and night operation classification rule"
-                >
-                  <Moon className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" aria-hidden="true" />
-                  <div>
-                    <span className="font-medium text-foreground">Day vs Night classification:</span>{" "}
-                    Trips that <strong>end before 11:30 AM</strong> are categorized as
-                    <em className="not-italic font-medium"> Day Operation</em>. Trips
-                    <strong> starting after 11:30 AM</strong> are dispatched in the next
-                    <strong> after-8:00&nbsp;PM</strong> batch and categorized as
-                    <em className="not-italic font-medium"> Night Operation</em>.
-                  </div>
-                </div>
               </>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
