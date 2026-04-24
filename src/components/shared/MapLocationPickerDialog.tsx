@@ -271,7 +271,7 @@ export function MapLocationPickerDialog({
       container.style.width = "100%";
       container.style.height = "350px";
 
-      const style = getPreviewSafeMapStyle("streets");
+      const style = getPreviewSafeMapStyle(mapStyle);
 
       const map = new maplibregl.Map({
         container,
