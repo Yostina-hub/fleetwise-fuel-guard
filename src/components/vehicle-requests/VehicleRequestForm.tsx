@@ -660,7 +660,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         departure_lng: form.departure_lng,
         destination_lat: form.destination_lat,
         destination_lng: form.destination_lng,
-        num_vehicles: allowsMultipleVehicles ? safe.num_vehicles : 1,
+        // Honor passenger-driven multi-vehicle for non-Project ops too:
+        // Daily / Nighttime / Field can request more than 1 vehicle when the
+        // passenger count exceeds the largest single vehicle (25 seats).
+        num_vehicles: Math.min(Number(safe.num_vehicles) || 1, allowsMultipleVehicles ? 50 : Math.max(1, paxBasedMaxVehicles)),
         passengers: safe.passengers,
         vehicle_type: safe.vehicle_type || null,
         trip_type: safe.trip_type || null,
