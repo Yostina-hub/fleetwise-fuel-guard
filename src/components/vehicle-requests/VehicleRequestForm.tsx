@@ -835,6 +835,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // sections / fields render for the current request_type. Keeps JSX free
   // of inline boolean spaghetti and makes the rules unit-testable.
   const visibility = useMemo(() => deriveVisibility(form.request_type), [form.request_type]);
+  const { isNighttime, isDaily, isProject, isField, isMessenger, allowsMultipleVehicles } = visibility;
   // Largest single vehicle (Midi-Bus) seats 25. Beyond that, even Daily /
   // Nighttime / Field requests must use multiple vehicles — so we expose a
   // passenger-driven cap that overrides the per-operation default of 1.
