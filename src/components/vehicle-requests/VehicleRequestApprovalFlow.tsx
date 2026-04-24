@@ -238,8 +238,10 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
   });
 
   const assignMutation = useMutation({
-    mutationFn: async (vehicleId: string) => {
-      if (!selectedDriver) {
+    mutationFn: async (vars: { vehicleId: string; driverId?: string }) => {
+      const { vehicleId } = vars;
+      const driverId = vars.driverId || selectedDriver;
+      if (!driverId) {
         throw new Error("Please select a driver — required so the request shows in the Driver Portal.");
       }
       const user = (await supabase.auth.getUser()).data.user;
@@ -247,7 +249,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       const updates: any = {
         status: "assigned",
         assigned_vehicle_id: vehicleId,
-        assigned_driver_id: selectedDriver,
+        assigned_driver_id: driverId,
         assigned_at: new Date().toISOString(),
         actual_assignment_minutes: mins,
         assigned_by: user!.id,
@@ -261,12 +263,10 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       }).eq("id", vehicleId);
 
       // Update driver status to on_trip
-      if (selectedDriver) {
-        await (supabase as any).from("drivers").update({
-          status: "on_trip",
-          updated_at: new Date().toISOString(),
-        }).eq("id", selectedDriver);
-      }
+      await (supabase as any).from("drivers").update({
+        status: "on_trip",
+        updated_at: new Date().toISOString(),
+      }).eq("id", driverId);
 
       // Get assigned vehicle plate
       const { data: vehicle } = await (supabase as any)
@@ -276,40 +276,41 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         .single();
 
       // Send in-app notifications
-      await sendInAppNotifications(vehicleId);
+      await sendInAppNotifications(vehicleId, driverId);
 
       // Send SMS to driver AND requester
-      if (selectedDriver) {
-        const driver = drivers.find((d: any) => d.id === selectedDriver);
-        if (driver?.phone) {
-          try {
-            // Get requester phone for dual notification
-            const { data: reqProfile } = await supabase
-              .from("profiles")
-              .select("phone")
-              .eq("id", request.requester_id)
-              .single();
+      const { data: driverRow } = await supabase
+        .from("drivers")
+        .select("first_name, last_name, phone")
+        .eq("id", driverId)
+        .maybeSingle();
+      if (driverRow?.phone) {
+        try {
+          const { data: reqProfile } = await supabase
+            .from("profiles")
+            .select("phone")
+            .eq("id", request.requester_id)
+            .single();
 
-            await notifyAssignmentSms({
-              driverPhone: driver.phone,
-              driverName: `${driver.first_name} ${driver.last_name}`,
-              requesterPhone: reqProfile?.phone || undefined,
-              requesterName: request.requester_name,
-              requestNumber: request.request_number,
-              vehiclePlate: vehicle?.plate_number || "N/A",
-              departure: request.departure_place || "TBD",
-              destination: request.destination || "TBD",
-              scheduledTime: format(new Date(request.needed_from), "MMM dd, h:mm a"),
-              appUrl: getAppUrl(),
-            });
+          await notifyAssignmentSms({
+            driverPhone: driverRow.phone,
+            driverName: `${driverRow.first_name} ${driverRow.last_name}`,
+            requesterPhone: reqProfile?.phone || undefined,
+            requesterName: request.requester_name,
+            requestNumber: request.request_number,
+            vehiclePlate: vehicle?.plate_number || "N/A",
+            departure: request.departure_place || "TBD",
+            destination: request.destination || "TBD",
+            scheduledTime: format(new Date(request.needed_from), "MMM dd, h:mm a"),
+            appUrl: getAppUrl(),
+          });
 
-            await (supabase as any).from("vehicle_requests").update({
-              sms_notification_sent: true,
-              sms_sent_at: new Date().toISOString(),
-            }).eq("id", request.id);
-          } catch (e) {
-            console.error("Assignment SMS failed:", e);
-          }
+          await (supabase as any).from("vehicle_requests").update({
+            sms_notification_sent: true,
+            sms_sent_at: new Date().toISOString(),
+          }).eq("id", request.id);
+        } catch (e) {
+          console.error("Assignment SMS failed:", e);
         }
       }
     },
