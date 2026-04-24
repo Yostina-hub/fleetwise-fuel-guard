@@ -1895,45 +1895,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* DETAILS SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={FileText} title="Purpose & Details" />
-            <div className="grid grid-cols-1 gap-3">
-              <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Business Purpose <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={form.purpose_category}
-                  onValueChange={(v) => { update("purpose_category", v); handleBlur("purpose_category", v, form as any); }}
-                >
-                  <SelectTrigger
-                    className={`h-9 text-sm ${getError("purpose_category") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
-                    aria-invalid={!!getError("purpose_category")}
-                  >
-                    <SelectValue placeholder="Please select business purpose…" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[420px]">
-                    {BUSINESS_PURPOSE_GROUPS.map((g) => {
-                      const items = BUSINESS_PURPOSE_CATEGORIES.filter(
-                        (c) => c.group === g.id && !c.hidden,
-                      );
-                      if (items.length === 0) return null;
-                      return (
-                        <SelectGroup key={g.id}>
-                          <SelectLabel className="text-xs uppercase tracking-wide text-muted-foreground">
-                            {g.label}
-                          </SelectLabel>
-                          {items.map((c) => (
-                            <SelectItem key={c.value} value={c.value}>
-                              <span className="text-sm">{c.label}</span>
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                <FieldError field="purpose_category" />
-              </div>
-            </div>
             <VRField
               id="vr-purpose"
               label="Trip Description"
