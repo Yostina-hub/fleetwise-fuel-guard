@@ -1637,7 +1637,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 return (
                   <VRField
                     id="vr-passengers"
-                    label="Passengers"
+                    label="No. of Passengers"
                     icon={Users}
                     error={getError("passengers")}
                   >
