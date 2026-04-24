@@ -1026,20 +1026,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recommendation?.value, isMessenger]);
 
-  // Keep `passengers` in sync with the chosen vehicle_type. Cargo / courier
-  // classes (anything not in PASSENGER_VEHICLE_VALUES) store -1 to mean
-  // "not applicable" — driver only, no passenger seats requested.
-  useEffect(() => {
-    if (!form.vehicle_type) return;
-    const isPax = isPassengerVehicleType(form.vehicle_type);
-    const current = parseInt(form.passengers);
-    if (!isPax && current !== NON_PASSENGER_SENTINEL) {
-      setForm((f) => ({ ...f, passengers: String(NON_PASSENGER_SENTINEL) }));
-    } else if (isPax && current === NON_PASSENGER_SENTINEL) {
-      setForm((f) => ({ ...f, passengers: "1" }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.vehicle_type]);
+  // Passenger count is driven by the chosen Trip Type (Passengers Only /
+  // Passengers + Cargo / Cargo Only), not by the currently selected vehicle.
+  // We intentionally do NOT force passengers back to N/A just because a
+  // non-passenger vehicle is temporarily selected; the eligibility effect
+  // below will clear or replace incompatible vehicle types automatically.
 
   // If the previously chosen vehicle type no longer fits the updated
   // passengers/cargo combo, snap back to the recommendation so the form
