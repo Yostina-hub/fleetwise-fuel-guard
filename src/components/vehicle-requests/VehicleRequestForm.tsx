@@ -1478,25 +1478,43 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <FieldError field="destination" />
             </div>
 
-            <div className="max-w-xs">
+            <div className="max-w-sm">
               <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
                 <Route className="w-3.5 h-3.5" /> Trip Mode <span className="text-destructive">*</span>
               </Label>
-              <Select
-                value={form.trip_type}
-                onValueChange={v => { update("trip_type", v); handleBlur("trip_type", v, form as any); }}
+              <div
+                role="radiogroup"
+                aria-label="Trip mode"
+                aria-invalid={!!getError("trip_type")}
+                className={`grid grid-cols-2 gap-1.5 rounded-lg border bg-muted/30 p-1 ${
+                  getError("trip_type") ? "border-destructive ring-1 ring-destructive/30" : "border-input"
+                }`}
               >
-                <SelectTrigger
-                  className={`h-9 text-sm ${getError("trip_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
-                  aria-invalid={!!getError("trip_type")}
-                >
-                  <SelectValue placeholder="Please select trip mode…" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="one_way">One Way Trip</SelectItem>
-                  <SelectItem value="round_trip">Round Trip</SelectItem>
-                </SelectContent>
-              </Select>
+                {[
+                  { value: "one_way", label: "One Way", hint: "Drop-off only", Icon: ChevronRight },
+                  { value: "round_trip", label: "Round Trip", hint: "Return included", Icon: Route },
+                ].map(({ value, label, hint, Icon }) => {
+                  const active = form.trip_type === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => { update("trip_type", value); handleBlur("trip_type", value, form as any); }}
+                      className={`group flex flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 text-xs font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ${
+                        active
+                          ? "bg-background text-primary shadow-sm ring-1 ring-primary/30"
+                          : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className={`h-4 w-4 ${active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
+                      <span className="leading-tight">{label}</span>
+                      <span className="text-[10px] font-normal text-muted-foreground/80 leading-tight">{hint}</span>
+                    </button>
+                  );
+                })}
+              </div>
               <FieldError field="trip_type" />
             </div>
           </section>
