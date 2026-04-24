@@ -251,11 +251,15 @@ export function validateVRField(
     }
 
     case "passengers": {
+      const cargo = sanitizeText(ctx.cargo_load) as CargoLoad | "";
       const n = Number(value);
-      // -1 is the sentinel for "not applicable" (cargo / courier vehicles).
+      // -1 is the sentinel for "Cargo Only" (driver only, no passengers).
       if (n === -1) return;
-      if (!Number.isFinite(n) || n < 1)
-        return "Enter at least 1 passenger (the driver counts only if traveling).";
+      if (!Number.isFinite(n) || n < 1) {
+        return cargo && cargo !== "none"
+          ? "Passenger count is required for Passengers + Cargo. Enter at least 1, or switch to Cargo Only."
+          : "Passenger count is required for Passengers Only. Enter at least 1.";
+      }
       if (!Number.isInteger(n))
         return "Passengers must be a whole number.";
       if (n > 100)
@@ -328,9 +332,20 @@ export function validateVRField(
 
     case "cargo_load": {
       const v = sanitizeText(value);
-      if (!v) return "Cargo / Equipment size is required. Pick None, Small, Medium, or Large.";
+      const passengersN = Number(ctx.passengers);
+      const isCargoOnly = passengersN === -1;
+      // Passengers Only mode: cargo_load is implicitly "none" and not required.
+      // The form auto-sets it; only validate the value if the user picked one.
+      if (!isCargoOnly && v === "none") return;
+      if (!v) {
+        return isCargoOnly
+          ? "Cargo size is required for Cargo Only. Pick Small, Medium, or Large."
+          : "Cargo size is required for Passengers + Cargo. Pick Small, Medium, or Large (or switch to Passengers Only).";
+      }
       if (!["none", "small", "medium", "large"].includes(v))
-        return "Invalid cargo size. Pick None, Small, Medium, or Large.";
+        return "Invalid cargo size. Pick Small, Medium, or Large.";
+      if (isCargoOnly && v === "none")
+        return "Cargo Only requires a real cargo size. Pick Small, Medium, or Large.";
       return;
     }
 
