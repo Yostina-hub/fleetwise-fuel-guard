@@ -1136,6 +1136,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       }
     }
 
+    // Operation type & priority must be explicitly chosen (no silent defaults).
+    if (!form.request_type) {
+      toast.error("Please select an operation type.");
+      return;
+    }
+    if (!form.priority) {
+      toast.error("Please select a priority.");
+      return;
+    }
+
     // Resource-aware demand shaping.
     if (!form.purpose_category) {
       toast.error("Select a business purpose category. Personal use of fleet vehicles is not permitted.");
