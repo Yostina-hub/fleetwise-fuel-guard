@@ -1555,42 +1555,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     icon={Users}
                     error={passengersError}
                   >
-                    <div className="flex items-stretch gap-1.5">
-                      <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
-                        <SelectTrigger className="h-9 text-sm flex-1 min-w-0">
-                          <SelectValue placeholder="Select trip type…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="passengers_only">Passengers Only</SelectItem>
-                          <SelectItem value="passengers_cargo">Passengers + Cargo</SelectItem>
-                          <SelectItem value="cargo_only">Cargo Only</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {mode === "cargo_only" ? (
-                        <Input
-                          type="text"
-                          value="N/A"
-                          readOnly
-                          disabled
-                          aria-label="Passengers not applicable"
-                          title="Cargo Only — driver only"
-                          className="h-9 text-sm w-14 shrink-0 text-center px-1 bg-muted/40"
-                        />
-                      ) : (
-                        <Input
-                          type="number"
-                          min={1}
-                          max={100}
-                          aria-label="Number of passengers"
-                          title="Number of passengers"
-                          placeholder="Pax"
-                          value={passengersIsNA ? "" : form.passengers}
-                          onChange={e => update("passengers", e.target.value)}
-                          onBlur={e => handleBlur("passengers", e.target.value, form as any)}
-                          className="h-9 text-sm w-16 shrink-0 text-center px-1"
-                        />
-                      )}
-                    </div>
+                    <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="Select trip type…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="passengers_only">Passengers Only</SelectItem>
+                        <SelectItem value="passengers_cargo">Passengers + Cargo</SelectItem>
+                        <SelectItem value="cargo_only">Cargo Only</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </VRField>
                 );
               })()}
@@ -1656,10 +1630,37 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 );
               })()}
 
-              <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  No. Of Vehicles <span className="text-destructive">*</span>
-                </Label>
+              {(() => {
+                const passengersIsNA = form.passengers === String(NON_PASSENGER_SENTINEL);
+                if (passengersIsNA) return null;
+                return (
+                  <VRField
+                    id="vr-passengers"
+                    label="Passengers"
+                    icon={Users}
+                    error={getError("passengers")}
+                  >
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      placeholder="e.g. 4"
+                      value={form.passengers}
+                      onChange={e => update("passengers", e.target.value)}
+                      onBlur={e => handleBlur("passengers", e.target.value, form as any)}
+                      className="h-9 text-sm"
+                    />
+                  </VRField>
+                );
+              })()}
+
+              <VRField
+                id="vr-num-vehicles"
+                label="No. Of Vehicles"
+                icon={Car}
+                required
+                error={getError("num_vehicles")}
+              >
                 <Input
                   type="number"
                   min={1}
@@ -1669,11 +1670,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
                   disabled={!allowsMultipleVehicles}
                   title={allowsMultipleVehicles ? undefined : "Only one vehicle allowed for this request type"}
-                  className={`h-9 text-sm ${!allowsMultipleVehicles ? "bg-muted/40" : ""} ${getError("num_vehicles") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
-                  aria-invalid={!!getError("num_vehicles")}
+                  className={`h-9 text-sm ${!allowsMultipleVehicles ? "bg-muted/40" : ""}`}
                 />
-                <FieldError field="num_vehicles" />
-              </div>
+              </VRField>
 
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
