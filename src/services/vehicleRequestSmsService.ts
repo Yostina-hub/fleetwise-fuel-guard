@@ -115,6 +115,23 @@ export const notifyAssignmentSms = async (params: {
 };
 
 /**
+ * Send a turn-by-turn navigation link to the assigned driver.
+ * `mapsUrl` should be a Google Maps directions URL with waypoints.
+ */
+export const notifyNavigationSms = async (params: {
+  driverPhone: string;
+  requestNumber: string;
+  mapsUrl: string;
+}) => {
+  const msg = [
+    `FleetTrack: Navigation ${params.requestNumber}`,
+    `Open route:`,
+    params.mapsUrl,
+  ].join("\n");
+  return sendSms(params.driverPhone, msg, "navigation_link");
+};
+
+/**
  * Get the app URL (production or preview)
  */
 export const getAppUrl = (): string => {
