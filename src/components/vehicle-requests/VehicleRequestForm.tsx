@@ -1333,7 +1333,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             <SectionHeader icon={Sparkles} title="Operation Type" />
             <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
               <SelectTrigger className="w-full md:max-w-sm h-9 text-sm">
-                <SelectValue placeholder="Select operation type…" />
+                <SelectValue placeholder="Please select operation type…" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="daily_operation">Daily Operation</SelectItem>
@@ -1441,7 +1441,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             <div>
               <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
               <Select value={form.trip_type} onValueChange={v => update("trip_type", v)}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select Trip Type" /></SelectTrigger>
+                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Please select trip type…" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="one_way">One Way Trip</SelectItem>
                   <SelectItem value="round_trip">Round Trip</SelectItem>
@@ -1509,7 +1509,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     className="h-9 text-sm"
                     aria-invalid={!form.cargo_load}
                   >
-                    <SelectValue placeholder="Select cargo size (required)" />
+                    <SelectValue placeholder="Please select cargo size…" />
                   </SelectTrigger>
                   <SelectContent>
                     {CARGO_LOAD_OPTIONS.map(c => (
@@ -1547,7 +1547,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">Vehicle Type</Label>
                 <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Please select vehicle type…" /></SelectTrigger>
                   <SelectContent>
                     {eligibleVehicleTypes.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-muted-foreground">
@@ -1607,7 +1607,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   }}
                 >
                   <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Select category...">
+                    <SelectValue placeholder="Please select category…">
                       {form.pool_category && <PoolCategoryChip value={form.pool_category} />}
                     </SelectValue>
                   </SelectTrigger>
@@ -1713,7 +1713,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </Label>
               <Select value={form.purpose_category} onValueChange={(v) => update("purpose_category", v)}>
                 <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Select the business purpose…" />
+                  <SelectValue placeholder="Please select business purpose…" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[420px]">
                   {BUSINESS_PURPOSE_GROUPS.map((g) => {
@@ -1746,7 +1746,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 onValueChange={(v) => update("department_id", v === "__none__" ? "" : v)}
               >
                 <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Select department (optional)" />
+                  <SelectValue placeholder="Please select department (optional)" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— No department —</SelectItem>
