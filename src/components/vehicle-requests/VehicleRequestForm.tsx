@@ -226,11 +226,17 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const legacyDraftKey = user?.id ? `vehicle-request:${user.id}:${source ?? "default"}` : null;
   const draftKey = user?.id ? `vehicle-request:v2:${user.id}:${source ?? "default"}` : null;
   const initialWithPrefill = useMemo(() => ({
-    ...initialForm,
+    // Recompute defaults each time the dialog opens so the Date field
+    // reflects the *current* machine clock — not whenever the JS bundle
+    // first parsed `initialForm`. Without this, a long-lived tab can
+    // present yesterday's date as today's default.
+    ...buildInitialForm(),
     ...(prefill?.purpose ? { purpose: String(prefill.purpose) } : {}),
     ...(prefill?.departure_place ? { departure_place: String(prefill.departure_place) } : {}),
     ...(prefill?.destination ? { destination: String(prefill.destination) } : {}),
-  }), [prefill?.purpose, prefill?.departure_place, prefill?.destination]);
+  // `open` is in the deps so a re-open after midnight gets the correct date.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [prefill?.purpose, prefill?.departure_place, prefill?.destination, open]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !legacyDraftKey) return;
