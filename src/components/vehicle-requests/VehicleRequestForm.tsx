@@ -1362,7 +1362,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 className={`w-full md:max-w-sm h-9 text-sm ${getError("request_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
                 aria-invalid={!!getError("request_type")}
               >
-                <SelectValue placeholder="Please select operation type…" />
+                <SelectValue placeholder="Please select request type…" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="daily_operation">Day Request (8:30 AM – 5:30 PM)</SelectItem>
