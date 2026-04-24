@@ -909,6 +909,8 @@ const VehicleRequests = () => {
                 Back to Requests
               </Button>
             </div>
+          </div>
+        )}
 
         {/* ============== MAIN PANEL ============== */}
 
