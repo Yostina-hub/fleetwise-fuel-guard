@@ -72,7 +72,8 @@ export type VRFieldName =
   | "project_number"
   | "priority"
   | "contact_phone"
-  | "cargo_weight_kg";
+  | "cargo_weight_kg"
+  | "stops";
 
 export interface VRFormValues {
   request_type: string;
@@ -83,6 +84,13 @@ export interface VRFormValues {
   end_date?: Date | string | null;
   departure_place?: string;
   destination?: string;
+  /** Coordinates required so the trip resolves to a real map location. */
+  departure_lat?: number | null;
+  departure_lng?: number | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
+  /** Ordered intermediate waypoints — each must have a real map coordinate. */
+  stops?: Array<{ name?: string; lat?: number | null; lng?: number | null }>;
   num_vehicles?: string | number;
   passengers?: string | number;
   vehicle_type?: string;
@@ -110,6 +118,12 @@ const toDate = (v: unknown): Date | null => {
   if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
   const d = new Date(v as string);
   return isNaN(d.getTime()) ? null : d;
+};
+
+/** Coordinate sanity: finite number within Earth's lat/lng bounds. */
+const isFiniteCoord = (n: unknown): boolean => {
+  const v = Number(n);
+  return Number.isFinite(v) && v !== 0 && Math.abs(v) <= 180;
 };
 
 const startOfToday = () => {
@@ -223,17 +237,25 @@ export function validateVRField(
 
     case "departure_place": {
       const v = sanitizeShortText(value);
-      if (!v) return "Departure place is required. Pick a location or type the address.";
-      if (v.length < 2) return "Departure place is too short. Enter at least 2 characters or pick a saved location.";
+      if (!v) return "Departure place is required. Pick a location from the map.";
+      if (v.length < 2) return "Departure place is too short. Pick a location from the map.";
       if (v.length > 200) return "Departure place is too long (max 200 characters).";
+      // Coordinates are required so the trip resolves to a real map location —
+      // typed text alone is not enough for routing, distance, or dispatch.
+      if (!isFiniteCoord(ctx.departure_lat) || !isFiniteCoord(ctx.departure_lng)) {
+        return "Pick the departure on the map. Free-text addresses without coordinates are not allowed.";
+      }
       return;
     }
 
     case "destination": {
       const v = sanitizeShortText(value);
-      if (!v) return "Destination is required. Pick a location or type the address.";
-      if (v.length < 2) return "Destination is too short. Enter at least 2 characters or pick a saved location.";
+      if (!v) return "Destination is required. Pick a location from the map.";
+      if (v.length < 2) return "Destination is too short. Pick a location from the map.";
       if (v.length > 200) return "Destination is too long (max 200 characters).";
+      if (!isFiniteCoord(ctx.destination_lat) || !isFiniteCoord(ctx.destination_lng)) {
+        return "Pick the destination on the map. Free-text addresses without coordinates are not allowed.";
+      }
       return;
     }
 
@@ -453,6 +475,25 @@ export function validateVRField(
       return;
     }
 
+    case "stops": {
+      const list = Array.isArray(value) ? value : [];
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i] || {};
+        const name = sanitizeShortText(s.name);
+        const hasCoords = isFiniteCoord(s.lat) && isFiniteCoord(s.lng);
+        // Empty rows are tolerated (the form drops them on submit), but if
+        // the user typed a stop name OR picked partial coords, require a
+        // real map pick — typed text without a coordinate is rejected.
+        if ((name || s.lat != null || s.lng != null) && !hasCoords) {
+          return `Stop ${i + 1} must be picked on the map. Free-text stops without coordinates are not allowed.`;
+        }
+        if (name && name.length > 200) {
+          return `Stop ${i + 1} name is too long (max 200 characters).`;
+        }
+      }
+      return;
+    }
+
     default:
       return;
   }
@@ -485,10 +526,12 @@ export function validateVehicleRequestForm(values: VRFormValues): {
     "priority",
     "contact_phone",
     "cargo_weight_kg",
+    "stops",
   ];
   const errors: Partial<Record<VRFieldName, string>> = {};
   for (const f of fields) {
-    const msg = validateVRField(f, (values as any)[f], values);
+    const raw = f === "stops" ? (values as any).stops : (values as any)[f];
+    const msg = validateVRField(f, raw, values);
     if (msg) errors[f] = msg;
   }
   return { valid: Object.keys(errors).length === 0, errors };

@@ -1522,14 +1522,33 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 destinationLng={form.destination_lng}
                 stops={form.stops as any}
                 onDepartureChange={(v) => { update("departure_place", v); handleBlur("departure_place", v, form as any); }}
-                onDepartureCoords={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
+                onDepartureCoords={(lat, lng) => {
+                  update("departure_lat", lat);
+                  update("departure_lng", lng);
+                  // Re-validate departure_place now that we have real coords —
+                  // this clears the "Pick on the map" error the moment a
+                  // coordinate is captured.
+                  handleBlur("departure_place", form.departure_place, {
+                    ...form, departure_lat: lat, departure_lng: lng,
+                  } as any);
+                }}
                 onDestinationChange={(v) => { update("destination", v); handleBlur("destination", v, form as any); }}
-                onDestinationCoords={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
-                onStopsChange={(stops) => update("stops", stops as any)}
+                onDestinationCoords={(lat, lng) => {
+                  update("destination_lat", lat);
+                  update("destination_lng", lng);
+                  handleBlur("destination", form.destination, {
+                    ...form, destination_lat: lat, destination_lng: lng,
+                  } as any);
+                }}
+                onStopsChange={(stops) => {
+                  update("stops", stops as any);
+                  handleBlur("stops", stops as any, { ...form, stops } as any);
+                }}
               />
               <div className="space-y-0.5">
                 <FieldError field="departure_place" />
                 <FieldError field="destination" />
+                <FieldError field="stops" />
               </div>
             </section>
           </div>
