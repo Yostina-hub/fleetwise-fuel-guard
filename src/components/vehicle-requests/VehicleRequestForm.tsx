@@ -877,8 +877,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   //   • Day Request:   everything else (fully inside 6:00 AM – 8:00 PM)
   //
   // Rule (24h):
-  //   • Day:   06:00 ≤ start AND end ≤ 20:00
-  //   • Night: start < 06:00  OR  start ≥ 20:00  OR  end > 20:00  OR  end ≤ 06:00
+  //   • Day Operation:   08:30 ≤ start AND end ≤ 17:30
+  //   • Night Request:   anything outside 08:30 – 17:30 (i.e. touches 17:30 – 08:30 next day,
+  //                      with the strict night window being 20:00 – 06:00)
   //
   // Only auto-toggles when the user is on daily/nighttime — never overrides
   // Project / Field / Group / Messenger selections.
@@ -893,20 +894,20 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     const startMin = toMin(form.start_time);
     const endMin = toMin(form.end_time);
     if (startMin == null && endMin == null) return; // wait for input
-    const DAY_START = 6 * 60;    // 06:00
-    const NIGHT_START = 20 * 60; // 20:00 (8:00 PM)
+    const DAY_START = 8 * 60 + 30;  // 08:30
+    const DAY_END   = 17 * 60 + 30; // 17:30
     const isNight =
-      (startMin != null && (startMin < DAY_START || startMin >= NIGHT_START)) ||
-      (endMin   != null && (endMin   > NIGHT_START || endMin   <= DAY_START));
+      (startMin != null && (startMin < DAY_START || startMin > DAY_END)) ||
+      (endMin   != null && (endMin   > DAY_END   || endMin   < DAY_START));
     const desired = isNight ? "nighttime_operation" : "daily_operation";
     if (desired !== form.request_type) {
       setForm((f) => ({ ...f, request_type: desired }));
       toast.message(
-        isNight ? "Switched to Night Request" : "Switched to Day Request",
+        isNight ? "Switched to Night Request" : "Switched to Day Operation",
         {
           description: isNight
-            ? "Trip touches 8:00 PM – 6:00 AM — categorized as Night Request."
-            : "Trip is fully within 6:00 AM – 8:00 PM — categorized as Day Request.",
+            ? "Trip falls outside 8:30 AM – 5:30 PM (night window 8:00 PM – 6:00 AM) — categorized as Night Request."
+            : "Trip is fully within 8:30 AM – 5:30 PM — categorized as Day Operation.",
         }
       );
     }
@@ -1345,8 +1346,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <SelectValue placeholder="Please select operation type…" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="daily_operation">Daily Operation</SelectItem>
-                <SelectItem value="nighttime_operation">Nighttime Operation</SelectItem>
+                <SelectItem value="daily_operation">Day Operation (8:30 AM – 5:30 PM)</SelectItem>
+                <SelectItem value="nighttime_operation">Night Request (8:00 PM – 6:00 AM)</SelectItem>
                 <SelectItem value="project_operation">Project Operation</SelectItem>
                 <SelectItem value="field_operation">Field Operation</SelectItem>
                 <SelectItem value="group_operation">Group Operation</SelectItem>
