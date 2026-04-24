@@ -374,6 +374,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     }
   }, [onBehalfOf, onBehalfDraftKey]);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
+  const [tripTypeTouched, setTripTypeTouched] = useState(false);
   const fieldAnchors = useRef<Partial<Record<"date" | "start_time" | "end_time" | "start_date" | "end_date" | "project_number", HTMLDivElement | null>>>({});
 
   // Mandatory rating gate — block new requests until prior completed trips are rated.
@@ -1517,7 +1518,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     ? "passengers_cargo"
                     : "passengers_only";
                 const switchMode = (next: "passengers_only" | "passengers_cargo" | "cargo_only") => {
-                  if (next === mode) return;
+                  setTripTypeTouched(true);
+                  if (next === mode && tripTypeTouched) return;
                   setForm((f) => {
                     const base = {
                       ...f,
@@ -1557,7 +1559,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     required
                     error={passengersError}
                   >
-                    <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
+                    <Select value={tripTypeTouched ? mode : ""} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
                       <SelectTrigger className="h-9 text-sm">
                         <SelectValue placeholder="Please select trip type…" />
                       </SelectTrigger>
