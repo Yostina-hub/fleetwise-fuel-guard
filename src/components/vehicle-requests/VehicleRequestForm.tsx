@@ -1067,6 +1067,42 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   const handleSubmit = () => {
     const sanitized = sanitizeVehicleRequestForm(form as any) as any;
+
+    // Auto-sync start_time to current clock if user picked a past time on today's
+    // trip date (daily / nighttime). Avoids a "start time in the past" validation
+    // error at submit when the form was opened minutes earlier.
+    const isDailyLike =
+      sanitized.request_type === "daily_operation" ||
+      sanitized.request_type === "nighttime_operation";
+    if (isDailyLike && sanitized.start_time) {
+      const tripDate = sanitized.date instanceof Date
+        ? sanitized.date
+        : (sanitized.date ? new Date(sanitized.date) : null);
+      if (tripDate) {
+        const today = new Date();
+        const sameDay =
+          tripDate.getFullYear() === today.getFullYear() &&
+          tripDate.getMonth() === today.getMonth() &&
+          tripDate.getDate() === today.getDate();
+        if (sameDay) {
+          const nowHHMM = `${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
+          if (sanitized.start_time < nowHHMM) {
+            sanitized.start_time = nowHHMM;
+            if (sanitized.end_time && sanitized.end_time <= nowHHMM) {
+              // Keep end_time after start; bump by 1 hour if it now precedes start.
+              const [h, m] = nowHHMM.split(":").map(Number);
+              const endMins = h * 60 + m + 60;
+              const eh = Math.floor((endMins % 1440) / 60);
+              const em = endMins % 60;
+              sanitized.end_time = `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`;
+            }
+            userTouchedStartTimeRef.current = true;
+            toast.info(`Start time auto-updated to ${nowHHMM} (current time).`);
+          }
+        }
+      }
+    }
+
     setForm((f) => ({ ...f, ...sanitized }));
     const result = validateAll({ ...form, ...sanitized } as any);
     if (!result.valid) {
