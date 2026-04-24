@@ -237,8 +237,12 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
   });
 
   const assignMutation = useMutation({
-    mutationFn: async (vehicleId: string) => {
-      if (!selectedDriver) {
+    // Accepts an explicit driverId so the PoolAssignmentPicker (which owns its
+    // own driver selection state) can drive this mutation directly. Falling
+    // back to `selectedDriver` keeps any legacy callers working.
+    mutationFn: async ({ vehicleId, driverId }: { vehicleId: string; driverId?: string }) => {
+      const finalDriverId = driverId || selectedDriver;
+      if (!finalDriverId) {
         throw new Error("Please select a driver — required so the request shows in the Driver Portal.");
       }
       const user = (await supabase.auth.getUser()).data.user;
@@ -246,10 +250,15 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       const updates: any = {
         status: "assigned",
         assigned_vehicle_id: vehicleId,
-        assigned_driver_id: selectedDriver,
+        assigned_driver_id: finalDriverId,
         assigned_at: new Date().toISOString(),
         actual_assignment_minutes: mins,
         assigned_by: user!.id,
+        // Mirror QuickAssignDialog so pool-review state stays consistent across
+        // every entry point that can assign a vehicle.
+        pool_review_status: "reviewed",
+        pool_reviewed_at: new Date().toISOString(),
+        pool_reviewer_id: user!.id,
       };
       await (supabase as any).from("vehicle_requests").update(updates).eq("id", request.id);
 
@@ -260,12 +269,10 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       }).eq("id", vehicleId);
 
       // Update driver status to on_trip
-      if (selectedDriver) {
-        await (supabase as any).from("drivers").update({
-          status: "on_trip",
-          updated_at: new Date().toISOString(),
-        }).eq("id", selectedDriver);
-      }
+      await (supabase as any).from("drivers").update({
+        status: "on_trip",
+        updated_at: new Date().toISOString(),
+      }).eq("id", finalDriverId);
 
       // Get assigned vehicle plate
       const { data: vehicle } = await (supabase as any)
@@ -275,40 +282,38 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         .single();
 
       // Send in-app notifications
-      await sendInAppNotifications(vehicleId);
+      await sendInAppNotifications(vehicleId, finalDriverId);
 
       // Send SMS to driver AND requester
-      if (selectedDriver) {
-        const driver = drivers.find((d: any) => d.id === selectedDriver);
-        if (driver?.phone) {
-          try {
-            // Get requester phone for dual notification
-            const { data: reqProfile } = await supabase
-              .from("profiles")
-              .select("phone")
-              .eq("id", request.requester_id)
-              .single();
+      const driver = drivers.find((d: any) => d.id === finalDriverId);
+      if (driver?.phone) {
+        try {
+          // Get requester phone for dual notification
+          const { data: reqProfile } = await supabase
+            .from("profiles")
+            .select("phone")
+            .eq("id", request.requester_id)
+            .single();
 
-            await notifyAssignmentSms({
-              driverPhone: driver.phone,
-              driverName: `${driver.first_name} ${driver.last_name}`,
-              requesterPhone: reqProfile?.phone || undefined,
-              requesterName: request.requester_name,
-              requestNumber: request.request_number,
-              vehiclePlate: vehicle?.plate_number || "N/A",
-              departure: request.departure_place || "TBD",
-              destination: request.destination || "TBD",
-              scheduledTime: format(new Date(request.needed_from), "MMM dd, h:mm a"),
-              appUrl: getAppUrl(),
-            });
+          await notifyAssignmentSms({
+            driverPhone: driver.phone,
+            driverName: `${driver.first_name} ${driver.last_name}`,
+            requesterPhone: reqProfile?.phone || undefined,
+            requesterName: request.requester_name,
+            requestNumber: request.request_number,
+            vehiclePlate: vehicle?.plate_number || "N/A",
+            departure: request.departure_place || "TBD",
+            destination: request.destination || "TBD",
+            scheduledTime: format(new Date(request.needed_from), "MMM dd, h:mm a"),
+            appUrl: getAppUrl(),
+          });
 
-            await (supabase as any).from("vehicle_requests").update({
-              sms_notification_sent: true,
-              sms_sent_at: new Date().toISOString(),
-            }).eq("id", request.id);
-          } catch (e) {
-            console.error("Assignment SMS failed:", e);
-          }
+          await (supabase as any).from("vehicle_requests").update({
+            sms_notification_sent: true,
+            sms_sent_at: new Date().toISOString(),
+          }).eq("id", request.id);
+        } catch (e) {
+          console.error("Assignment SMS failed:", e);
         }
       }
     },
@@ -319,6 +324,30 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       onClose();
     },
     onError: (err: any) => toast.error(err.message),
+  });
+
+  // Mark pool unavailable — same behavior as QuickAssignDialog so the View
+  // dialog can also flag a request when no vehicles in the pool can serve it.
+  const unavailableMutation = useMutation({
+    mutationFn: async () => {
+      const user = (await supabase.auth.getUser()).data.user;
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update({
+          pool_review_status: "unavailable",
+          pool_reviewer_id: user!.id,
+          pool_reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", request.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.info("Marked as no vehicles available");
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
+      onClose();
+    },
+    onError: (err: any) => toast.error(err?.message || "Failed to update"),
   });
 
   // Send in-app notifications on assignment
