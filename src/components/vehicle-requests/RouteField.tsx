@@ -1,5 +1,5 @@
 import * as React from "react";
-import { MapPin, ArrowRight, Route as RouteIcon, X, ChevronUp, ChevronDown } from "lucide-react";
+import { MapPin, ArrowRight, Route as RouteIcon, X, ChevronUp, ChevronDown, Plus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -182,6 +182,20 @@ export const RouteField: React.FC<Props> = ({
               </div>
             </div>
           )}
+
+          {/* Add intermediate stop — appears between stops and final destination
+              so the action is visually anchored to where the new row will land. */}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="w-full h-8 text-xs"
+            onClick={() => onStopsChange([...stops, { name: "", lat: null, lng: null }])}
+            disabled={stops.length >= 10}
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Add intermediate stop{stops.length >= 10 ? " (max 10)" : ""}
+          </Button>
 
           {/* Destination */}
           <div>
