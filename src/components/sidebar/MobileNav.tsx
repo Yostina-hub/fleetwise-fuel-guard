@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNav } from "./SidebarNav";
 import { cn } from "@/lib/utils";
-import ethioTelecomLogo from "@/assets/ethio-telecom-logo.webp";
+import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 import type { NavItem, AdminItem } from "./SidebarNav";
 
 interface MobileNavProps {

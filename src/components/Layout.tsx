@@ -75,7 +75,7 @@ import { useCurrentDriverId } from "@/hooks/useCurrentDriverId";
 import { cn } from "@/lib/utils";
 import { isPathAccessible } from "@/config/sidebarAccess";
 import { getRoleSpecificNav } from "@/config/roleNavTemplates";
-import ethioTelecomLogo from "@/assets/ethio-telecom-logo.webp";
+import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 import {
   Tooltip,
   TooltipContent,

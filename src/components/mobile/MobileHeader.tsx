@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import ethioTelecomLogo from "@/assets/ethio-telecom-logo.webp";
+import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 
 // Map routes to translation keys
 const routeTitleKeys: Record<string, string> = {
