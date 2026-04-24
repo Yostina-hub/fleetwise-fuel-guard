@@ -108,7 +108,10 @@ export function VRField({
         {enhancedChild}
         {status === "success" && (
           <CheckCircle2
-            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-success"
+            className={cn(
+              "pointer-events-none absolute top-1/2 -translate-y-1/2 h-4 w-4 text-success",
+              (children.props as any)?.type === "number" ? "right-7" : "right-2.5",
+            )}
             aria-hidden="true"
           />
         )}
