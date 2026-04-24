@@ -324,7 +324,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
   });
 
   // Send in-app notifications on assignment
-  const sendInAppNotifications = async (vehicleId: string) => {
+  const sendInAppNotifications = async (vehicleId: string, driverIdParam?: string) => {
     try {
       const { data: vehicle } = await (supabase as any)
         .from("vehicles")
@@ -344,13 +344,18 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       }
 
       // Notify driver in-app (find user_id from driver profile)
-      if (selectedDriver) {
-        const driver = drivers.find((d: any) => d.id === selectedDriver);
-        if (driver) {
+      const driverIdForNotify = driverIdParam || selectedDriver;
+      if (driverIdForNotify) {
+        const { data: driverRow } = await supabase
+          .from("drivers")
+          .select("first_name")
+          .eq("id", driverIdForNotify)
+          .maybeSingle();
+        if (driverRow?.first_name) {
           const { data: driverProfile } = await supabase
             .from("profiles")
             .select("id")
-            .ilike("full_name", `%${driver.first_name}%`)
+            .ilike("full_name", `%${driverRow.first_name}%`)
             .eq("organization_id", request.organization_id)
             .limit(1)
             .maybeSingle();
@@ -369,6 +374,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       console.error("In-app notification error:", e);
     }
   };
+
 
   const completeMutation = useMutation({
     mutationFn: async () => {
