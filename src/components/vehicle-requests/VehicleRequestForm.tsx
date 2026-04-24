@@ -1723,29 +1723,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               )}
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
-                  Priority <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={form.priority}
-                  onValueChange={v => { update("priority", v); handleBlur("priority", v, form as any); }}
-                >
-                  <SelectTrigger
-                    className={`h-9 text-sm ${getError("priority") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
-                    aria-invalid={!!getError("priority")}
-                  >
-                    <SelectValue placeholder="Please select priority…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">🟢 Low — flexible timing</SelectItem>
-                    <SelectItem value="normal">🔵 Normal — standard priority</SelectItem>
-                    <SelectItem value="high">🟠 High — time sensitive</SelectItem>
-                    <SelectItem value="urgent">🔴 Urgent — immediate dispatch</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FieldError field="priority" />
-              </div>
-              <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
                   Pool Category <span className="text-destructive">*</span>
                 </Label>
                 <Select
