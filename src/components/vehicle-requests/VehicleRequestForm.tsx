@@ -280,6 +280,35 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restoredAt]);
 
+  // Refresh stale defaults whenever the dialog (re-)opens. If the persisted
+  // draft has a date in the past — or no date / start_time at all — bump it
+  // to the current machine clock so requesters never land on a form that's
+  // already invalid before they touch it.
+  useEffect(() => {
+    if (!open) return;
+    setForm((prev) => {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const next: any = { ...prev };
+      let changed = false;
+
+      const isStaleDate = (d: unknown) => {
+        if (!d) return true;
+        const dt = d instanceof Date ? d : new Date(d as any);
+        return isNaN(dt.getTime()) || dt < today;
+      };
+
+      if (isStaleDate(prev.date)) { next.date = today; changed = true; }
+      if (isStaleDate(prev.start_date)) { next.start_date = today; changed = true; }
+      if (!prev.start_time) { next.start_time = nowHHMM; changed = true; }
+      if (!prev.start_date_time) { next.start_date_time = nowHHMM; changed = true; }
+
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   // Super-admin / manager: file the request on behalf of another user or driver.
   // The selection is persisted to localStorage alongside the form draft so a
   // refresh, accidental close, or browser crash doesn't lose who the request
