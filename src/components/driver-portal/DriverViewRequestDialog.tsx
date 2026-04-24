@@ -165,6 +165,9 @@ export const DriverViewRequestDialog = ({
   const [completionRemarkError, setCompletionRemarkError] = useState<string | null>(null);
   const [navMapOpen, setNavMapOpen] = useState(false);
   const [confirmCheckOutOpen, setConfirmCheckOutOpen] = useState(false);
+  const [aiEstimate, setAiEstimate] = useState<string | null>(null);
+  const [aiEstimateLoading, setAiEstimateLoading] = useState(false);
+  const [aiEstimateError, setAiEstimateError] = useState<string | null>(null);
 
   const checkedIn = !!request?.driver_checked_in_at;
   const checkedOut = !!request?.driver_checked_out_at;
