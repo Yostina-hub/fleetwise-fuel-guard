@@ -1577,23 +1577,28 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     ? undefined
                     : getError("passengers");
                 return (
-                  <>
-                    <VRField
-                      id="vr-trip-type"
-                      label="Trip Type"
-                      icon={Users}
-                    >
-                      {nonPaxVehicle ? (
-                        <Input
-                          type="text"
-                          value="N/A"
-                          readOnly
-                          disabled
-                          className="h-9 text-sm bg-muted/40"
-                        />
-                      ) : (
+                  <VRField
+                    id="vr-trip-type"
+                    label="Trip Type"
+                    icon={Users}
+                    error={passengersError}
+                  >
+                    {nonPaxVehicle ? (
+                      <Input
+                        type="text"
+                        value="N/A"
+                        readOnly
+                        disabled
+                        className="h-9 text-sm bg-muted/40"
+                      />
+                    ) : (
+                      // Trip Type select + compact passenger count nested
+                      // together so they share one cell. The number input
+                      // sits to the right of the select (≈64px wide) and
+                      // is hidden / disabled in Cargo Only mode.
+                      <div className="flex items-stretch gap-1.5">
                         <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
-                          <SelectTrigger className="h-9 text-sm">
+                          <SelectTrigger className="h-9 text-sm flex-1 min-w-0">
                             <SelectValue placeholder="Select trip type…" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1602,36 +1607,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                             <SelectItem value="cargo_only">Cargo Only</SelectItem>
                           </SelectContent>
                         </Select>
-                      )}
-                    </VRField>
-                    <VRField
-                      id="vr-passengers"
-                      label="Passengers"
-                      icon={Users}
-                      error={passengersError}
-                    >
-                      {nonPaxVehicle || mode === "cargo_only" ? (
-                        <Input
-                          type="text"
-                          value={nonPaxVehicle ? "N/A" : "N/A — driver only"}
-                          readOnly
-                          disabled
-                          className="h-9 text-sm bg-muted/40"
-                        />
-                      ) : (
                         <Input
                           type="number"
                           min={1}
                           max={100}
-                          placeholder="No. of passengers"
-                          value={passengersIsNA ? "" : form.passengers}
+                          aria-label="Number of passengers"
+                          title={mode === "cargo_only" ? "Driver only — no passengers" : "Number of passengers"}
+                          placeholder="Pax"
+                          value={mode === "cargo_only" || passengersIsNA ? "" : form.passengers}
                           onChange={e => update("passengers", e.target.value)}
                           onBlur={e => handleBlur("passengers", e.target.value, form as any)}
-                          className="h-9 text-sm"
+                          disabled={mode === "cargo_only"}
+                          className="h-9 text-sm w-16 shrink-0 text-center px-1"
                         />
-                      )}
-                    </VRField>
-                  </>
+                      </div>
+                    )}
+                  </VRField>
                 );
               })()}
               {(() => {
