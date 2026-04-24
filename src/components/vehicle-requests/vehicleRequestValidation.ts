@@ -323,8 +323,8 @@ export function validateVRField(
     case "pool_name": {
       const v = sanitizeText(value);
       if (!ctx.pool_category) {
-        // pool_name can't be evaluated until category is picked.
-        return;
+        // Surface a clear blocker so the user knows why this field is empty.
+        return "Pick a pool category first to enable assigned location.";
       }
       if (!v) return "Assigned location is required. Pick the specific pool / location.";
       return;
