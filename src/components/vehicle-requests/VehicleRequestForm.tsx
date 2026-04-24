@@ -1799,7 +1799,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               onClick={() => { setForm(buildInitialForm()); validation.reset(); }}
               className="text-muted-foreground h-8 px-2"
             >
-              Clear
+              Reset
             </Button>
             <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
               {t('common.cancel', 'Cancel')}
