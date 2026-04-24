@@ -33,6 +33,7 @@ import { DateRangeField } from "./DateRangeField";
 import { RouteField } from "./RouteField";
 import { deriveVisibility } from "./visibility";
 import { RouteMapPreview } from "./RouteMapPreview";
+import { AiVehicleTypeSuggestion } from "./AiVehicleTypeSuggestion";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
 import { useCan } from "@/hooks/useCan";
