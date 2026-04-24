@@ -1382,103 +1382,99 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             <FieldError field="request_type" />
           </section>
 
-          {/* SCHEDULE SECTION */}
-          <section className="space-y-3">
-            <SectionHeader icon={CalendarDays} title="Schedule" />
-            {isDaily ? (
-              <div
-                ref={(node) => { fieldAnchors.current.date = node; fieldAnchors.current.start_time = node; fieldAnchors.current.end_time = node; }}
-              >
-                <DateTimeRangeField
-                  date={form.date}
-                  startTime={form.start_time}
-                  endTime={form.end_time}
-                  onDateChange={(d) => { userTouchedDateRef.current = true; update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }}
-                  onStartTimeChange={(v) => { userTouchedStartTimeRef.current = true; update("start_time", v); }}
-                  onEndTimeChange={(v) => update("end_time", v)}
-                  onBlurStart={() => handleBlur("start_time", form.start_time, form as any)}
-                  onBlurEnd={() => handleBlur("end_time", form.end_time, form as any)}
-                  errorDate={!!getError("date")}
-                  errorStart={!!getError("start_time")}
-                  errorEnd={!!getError("end_time")}
-                  minDate={new Date()}
-                />
-                <div className="space-y-0.5 mt-1">
-                  <FieldError field="date" />
-                  <FieldError field="start_time" />
-                  <FieldError field="end_time" />
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {/* SCHEDULE + ROUTE — placed side by side on wider screens */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <section className="space-y-3">
+              <SectionHeader icon={CalendarDays} title="Schedule" />
+              {isDaily ? (
                 <div
-                  ref={(node) => { fieldAnchors.current.start_date = node; fieldAnchors.current.end_date = node; }}
+                  ref={(node) => { fieldAnchors.current.date = node; fieldAnchors.current.start_time = node; fieldAnchors.current.end_time = node; }}
                 >
-                  <DateRangeField
-                    startDate={form.start_date}
-                    endDate={form.end_date}
-                    onStartDateChange={(d) => { update("start_date", d); handleBlur("start_date", d, form as any); }}
-                    onEndDateChange={(d) => { update("end_date", d); handleBlur("end_date", d, form as any); }}
-                    minStart={new Date()}
-                    endRequired={isProject}
-                    errorStart={!!getError("start_date")}
-                    errorEnd={!!getError("end_date")}
+                  <DateTimeRangeField
+                    date={form.date}
+                    startTime={form.start_time}
+                    endTime={form.end_time}
+                    onDateChange={(d) => { userTouchedDateRef.current = true; update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }}
+                    onStartTimeChange={(v) => { userTouchedStartTimeRef.current = true; update("start_time", v); }}
+                    onEndTimeChange={(v) => update("end_time", v)}
+                    onBlurStart={() => handleBlur("start_time", form.start_time, form as any)}
+                    onBlurEnd={() => handleBlur("end_time", form.end_time, form as any)}
+                    errorDate={!!getError("date")}
+                    errorStart={!!getError("start_time")}
+                    errorEnd={!!getError("end_time")}
+                    minDate={new Date()}
                   />
                   <div className="space-y-0.5 mt-1">
-                    <FieldError field="start_date" />
-                    <FieldError field="end_date" />
+                    <FieldError field="date" />
+                    <FieldError field="start_time" />
+                    <FieldError field="end_time" />
                   </div>
                 </div>
-                {visibility.showProjectNumber && (
-                  <div ref={(node) => { fieldAnchors.current.project_number = node; }}>
-                    <VRField
-                      id="vr-project-number"
-                      label="Project Number"
-                      required
-                      error={getError("project_number")}
-                    >
-                      <Input
-                        value={form.project_number}
-                        onChange={e => update("project_number", e.target.value)}
-                        onBlur={e => handleBlur("project_number", e.target.value, form as any)}
-                        placeholder="e.g. PRJ-2026-001"
-                        className="h-9 text-sm"
-                      />
-                    </VRField>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div
+                    ref={(node) => { fieldAnchors.current.start_date = node; fieldAnchors.current.end_date = node; }}
+                  >
+                    <DateRangeField
+                      startDate={form.start_date}
+                      endDate={form.end_date}
+                      onStartDateChange={(d) => { update("start_date", d); handleBlur("start_date", d, form as any); }}
+                      onEndDateChange={(d) => { update("end_date", d); handleBlur("end_date", d, form as any); }}
+                      minStart={new Date()}
+                      endRequired={isProject}
+                      errorStart={!!getError("start_date")}
+                      errorEnd={!!getError("end_date")}
+                    />
+                    <div className="space-y-0.5 mt-1">
+                      <FieldError field="start_date" />
+                      <FieldError field="end_date" />
+                    </div>
                   </div>
-                )}
+                  {visibility.showProjectNumber && (
+                    <div ref={(node) => { fieldAnchors.current.project_number = node; }}>
+                      <VRField
+                        id="vr-project-number"
+                        label="Project Number"
+                        required
+                        error={getError("project_number")}
+                      >
+                        <Input
+                          value={form.project_number}
+                          onChange={e => update("project_number", e.target.value)}
+                          onBlur={e => handleBlur("project_number", e.target.value, form as any)}
+                          placeholder="e.g. PRJ-2026-001"
+                          className="h-9 text-sm"
+                        />
+                      </VRField>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* ROUTE SECTION */}
+            <section className="space-y-3">
+              <SectionHeader icon={MapPin} title="Route" />
+              <RouteField
+                departure={form.departure_place}
+                departureLat={form.departure_lat}
+                departureLng={form.departure_lng}
+                destination={form.destination}
+                destinationLat={form.destination_lat}
+                destinationLng={form.destination_lng}
+                stops={form.stops as any}
+                onDepartureChange={(v) => { update("departure_place", v); handleBlur("departure_place", v, form as any); }}
+                onDepartureCoords={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
+                onDestinationChange={(v) => { update("destination", v); handleBlur("destination", v, form as any); }}
+                onDestinationCoords={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
+                onStopsChange={(stops) => update("stops", stops as any)}
+              />
+              <div className="space-y-0.5">
+                <FieldError field="departure_place" />
+                <FieldError field="destination" />
               </div>
-            )}
-
-
-
-            {/* Per-field errors are rendered inline below their inputs. */}
-
-          </section>
-
-          {/* ROUTE SECTION */}
-          <section className="space-y-3">
-            <SectionHeader icon={MapPin} title="Route" />
-            <RouteField
-              departure={form.departure_place}
-              departureLat={form.departure_lat}
-              departureLng={form.departure_lng}
-              destination={form.destination}
-              destinationLat={form.destination_lat}
-              destinationLng={form.destination_lng}
-              stops={form.stops as any}
-              onDepartureChange={(v) => { update("departure_place", v); handleBlur("departure_place", v, form as any); }}
-              onDepartureCoords={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
-              onDestinationChange={(v) => { update("destination", v); handleBlur("destination", v, form as any); }}
-              onDestinationCoords={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
-              onStopsChange={(stops) => update("stops", stops as any)}
-            />
-            <div className="space-y-0.5">
-              <FieldError field="departure_place" />
-              <FieldError field="destination" />
-            </div>
-
-          </section>
+            </section>
+          </div>
 
           {/* RESOURCES SECTION */}
           <section className="space-y-3">
