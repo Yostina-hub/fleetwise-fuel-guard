@@ -109,15 +109,17 @@ export function MapLocationPickerDialog({
    * `allow="geolocation"`); the explicit "Use my location" button below is
    * the reliable path.
    */
-  const requestCurrentLocation = (): Promise<{ lat: number; lng: number } | null> =>
+  const requestCurrentLocation = (): Promise<
+    { lat: number; lng: number } | { error: "denied" | "unavailable" | "timeout" | "unsupported" }
+  > =>
     new Promise((resolve) => {
       if (typeof navigator === "undefined" || !navigator.geolocation) {
         console.warn("[MapPicker] geolocation API unavailable in this browser");
-        return resolve(null);
+        return resolve({ error: "unsupported" });
       }
       const timer = setTimeout(() => {
         console.warn("[MapPicker] geolocation request timed out");
-        resolve(null);
+        resolve({ error: "timeout" });
       }, 12000);
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -127,7 +129,10 @@ export function MapLocationPickerDialog({
         (err) => {
           clearTimeout(timer);
           console.warn("[MapPicker] geolocation error:", err.code, err.message);
-          resolve(null);
+          // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+          const reason: "denied" | "unavailable" | "timeout" =
+            err.code === 1 ? "denied" : err.code === 3 ? "timeout" : "unavailable";
+          resolve({ error: reason });
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 30_000 },
       );
@@ -142,10 +147,16 @@ export function MapLocationPickerDialog({
     setIsLocating(true);
     const here = await requestCurrentLocation();
     setIsLocating(false);
-    if (!here) {
-      setSearchError(
-        "Couldn't access your location. Make sure location permission is allowed for this site, then try again.",
-      );
+    if ("error" in here) {
+      const message =
+        here.error === "denied"
+          ? "Location access is blocked for this site. Allow location in your browser's site settings, then click 'My location' again."
+          : here.error === "unsupported"
+            ? "Your browser doesn't support geolocation. Use search or click the map instead."
+            : here.error === "timeout"
+              ? "Location lookup timed out. Try again, or pick a place from the map."
+              : "Couldn't determine your location. Try again, or pick a place from the map.";
+      setSearchError(message);
       return;
     }
     setLat(parseFloat(here.lat.toFixed(6)));
@@ -161,13 +172,24 @@ export function MapLocationPickerDialog({
       setIsLocating(true);
       const here = await requestCurrentLocation();
       if (cancelled) return;
-      const startLat = here?.lat ?? initialLat;
-      const startLng = here?.lng ?? initialLng;
+      const hasCoords = !("error" in here);
+      const startLat = hasCoords ? here.lat : initialLat;
+      const startLng = hasCoords ? here.lng : initialLng;
       setLat(startLat);
       setLng(startLng);
       setSearchQuery("");
       setSearchResults([]);
-      setSearchError(null);
+      // Surface a hint when the auto-attempt was blocked so the user
+      // understands why the map opened on a default location and how to
+      // recover (click "My location" — that runs from a user gesture and
+      // typically triggers the browser's permission prompt).
+      if (!hasCoords && (here as any).error === "denied") {
+        setSearchError(
+          "Showing the default map view. Click 'My location' to allow this site to use your current location.",
+        );
+      } else {
+        setSearchError(null);
+      }
       setIsLocating(false);
       // Best-effort reverse geocode so the name field is descriptive
       // (avoids the misleading "Churchill Avenue" street default).
