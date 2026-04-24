@@ -1410,7 +1410,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div
                   ref={(node) => { fieldAnchors.current.start_date = node; fieldAnchors.current.end_date = node; }}
                 >
