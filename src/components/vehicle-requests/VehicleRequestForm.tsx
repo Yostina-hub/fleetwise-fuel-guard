@@ -1473,23 +1473,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <section className="space-y-3">
             <SectionHeader icon={Layers} title="Vehicle & Resources" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              <VRField
-                id="vr-num-vehicles"
-                label="No. Of Vehicles"
-                icon={Car}
-                error={getError("num_vehicles")}
-              >
-                <Input
-                  type="number"
-                  min={1}
-                  max={allowsMultipleVehicles ? 50 : 1}
-                  value={allowsMultipleVehicles ? form.num_vehicles : "1"}
-                  onChange={e => update("num_vehicles", e.target.value)}
-                  onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
-                  disabled={!allowsMultipleVehicles}
-                  className="h-9 text-sm"
-                />
-              </VRField>
+              {/* No. Of Vehicles is rendered inline next to the Trip Type
+                  field below to keep related quantity inputs side-by-side. */}
               <VRField
                 id="vr-trip-mode"
                 label="Trip Mode"
