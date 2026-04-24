@@ -1360,8 +1360,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Sparkles className="w-3.5 h-3.5" />
               Vehicle Request Type <span className="text-destructive">*</span>
             </Label>
-            <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
-              <SelectTrigger className="w-full md:max-w-sm h-9 text-sm">
+            <Select
+              value={form.request_type}
+              onValueChange={(v) => { update("request_type", v); handleBlur("request_type", v, form as any); }}
+            >
+              <SelectTrigger
+                className={`w-full md:max-w-sm h-9 text-sm ${getError("request_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                aria-invalid={!!getError("request_type")}
+              >
                 <SelectValue placeholder="Please select operation type…" />
               </SelectTrigger>
               <SelectContent>
@@ -1373,6 +1379,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <SelectItem value="messenger_service">Messenger Request</SelectItem>
               </SelectContent>
             </Select>
+            <FieldError field="request_type" />
           </section>
 
           {/* SCHEDULE SECTION */}
