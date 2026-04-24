@@ -1015,12 +1015,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     });
   }, [form.passengers, form.cargo_load, cargoWeightKgNum, recommendation?.value, isMessenger]);
 
-  // Auto-fill vehicle_type with the recommendation when the user hasn't
-  // touched it yet. Manual edits are preserved.
+  // Keep `vehicle_type` in sync with the live recommendation whenever
+  // passengers/cargo change — UNLESS the user has manually overridden it.
+  // This way, increasing passengers upgrades the recommendation (sedan → van
+  // → bus) and decreasing them downgrades it back (bus → van → sedan), so
+  // the form never "sticks" on a previously-larger class.
   useEffect(() => {
     if (!recommendation) return;
     if (isMessenger) return; // messenger service uses its own forced default
-    if (!form.vehicle_type) {
+    if (userPickedVehicleTypeRef.current) return; // respect manual override
+    if (form.vehicle_type !== recommendation.value) {
       setForm((f) => ({ ...f, vehicle_type: recommendation.value }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
