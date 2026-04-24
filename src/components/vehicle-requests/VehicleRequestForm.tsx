@@ -1545,14 +1545,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 return (
                   <VRField
                     id="vr-trip-type"
-                    label="Trip Type"
+                    label="Load Type"
                     icon={Users}
                     required
                     error={passengersError}
                   >
                     <Select value={tripTypeTouched ? mode : ""} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
                       <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="Please select trip type…" />
+                        <SelectValue placeholder="Please select load type…" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="passengers_only">Passengers Only</SelectItem>
