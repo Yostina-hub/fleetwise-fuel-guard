@@ -1801,8 +1801,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Label className="text-primary font-medium text-sm mb-1 block">
                 Business Purpose <span className="text-destructive">*</span>
               </Label>
-              <Select value={form.purpose_category} onValueChange={(v) => update("purpose_category", v)}>
-                <SelectTrigger className="h-9 text-sm">
+              <Select
+                value={form.purpose_category}
+                onValueChange={(v) => { update("purpose_category", v); handleBlur("purpose_category", v, form as any); }}
+              >
+                <SelectTrigger
+                  className={`h-9 text-sm ${getError("purpose_category") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                  aria-invalid={!!getError("purpose_category")}
+                >
                   <SelectValue placeholder="Please select business purpose…" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[420px]">
@@ -1826,6 +1832,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   })}
                 </SelectContent>
               </Select>
+              <FieldError field="purpose_category" />
             </div>
             <div>
               <Label className="text-primary font-medium text-sm mb-1 block">
