@@ -431,6 +431,8 @@ export function validateVehicleRequestForm(values: VRFormValues): {
     "trip_type",
     "pool_category",
     "pool_name",
+    "cargo_load",
+    "purpose_category",
     "purpose",
     "project_number",
     "priority",
