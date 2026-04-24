@@ -1374,27 +1374,36 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* ROUTE SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={MapPin} title="Route" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              <LocationPickerField
-                label="Departure Place"
-                value={form.departure_place}
-                lat={form.departure_lat}
-                lng={form.departure_lng}
-                onChange={v => update("departure_place", v)}
-                onCoordsChange={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
-                placeholder="Select or type departure"
-                iconColor="text-green-500"
-              />
-              <LocationPickerField
-                label="Final Destination"
-                value={form.destination}
-                lat={form.destination_lat}
-                lng={form.destination_lng}
-                onChange={v => update("destination", v)}
-                onCoordsChange={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
-                placeholder="Select or type final destination"
-                iconColor="text-red-500"
-              />
+            <div className="rounded-lg border border-input bg-background hover:border-primary/40 focus-within:border-primary transition-colors">
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-end gap-0">
+                <div className="p-3 md:border-r border-border/60">
+                  <LocationPickerField
+                    label="Departure Place"
+                    value={form.departure_place}
+                    lat={form.departure_lat}
+                    lng={form.departure_lng}
+                    onChange={v => update("departure_place", v)}
+                    onCoordsChange={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
+                    placeholder="Select or type departure"
+                    iconColor="text-green-500"
+                  />
+                </div>
+                <div className="hidden md:flex items-center justify-center pb-4 text-muted-foreground/70">
+                  <span className="text-base">→</span>
+                </div>
+                <div className="p-3">
+                  <LocationPickerField
+                    label="Final Destination"
+                    value={form.destination}
+                    lat={form.destination_lat}
+                    lng={form.destination_lng}
+                    onChange={v => update("destination", v)}
+                    onCoordsChange={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
+                    placeholder="Select or type final destination"
+                    iconColor="text-red-500"
+                  />
+                </div>
+              </div>
             </div>
             {/* Inline route preview map removed — keeps the form compact.
                 Users still pick locations via the map dialog on each field. */}
