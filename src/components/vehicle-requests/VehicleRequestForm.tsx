@@ -1491,23 +1491,30 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 icon={Users}
                 error={getError("passengers")}
               >
-                {isPassengerVehicleType(form.vehicle_type) ? (
-                  <Input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={form.passengers}
-                    onChange={e => update("passengers", e.target.value)}
-                    onBlur={e => handleBlur("passengers", e.target.value, form as any)}
-                    className="h-9 text-sm"
-                  />
-                ) : (
+                {/*
+                 * Passengers is enabled by default and stays editable for every
+                 * request type, including when cargo/equipment is selected.
+                 * It only becomes a read-only "N/A" when the user has explicitly
+                 * picked a non-passenger vehicle type (courier motorbike, cargo
+                 * truck, etc.) — selecting a cargo size alone must NOT disable it.
+                 */}
+                {form.vehicle_type && !isPassengerVehicleType(form.vehicle_type) ? (
                   <Input
                     type="text"
                     value="N/A"
                     readOnly
                     disabled
                     className="h-9 text-sm bg-muted/40"
+                  />
+                ) : (
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={form.passengers === String(NON_PASSENGER_SENTINEL) ? "" : form.passengers}
+                    onChange={e => update("passengers", e.target.value)}
+                    onBlur={e => handleBlur("passengers", e.target.value, form as any)}
+                    className="h-9 text-sm"
                   />
                 )}
               </VRField>
