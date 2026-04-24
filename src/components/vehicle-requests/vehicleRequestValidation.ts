@@ -119,6 +119,12 @@ const toDate = (v: unknown): Date | null => {
   return isNaN(d.getTime()) ? null : d;
 };
 
+/** Coordinate sanity: finite number within Earth's lat/lng bounds. */
+const isFiniteCoord = (n: unknown): boolean => {
+  const v = Number(n);
+  return Number.isFinite(v) && v !== 0 && Math.abs(v) <= 180;
+};
+
 const startOfToday = () => {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
