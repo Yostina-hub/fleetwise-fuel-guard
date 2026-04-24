@@ -405,8 +405,8 @@ const LayoutInner = ({ children }: LayoutProps) => {
       >
         {/* Header with Logo */}
         <div className={cn(
-          "py-4 bg-surface-deep flex items-center",
-          isCollapsed ? "px-2 justify-center" : "px-3"
+          "py-4 bg-surface-deep flex items-center justify-center",
+          isCollapsed ? "px-2" : "px-3"
         )}>
           <img 
             src={ethioTelecomLogo} 
