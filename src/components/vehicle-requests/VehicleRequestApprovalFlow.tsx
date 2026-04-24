@@ -36,6 +36,7 @@ import { notifyFleetOpsRequestApproved } from "@/services/fleetApprovalPushServi
 import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
 import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetList";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
+import { PoolAssignmentPicker } from "@/components/vehicle-requests/PoolAssignmentPicker";
 import type { RequestAssignment } from "@/hooks/useRequestAssignments";
 import {
   getVehicleClassProfile,
