@@ -1,5 +1,5 @@
 import * as React from "react";
-import { MapPin, ArrowRight, Route as RouteIcon, X, ChevronUp, ChevronDown, Plus } from "lucide-react";
+import { MapPin, ArrowRight, Route as RouteIcon, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
