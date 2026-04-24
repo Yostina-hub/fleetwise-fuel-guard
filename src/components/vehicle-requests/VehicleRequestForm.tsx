@@ -280,6 +280,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // reopens so a fresh form re-engages live sync.
   const userTouchedDateRef = useRef(false);
   const userTouchedStartTimeRef = useRef(false);
+  // Tracks whether the user has manually overridden the auto-recommended
+  // vehicle type. While false, the form keeps `vehicle_type` in sync with
+  // the recommendation as passengers/cargo change (so reducing passengers
+  // from 30 → 4 downgrades bus → sedan instead of "sticking" on the bus).
+  const userPickedVehicleTypeRef = useRef(false);
+
 
   // Auto-sync Date and Start Time to the machine's current clock whenever the
   // form is opened, and keep them ticking live (every 30s) until the user
@@ -1009,12 +1015,23 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     });
   }, [form.passengers, form.cargo_load, cargoWeightKgNum, recommendation?.value, isMessenger]);
 
-  // Auto-fill vehicle_type with the recommendation when the user hasn't
-  // touched it yet. Manual edits are preserved.
+  // Whenever passengers/cargo/weight change, clear the manual-override flag
+  // so the recommender takes back control and downgrades/upgrades the
+  // vehicle type to match the new load (e.g. 30 pax → bus, then 4 pax → sedan).
+  useEffect(() => {
+    userPickedVehicleTypeRef.current = false;
+  }, [form.passengers, form.cargo_load, cargoWeightKgNum]);
+
+  // Keep `vehicle_type` in sync with the live recommendation whenever
+  // passengers/cargo change — UNLESS the user has manually overridden it.
+  // This way, increasing passengers upgrades the recommendation (sedan → van
+  // → bus) and decreasing them downgrades it back (bus → van → sedan), so
+  // the form never "sticks" on a previously-larger class.
   useEffect(() => {
     if (!recommendation) return;
     if (isMessenger) return; // messenger service uses its own forced default
-    if (!form.vehicle_type) {
+    if (userPickedVehicleTypeRef.current) return; // respect manual override
+    if (form.vehicle_type !== recommendation.value) {
       setForm((f) => ({ ...f, vehicle_type: recommendation.value }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1710,7 +1727,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Label>
                 <Select
                   value={form.vehicle_type}
-                  onValueChange={v => { update("vehicle_type", v); handleBlur("vehicle_type", v, { ...form, vehicle_type: v } as any); }}
+                  onValueChange={v => {
+                    // Mark as manually overridden ONLY if the user picked
+                    // something different from the live recommendation.
+                    // Picking the recommendation itself keeps auto-sync on.
+                    userPickedVehicleTypeRef.current =
+                      !!recommendation && v !== recommendation.value;
+                    update("vehicle_type", v);
+                    handleBlur("vehicle_type", v, { ...form, vehicle_type: v } as any);
+                  }}
                 >
                   <SelectTrigger
                     className={`h-9 text-sm ${getError("vehicle_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
