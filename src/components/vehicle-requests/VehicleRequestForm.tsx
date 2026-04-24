@@ -1347,7 +1347,35 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             </Label>
             <Select
               value={form.request_type}
-              onValueChange={(v) => { update("request_type", v); handleBlur("request_type", v, form as any); }}
+              onValueChange={(v) => {
+                // When the user *manually* picks Night Request, snap the
+                // start/end times to the night window's lower bound (20:00 → 06:00)
+                // so the auto-classifier (08:30–17:30 = Day) doesn't immediately
+                // bounce them back to Day Operation.
+                if (v === "nighttime_operation") {
+                  setForm((f) => ({
+                    ...f,
+                    request_type: v,
+                    start_time: "20:00",
+                    end_time: f.end_time && f.end_time !== "" ? f.end_time : "06:00",
+                  }));
+                  handleBlur("request_type", v, { ...(form as any), request_type: v });
+                  return;
+                }
+                if (v === "daily_operation") {
+                  // Reset to canonical day window if coming from night.
+                  setForm((f) => ({
+                    ...f,
+                    request_type: v,
+                    start_time: f.start_time && f.start_time !== "20:00" ? f.start_time : "08:30",
+                    end_time: f.end_time && f.end_time !== "06:00" ? f.end_time : "17:30",
+                  }));
+                  handleBlur("request_type", v, { ...(form as any), request_type: v });
+                  return;
+                }
+                update("request_type", v);
+                handleBlur("request_type", v, form as any);
+              }}
             >
               <SelectTrigger
                 className={`w-full md:max-w-sm h-9 text-sm ${getError("request_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
