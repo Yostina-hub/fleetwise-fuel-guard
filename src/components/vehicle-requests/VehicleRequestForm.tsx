@@ -1208,7 +1208,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       return;
     }
 
-    createMutation.mutate();
+    // All validation passed — ask the user to confirm before firing off the
+    // request. The actual mutation runs from the AlertDialog's confirm action.
+    setConfirmOpen(true);
   };
 
   const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) => {
