@@ -935,7 +935,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   // Professional, descriptive validation (per-field, on blur + on submit).
   const validation = useVehicleRequestValidation();
-  const { getError, handleBlur, validateAll, errorCount } = validation;
+  const { getError, handleBlur, validateField, validateAll, errorCount } = validation;
 
   // Estimated duration (days for multi-day; hours for single-day) shown in the UI.
   const durationLabel = useMemo(() => {
@@ -1481,6 +1481,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 id="vr-trip-mode"
                 label="Trip Mode"
                 icon={Route}
+                required
                 error={getError("trip_type")}
               >
                 <Select
@@ -1610,7 +1611,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
                     <div>
                       <Label className="text-primary font-medium text-sm mb-1 block">
-                        Total Cargo Weight (kg)
+                        Total Cargo Weight (kg) <span className="text-destructive">*</span>
                       </Label>
                       <div className="relative">
                         <Input
@@ -1620,15 +1621,23 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                           max={50000}
                           step={1}
                           value={form.cargo_weight_kg}
-                          onChange={(e) => update("cargo_weight_kg", e.target.value)}
-                          onBlur={(e) => handleBlur("vehicle_type", form.vehicle_type, { ...form, cargo_weight_kg: e.target.value } as any)}
+                          onChange={(e) => {
+                            update("cargo_weight_kg", e.target.value);
+                            validateField("cargo_weight_kg", e.target.value, { ...form, cargo_weight_kg: e.target.value } as any);
+                          }}
+                          onBlur={(e) => {
+                            handleBlur("cargo_weight_kg", e.target.value, { ...form, cargo_weight_kg: e.target.value } as any);
+                            handleBlur("vehicle_type", form.vehicle_type, { ...form, cargo_weight_kg: e.target.value } as any);
+                          }}
                           placeholder="e.g. 250"
-                          className="h-9 text-sm pr-12"
+                          className={`h-9 text-sm pr-12 ${getError("cargo_weight_kg") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                          aria-invalid={!!getError("cargo_weight_kg")}
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
                           kg
                         </span>
                       </div>
+                      <FieldError field="cargo_weight_kg" />
                     </div>
                   </>
                 );

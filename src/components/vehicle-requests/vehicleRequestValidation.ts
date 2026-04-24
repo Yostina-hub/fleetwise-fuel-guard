@@ -71,7 +71,8 @@ export type VRFieldName =
   | "cargo_load"
   | "project_number"
   | "priority"
-  | "contact_phone";
+  | "contact_phone"
+  | "cargo_weight_kg";
 
 export interface VRFormValues {
   request_type: string;
@@ -421,6 +422,23 @@ export function validateVRField(
       return;
     }
 
+    case "cargo_weight_kg": {
+      // Only required when the trip carries cargo (Passengers + Cargo or
+      // Cargo Only). Passengers Only trips don't need a weight.
+      const passengersN = Number(ctx.passengers);
+      const isCargoOnly = passengersN === -1;
+      const cargo = sanitizeText(ctx.cargo_load) as CargoLoad | "";
+      const hasCargo = isCargoOnly || (cargo && cargo !== "none");
+      if (!hasCargo) return;
+      const raw = sanitizeText(value);
+      if (!raw) return "Total cargo weight is required. Enter the approximate weight in kilograms (e.g. 250).";
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return "Cargo weight must be a number in kilograms.";
+      if (n <= 0) return "Cargo weight must be greater than 0 kg. Switch to Passengers Only if there is no cargo.";
+      if (n > 50000) return "Cargo weight is too high (max 50,000 kg). Split the load across multiple requests.";
+      return;
+    }
+
     default:
       return;
   }
@@ -452,6 +470,7 @@ export function validateVehicleRequestForm(values: VRFormValues): {
     "project_number",
     "priority",
     "contact_phone",
+    "cargo_weight_kg",
   ];
   const errors: Partial<Record<VRFieldName, string>> = {};
   for (const f of fields) {
