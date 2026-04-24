@@ -1735,20 +1735,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 required
                 error={getError("num_vehicles")}
               >
-                <Input
-                  type="number"
-                  min={1}
-                  max={effectiveMaxVehicles}
-                  value={form.num_vehicles}
-                  onChange={e => update("num_vehicles", e.target.value)}
-                  onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
-                  className="h-9 text-sm"
-                />
-                {!allowsMultipleVehicles && paxBasedMaxVehicles > 1 && (
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    {parseInt(form.passengers) || 0} passengers exceed a single vehicle's 25-seat limit — up to {paxBasedMaxVehicles} vehicles allowed.
-                  </p>
-                )}
+                <div>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={effectiveMaxVehicles}
+                    value={form.num_vehicles}
+                    onChange={e => update("num_vehicles", e.target.value)}
+                    onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
+                    className="h-9 text-sm"
+                  />
+                  {!allowsMultipleVehicles && paxBasedMaxVehicles > 1 && (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {parseInt(form.passengers) || 0} passengers exceed a single vehicle's 25-seat limit — up to {paxBasedMaxVehicles} vehicles allowed.
+                    </p>
+                  )}
+                </div>
               </VRField>
 
               <div>
