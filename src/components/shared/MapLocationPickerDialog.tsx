@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Navigation, Search, Loader2 } from "lucide-react";
+import { MapPin, Navigation, Search, Loader2, Layers } from "lucide-react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getPreviewSafeMapStyle } from "@/lib/lemat";
@@ -40,6 +40,7 @@ export function MapLocationPickerDialog({
   const [lng, setLng] = useState(initialLng);
   const [locationName, setLocationName] = useState("");
   const [isLocating, setIsLocating] = useState(false);
+  const [mapStyle, setMapStyle] = useState<"streets" | "satellite">("streets");
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -270,7 +271,7 @@ export function MapLocationPickerDialog({
       container.style.width = "100%";
       container.style.height = "350px";
 
-      const style = getPreviewSafeMapStyle("streets");
+      const style = getPreviewSafeMapStyle(mapStyle);
 
       const map = new maplibregl.Map({
         container,
@@ -329,6 +330,20 @@ export function MapLocationPickerDialog({
       mapRef.current.easeTo({ center: [lng, lat], duration: 600 });
     }
   }, [lat, lng]);
+
+  // Swap base layer (Streets ↔ Satellite) without rebuilding the map.
+  // setStyle removes existing markers from the new style instance, so we
+  // re-attach the draggable pin once the new style finishes loading.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setStyle(getPreviewSafeMapStyle(mapStyle));
+    const reattach = () => {
+      if (!markerRef.current) return;
+      markerRef.current.addTo(map);
+    };
+    map.once("styledata", reattach);
+  }, [mapStyle]);
 
   const flyToLocation = (result: SearchResult) => {
     const newLat = parseFloat(result.lat);
@@ -429,11 +444,43 @@ export function MapLocationPickerDialog({
           </Button>
         </div>
 
-        {/* Map */}
-        <div
-          ref={mapContainer}
-          className="w-full h-[350px] rounded-lg border border-border overflow-hidden"
-        />
+        {/* Map (with Streets / Satellite layer toggle overlay) */}
+        <div className="relative">
+          <div
+            ref={mapContainer}
+            className="w-full h-[350px] rounded-lg border border-border overflow-hidden"
+          />
+          <div className="absolute top-2 left-2 z-10 inline-flex rounded-md border border-border bg-background/90 backdrop-blur shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setMapStyle("streets")}
+              className={`px-2.5 py-1 text-[11px] font-medium inline-flex items-center gap-1 transition-colors ${
+                mapStyle === "streets"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground hover:bg-accent"
+              }`}
+              aria-pressed={mapStyle === "streets"}
+              title="Street map"
+            >
+              <Layers className="w-3 h-3" />
+              Streets
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapStyle("satellite")}
+              className={`px-2.5 py-1 text-[11px] font-medium inline-flex items-center gap-1 transition-colors border-l border-border ${
+                mapStyle === "satellite"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground hover:bg-accent"
+              }`}
+              aria-pressed={mapStyle === "satellite"}
+              title="Satellite imagery"
+            >
+              <Layers className="w-3 h-3" />
+              Satellite
+            </button>
+          </div>
+        </div>
 
         {/* Selected place — name is auto-filled from the map; coords kept
             as a tiny read-only hint so users know the pin is real, but they
