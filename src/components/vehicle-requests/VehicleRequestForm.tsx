@@ -1604,9 +1604,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
 
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">Vehicle Type</Label>
-                <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Please select vehicle type…" /></SelectTrigger>
+                <Label className="text-primary font-medium text-sm mb-1 block">
+                  Vehicle Type <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.vehicle_type}
+                  onValueChange={v => { update("vehicle_type", v); handleBlur("vehicle_type", v, { ...form, vehicle_type: v } as any); }}
+                >
+                  <SelectTrigger
+                    className={`h-9 text-sm ${getError("vehicle_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("vehicle_type")}
+                  >
+                    <SelectValue placeholder="Please select vehicle type…" />
+                  </SelectTrigger>
                   <SelectContent>
                     {eligibleVehicleTypes.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-muted-foreground">
@@ -1621,6 +1631,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     )}
                   </SelectContent>
                 </Select>
+                <FieldError field="vehicle_type" />
               </div>
 
               {isUpgrade && (
