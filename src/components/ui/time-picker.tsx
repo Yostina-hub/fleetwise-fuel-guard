@@ -278,7 +278,7 @@ export function TimePicker({
             </div>
             <ScrollArea className="h-56 w-16">
               <div className="p-1">
-                {hours12.map((h) => (
+                {visibleHours12.map((h) => (
                   <button
                     key={h}
                     type="button"
@@ -302,7 +302,7 @@ export function TimePicker({
             </div>
             <ScrollArea className="h-56 w-16">
               <div className="p-1">
-                {minutes.map((m) => (
+                {visibleMinutes.map((m) => (
                   <button
                     key={m}
                     type="button"
