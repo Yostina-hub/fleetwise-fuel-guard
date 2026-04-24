@@ -1346,12 +1346,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <SelectValue placeholder="Please select operation type…" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="daily_operation">Day Operation (8:30 AM – 5:30 PM)</SelectItem>
+                <SelectItem value="daily_operation">Day Request (8:30 AM – 5:30 PM)</SelectItem>
                 <SelectItem value="nighttime_operation">Night Request (8:00 PM – 6:00 AM)</SelectItem>
-                <SelectItem value="project_operation">Project Operation</SelectItem>
-                <SelectItem value="field_operation">Field Operation</SelectItem>
-                <SelectItem value="group_operation">Group Operation</SelectItem>
-                <SelectItem value="messenger_service">Messenger Service</SelectItem>
+                <SelectItem value="project_operation">Project Request</SelectItem>
+                <SelectItem value="field_operation">Field Request</SelectItem>
+                <SelectItem value="group_operation">Group Request</SelectItem>
+                <SelectItem value="messenger_service">Messenger Request</SelectItem>
               </SelectContent>
             </Select>
           </section>
