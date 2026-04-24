@@ -1341,6 +1341,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* TYPE SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={Sparkles} title="Vehicle Request Type" />
+            <Label className="text-primary font-medium text-sm flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              Vehicle Request Type <span className="text-destructive">*</span>
+            </Label>
             <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
               <SelectTrigger className="w-full md:max-w-sm h-9 text-sm">
                 <SelectValue placeholder="Please select operation type…" />
