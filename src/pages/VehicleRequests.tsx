@@ -52,6 +52,7 @@ import {
   ArrowUp,
   ArrowDown,
   UserCheck,
+  GitMerge,
 } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
@@ -64,6 +65,7 @@ import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPo
 import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
 import { ConsolidationPanel } from "@/components/vehicle-requests/ConsolidationPanel";
 import { OpsMapView } from "@/components/vehicle-requests/OpsMapView";
+import { TripConsolidationWorkspace } from "@/components/vehicle-requests/TripConsolidationWorkspace";
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
 
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
@@ -156,11 +158,12 @@ const VehicleRequests = () => {
   // workspace with consolidation + per-request review/assign panels).
   // Synced to URL ?view=assignments so the legacy /pool-supervisors redirect
   // can deep-link straight into this mode.
-  const [viewMode, setViewMode] = useState<"requests" | "assignments" | "ops_map">(() => {
+  const [viewMode, setViewMode] = useState<"requests" | "assignments" | "ops_map" | "consolidation">(() => {
     if (typeof window === "undefined") return "requests";
     const v = new URLSearchParams(window.location.search).get("view");
     if (v === "assignments") return "assignments";
     if (v === "ops_map") return "ops_map";
+    if (v === "consolidation") return "consolidation";
     return "requests";
   });
   useEffect(() => {
@@ -168,6 +171,7 @@ const VehicleRequests = () => {
     const url = new URL(window.location.href);
     if (viewMode === "assignments") url.searchParams.set("view", "assignments");
     else if (viewMode === "ops_map") url.searchParams.set("view", "ops_map");
+    else if (viewMode === "consolidation") url.searchParams.set("view", "consolidation");
     else url.searchParams.delete("view");
     window.history.replaceState({}, "", url.toString());
   }, [viewMode]);
@@ -788,6 +792,18 @@ const VehicleRequests = () => {
                   <Sparkles className="w-3.5 h-3.5" />
                   Ops Map
                 </Button>
+                <Button
+                  variant={viewMode === "consolidation" ? "default" : "outline"}
+                  size="sm"
+                  className="gap-1.5 h-9"
+                  onClick={() =>
+                    setViewMode((m) => (m === "consolidation" ? "requests" : "consolidation"))
+                  }
+                  title="Trip Consolidation — merge requests by pool, route, and time"
+                >
+                  <GitMerge className="w-3.5 h-3.5" />
+                  Consolidate
+                </Button>
               </>
             )}
             <Can resource="vehicle_requests" action="create">
@@ -875,6 +891,24 @@ const VehicleRequests = () => {
               </CardContent>
             </Card>
             <OpsMapView organizationId={organizationId} />
+          </div>
+        )}
+
+        {/* ============== TRIP CONSOLIDATION WORKSPACE ============== */}
+        {viewMode === "consolidation" && canManageAll && organizationId && (
+          <div className="space-y-4 animate-fade-in">
+            <TripConsolidationWorkspace organizationId={organizationId} />
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => setViewMode("requests")}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Back to Requests
+              </Button>
+            </div>
           </div>
         )}
 

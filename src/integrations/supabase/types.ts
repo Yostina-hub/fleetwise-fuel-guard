@@ -23895,6 +23895,7 @@ export type Database = {
           check_in_at: string | null
           check_in_by: string | null
           completed_at: string | null
+          consolidated_request_count: number | null
           created_at: string
           cross_pool_assignment: boolean | null
           current_workflow_stage: string | null
@@ -23929,7 +23930,10 @@ export type Database = {
           filed_by_user_id: string | null
           filed_on_behalf: boolean
           id: string
+          is_consolidated_parent: boolean
           kpi_target_minutes: number | null
+          merge_strategy: string | null
+          merged_into_request_id: string | null
           needed_from: string
           needed_until: string | null
           num_vehicles: number | null
@@ -23992,6 +23996,7 @@ export type Database = {
           check_in_at?: string | null
           check_in_by?: string | null
           completed_at?: string | null
+          consolidated_request_count?: number | null
           created_at?: string
           cross_pool_assignment?: boolean | null
           current_workflow_stage?: string | null
@@ -24026,7 +24031,10 @@ export type Database = {
           filed_by_user_id?: string | null
           filed_on_behalf?: boolean
           id?: string
+          is_consolidated_parent?: boolean
           kpi_target_minutes?: number | null
+          merge_strategy?: string | null
+          merged_into_request_id?: string | null
           needed_from: string
           needed_until?: string | null
           num_vehicles?: number | null
@@ -24089,6 +24097,7 @@ export type Database = {
           check_in_at?: string | null
           check_in_by?: string | null
           completed_at?: string | null
+          consolidated_request_count?: number | null
           created_at?: string
           cross_pool_assignment?: boolean | null
           current_workflow_stage?: string | null
@@ -24123,7 +24132,10 @@ export type Database = {
           filed_by_user_id?: string | null
           filed_on_behalf?: boolean
           id?: string
+          is_consolidated_parent?: boolean
           kpi_target_minutes?: number | null
+          merge_strategy?: string | null
+          merged_into_request_id?: string | null
           needed_from?: string
           needed_until?: string | null
           num_vehicles?: number | null
@@ -24196,6 +24208,13 @@ export type Database = {
             columns: ["destination_geofence_id"]
             isOneToOne: false
             referencedRelation: "geofences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_requests_merged_into_request_id_fkey"
+            columns: ["merged_into_request_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_requests"
             referencedColumns: ["id"]
           },
           {
@@ -26892,6 +26911,15 @@ export type Database = {
           high: number
           processed: number
         }[]
+      }
+      consolidate_vehicle_requests: {
+        Args: {
+          _notes?: string
+          _organization_id: string
+          _request_ids: string[]
+          _strategy?: string
+        }
+        Returns: string
       }
       cpbr_is_same_org: { Args: { _org: string }; Returns: boolean }
       create_telemetry_partition: {
