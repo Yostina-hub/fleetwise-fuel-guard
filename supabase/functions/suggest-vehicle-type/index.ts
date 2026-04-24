@@ -18,7 +18,7 @@ interface Body {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: buildCorsHeaders(req) });
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     if (!Array.isArray(body.eligible_types) || body.eligible_types.length === 0) {
       return new Response(JSON.stringify({ error: "No eligible vehicle types provided" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...buildCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -109,20 +109,20 @@ ${optionsList}`;
       if (aiRes.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded — please try again in a moment." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          { status: 429, headers: { ...buildCorsHeaders(req), "Content-Type": "application/json" } },
         );
       }
       if (aiRes.status === 402) {
         return new Response(
           JSON.stringify({ error: "AI credits exhausted — add funds to your Lovable workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          { status: 402, headers: { ...buildCorsHeaders(req), "Content-Type": "application/json" } },
         );
       }
       const txt = await aiRes.text();
       console.error("AI gateway error:", aiRes.status, txt);
       return new Response(JSON.stringify({ error: "AI gateway error" }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...buildCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -131,7 +131,7 @@ ${optionsList}`;
     if (!call) {
       return new Response(JSON.stringify({ error: "No suggestion produced" }), {
         status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...buildCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
     let parsed: { vehicle_type: string; reason: string; confidence: string };
@@ -140,7 +140,7 @@ ${optionsList}`;
     } catch {
       return new Response(JSON.stringify({ error: "Malformed AI response" }), {
         status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...buildCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
     if (!allowedValues.includes(parsed.vehicle_type)) {
@@ -150,13 +150,13 @@ ${optionsList}`;
     }
 
     return new Response(JSON.stringify(parsed), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...buildCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("suggest-vehicle-type error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      { status: 500, headers: { ...buildCorsHeaders(req), "Content-Type": "application/json" } },
     );
   }
 });
