@@ -1849,7 +1849,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <div>
                 <VRField
                   id="vr-contact-phone"
-                  label="Contact Phone *"
+                  label="Contact Phone"
+                  required
                   error={getError("contact_phone")}
                 >
                   <Input
