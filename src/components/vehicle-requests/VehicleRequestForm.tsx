@@ -652,6 +652,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         purpose:
           safe.purpose +
           filedOnBehalfNote +
+          (form.cargo_description?.trim() ? `\n\nItems to transport: ${form.cargo_description.trim()}` : "") +
           (safe.contact_phone ? `\n\nContact phone: ${safe.contact_phone}` : ""),
         needed_from: neededFrom,
         needed_until: neededUntil,
