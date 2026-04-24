@@ -1229,7 +1229,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {HeaderInner}
         </div>
       ) : (
-        <div className="px-5 sm:px-6 py-3 border-b border-border bg-card sticky top-0 z-10">
+        <div className="px-3 sm:px-5 md:px-6 py-3 border-b border-border bg-card sticky top-0 z-10">
           <DialogHeader>
             <DialogTitle className="sr-only">Vehicle Request</DialogTitle>
             <DialogDescription className="sr-only">
@@ -1240,7 +1240,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         </div>
       )}
 
-      <div className={`${embedded ? "px-1" : "px-5 sm:px-6"} pt-2 pb-1 space-y-3`}>
+      <div className={`${embedded ? "px-1" : "px-3 sm:px-5 md:px-6"} pt-2 pb-1 space-y-3`}>
         {/* Draft restored notice */}
         {restoredAt && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs animate-fade-in">
@@ -1479,7 +1479,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* RESOURCES SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={Layers} title="Vehicle & Resources" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               <VRField
                 id="vr-num-vehicles"
                 label="No. Of Vehicles"
@@ -1718,7 +1718,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
 
               {isUpgrade && (
-                <div className="md:col-span-2 lg:col-span-3">
+                <div className="sm:col-span-2 lg:col-span-3">
                   <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1 block">
                     Justification <span className="text-destructive">*</span>
                   </Label>
@@ -1997,7 +1997,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         return embedded ? (
           <div className="pt-4 border-t border-border/60 mt-4">{FooterInner}</div>
         ) : (
-          <DialogFooter className="px-5 sm:px-6 py-3 mt-4 bg-muted/30 border-t border-border/60 sm:justify-between sticky bottom-0 z-10">
+          <DialogFooter className="px-3 sm:px-5 md:px-6 py-3 mt-4 bg-muted/30 border-t border-border/60 sm:justify-between sticky bottom-0 z-10">
             {FooterInner}
           </DialogFooter>
         );
@@ -2039,7 +2039,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[94vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-6xl max-h-[94vh] overflow-y-auto p-0 gap-0">
         {isDriverOnly ? blockedBody : body}
       </DialogContent>
     </Dialog>
