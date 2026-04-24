@@ -1555,42 +1555,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     icon={Users}
                     error={passengersError}
                   >
-                    <div className="flex items-stretch gap-1.5">
-                      <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
-                        <SelectTrigger className="h-9 text-sm flex-1 min-w-0">
-                          <SelectValue placeholder="Select trip type…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="passengers_only">Passengers Only</SelectItem>
-                          <SelectItem value="passengers_cargo">Passengers + Cargo</SelectItem>
-                          <SelectItem value="cargo_only">Cargo Only</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {mode === "cargo_only" ? (
-                        <Input
-                          type="text"
-                          value="N/A"
-                          readOnly
-                          disabled
-                          aria-label="Passengers not applicable"
-                          title="Cargo Only — driver only"
-                          className="h-9 text-sm w-14 shrink-0 text-center px-1 bg-muted/40"
-                        />
-                      ) : (
-                        <Input
-                          type="number"
-                          min={1}
-                          max={100}
-                          aria-label="Number of passengers"
-                          title="Number of passengers"
-                          placeholder="Pax"
-                          value={passengersIsNA ? "" : form.passengers}
-                          onChange={e => update("passengers", e.target.value)}
-                          onBlur={e => handleBlur("passengers", e.target.value, form as any)}
-                          className="h-9 text-sm w-16 shrink-0 text-center px-1"
-                        />
-                      )}
-                    </div>
+                    <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="Select trip type…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="passengers_only">Passengers Only</SelectItem>
+                        <SelectItem value="passengers_cargo">Passengers + Cargo</SelectItem>
+                        <SelectItem value="cargo_only">Cargo Only</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </VRField>
                 );
               })()}
