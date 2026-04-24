@@ -475,6 +475,25 @@ export function validateVRField(
       return;
     }
 
+    case "stops": {
+      const list = Array.isArray(value) ? value : [];
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i] || {};
+        const name = sanitizeShortText(s.name);
+        const hasCoords = isFiniteCoord(s.lat) && isFiniteCoord(s.lng);
+        // Empty rows are tolerated (the form drops them on submit), but if
+        // the user typed a stop name OR picked partial coords, require a
+        // real map pick — typed text without a coordinate is rejected.
+        if ((name || s.lat != null || s.lng != null) && !hasCoords) {
+          return `Stop ${i + 1} must be picked on the map. Free-text stops without coordinates are not allowed.`;
+        }
+        if (name && name.length > 200) {
+          return `Stop ${i + 1} name is too long (max 200 characters).`;
+        }
+      }
+      return;
+    }
+
     default:
       return;
   }
