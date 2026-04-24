@@ -1554,6 +1554,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     id="vr-trip-type"
                     label="Trip Type"
                     icon={Users}
+                    required
                     error={passengersError}
                   >
                     <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
