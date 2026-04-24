@@ -28,6 +28,7 @@ import { AlertCircle } from "lucide-react";
 import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm, vehicleRequestZodSchema, validateVehicleRequestForm } from "./vehicleRequestValidation";
 import { VRField } from "./VRField";
+import { DateTimeRangeField } from "./DateTimeRangeField";
 import { deriveVisibility } from "./visibility";
 import { RouteMapPreview } from "./RouteMapPreview";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
