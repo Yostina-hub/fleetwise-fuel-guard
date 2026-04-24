@@ -745,6 +745,47 @@ export const DriverViewRequestDialog = ({
               }}
               heightPx={220}
             />
+
+            {/* Inline AI route estimate */}
+            <div className="border-t bg-primary/5 p-3 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  AI Route Estimate
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={requestAiEstimate}
+                  disabled={aiEstimateLoading}
+                  className="h-7 text-xs gap-1"
+                >
+                  {aiEstimateLoading ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Estimating…
+                    </>
+                  ) : aiEstimate ? (
+                    "Regenerate"
+                  ) : (
+                    "Estimate Route"
+                  )}
+                </Button>
+              </div>
+              {aiEstimateError && (
+                <p className="text-xs text-destructive">{aiEstimateError}</p>
+              )}
+              {aiEstimate ? (
+                <p className="whitespace-pre-line text-xs leading-relaxed text-foreground/90">
+                  {aiEstimate}
+                </p>
+              ) : !aiEstimateError ? (
+                <p className="text-[11px] text-muted-foreground">
+                  Get an AI-generated travel briefing covering ETA hints, road
+                  conditions and driving tips for this trip.
+                </p>
+              ) : null}
+            </div>
           </div>
         )}
 
