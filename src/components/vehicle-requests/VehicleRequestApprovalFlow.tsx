@@ -594,6 +594,21 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         onCheckIn={(a) => setActiveAssignment(a)}
       />
 
+      {/* Operator tools: geofencing / optimization / consolidation / navigate */}
+      {canManageAll && (
+        <OperatorToolsTabs
+          request={request}
+          canManage={canManageAll}
+          isAssigning={assignMutation.isPending}
+          onAssignViaPicker={(vehicleId, driverId) =>
+            assignMutation.mutate({ vehicleId, driverId })
+          }
+          onUnavailable={() =>
+            toast.info("Mark-unavailable is handled in the Pool Review queue.")
+          }
+        />
+      )}
+
       {/* Approval routing info */}
       {request.approval_routed_to && (
         <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-lg p-2">
