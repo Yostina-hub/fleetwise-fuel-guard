@@ -412,7 +412,7 @@ const LayoutInner = ({ children }: LayoutProps) => {
             src={ethioTelecomLogo} 
             alt="ethio telecom" 
             className={cn(
-              "object-contain transition-all duration-300",
+              "object-contain transition-all duration-300 dark:[filter:invert(1)_hue-rotate(180deg)]",
               isCollapsed ? "h-8 w-8" : "h-14 w-auto"
             )}
           />
