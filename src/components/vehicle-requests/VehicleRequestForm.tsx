@@ -966,12 +966,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   }, [form.cargo_weight_kg]);
 
   const recommendation = useMemo(() => {
-    if (!form.cargo_load) return null;
     const raw = parseInt(form.passengers);
     const pax = raw === NON_PASSENGER_SENTINEL ? 1 : (raw || 1);
+    // Default cargo to "none" so the recommender can drive auto-sync purely
+    // from passenger count — even before the user has picked a Trip Load.
+    // (Cargo Only / Passengers + Cargo trips override this with the real value.)
+    const cargo = (form.cargo_load || "none") as CargoLoad;
     return recommendVehicleClass({
       passengers: pax,
-      cargo: form.cargo_load as CargoLoad,
+      cargo,
       cargoWeightKg: cargoWeightKgNum || null,
       courierOnly: isMessenger,
     });
