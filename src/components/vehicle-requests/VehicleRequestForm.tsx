@@ -1229,7 +1229,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {HeaderInner}
         </div>
       ) : (
-        <div className="px-5 sm:px-6 py-3 border-b border-border bg-card sticky top-0 z-10">
+        <div className="px-3 sm:px-5 md:px-6 py-3 border-b border-border bg-card sticky top-0 z-10">
           <DialogHeader>
             <DialogTitle className="sr-only">Vehicle Request</DialogTitle>
             <DialogDescription className="sr-only">
