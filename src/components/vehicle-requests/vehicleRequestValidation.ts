@@ -67,6 +67,8 @@ export type VRFieldName =
   | "pool_category"
   | "pool_name"
   | "purpose"
+  | "purpose_category"
+  | "cargo_load"
   | "project_number"
   | "priority"
   | "contact_phone";
@@ -87,11 +89,12 @@ export interface VRFormValues {
   pool_category?: string;
   pool_name?: string;
   purpose?: string;
+  purpose_category?: string;
   project_number?: string;
   priority?: string;
   contact_phone?: string;
   /** Drives passenger+cargo fitness check on vehicle_type. */
-  cargo_load?: CargoLoad;
+  cargo_load?: CargoLoad | "";
   /** Optional cargo total weight (kg) — validated against vehicle max payload. */
   cargo_weight_kg?: string | number | null;
 }
@@ -154,8 +157,9 @@ export function validateVRField(
         return "Nighttime operations must start at or after 20:00 (8:00 night) or before 06:00 EAT.";
       }
       // If the trip date is today, reject times already in the past on the
-      // requester's machine clock — we cannot schedule a trip for a moment
-      // that has already passed.
+      // requester's machine clock — but allow a small grace window so the
+      // live-clock auto-fill, network latency, and submit-click delay never
+      // turn a freshly-prefilled time into a "you're in the past" error.
       const tripDate = toDate(ctx.date);
       if (tripDate) {
         const today = startOfToday();
@@ -163,10 +167,14 @@ export function validateVRField(
           && tripDate.getMonth() === today.getMonth()
           && tripDate.getDate() === today.getDate();
         if (sameDay) {
+          const GRACE_MINUTES = 5;
           const now = new Date();
-          const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-          if (v < nowHHMM)
-            return `Start time (${v}) is already in the past — current time is ${nowHHMM}. Pick a future time or change the date.`;
+          const graceCutoff = new Date(now.getTime() - GRACE_MINUTES * 60_000);
+          const cutoffHHMM = `${String(graceCutoff.getHours()).padStart(2, "0")}:${String(graceCutoff.getMinutes()).padStart(2, "0")}`;
+          if (v < cutoffHHMM) {
+            const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+            return `Start time (${v}) is more than ${GRACE_MINUTES} minutes in the past — current time is ${nowHHMM}. Pick a future time or change the date.`;
+          }
         }
       }
       return;
@@ -214,14 +222,16 @@ export function validateVRField(
 
     case "departure_place": {
       const v = sanitizeShortText(value);
-      if (v && v.length < 2) return "Departure place is too short. Enter at least 2 characters or pick a saved location.";
+      if (!v) return "Departure place is required. Pick a location or type the address.";
+      if (v.length < 2) return "Departure place is too short. Enter at least 2 characters or pick a saved location.";
       if (v.length > 200) return "Departure place is too long (max 200 characters).";
       return;
     }
 
     case "destination": {
       const v = sanitizeShortText(value);
-      if (v && v.length < 2) return "Destination is too short. Enter at least 2 characters or pick a saved location.";
+      if (!v) return "Destination is required. Pick a location or type the address.";
+      if (v.length < 2) return "Destination is too short. Enter at least 2 characters or pick a saved location.";
       if (v.length > 200) return "Destination is too long (max 200 characters).";
       return;
     }
@@ -292,22 +302,41 @@ export function validateVRField(
 
     case "trip_type": {
       const v = sanitizeText(value);
-      if (v && !["one_way", "round_trip"].includes(v))
+      if (!v) return "Trip type is required. Choose 'One Way' or 'Round Trip'.";
+      if (!["one_way", "round_trip"].includes(v))
         return "Trip type must be either 'One Way' or 'Round Trip'.";
       return;
     }
 
     case "pool_category": {
       const v = sanitizeText(value);
-      if (v && !["corporate", "zone", "region"].includes(v))
+      if (!v) return "Pool category is required. Choose Corporate, Zone, or Region.";
+      if (!["corporate", "zone", "region"].includes(v))
         return "Invalid pool category. Choose Corporate, Zone, or Region.";
       return;
     }
 
     case "pool_name": {
       const v = sanitizeText(value);
-      if (v && !ctx.pool_category)
-        return "Choose a pool category first, then select the specific pool.";
+      if (!ctx.pool_category) {
+        // pool_name can't be evaluated until category is picked.
+        return;
+      }
+      if (!v) return "Assigned location is required. Pick the specific pool / location.";
+      return;
+    }
+
+    case "cargo_load": {
+      const v = sanitizeText(value);
+      if (!v) return "Cargo / Equipment size is required. Pick None, Small, Medium, or Large.";
+      if (!["none", "small", "medium", "large"].includes(v))
+        return "Invalid cargo size. Pick None, Small, Medium, or Large.";
+      return;
+    }
+
+    case "purpose_category": {
+      const v = sanitizeText(value);
+      if (!v) return "Business purpose is required. Pick the closest category from the list.";
       return;
     }
 
@@ -332,7 +361,8 @@ export function validateVRField(
 
     case "priority": {
       const v = sanitizeText(value);
-      if (v && !["low", "normal", "high", "urgent"].includes(v))
+      if (!v) return "Priority is required. Pick Low, Normal, High, or Urgent.";
+      if (!["low", "normal", "high", "urgent"].includes(v))
         return "Priority must be Low, Normal, High, or Urgent.";
       return;
     }
@@ -401,6 +431,8 @@ export function validateVehicleRequestForm(values: VRFormValues): {
     "trip_type",
     "pool_category",
     "pool_name",
+    "cargo_load",
+    "purpose_category",
     "purpose",
     "project_number",
     "priority",

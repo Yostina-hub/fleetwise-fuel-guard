@@ -291,17 +291,32 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   // Auto-sync Date and Start Time to the machine's current clock whenever the
   // form is opened, and keep them ticking live (every 30s) until the user
-  // edits either field. End time stays under user control.
+  // edits any schedule field. End time stays under user control.
+  //
+  // IMPORTANT: once the user has supplied an end_time (i.e. actively configured
+  // the trip window) we MUST stop bumping start_time forward — otherwise the
+  // ticking clock can shove start_time past end_time and the validator will
+  // suddenly start screaming "start time is in the past" / "end before start"
+  // even though the user has already filled both fields correctly.
   useEffect(() => {
     if (!open) return;
     userTouchedDateRef.current = false;
     userTouchedStartTimeRef.current = false;
 
     const sync = () => {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      // Freeze the auto-tick once the user has configured the window. We treat
+      // "end_time is set" OR "request_type is chosen" as a strong signal the
+      // user is actively filling the form and no longer wants the start time
+      // silently rewritten on every tick.
       setForm((prev) => {
+        const userIsActive =
+          !!prev.end_time ||
+          (!!prev.request_type && prev.request_type !== "");
+        if (userIsActive) return prev;
+
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
         const next: any = { ...prev };
         let changed = false;
         if (!userTouchedDateRef.current) {
@@ -1345,8 +1360,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Sparkles className="w-3.5 h-3.5" />
               Vehicle Request Type <span className="text-destructive">*</span>
             </Label>
-            <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
-              <SelectTrigger className="w-full md:max-w-sm h-9 text-sm">
+            <Select
+              value={form.request_type}
+              onValueChange={(v) => { update("request_type", v); handleBlur("request_type", v, form as any); }}
+            >
+              <SelectTrigger
+                className={`w-full md:max-w-sm h-9 text-sm ${getError("request_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                aria-invalid={!!getError("request_type")}
+              >
                 <SelectValue placeholder="Please select operation type…" />
               </SelectTrigger>
               <SelectContent>
@@ -1358,6 +1379,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <SelectItem value="messenger_service">Messenger Request</SelectItem>
               </SelectContent>
             </Select>
+            <FieldError field="request_type" />
           </section>
 
           {/* SCHEDULE SECTION */}
@@ -1445,22 +1467,37 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               destinationLat={form.destination_lat}
               destinationLng={form.destination_lng}
               stops={form.stops as any}
-              onDepartureChange={(v) => update("departure_place", v)}
+              onDepartureChange={(v) => { update("departure_place", v); handleBlur("departure_place", v, form as any); }}
               onDepartureCoords={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
-              onDestinationChange={(v) => update("destination", v)}
+              onDestinationChange={(v) => { update("destination", v); handleBlur("destination", v, form as any); }}
               onDestinationCoords={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
               onStopsChange={(stops) => update("stops", stops as any)}
             />
+            <div className="space-y-0.5">
+              <FieldError field="departure_place" />
+              <FieldError field="destination" />
+            </div>
 
             <div>
-              <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
-              <Select value={form.trip_type} onValueChange={v => update("trip_type", v)}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Please select trip type…" /></SelectTrigger>
+              <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
+                <Route className="w-3.5 h-3.5" /> Trip Type <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={form.trip_type}
+                onValueChange={v => { update("trip_type", v); handleBlur("trip_type", v, form as any); }}
+              >
+                <SelectTrigger
+                  className={`h-9 text-sm ${getError("trip_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                  aria-invalid={!!getError("trip_type")}
+                >
+                  <SelectValue placeholder="Please select trip type…" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="one_way">One Way Trip</SelectItem>
                   <SelectItem value="round_trip">Round Trip</SelectItem>
                 </SelectContent>
               </Select>
+              <FieldError field="trip_type" />
             </div>
           </section>
 
@@ -1491,23 +1528,30 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 icon={Users}
                 error={getError("passengers")}
               >
-                {isPassengerVehicleType(form.vehicle_type) ? (
-                  <Input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={form.passengers}
-                    onChange={e => update("passengers", e.target.value)}
-                    onBlur={e => handleBlur("passengers", e.target.value, form as any)}
-                    className="h-9 text-sm"
-                  />
-                ) : (
+                {/*
+                 * Passengers is enabled by default and stays editable for every
+                 * request type, including when cargo/equipment is selected.
+                 * It only becomes a read-only "N/A" when the user has explicitly
+                 * picked a non-passenger vehicle type (courier motorbike, cargo
+                 * truck, etc.) — selecting a cargo size alone must NOT disable it.
+                 */}
+                {form.vehicle_type && !isPassengerVehicleType(form.vehicle_type) ? (
                   <Input
                     type="text"
                     value="N/A"
                     readOnly
                     disabled
                     className="h-9 text-sm bg-muted/40"
+                  />
+                ) : (
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={form.passengers === String(NON_PASSENGER_SENTINEL) ? "" : form.passengers}
+                    onChange={e => update("passengers", e.target.value)}
+                    onBlur={e => handleBlur("passengers", e.target.value, form as any)}
+                    className="h-9 text-sm"
                   />
                 )}
               </VRField>
@@ -1517,11 +1561,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Label>
                 <Select
                   value={form.cargo_load}
-                  onValueChange={(v) => update("cargo_load", v as CargoLoad)}
+                  onValueChange={(v) => { update("cargo_load", v as CargoLoad); handleBlur("cargo_load", v, form as any); }}
                 >
                   <SelectTrigger
-                    className="h-9 text-sm"
-                    aria-invalid={!form.cargo_load}
+                    className={`h-9 text-sm ${getError("cargo_load") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("cargo_load")}
                   >
                     <SelectValue placeholder="Please select cargo size…" />
                   </SelectTrigger>
@@ -1533,6 +1577,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError field="cargo_load" />
               </div>
 
               <div>
@@ -1559,9 +1604,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
 
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">Vehicle Type</Label>
-                <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Please select vehicle type…" /></SelectTrigger>
+                <Label className="text-primary font-medium text-sm mb-1 block">
+                  Vehicle Type <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.vehicle_type}
+                  onValueChange={v => { update("vehicle_type", v); handleBlur("vehicle_type", v, { ...form, vehicle_type: v } as any); }}
+                >
+                  <SelectTrigger
+                    className={`h-9 text-sm ${getError("vehicle_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("vehicle_type")}
+                  >
+                    <SelectValue placeholder="Please select vehicle type…" />
+                  </SelectTrigger>
                   <SelectContent>
                     {eligibleVehicleTypes.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-muted-foreground">
@@ -1576,6 +1631,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     )}
                   </SelectContent>
                 </Select>
+                <FieldError field="vehicle_type" />
               </div>
 
               {isUpgrade && (
@@ -1593,9 +1649,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               )}
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">Priority</Label>
-                <Select value={form.priority} onValueChange={v => update("priority", v)}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Please select priority…" /></SelectTrigger>
+                <Label className="text-primary font-medium text-sm mb-1 block">
+                  Priority <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.priority}
+                  onValueChange={v => { update("priority", v); handleBlur("priority", v, form as any); }}
+                >
+                  <SelectTrigger
+                    className={`h-9 text-sm ${getError("priority") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("priority")}
+                  >
+                    <SelectValue placeholder="Please select priority…" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">🟢 Low — flexible timing</SelectItem>
                     <SelectItem value="normal">🔵 Normal — standard priority</SelectItem>
@@ -1603,15 +1669,17 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <SelectItem value="urgent">🔴 Urgent — immediate dispatch</SelectItem>
                   </SelectContent>
                 </Select>
+                <FieldError field="priority" />
               </div>
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
-                  Pool Category
+                  Pool Category <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.pool_category}
                   onValueChange={v => {
                     update("pool_category", v);
+                    handleBlur("pool_category", v, form as any);
                     // Reset the dependent location whenever category changes
                     const meta = POOL_CATEGORY_META[v as keyof typeof POOL_CATEGORY_META];
                     const cur = ASSIGNED_LOCATIONS.find(l => l.value === form.pool_name);
@@ -1620,7 +1688,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     }
                   }}
                 >
-                  <SelectTrigger className="h-9 text-sm">
+                  <SelectTrigger
+                    className={`h-9 text-sm ${getError("pool_category") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("pool_category")}
+                  >
                     <SelectValue placeholder="Please select category…">
                       {form.pool_category && <PoolCategoryChip value={form.pool_category} />}
                     </SelectValue>
@@ -1631,18 +1702,22 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <SelectItem value="region"><PoolCategoryChip value="region" /></SelectItem>
                   </SelectContent>
                 </Select>
+                <FieldError field="pool_category" />
               </div>
 
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
-                  Assigned Location
+                  Assigned Location <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.pool_name}
-                  onValueChange={v => update("pool_name", v)}
+                  onValueChange={v => { update("pool_name", v); handleBlur("pool_name", v, { ...form, pool_name: v } as any); }}
                   disabled={!form.pool_category}
                 >
-                  <SelectTrigger className={`h-9 text-sm ${!form.pool_category ? "opacity-50" : ""}`}>
+                  <SelectTrigger
+                    className={`h-9 text-sm ${!form.pool_category ? "opacity-50" : ""} ${getError("pool_name") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("pool_name")}
+                  >
                     <SelectValue placeholder={form.pool_category ? "Select location..." : "Pick category first"}>
                       {form.pool_name && (
                         <span className="flex items-center gap-2">
@@ -1696,6 +1771,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     )}
                   </SelectContent>
                 </Select>
+                <FieldError field="pool_name" />
               </div>
               <div>
                 <VRField
@@ -1725,8 +1801,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <Label className="text-primary font-medium text-sm mb-1 block">
                 Business Purpose <span className="text-destructive">*</span>
               </Label>
-              <Select value={form.purpose_category} onValueChange={(v) => update("purpose_category", v)}>
-                <SelectTrigger className="h-9 text-sm">
+              <Select
+                value={form.purpose_category}
+                onValueChange={(v) => { update("purpose_category", v); handleBlur("purpose_category", v, form as any); }}
+              >
+                <SelectTrigger
+                  className={`h-9 text-sm ${getError("purpose_category") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                  aria-invalid={!!getError("purpose_category")}
+                >
                   <SelectValue placeholder="Please select business purpose…" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[420px]">
@@ -1750,6 +1832,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   })}
                 </SelectContent>
               </Select>
+              <FieldError field="purpose_category" />
             </div>
             <div>
               <Label className="text-primary font-medium text-sm mb-1 block">
