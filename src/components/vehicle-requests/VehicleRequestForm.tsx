@@ -159,6 +159,13 @@ const buildInitialForm = () => {
   };
 };
 
+// NOTE: We intentionally do NOT compute `initialForm` at module-load time
+// because the form's default Date + Start Time should reflect the *current*
+// machine clock when the requester opens the form — not whenever the JS
+// bundle was first parsed (which can be hours or days earlier on a long
+// running tab). The form computes a fresh default per-mount inside the
+// component body via `useMemo`. The exported type below preserves the
+// shape for `useFormDraft<typeof initialForm>` consumers.
 const initialForm = buildInitialForm();
 
 // FieldHint is imported from @/components/ui/field-hint so all forms share
