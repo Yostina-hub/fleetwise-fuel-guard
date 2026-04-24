@@ -222,14 +222,16 @@ export function validateVRField(
 
     case "departure_place": {
       const v = sanitizeShortText(value);
-      if (v && v.length < 2) return "Departure place is too short. Enter at least 2 characters or pick a saved location.";
+      if (!v) return "Departure place is required. Pick a location or type the address.";
+      if (v.length < 2) return "Departure place is too short. Enter at least 2 characters or pick a saved location.";
       if (v.length > 200) return "Departure place is too long (max 200 characters).";
       return;
     }
 
     case "destination": {
       const v = sanitizeShortText(value);
-      if (v && v.length < 2) return "Destination is too short. Enter at least 2 characters or pick a saved location.";
+      if (!v) return "Destination is required. Pick a location or type the address.";
+      if (v.length < 2) return "Destination is too short. Enter at least 2 characters or pick a saved location.";
       if (v.length > 200) return "Destination is too long (max 200 characters).";
       return;
     }
