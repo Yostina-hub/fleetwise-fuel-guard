@@ -154,7 +154,7 @@ const buildInitialForm = () => {
     purpose: "",
     department_id: "" as string,
     project_number: "",
-    priority: "" as string,
+    priority: "normal" as string,
     contact_phone: "",
     purpose_category: "" as string,
     cargo_load: "" as CargoLoad | "",
