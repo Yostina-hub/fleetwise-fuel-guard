@@ -197,10 +197,12 @@ export function LocationPickerField({
   if (!geofences || geofences.length === 0) {
     return (
       <div className="space-y-1.5">
-        <Label className="flex items-center gap-1 text-xs">
-          <MapPin className={`h-3.5 w-3.5 ${iconColor}`} />
-          {label} {required && "*"}
-        </Label>
+        {label && (
+          <Label className="flex items-center gap-1 text-xs">
+            <MapPin className={`h-3.5 w-3.5 ${iconColor}`} />
+            {label} {required && "*"}
+          </Label>
+        )}
         <div className="flex gap-2 items-center">
           <Input
             value={cleanValue}
@@ -224,10 +226,12 @@ export function LocationPickerField({
 
   return (
     <div className="space-y-1.5">
-      <Label className="flex items-center gap-1 text-xs">
-        <MapPin className={`h-3.5 w-3.5 ${iconColor}`} />
-        {label} {required && "*"}
-      </Label>
+      {label && (
+        <Label className="flex items-center gap-1 text-xs">
+          <MapPin className={`h-3.5 w-3.5 ${iconColor}`} />
+          {label} {required && "*"}
+        </Label>
+      )}
       <div className="flex gap-2 items-center">
         {isCustom ? (
           <Input
