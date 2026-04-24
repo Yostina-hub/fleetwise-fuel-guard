@@ -1620,26 +1620,27 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <>
                     <div>
                       <Label className="text-primary font-medium text-sm mb-1 block">
-                        Cargo / Equipment <span className="text-destructive">*</span>
+                        Item description <span className="text-destructive">*</span>
                       </Label>
-                      <Select
-                        value={form.cargo_load}
-                        onValueChange={(v) => { update("cargo_load", v as CargoLoad); handleBlur("cargo_load", v, form as any); }}
-                      >
-                        <SelectTrigger
-                          className={`h-9 text-sm ${getError("cargo_load") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
-                          aria-invalid={!!getError("cargo_load")}
-                        >
-                          <SelectValue placeholder="Please select cargo size…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CARGO_LOAD_OPTIONS.filter(c => c.value !== "none").map(c => (
-                            <SelectItem key={c.value} value={c.value}>
-                              <span className="text-sm">{c.label}</span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        type="text"
+                        value={form.cargo_description}
+                        onChange={(e) => {
+                          update("cargo_description", e.target.value);
+                          // Ensure a sensible default cargo_load so the
+                          // recommender keeps working even though the user
+                          // no longer picks a size explicitly. Weight (below)
+                          // can still bump it to medium/large.
+                          if (e.target.value.trim() && !form.cargo_load) {
+                            update("cargo_load", "small" as CargoLoad);
+                          }
+                        }}
+                        onBlur={(e) => handleBlur("cargo_load", form.cargo_load || (e.target.value.trim() ? "small" : ""), { ...form, cargo_description: e.target.value } as any)}
+                        placeholder="e.g. 5 boxes of office supplies, ~20kg"
+                        maxLength={300}
+                        className={`h-9 text-sm ${getError("cargo_load") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                        aria-invalid={!!getError("cargo_load")}
+                      />
                       <FieldError field="cargo_load" />
                     </div>
 
