@@ -1939,7 +1939,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 value={form.purpose}
                 onChange={e => update("purpose", e.target.value.slice(0, 1000))}
                 onBlur={e => handleBlur("purpose", e.target.value, form as any)}
-                placeholder="Describe the trip purpose (min 10 characters)…"
+                placeholder="e.g. Describe the trip purpose (min 10 characters)…"
                 rows={3}
                 maxLength={1000}
               />
