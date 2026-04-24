@@ -1561,11 +1561,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Label>
                 <Select
                   value={form.cargo_load}
-                  onValueChange={(v) => update("cargo_load", v as CargoLoad)}
+                  onValueChange={(v) => { update("cargo_load", v as CargoLoad); handleBlur("cargo_load", v, form as any); }}
                 >
                   <SelectTrigger
-                    className="h-9 text-sm"
-                    aria-invalid={!form.cargo_load}
+                    className={`h-9 text-sm ${getError("cargo_load") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("cargo_load")}
                   >
                     <SelectValue placeholder="Please select cargo size…" />
                   </SelectTrigger>
@@ -1577,6 +1577,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError field="cargo_load" />
               </div>
 
               <div>
