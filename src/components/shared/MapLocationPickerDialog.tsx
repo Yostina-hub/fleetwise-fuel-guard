@@ -444,11 +444,43 @@ export function MapLocationPickerDialog({
           </Button>
         </div>
 
-        {/* Map */}
-        <div
-          ref={mapContainer}
-          className="w-full h-[350px] rounded-lg border border-border overflow-hidden"
-        />
+        {/* Map (with Streets / Satellite layer toggle overlay) */}
+        <div className="relative">
+          <div
+            ref={mapContainer}
+            className="w-full h-[350px] rounded-lg border border-border overflow-hidden"
+          />
+          <div className="absolute top-2 left-2 z-10 inline-flex rounded-md border border-border bg-background/90 backdrop-blur shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setMapStyle("streets")}
+              className={`px-2.5 py-1 text-[11px] font-medium inline-flex items-center gap-1 transition-colors ${
+                mapStyle === "streets"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground hover:bg-accent"
+              }`}
+              aria-pressed={mapStyle === "streets"}
+              title="Street map"
+            >
+              <Layers className="w-3 h-3" />
+              Streets
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapStyle("satellite")}
+              className={`px-2.5 py-1 text-[11px] font-medium inline-flex items-center gap-1 transition-colors border-l border-border ${
+                mapStyle === "satellite"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground hover:bg-accent"
+              }`}
+              aria-pressed={mapStyle === "satellite"}
+              title="Satellite imagery"
+            >
+              <Layers className="w-3 h-3" />
+              Satellite
+            </button>
+          </div>
+        </div>
 
         {/* Selected place — name is auto-filled from the map; coords kept
             as a tiny read-only hint so users know the pin is real, but they
