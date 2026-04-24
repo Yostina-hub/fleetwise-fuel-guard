@@ -1848,7 +1848,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* DETAILS SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={FileText} title="Purpose & Details" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
                   Business Purpose <span className="text-destructive">*</span>
@@ -1885,27 +1885,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
                 <FieldError field="purpose_category" />
-              </div>
-              <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Department / Division
-                </Label>
-                <Select
-                  value={form.department_id || "__none__"}
-                  onValueChange={(v) => update("department_id", v === "__none__" ? "" : v)}
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Please select department (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— No department —</SelectItem>
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.code ? `${d.code} · ${d.name}` : d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
             <VRField
