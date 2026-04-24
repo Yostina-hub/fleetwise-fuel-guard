@@ -101,27 +101,13 @@ export const RouteField: React.FC<Props> = ({
           </div>
 
           {/* Intermediate Stops */}
-          <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <RouteIcon className="w-3.5 h-3.5" />
-              </Label>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-                onClick={() => onStopsChange([...stops, { name: "", lat: null, lng: null }])}
-                disabled={stops.length >= 10}
-              >
-                <Plus className="w-3 h-3 mr-1" /> Add Stop
-              </Button>
-            </div>
-            {stops.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">
-                No stops. Trip goes directly from Departure to Destination.
-              </p>
-            ) : (
+          {stops.length > 0 && (
+            <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <RouteIcon className="w-3.5 h-3.5" />
+                </Label>
+              </div>
               <div className="space-y-2">
                 {stops.map((stop, idx) => (
                   <div
@@ -194,8 +180,8 @@ export const RouteField: React.FC<Props> = ({
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Destination */}
           <div>
