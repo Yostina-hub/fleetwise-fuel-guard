@@ -71,7 +71,8 @@ export type VRFieldName =
   | "cargo_load"
   | "project_number"
   | "priority"
-  | "contact_phone";
+  | "contact_phone"
+  | "cargo_weight_kg";
 
 export interface VRFormValues {
   request_type: string;
