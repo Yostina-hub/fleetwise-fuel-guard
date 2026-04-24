@@ -29,6 +29,7 @@ import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm, vehicleRequestZodSchema, validateVehicleRequestForm } from "./vehicleRequestValidation";
 import { VRField } from "./VRField";
 import { DateTimeRangeField } from "./DateTimeRangeField";
+import { DateRangeField } from "./DateRangeField";
 import { RouteField } from "./RouteField";
 import { deriveVisibility } from "./visibility";
 import { RouteMapPreview } from "./RouteMapPreview";
@@ -1333,14 +1334,24 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                <div ref={(node) => { fieldAnchors.current.start_date = node; }}>
-                  <DateTimePicker label="Start Date" date={form.start_date} onDateChange={d => { update("start_date", d); handleBlur("start_date", d, form as any); }} required minDate={new Date()} hideTime error={!!getError("start_date")} />
-                  <FieldError field="start_date" />
-                </div>
-                <div ref={(node) => { fieldAnchors.current.end_date = node; }}>
-                  <DateTimePicker label="End Date" date={form.end_date} onDateChange={d => { update("end_date", d); handleBlur("end_date", d, form as any); }} required={isProject} minDate={form.start_date} hideTime error={!!getError("end_date")} />
-                  <FieldError field="end_date" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div
+                  ref={(node) => { fieldAnchors.current.start_date = node; fieldAnchors.current.end_date = node; }}
+                >
+                  <DateRangeField
+                    startDate={form.start_date}
+                    endDate={form.end_date}
+                    onStartDateChange={(d) => { update("start_date", d); handleBlur("start_date", d, form as any); }}
+                    onEndDateChange={(d) => { update("end_date", d); handleBlur("end_date", d, form as any); }}
+                    minStart={new Date()}
+                    endRequired={isProject}
+                    errorStart={!!getError("start_date")}
+                    errorEnd={!!getError("end_date")}
+                  />
+                  <div className="space-y-0.5 mt-1">
+                    <FieldError field="start_date" />
+                    <FieldError field="end_date" />
+                  </div>
                 </div>
                 {visibility.showProjectNumber && (
                   <div ref={(node) => { fieldAnchors.current.project_number = node; }}>
@@ -1349,7 +1360,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                       label="Project Number"
                       required
                       error={getError("project_number")}
-                      tooltip="Project code this trip is charged to (e.g. PRJ-2026-001). Letters, digits and dashes."
                     >
                       <Input
                         value={form.project_number}
