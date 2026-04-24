@@ -1552,63 +1552,78 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     : hasCargo
                       ? "passengers_cargo"
                       : "passengers_only";
+                  const switchMode = (next: "passengers_only" | "passengers_cargo" | "cargo_only") => {
+                    if (next === mode) return;
+                    setForm((f) => {
+                      const base = {
+                        ...f,
+                        passengers:
+                          f.passengers === String(NON_PASSENGER_SENTINEL)
+                            ? ""
+                            : f.passengers,
+                        cargo_load: "none" as CargoLoad,
+                        cargo_weight_kg: "",
+                      };
+                      if (next === "passengers_only") {
+                        return { ...base, passengers: base.passengers || "1" };
+                      }
+                      if (next === "passengers_cargo") {
+                        return {
+                          ...base,
+                          passengers: base.passengers || "1",
+                          cargo_load: "small" as CargoLoad,
+                        };
+                      }
+                      return {
+                        ...base,
+                        passengers: String(NON_PASSENGER_SENTINEL),
+                        cargo_load: "medium" as CargoLoad,
+                      };
+                    });
+                  };
+                  const tripModes: Array<{
+                    value: "passengers_only" | "passengers_cargo" | "cargo_only";
+                    label: string;
+                    hint: string;
+                    Icon: typeof Users;
+                  }> = [
+                    { value: "passengers_only", label: "Passengers", hint: "People only", Icon: Users },
+                    { value: "passengers_cargo", label: "Passengers + Cargo", hint: "People & goods", Icon: Layers },
+                    { value: "cargo_only", label: "Cargo Only", hint: "Driver only", Icon: Package },
+                  ];
                   return (
                     <div className="space-y-2">
-                      <Select
-                        value={mode}
-                        onValueChange={(next) => {
-                          if (next === mode) return;
-                          setForm((f) => {
-                            // Always normalize: strip sentinel + clear cargo
-                            // residue first, then apply the target mode's
-                            // initial values. This guarantees no stale
-                            // weight / size / sentinel leaks across modes.
-                            const base = {
-                              ...f,
-                              passengers:
-                                f.passengers === String(NON_PASSENGER_SENTINEL)
-                                  ? ""
-                                  : f.passengers,
-                              cargo_load: "none" as CargoLoad,
-                              cargo_weight_kg: "",
-                            };
-                            if (next === "passengers_only") {
-                              return {
-                                ...base,
-                                passengers: base.passengers || "1",
-                              };
-                            }
-                            if (next === "passengers_cargo") {
-                              return {
-                                ...base,
-                                passengers: base.passengers || "1",
-                                cargo_load: "small" as CargoLoad,
-                              };
-                            }
-                            // cargo_only
-                            return {
-                              ...base,
-                              passengers: String(NON_PASSENGER_SENTINEL),
-                              cargo_load: "medium" as CargoLoad,
-                            };
-                          });
-                        }}
+                      <div
+                        role="radiogroup"
+                        aria-label="Trip type"
+                        className="grid grid-cols-3 gap-1.5 rounded-lg border border-input bg-muted/30 p-1"
                       >
-                        <SelectTrigger className="h-9 text-sm">
-                          <SelectValue placeholder="Select load type…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="passengers_only">
-                            <span className="text-sm">Passengers Only</span>
-                          </SelectItem>
-                          <SelectItem value="passengers_cargo">
-                            <span className="text-sm">Passengers + Cargo</span>
-                          </SelectItem>
-                          <SelectItem value="cargo_only">
-                            <span className="text-sm">Cargo Only</span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                        {tripModes.map(({ value, label, hint, Icon }) => {
+                          const active = mode === value;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              role="radio"
+                              aria-checked={active}
+                              onClick={() => switchMode(value)}
+                              className={`group flex flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 text-xs font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ${
+                                active
+                                  ? "bg-background text-primary shadow-sm ring-1 ring-primary/30"
+                                  : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
+                              }`}
+                            >
+                              <Icon
+                                className={`h-4 w-4 ${active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}
+                              />
+                              <span className="leading-tight text-center">{label}</span>
+                              <span className="text-[10px] font-normal text-muted-foreground/80 leading-tight">
+                                {hint}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                       {mode === "cargo_only" ? (
                         <Input
                           type="text"
