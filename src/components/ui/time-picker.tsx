@@ -133,24 +133,74 @@ export function TimePicker({
 
   const { h12, m: mm, period } = React.useMemo(() => to12h(value), [value]);
 
-  const hours12 = React.useMemo(
-    () => Array.from({ length: 12 }, (_, i) => pad(i + 1)),
-    [],
-  );
-  const minutes = React.useMemo(
-    () => Array.from({ length: Math.ceil(60 / minuteStep) }, (_, i) => pad(i * minuteStep)),
-    [minuteStep],
-  );
-
   // Local fallback for period when no hour is selected yet.
   const [localPeriod, setLocalPeriod] = React.useState<"AM" | "PM">(() => currentEatPeriod());
   const effectivePeriod: "AM" | "PM" = h12 ? period : localPeriod;
+
+  // Helpers to test ranges against allowedRanges.
+  const anyMinuteInHour = React.useCallback(
+    (h24: number) => {
+      if (!allowedRanges || allowedRanges.length === 0) return true;
+      const base = h24 * 60;
+      // Hour is allowed if any minute in [base, base+60) overlaps an allowed range.
+      return allowedRanges.some(([s, e]) => base < e && base + 60 > s);
+    },
+    [allowedRanges],
+  );
+
+  const anyHourInPeriod = React.useCallback(
+    (p: "AM" | "PM") => {
+      if (!allowedRanges || allowedRanges.length === 0) return true;
+      const start = p === "AM" ? 0 : 12;
+      for (let h = start; h < start + 12; h++) {
+        if (anyMinuteInHour(h)) return true;
+      }
+      return false;
+    },
+    [allowedRanges, anyMinuteInHour],
+  );
+
+  // Visible hours (12h) for the effective AM/PM, filtered by allowedRanges.
+  const visibleHours12 = React.useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => i + 1).filter((n) => {
+      const h24 = effectivePeriod === "PM" ? (n % 12) + 12 : n % 12;
+      return anyMinuteInHour(h24);
+    }).map((n) => pad(n));
+  }, [effectivePeriod, anyMinuteInHour]);
+
+  // Visible minutes for the currently chosen hour (or any hour if none chosen).
+  const visibleMinutes = React.useMemo(() => {
+    const allMinutes = Array.from({ length: Math.ceil(60 / minuteStep) }, (_, i) => i * minuteStep);
+    if (!allowedRanges || allowedRanges.length === 0) return allMinutes.map(pad);
+    if (h12) {
+      const h24 = parseInt(h12To24(h12, effectivePeriod), 10);
+      return allMinutes.filter((m) => inAllowed(h24 * 60 + m)).map(pad);
+    }
+    // No hour chosen yet — show minutes that exist in *any* allowed hour.
+    return allMinutes.filter((m) => {
+      for (let h = 0; h < 24; h++) if (inAllowed(h * 60 + m)) return true;
+      return false;
+    }).map(pad);
+  }, [allowedRanges, h12, effectivePeriod, minuteStep, inAllowed]);
+
+  const visiblePeriods = React.useMemo(
+    () => (["AM", "PM"] as const).filter((p) => anyHourInPeriod(p)),
+    [anyHourInPeriod],
+  );
 
   React.useEffect(() => {
     if (open && !value) {
       setLocalPeriod(currentEatPeriod());
     }
   }, [open, value, currentEatPeriod]);
+
+  // If the local period is filtered out (e.g. Day Operation has no AM hours
+  // before 08:30 — wait, AM has 08:00–08:30 only — fall back to first visible).
+  React.useEffect(() => {
+    if (!h12 && visiblePeriods.length > 0 && !visiblePeriods.includes(localPeriod)) {
+      setLocalPeriod(visiblePeriods[0]);
+    }
+  }, [h12, visiblePeriods, localPeriod]);
 
   // Both hour and minute must be explicitly chosen — never silently default
   // the missing component, which would let users submit a half-picked time
@@ -184,6 +234,7 @@ export function TimePicker({
     if (h12 || mm) return `${h12 || "--"}:${mm || "--"} ${effectivePeriod}`;
     return "";
   }, [h12, mm, period, effectivePeriod]);
+
 
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) onBlur?.(); }}>
