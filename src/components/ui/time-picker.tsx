@@ -128,6 +128,18 @@ export function TimePicker({
       m = Math.round(mRaw / minuteStep) * minuteStep;
       if (m === 60) m = 0;
     }
+    // If "now" is outside allowed window, snap to the start of the first range.
+    if (allowedRanges && allowedRanges.length > 0) {
+      const mins = h * 60 + m;
+      const inside = allowedRanges.some(([s, e]) => mins >= s && mins < e);
+      if (!inside) {
+        const [s] = allowedRanges[0];
+        const sh = Math.floor(s / 60);
+        const sm = s % 60;
+        onChange(`${pad(sh)}:${pad(sm)}`);
+        return;
+      }
+    }
     onChange(`${pad(h)}:${pad(m)}`);
   };
 
@@ -325,7 +337,7 @@ export function TimePicker({
               AM/PM
             </div>
             <div className="h-56 w-16 p-1 flex flex-col gap-1">
-              {(["AM", "PM"] as const).map((p) => (
+              {visiblePeriods.map((p) => (
                 <button
                   key={p}
                   type="button"
