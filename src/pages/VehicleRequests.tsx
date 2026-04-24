@@ -792,6 +792,18 @@ const VehicleRequests = () => {
                   <Sparkles className="w-3.5 h-3.5" />
                   Ops Map
                 </Button>
+                <Button
+                  variant={viewMode === "consolidation" ? "default" : "outline"}
+                  size="sm"
+                  className="gap-1.5 h-9"
+                  onClick={() =>
+                    setViewMode((m) => (m === "consolidation" ? "requests" : "consolidation"))
+                  }
+                  title="Trip Consolidation — merge requests by pool, route, and time"
+                >
+                  <GitMerge className="w-3.5 h-3.5" />
+                  Consolidate
+                </Button>
               </>
             )}
             <Can resource="vehicle_requests" action="create">
