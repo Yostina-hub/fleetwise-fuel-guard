@@ -105,6 +105,30 @@ describe("VR form validation — Daily Operation", () => {
   it("rejects passengers below 1", () => {
     expect(validateVRField("passengers", 0)).toMatch(/at least 1/);
   });
+
+  it("rejects departure without map coordinates", () => {
+    expect(
+      validateVRField("departure_place", "Some place", { departure_lat: null, departure_lng: null } as any)
+    ).toMatch(/Pick the departure on the map/);
+  });
+
+  it("rejects destination without map coordinates", () => {
+    expect(
+      validateVRField("destination", "Some place", { destination_lat: null, destination_lng: null } as any)
+    ).toMatch(/Pick the destination on the map/);
+  });
+
+  it("rejects intermediate stop typed without map coords", () => {
+    expect(
+      validateVRField("stops", [{ name: "Mid stop", lat: null, lng: null }], {} as any)
+    ).toMatch(/picked on the map/);
+  });
+
+  it("accepts stops that have real coordinates", () => {
+    expect(
+      validateVRField("stops", [{ name: "Mid stop", lat: 9.0, lng: 38.8 }], {} as any)
+    ).toBeUndefined();
+  });
 });
 
 describe("VR form validation — Project Operation", () => {
