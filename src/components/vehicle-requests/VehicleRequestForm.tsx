@@ -129,7 +129,7 @@ const buildInitialForm = () => {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   return {
-    request_type: "daily_operation",
+    request_type: "" as string,
     date: today as Date | undefined,
     start_time: nowHHMM,
     end_time: "",
@@ -153,7 +153,7 @@ const buildInitialForm = () => {
     purpose: "",
     department_id: "" as string,
     project_number: "",
-    priority: "normal",
+    priority: "" as string,
     contact_phone: "",
     purpose_category: "" as string,
     cargo_load: "" as CargoLoad | "",
@@ -1581,7 +1581,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">Priority</Label>
                 <Select value={form.priority} onValueChange={v => update("priority", v)}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Please select priority…" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">🟢 Low — flexible timing</SelectItem>
                     <SelectItem value="normal">🔵 Normal — standard priority</SelectItem>
