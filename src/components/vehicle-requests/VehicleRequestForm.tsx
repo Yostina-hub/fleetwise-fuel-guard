@@ -1767,7 +1767,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
-                  Assigned Location <span className="text-destructive">*</span>
+                  Specific Pool <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.pool_name}
