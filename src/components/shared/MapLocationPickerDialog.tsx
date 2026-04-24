@@ -331,6 +331,20 @@ export function MapLocationPickerDialog({
     }
   }, [lat, lng]);
 
+  // Swap base layer (Streets ↔ Satellite) without rebuilding the map.
+  // setStyle removes existing markers from the new style instance, so we
+  // re-attach the draggable pin once the new style finishes loading.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setStyle(getPreviewSafeMapStyle(mapStyle));
+    const reattach = () => {
+      if (!markerRef.current) return;
+      markerRef.current.addTo(map);
+    };
+    map.once("styledata", reattach);
+  }, [mapStyle]);
+
   const flyToLocation = (result: SearchResult) => {
     const newLat = parseFloat(result.lat);
     const newLng = parseFloat(result.lon);
