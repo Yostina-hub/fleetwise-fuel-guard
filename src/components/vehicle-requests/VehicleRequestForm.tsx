@@ -1478,9 +1478,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               <FieldError field="destination" />
             </div>
 
-            <div>
+            <div className="max-w-xs">
               <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
-                <Route className="w-3.5 h-3.5" /> Trip Type <span className="text-destructive">*</span>
+                <Route className="w-3.5 h-3.5" /> Trip Mode <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={form.trip_type}
@@ -1490,7 +1490,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   className={`h-9 text-sm ${getError("trip_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
                   aria-invalid={!!getError("trip_type")}
                 >
-                  <SelectValue placeholder="Please select trip type…" />
+                  <SelectValue placeholder="Please select trip mode…" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="one_way">One Way Trip</SelectItem>
