@@ -1529,11 +1529,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 error={getError("passengers")}
               >
                 {/*
-                 * Two-option professional mode: "Passengers Only" (cargo
-                 * auto-cleared to none) vs "Passengers + Cargo" (user picks
-                 * cargo size & weight below). Becomes read-only "N/A" only
-                 * when a non-passenger vehicle type (courier/cargo truck) is
-                 * explicitly chosen.
+                 * Three-option professional load mode:
+                 *  • Passengers Only   → cargo cleared to "none", passengers required
+                 *  • Passengers + Cargo → cargo size required, passengers required
+                 *  • Cargo Only         → passengers set to N/A sentinel, cargo required
+                 * Becomes read-only "N/A" only when a non-passenger vehicle
+                 * type (courier/cargo truck) is explicitly chosen.
                  */}
                 {form.vehicle_type && !isPassengerVehicleType(form.vehicle_type) ? (
                   <Input
@@ -1543,55 +1544,84 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     disabled
                     className="h-9 text-sm bg-muted/40"
                   />
-                ) : (
-                  <div className="space-y-2">
-                    <Select
-                      value={
-                        form.cargo_load && form.cargo_load !== "none"
-                          ? "passengers_cargo"
-                          : "passengers_only"
-                      }
-                      onValueChange={(mode) => {
-                        if (mode === "passengers_only") {
-                          setForm((f) => ({
-                            ...f,
-                            cargo_load: "none" as CargoLoad,
-                            cargo_weight_kg: "",
-                          }));
-                        } else {
-                          setForm((f) => ({
-                            ...f,
-                            cargo_load: (f.cargo_load && f.cargo_load !== "none"
-                              ? f.cargo_load
-                              : "small") as CargoLoad,
-                          }));
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="Select passenger type…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="passengers_only">
-                          <span className="text-sm">Passengers Only</span>
-                        </SelectItem>
-                        <SelectItem value="passengers_cargo">
-                          <span className="text-sm">Passengers + Cargo</span>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={100}
-                      placeholder="No. of passengers"
-                      value={form.passengers === String(NON_PASSENGER_SENTINEL) ? "" : form.passengers}
-                      onChange={e => update("passengers", e.target.value)}
-                      onBlur={e => handleBlur("passengers", e.target.value, form as any)}
-                      className="h-9 text-sm"
-                    />
-                  </div>
-                )}
+                ) : (() => {
+                  const passengersIsNA = form.passengers === String(NON_PASSENGER_SENTINEL);
+                  const hasCargo = !!form.cargo_load && form.cargo_load !== "none";
+                  const mode = passengersIsNA
+                    ? "cargo_only"
+                    : hasCargo
+                      ? "passengers_cargo"
+                      : "passengers_only";
+                  return (
+                    <div className="space-y-2">
+                      <Select
+                        value={mode}
+                        onValueChange={(next) => {
+                          if (next === "passengers_only") {
+                            setForm((f) => ({
+                              ...f,
+                              passengers: f.passengers === String(NON_PASSENGER_SENTINEL) ? "1" : f.passengers,
+                              cargo_load: "none" as CargoLoad,
+                              cargo_weight_kg: "",
+                            }));
+                          } else if (next === "passengers_cargo") {
+                            setForm((f) => ({
+                              ...f,
+                              passengers: f.passengers === String(NON_PASSENGER_SENTINEL) ? "1" : f.passengers,
+                              cargo_load: (f.cargo_load && f.cargo_load !== "none"
+                                ? f.cargo_load
+                                : "small") as CargoLoad,
+                            }));
+                          } else {
+                            // cargo_only
+                            setForm((f) => ({
+                              ...f,
+                              passengers: String(NON_PASSENGER_SENTINEL),
+                              cargo_load: (f.cargo_load && f.cargo_load !== "none"
+                                ? f.cargo_load
+                                : "medium") as CargoLoad,
+                            }));
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="Select load type…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="passengers_only">
+                            <span className="text-sm">Passengers Only</span>
+                          </SelectItem>
+                          <SelectItem value="passengers_cargo">
+                            <span className="text-sm">Passengers + Cargo</span>
+                          </SelectItem>
+                          <SelectItem value="cargo_only">
+                            <span className="text-sm">Cargo Only</span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {mode === "cargo_only" ? (
+                        <Input
+                          type="text"
+                          value="N/A — driver only"
+                          readOnly
+                          disabled
+                          className="h-9 text-sm bg-muted/40"
+                        />
+                      ) : (
+                        <Input
+                          type="number"
+                          min={1}
+                          max={100}
+                          placeholder="No. of passengers"
+                          value={passengersIsNA ? "" : form.passengers}
+                          onChange={e => update("passengers", e.target.value)}
+                          onBlur={e => handleBlur("passengers", e.target.value, form as any)}
+                          className="h-9 text-sm"
+                        />
+                      )}
+                    </div>
+                  );
+                })()}
               </VRField>
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
