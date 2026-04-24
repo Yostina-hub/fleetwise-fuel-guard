@@ -1633,53 +1633,66 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   );
                 })()}
               </VRField>
-              <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Cargo / Equipment <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={form.cargo_load}
-                  onValueChange={(v) => { update("cargo_load", v as CargoLoad); handleBlur("cargo_load", v, form as any); }}
-                >
-                  <SelectTrigger
-                    className={`h-9 text-sm ${getError("cargo_load") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
-                    aria-invalid={!!getError("cargo_load")}
-                  >
-                    <SelectValue placeholder="Please select cargo size…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CARGO_LOAD_OPTIONS.map(c => (
-                      <SelectItem key={c.value} value={c.value}>
-                        <span className="text-sm">{c.label}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError field="cargo_load" />
-              </div>
+              {(() => {
+                // Cargo fields appear only when the load mode is
+                // "Passengers + Cargo" or "Cargo Only". In "Passengers Only"
+                // they are irrelevant and stay hidden to reduce noise.
+                const passengersIsNA = form.passengers === String(NON_PASSENGER_SENTINEL);
+                const hasCargo = !!form.cargo_load && form.cargo_load !== "none";
+                const showCargoFields = passengersIsNA || hasCargo;
+                if (!showCargoFields) return null;
+                return (
+                  <>
+                    <div>
+                      <Label className="text-primary font-medium text-sm mb-1 block">
+                        Cargo / Equipment <span className="text-destructive">*</span>
+                      </Label>
+                      <Select
+                        value={form.cargo_load}
+                        onValueChange={(v) => { update("cargo_load", v as CargoLoad); handleBlur("cargo_load", v, form as any); }}
+                      >
+                        <SelectTrigger
+                          className={`h-9 text-sm ${getError("cargo_load") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                          aria-invalid={!!getError("cargo_load")}
+                        >
+                          <SelectValue placeholder="Please select cargo size…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CARGO_LOAD_OPTIONS.filter(c => c.value !== "none").map(c => (
+                            <SelectItem key={c.value} value={c.value}>
+                              <span className="text-sm">{c.label}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FieldError field="cargo_load" />
+                    </div>
 
-              <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Total Cargo Weight (kg)
-                </Label>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    max={50000}
-                    step={1}
-                    value={form.cargo_weight_kg}
-                    onChange={(e) => update("cargo_weight_kg", e.target.value)}
-                    onBlur={(e) => handleBlur("vehicle_type", form.vehicle_type, { ...form, cargo_weight_kg: e.target.value } as any)}
-                    placeholder="e.g. 250"
-                    className="h-9 text-sm pr-12"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
-                    kg
-                  </span>
-                </div>
-              </div>
+                    <div>
+                      <Label className="text-primary font-medium text-sm mb-1 block">
+                        Total Cargo Weight (kg)
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          max={50000}
+                          step={1}
+                          value={form.cargo_weight_kg}
+                          onChange={(e) => update("cargo_weight_kg", e.target.value)}
+                          onBlur={(e) => handleBlur("vehicle_type", form.vehicle_type, { ...form, cargo_weight_kg: e.target.value } as any)}
+                          placeholder="e.g. 250"
+                          className="h-9 text-sm pr-12"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                          kg
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
 
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
