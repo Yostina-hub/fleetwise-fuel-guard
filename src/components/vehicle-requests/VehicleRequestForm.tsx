@@ -1502,6 +1502,28 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 />
               </VRField>
               <VRField
+                id="vr-trip-mode"
+                label="Trip Mode"
+                icon={Route}
+                error={getError("trip_type")}
+              >
+                <Select
+                  value={form.trip_type}
+                  onValueChange={v => { update("trip_type", v); handleBlur("trip_type", v, form as any); }}
+                >
+                  <SelectTrigger
+                    className={`h-9 text-sm ${getError("trip_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("trip_type")}
+                  >
+                    <SelectValue placeholder="Please select trip mode…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="one_way">One Way Trip</SelectItem>
+                    <SelectItem value="round_trip">Round Trip</SelectItem>
+                  </SelectContent>
+                </Select>
+              </VRField>
+              <VRField
                 id="vr-passengers"
                 label="Trip Type"
                 icon={Users}
