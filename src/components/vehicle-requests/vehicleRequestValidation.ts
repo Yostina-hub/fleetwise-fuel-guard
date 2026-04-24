@@ -302,22 +302,41 @@ export function validateVRField(
 
     case "trip_type": {
       const v = sanitizeText(value);
-      if (v && !["one_way", "round_trip"].includes(v))
+      if (!v) return "Trip type is required. Choose 'One Way' or 'Round Trip'.";
+      if (!["one_way", "round_trip"].includes(v))
         return "Trip type must be either 'One Way' or 'Round Trip'.";
       return;
     }
 
     case "pool_category": {
       const v = sanitizeText(value);
-      if (v && !["corporate", "zone", "region"].includes(v))
+      if (!v) return "Pool category is required. Choose Corporate, Zone, or Region.";
+      if (!["corporate", "zone", "region"].includes(v))
         return "Invalid pool category. Choose Corporate, Zone, or Region.";
       return;
     }
 
     case "pool_name": {
       const v = sanitizeText(value);
-      if (v && !ctx.pool_category)
-        return "Choose a pool category first, then select the specific pool.";
+      if (!ctx.pool_category) {
+        // pool_name can't be evaluated until category is picked.
+        return;
+      }
+      if (!v) return "Assigned location is required. Pick the specific pool / location.";
+      return;
+    }
+
+    case "cargo_load": {
+      const v = sanitizeText(value);
+      if (!v) return "Cargo / Equipment size is required. Pick None, Small, Medium, or Large.";
+      if (!["none", "small", "medium", "large"].includes(v))
+        return "Invalid cargo size. Pick None, Small, Medium, or Large.";
+      return;
+    }
+
+    case "purpose_category": {
+      const v = sanitizeText(value);
+      if (!v) return "Business purpose is required. Pick the closest category from the list.";
       return;
     }
 
@@ -342,7 +361,8 @@ export function validateVRField(
 
     case "priority": {
       const v = sanitizeText(value);
-      if (v && !["low", "normal", "high", "urgent"].includes(v))
+      if (!v) return "Priority is required. Pick Low, Normal, High, or Urgent.";
+      if (!["low", "normal", "high", "urgent"].includes(v))
         return "Priority must be Low, Normal, High, or Urgent.";
       return;
     }
