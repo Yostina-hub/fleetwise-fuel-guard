@@ -713,52 +713,34 @@ const DriverPortal = () => {
                                 <TableCell className="text-right">
                                   <div className="flex items-center justify-end gap-2 flex-wrap">
                                     {isRequest ? (
-                                      <>
-                                        <Button
-                                          size="sm"
-                                          variant={checkedIn ? "outline" : "default"}
-                                          className="gap-1 h-8"
-                                          onClick={() => {
-                                            // If we have a real per-vehicle assignment row (has vehicle_id),
-                                            // open the assignment-level check-in dialog. Otherwise (single-vehicle
-                                            // parent request), open the request dialog which has the proper
-                                            // inline check-in/out flow for the parent record.
-                                            if (a?.vehicle_id) {
-                                              setActiveAssignment({ request: r, assignment: a });
-                                            } else {
-                                              setViewRequest({
-                                                ...r,
-                                                assigned_vehicle: v,
-                                                assigned_vehicle_id: v?.id,
-                                                driver_checked_in_at: a?.driver_checked_in_at,
-                                                driver_checked_out_at: a?.driver_checked_out_at,
-                                              });
-                                            }
-                                          }}
-                                        >
-                                          {checkedIn ? (
-                                            <><StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> Out</>
-                                          ) : (
-                                            <><PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> In</>
-                                          )}
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="gap-1 h-8"
-                                          onClick={() =>
+                                      <Button
+                                        size="sm"
+                                        variant={checkedIn ? "outline" : "default"}
+                                        className="gap-1 h-8"
+                                        onClick={() => {
+                                          // Single action: open the request view, which contains
+                                          // the inline check-in/out flow plus full trip details
+                                          // (route, AI estimate, etc.). For multi-vehicle assignment
+                                          // rows we still use the per-assignment dialog.
+                                          if (a?.vehicle_id) {
+                                            setActiveAssignment({ request: r, assignment: a });
+                                          } else {
                                             setViewRequest({
                                               ...r,
                                               assigned_vehicle: v,
                                               assigned_vehicle_id: v?.id,
                                               driver_checked_in_at: a?.driver_checked_in_at,
                                               driver_checked_out_at: a?.driver_checked_out_at,
-                                            })
+                                            });
                                           }
-                                        >
-                                          <FileText className="w-3.5 h-3.5" aria-hidden="true" /> View
-                                        </Button>
-                                      </>
+                                        }}
+                                      >
+                                        {checkedIn ? (
+                                          <><StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> Out</>
+                                        ) : (
+                                          <><PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> Open</>
+                                        )}
+                                      </Button>
                                     ) : (
                                       <>
                                         {inProgress ? (
