@@ -116,11 +116,6 @@ export function AiVehicleTypeSuggestion({
           )}
           {loading ? "Thinking…" : "Suggest with AI"}
         </Button>
-        {!ready && !loading && (
-          <span className="text-[11px] text-muted-foreground">
-            Add a purpose to enable AI suggestion
-          </span>
-        )}
       </div>
     );
   }
