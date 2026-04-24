@@ -94,8 +94,7 @@ export function VRField({
       <Label
         htmlFor={id}
         className={cn(
-          "text-sm font-medium flex items-center gap-1.5 leading-tight",
-          status === "error" ? "text-destructive" : "text-primary",
+          "text-primary font-medium text-sm flex items-center gap-1.5 leading-tight",
         )}
       >
         {Icon && <Icon className="w-4 h-4 shrink-0" />}
