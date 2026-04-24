@@ -77,7 +77,7 @@ export function VRField({
 
   const childExtraClass =
     status === "error"
-      ? "border-destructive focus-visible:ring-destructive/30"
+      ? "border-destructive ring-1 ring-destructive/30 focus-visible:ring-destructive/40"
       : status === "success"
         ? "border-success/60 focus-visible:ring-success/30"
         : "";
