@@ -154,8 +154,9 @@ export function validateVRField(
         return "Nighttime operations must start at or after 20:00 (8:00 night) or before 06:00 EAT.";
       }
       // If the trip date is today, reject times already in the past on the
-      // requester's machine clock — we cannot schedule a trip for a moment
-      // that has already passed.
+      // requester's machine clock — but allow a small grace window so the
+      // live-clock auto-fill, network latency, and submit-click delay never
+      // turn a freshly-prefilled time into a "you're in the past" error.
       const tripDate = toDate(ctx.date);
       if (tripDate) {
         const today = startOfToday();
@@ -163,10 +164,14 @@ export function validateVRField(
           && tripDate.getMonth() === today.getMonth()
           && tripDate.getDate() === today.getDate();
         if (sameDay) {
+          const GRACE_MINUTES = 5;
           const now = new Date();
-          const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-          if (v < nowHHMM)
-            return `Start time (${v}) is already in the past — current time is ${nowHHMM}. Pick a future time or change the date.`;
+          const graceCutoff = new Date(now.getTime() - GRACE_MINUTES * 60_000);
+          const cutoffHHMM = `${String(graceCutoff.getHours()).padStart(2, "0")}:${String(graceCutoff.getMinutes()).padStart(2, "0")}`;
+          if (v < cutoffHHMM) {
+            const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+            return `Start time (${v}) is more than ${GRACE_MINUTES} minutes in the past — current time is ${nowHHMM}. Pick a future time or change the date.`;
+          }
         }
       }
       return;
