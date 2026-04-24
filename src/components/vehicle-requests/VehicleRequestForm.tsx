@@ -1376,15 +1376,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   errorStart={!!getError("start_time")}
                   errorEnd={!!getError("end_time")}
                   minDate={new Date()}
-                  allowedTimeRanges={
-                    form.request_type === "nighttime_operation"
-                      // Night Request: 8:00 PM – 6:00 AM (inclusive of 6:00 AM)
-                      ? [[0, 6 * 60 + 1], [20 * 60, 24 * 60]]
-                      : form.request_type === "daily_operation"
-                      // Day Operation: 8:30 AM – 5:30 PM (inclusive of 5:30 PM)
-                      ? [[8 * 60 + 30, 17 * 60 + 31]]
-                      : undefined
-                  }
                 />
                 <div className="space-y-0.5 mt-1">
                   <FieldError field="date" />
