@@ -282,34 +282,54 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restoredAt]);
 
-  // Refresh stale defaults whenever the dialog (re-)opens. If the persisted
-  // draft has a date in the past — or no date / start_time at all — bump it
-  // to the current machine clock so requesters never land on a form that's
-  // already invalid before they touch it.
+  // Track whether the user has manually edited the date / start time so the
+  // auto-sync ticker doesn't fight their input. Reset every time the dialog
+  // reopens so a fresh form re-engages live sync.
+  const userTouchedDateRef = useRef(false);
+  const userTouchedStartTimeRef = useRef(false);
+
+  // Auto-sync Date and Start Time to the machine's current clock whenever the
+  // form is opened, and keep them ticking live (every 30s) until the user
+  // edits either field. End time stays under user control.
   useEffect(() => {
     if (!open) return;
-    setForm((prev) => {
+    userTouchedDateRef.current = false;
+    userTouchedStartTimeRef.current = false;
+
+    const sync = () => {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-      const next: any = { ...prev };
-      let changed = false;
+      setForm((prev) => {
+        const next: any = { ...prev };
+        let changed = false;
+        if (!userTouchedDateRef.current) {
+          const prevDate = prev.date instanceof Date ? prev.date : (prev.date ? new Date(prev.date as any) : null);
+          if (!prevDate || prevDate.getTime() !== today.getTime()) {
+            next.date = today;
+            changed = true;
+          }
+          const prevStart = prev.start_date instanceof Date ? prev.start_date : (prev.start_date ? new Date(prev.start_date as any) : null);
+          if (!prevStart || prevStart.getTime() !== today.getTime()) {
+            next.start_date = today;
+            changed = true;
+          }
+        }
+        if (!userTouchedStartTimeRef.current && prev.start_time !== nowHHMM) {
+          next.start_time = nowHHMM;
+          if (!prev.start_date_time) next.start_date_time = nowHHMM;
+          changed = true;
+        }
+        return changed ? next : prev;
+      });
+    };
 
-      const isStaleDate = (d: unknown) => {
-        if (!d) return true;
-        const dt = d instanceof Date ? d : new Date(d as any);
-        return isNaN(dt.getTime()) || dt < today;
-      };
-
-      if (isStaleDate(prev.date)) { next.date = today; changed = true; }
-      if (isStaleDate(prev.start_date)) { next.start_date = today; changed = true; }
-      if (!prev.start_time) { next.start_time = nowHHMM; changed = true; }
-      if (!prev.start_date_time) { next.start_date_time = nowHHMM; changed = true; }
-
-      return changed ? next : prev;
-    });
+    sync();
+    const interval = setInterval(sync, 30_000);
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
 
   // Super-admin / manager: file the request on behalf of another user or driver.
   // The selection is persisted to localStorage alongside the form draft so a
@@ -1299,8 +1319,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   date={form.date}
                   startTime={form.start_time}
                   endTime={form.end_time}
-                  onDateChange={(d) => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }}
-                  onStartTimeChange={(v) => update("start_time", v)}
+                  onDateChange={(d) => { userTouchedDateRef.current = true; update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }}
+                  onStartTimeChange={(v) => { userTouchedStartTimeRef.current = true; update("start_time", v); }}
                   onEndTimeChange={(v) => update("end_time", v)}
                   onBlurStart={() => handleBlur("start_time", form.start_time, form as any)}
                   onBlurEnd={() => handleBlur("end_time", form.end_time, form as any)}
