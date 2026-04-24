@@ -52,6 +52,7 @@ import {
   ArrowUp,
   ArrowDown,
   UserCheck,
+  GitMerge,
 } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
