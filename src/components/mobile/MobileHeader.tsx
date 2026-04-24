@@ -59,7 +59,7 @@ export function MobileHeader() {
             <img 
               src={ethioTelecomLogo} 
               alt="ethio telecom" 
-              className="h-7 w-auto object-contain"
+              className="h-7 w-auto object-contain dark:[filter:invert(1)_hue-rotate(180deg)]"
             />
             <div className="h-4 w-px bg-surface-overlay" />
             <h1 className="text-sm font-semibold text-surface-foreground truncate max-w-[140px]">
