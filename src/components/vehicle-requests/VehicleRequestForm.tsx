@@ -158,6 +158,7 @@ const buildInitialForm = () => {
     purpose_category: "" as string,
     cargo_load: "" as CargoLoad | "",
     cargo_weight_kg: "" as string,
+    cargo_description: "" as string,
     vehicle_type_justification: "" as string,
   };
 };
