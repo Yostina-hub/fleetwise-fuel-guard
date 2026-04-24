@@ -1467,17 +1467,31 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               destinationLat={form.destination_lat}
               destinationLng={form.destination_lng}
               stops={form.stops as any}
-              onDepartureChange={(v) => update("departure_place", v)}
+              onDepartureChange={(v) => { update("departure_place", v); handleBlur("departure_place", v, form as any); }}
               onDepartureCoords={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
-              onDestinationChange={(v) => update("destination", v)}
+              onDestinationChange={(v) => { update("destination", v); handleBlur("destination", v, form as any); }}
               onDestinationCoords={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
               onStopsChange={(stops) => update("stops", stops as any)}
             />
+            <div className="space-y-0.5">
+              <FieldError field="departure_place" />
+              <FieldError field="destination" />
+            </div>
 
             <div>
-              <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
-              <Select value={form.trip_type} onValueChange={v => update("trip_type", v)}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Please select trip type…" /></SelectTrigger>
+              <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
+                <Route className="w-3.5 h-3.5" /> Trip Type <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={form.trip_type}
+                onValueChange={v => { update("trip_type", v); handleBlur("trip_type", v, form as any); }}
+              >
+                <SelectTrigger
+                  className={`h-9 text-sm ${getError("trip_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                  aria-invalid={!!getError("trip_type")}
+                >
+                  <SelectValue placeholder="Please select trip type…" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="one_way">One Way Trip</SelectItem>
                   <SelectItem value="round_trip">Round Trip</SelectItem>
