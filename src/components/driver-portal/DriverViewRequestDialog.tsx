@@ -64,6 +64,8 @@ interface ActiveRequest {
   approval_status?: string | null;
   purpose?: string | null;
   destination?: string | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
   departure_place?: string | null;
   departure_lat?: number | null;
   departure_lng?: number | null;
