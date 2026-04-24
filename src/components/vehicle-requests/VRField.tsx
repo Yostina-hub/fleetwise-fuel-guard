@@ -77,7 +77,7 @@ export function VRField({
 
   const childExtraClass =
     status === "error"
-      ? "border-destructive focus-visible:ring-destructive/30"
+      ? "border-destructive ring-1 ring-destructive/30 focus-visible:ring-destructive/40"
       : status === "success"
         ? "border-success/60 focus-visible:ring-success/30"
         : "";
@@ -94,8 +94,7 @@ export function VRField({
       <Label
         htmlFor={id}
         className={cn(
-          "text-sm font-medium flex items-center gap-1.5 leading-tight",
-          status === "error" ? "text-destructive" : "text-primary",
+          "text-primary font-medium text-sm flex items-center gap-1.5 leading-tight",
         )}
       >
         {Icon && <Icon className="w-4 h-4 shrink-0" />}
