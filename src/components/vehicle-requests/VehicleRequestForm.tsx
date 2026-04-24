@@ -1843,7 +1843,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                           return [
                             <SelectItem key={parent.value} value={parent.value}>
                               <span className="flex items-center gap-2 font-semibold">
-                                <MapPin className="h-3.5 w-3.5 text-primary" />
                                 {parent.label}
                               </span>
                             </SelectItem>,
