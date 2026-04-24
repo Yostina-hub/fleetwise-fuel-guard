@@ -291,17 +291,32 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   // Auto-sync Date and Start Time to the machine's current clock whenever the
   // form is opened, and keep them ticking live (every 30s) until the user
-  // edits either field. End time stays under user control.
+  // edits any schedule field. End time stays under user control.
+  //
+  // IMPORTANT: once the user has supplied an end_time (i.e. actively configured
+  // the trip window) we MUST stop bumping start_time forward — otherwise the
+  // ticking clock can shove start_time past end_time and the validator will
+  // suddenly start screaming "start time is in the past" / "end before start"
+  // even though the user has already filled both fields correctly.
   useEffect(() => {
     if (!open) return;
     userTouchedDateRef.current = false;
     userTouchedStartTimeRef.current = false;
 
     const sync = () => {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      // Freeze the auto-tick once the user has configured the window. We treat
+      // "end_time is set" OR "request_type is chosen" as a strong signal the
+      // user is actively filling the form and no longer wants the start time
+      // silently rewritten on every tick.
       setForm((prev) => {
+        const userIsActive =
+          !!prev.end_time ||
+          (!!prev.request_type && prev.request_type !== "");
+        if (userIsActive) return prev;
+
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
         const next: any = { ...prev };
         let changed = false;
         if (!userTouchedDateRef.current) {
