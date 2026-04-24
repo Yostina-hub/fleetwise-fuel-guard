@@ -29,6 +29,7 @@ import { useVehicleRequestValidation } from "./useVehicleRequestValidation";
 import { sanitizeVehicleRequestForm, vehicleRequestZodSchema, validateVehicleRequestForm } from "./vehicleRequestValidation";
 import { VRField } from "./VRField";
 import { DateTimeRangeField } from "./DateTimeRangeField";
+import { RouteField } from "./RouteField";
 import { deriveVisibility } from "./visibility";
 import { RouteMapPreview } from "./RouteMapPreview";
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
@@ -1355,129 +1356,20 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* ROUTE SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={MapPin} title="Route" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              <LocationPickerField
-                label="Departure Place"
-                value={form.departure_place}
-                lat={form.departure_lat}
-                lng={form.departure_lng}
-                onChange={v => update("departure_place", v)}
-                onCoordsChange={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
-                placeholder="Select or type departure"
-                iconColor="text-green-500"
-              />
-              <LocationPickerField
-                label="Final Destination"
-                value={form.destination}
-                lat={form.destination_lat}
-                lng={form.destination_lng}
-                onChange={v => update("destination", v)}
-                onCoordsChange={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
-                placeholder="Select or type final destination"
-                iconColor="text-red-500"
-              />
-            </div>
-            {/* Inline route preview map removed — keeps the form compact.
-                Users still pick locations via the map dialog on each field. */}
-            {/* Coordinate previews intentionally removed — the map picker
-                already auto-fills a human-readable place name, and showing
-                raw lat/lng under the route fields looked unprofessional. */}
-
-            {/* ── Ordered waypoints (intermediate stops between Departure and Final Destination) ── */}
-            <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
-                    <Route className="w-3.5 h-3.5" /> Intermediate Stops
-                    <FieldHint>
-                      Add ordered waypoints between Departure and Final Destination. Driver will visit them in this order.
-                    </FieldHint>
-                  </Label>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    update("stops", [...form.stops, { name: "", lat: null, lng: null }] as any)
-                  }
-                  disabled={form.stops.length >= 10}
-                >
-                  + Add Stop
-                </Button>
-              </div>
-              {form.stops.length === 0 && (
-                <p className="text-xs text-muted-foreground italic">No intermediate stops. Trip goes directly from Departure to Final Destination.</p>
-              )}
-              {form.stops.map((stop, idx) => (
-                <div key={idx} className="grid grid-cols-[auto_1fr_auto_auto_auto] items-end gap-2 rounded-md border border-border bg-background/60 p-2">
-                  <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                    {idx + 1}
-                  </div>
-                  <LocationPickerField
-                    label={`Stop ${idx + 1}`}
-                    value={stop.name}
-                    lat={stop.lat}
-                    lng={stop.lng}
-                    onChange={(v) => {
-                      const next = [...form.stops];
-                      next[idx] = { ...next[idx], name: v };
-                      update("stops", next as any);
-                    }}
-                    onCoordsChange={(lat, lng) => {
-                      const next = [...form.stops];
-                      next[idx] = { ...next[idx], lat, lng };
-                      update("stops", next as any);
-                    }}
-                    placeholder={`Select or type stop ${idx + 1}`}
-                    iconColor="text-amber-500"
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8"
-                    title="Move up"
-                    disabled={idx === 0}
-                    onClick={() => {
-                      const next = [...form.stops];
-                      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-                      update("stops", next as any);
-                    }}
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5 rotate-90" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8"
-                    title="Move down"
-                    disabled={idx === form.stops.length - 1}
-                    onClick={() => {
-                      const next = [...form.stops];
-                      [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
-                      update("stops", next as any);
-                    }}
-                  >
-                    <ChevronRight className="w-3.5 h-3.5 rotate-90" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    title="Remove stop"
-                    onClick={() => {
-                      const next = form.stops.filter((_, i) => i !== idx);
-                      update("stops", next as any);
-                    }}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+            <RouteField
+              departure={form.departure_place}
+              departureLat={form.departure_lat}
+              departureLng={form.departure_lng}
+              destination={form.destination}
+              destinationLat={form.destination_lat}
+              destinationLng={form.destination_lng}
+              stops={form.stops as any}
+              onDepartureChange={(v) => update("departure_place", v)}
+              onDepartureCoords={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
+              onDestinationChange={(v) => update("destination", v)}
+              onDestinationCoords={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
+              onStopsChange={(stops) => update("stops", stops as any)}
+            />
 
             <div>
               <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5"><Route className="w-3.5 h-3.5" /> Trip Type</Label>
