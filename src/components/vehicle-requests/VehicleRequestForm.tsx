@@ -1857,7 +1857,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     value={form.contact_phone}
                     onChange={e => update("contact_phone", e.target.value)}
                     onBlur={e => handleBlur("contact_phone", e.target.value, form as any)}
-                    placeholder="0911 234 567 or +251 911 234 567"
+                    placeholder="e.g. 0911 234 567 or +251 911 234 567"
                     aria-invalid={!!getError("contact_phone")}
                     className={`h-9 text-sm ${getError("contact_phone") ? "border-destructive ring-1 ring-destructive/30 focus-visible:ring-destructive/40" : ""}`}
                   />
