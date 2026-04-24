@@ -1481,6 +1481,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 id="vr-trip-mode"
                 label="Trip Mode"
                 icon={Route}
+                required
                 error={getError("trip_type")}
               >
                 <Select
