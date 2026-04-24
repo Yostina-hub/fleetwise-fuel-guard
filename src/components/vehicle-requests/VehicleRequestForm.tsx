@@ -1479,7 +1479,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* RESOURCES SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={Layers} title="Vehicle & Resources" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               <VRField
                 id="vr-num-vehicles"
                 label="No. Of Vehicles"
