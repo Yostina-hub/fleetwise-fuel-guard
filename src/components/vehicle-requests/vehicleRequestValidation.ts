@@ -265,25 +265,12 @@ export function validateVRField(
         return "Enter the number of vehicles needed (minimum 1).";
       if (!Number.isInteger(n))
         return "Number of vehicles must be a whole number (e.g. 1, 2, 3).";
-      // Project may always request fleets up to 50.
-      // Daily / Nighttime / Field / Messenger are normally capped at 1, but
-      // we allow multi-vehicle when the passenger count physically can't fit
-      // in a single vehicle (largest single vehicle in the catalogue is the
-      // Midi-Bus at 25 seats). Required = ceil(passengers / 25).
-      const SINGLE_VEHICLE_MAX_PAX = 25;
-      const paxRaw = Number(ctx.passengers);
-      const pax = paxRaw === -1 ? 0 : (Number.isFinite(paxRaw) ? Math.max(0, paxRaw) : 0);
-      const paxRequired = pax > SINGLE_VEHICLE_MAX_PAX
-        ? Math.ceil(pax / SINGLE_VEHICLE_MAX_PAX)
-        : 1;
-      const max = isProject ? 50 : Math.max(1, paxRequired);
-      if (n > max) {
-        if (isProject)
-          return "Maximum 50 vehicles per request. Split into multiple requests if you need more.";
-        if (paxRequired > 1)
-          return `For ${pax} passengers you can request up to ${paxRequired} vehicle${paxRequired === 1 ? "" : "s"} (max 25 seats per vehicle). For larger fleets, switch to Project Operation.`;
-        return "Daily, Nighttime and Field operations are limited to 1 vehicle unless the passenger count exceeds 25. Switch to Project Operation for larger fleets.";
-      }
+      // Hard ceiling only — every operation type may request up to 50 vehicles
+      // per single submission. Per-operation caps were removed by request:
+      // dispatchers decide what's appropriate for Daily / Nighttime / Field /
+      // Project / Messenger without the form blocking them.
+      if (n > 50)
+        return "Maximum 50 vehicles per request. Split into multiple requests if you need more.";
       return;
     }
 
