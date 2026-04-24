@@ -1759,9 +1759,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     onBlur={e => handleBlur("num_vehicles", e.target.value, form as any)}
                     className="h-9 text-sm"
                   />
-                  {!allowsMultipleVehicles && paxBasedMaxVehicles > 1 && (
+                  {paxBasedSuggestedVehicles > 1 && (
                     <p className="text-[11px] text-muted-foreground mt-1">
-                      {parseInt(form.passengers) || 0} passengers exceed a single vehicle's 25-seat limit — up to {paxBasedMaxVehicles} vehicles allowed.
+                      Suggested: {paxBasedSuggestedVehicles} vehicles for {parseInt(form.passengers) || 0} passengers (25 seats / vehicle).
                     </p>
                   )}
                 </div>
