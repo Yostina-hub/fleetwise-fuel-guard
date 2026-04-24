@@ -1319,8 +1319,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   date={form.date}
                   startTime={form.start_time}
                   endTime={form.end_time}
-                  onDateChange={(d) => { update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }}
-                  onStartTimeChange={(v) => update("start_time", v)}
+                  onDateChange={(d) => { userTouchedDateRef.current = true; update("date", d); handleBlur("date", d, form as any); handleBlur("start_time", form.start_time, { ...form, date: d } as any); }}
+                  onStartTimeChange={(v) => { userTouchedStartTimeRef.current = true; update("start_time", v); }}
                   onEndTimeChange={(v) => update("end_time", v)}
                   onBlurStart={() => handleBlur("start_time", form.start_time, form as any)}
                   onBlurEnd={() => handleBlur("end_time", form.end_time, form as any)}
