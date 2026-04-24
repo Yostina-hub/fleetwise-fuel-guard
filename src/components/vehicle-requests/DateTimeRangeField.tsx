@@ -59,8 +59,8 @@ export const DateTimeRangeField: React.FC<Props> = ({
 
   return (
     <div className={className}>
-      <Label className="text-primary font-medium text-sm mb-1 block">
-        Date &amp; Time <span className="text-destructive">*</span>
+      <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5">
+        <CalendarIcon className="w-3.5 h-3.5" /> Date &amp; Time <span className="text-destructive">*</span>
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -68,13 +68,13 @@ export const DateTimeRangeField: React.FC<Props> = ({
             type="button"
             aria-invalid={hasError}
             className={cn(
-              "w-full h-10 rounded-md border bg-background px-3 text-sm",
+              "w-full min-h-10 rounded-md border bg-background px-3 py-2 text-sm",
               "flex items-center gap-2 text-left transition-colors",
               "hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-ring",
               hasError ? "border-destructive" : "border-input",
             )}
           >
-            <CalendarIcon className="w-4 h-4 text-primary shrink-0" />
+            <CalendarIcon className="w-3.5 h-3.5 text-primary shrink-0" />
             <span className={cn("font-medium", !date && "text-muted-foreground font-normal")}>
               {summary.datePart}
             </span>
