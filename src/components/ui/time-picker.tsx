@@ -30,6 +30,13 @@ interface TimePickerProps {
   ariaInvalid?: boolean;
   /** Minute granularity (default 5). Use 1 for exact minute. */
   minuteStep?: number;
+  /**
+   * Optional whitelist of allowed time ranges (minutes-of-day, end-exclusive).
+   * Used to bound selection to a window like Day Operation (08:30–17:30) or
+   * Night Request (20:00–06:00 next day → [[0,360],[1200,1440]]).
+   * If omitted, all times are selectable.
+   */
+  allowedRanges?: Array<[number, number]>;
 }
 
 const pad = (n: number) => n.toString().padStart(2, "0");
@@ -69,8 +76,17 @@ export function TimePicker({
   className,
   ariaInvalid,
   minuteStep = 5,
+  allowedRanges,
 }: TimePickerProps) {
   const [open, setOpen] = React.useState(false);
+
+  const inAllowed = React.useCallback(
+    (mins: number) => {
+      if (!allowedRanges || allowedRanges.length === 0) return true;
+      return allowedRanges.some(([s, e]) => mins >= s && mins < e);
+    },
+    [allowedRanges],
+  );
 
   // Live current time in Africa/Addis_Ababa (EAT, UTC+3) — fleet operates on
   // Ethiopian local time so the hint and the "Use current time" shortcut
