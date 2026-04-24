@@ -1,14 +1,17 @@
 // Consolidate Vehicle Requests
 // =============================
 // Returns merge-preview groups for approved+unassigned vehicle requests using
-// THREE strategies (the supervisor picks which to apply):
+// FOUR strategies (the supervisor picks which to apply):
 //   1. exact_route   — same pool + departure + destination + day
 //   2. dest_window   — same destination + ±30 min needed_from
 //   3. geofence_pair — pickup geofence + drop geofence + ±30 min
+//   4. smart_rules   — configurable rule engine combining:
+//        • Capacity utilization (combined load ≤ X% of vehicle capacity)
+//        • Geographic proximity (drop-offs within X km)
+//        • Time window (needed_from within X minutes)
+//        • Compatibility (cargo type / temperature / passengers vs cargo)
 //
-// This endpoint is read-only — it just returns suggestions. Confirming a
-// merge is done by calling auto-dispatch-pool with the chosen pool_name OR
-// by allowing the supervisor to manually consolidate from the panel.
+// This endpoint is read-only — it just returns suggestions.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -66,20 +69,56 @@ const findFence = (lat: number | null, lng: number | null, fences: any[]) => {
   return null;
 };
 
+// ───────────────────────── Compatibility helpers ─────────────────────────
+// We classify a request as "passenger" if it carries pax with no cargo,
+// "cargo_dry" / "cargo_cold" otherwise. Mixing passenger ↔ cargo or
+// dry ↔ cold is rejected.
+const cargoProfile = (r: any): "passenger" | "cargo_dry" | "cargo_cold" => {
+  const cargo = norm(r.cargo_load);
+  const cold = /(cold|chill|frozen|refriger|temperature)/.test(cargo) ||
+    /(cold|chill|refriger)/.test(norm(r.vehicle_type));
+  if (cold) return "cargo_cold";
+  if (cargo) return "cargo_dry";
+  return "passenger";
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { organization_id } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const organization_id = body.organization_id;
     if (!organization_id) {
       return new Response(JSON.stringify({ ok: false, error: "organization_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Smart-rule configuration with safe defaults. All four are togglable.
+    const rules = {
+      capacity: {
+        enabled: body.rules?.capacity?.enabled ?? true,
+        max_utilization_pct: Number(body.rules?.capacity?.max_utilization_pct ?? 80),
+        // Reference vehicle capacity used when none of the requests specify one.
+        // (Used to keep grouped passenger count below the threshold.)
+        reference_capacity: Number(body.rules?.capacity?.reference_capacity ?? 14),
+      },
+      proximity: {
+        enabled: body.rules?.proximity?.enabled ?? true,
+        radius_km: Number(body.rules?.proximity?.radius_km ?? 5),
+      },
+      time_window: {
+        enabled: body.rules?.time_window?.enabled ?? true,
+        window_minutes: Number(body.rules?.time_window?.window_minutes ?? 30),
+      },
+      compatibility: {
+        enabled: body.rules?.compatibility?.enabled ?? true,
+      },
+    };
+
     const { data: reqs, error } = await supabase
       .from("vehicle_requests")
-      .select("id, request_number, pool_name, departure_place, destination, departure_lat, departure_lng, destination_lat, destination_lng, needed_from, passengers, status, assigned_vehicle_id, deleted_at")
+      .select("id, request_number, pool_name, departure_place, destination, departure_lat, departure_lng, destination_lat, destination_lng, needed_from, needed_until, passengers, cargo_load, vehicle_type, status, assigned_vehicle_id, deleted_at")
       .eq("organization_id", organization_id)
       .eq("status", "approved")
       .is("assigned_vehicle_id", null)
@@ -105,7 +144,7 @@ Deno.serve(async (req) => {
       .filter(([, v]) => v.length > 1)
       .map(([k, v]) => ({ strategy: "exact_route", key: k, count: v.length, requests: v }));
 
-    // 2. dest_window (same destination text + ±30 min)
+    // 2. dest_window
     const destWindow: any[] = [];
     const usedDest = new Set<string>();
     for (let i = 0; i < list.length; i++) {
@@ -126,7 +165,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. geofence_pair (pickup fence + drop fence + ±30 min)
+    // 3. geofence_pair
     const geoPair: any[] = [];
     const usedGeo = new Set<string>();
     const fenceFor = (r: any) => ({
@@ -161,11 +200,95 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 4. smart_rules — configurable, all four rules combined
+    const smartGroups: any[] = [];
+    const usedSmart = new Set<string>();
+    for (let i = 0; i < list.length; i++) {
+      if (usedSmart.has(list[i].id)) continue;
+      const a = list[i];
+      const profA = cargoProfile(a);
+      let combinedPassengers = Number(a.passengers || 0);
+      const grp = [a];
+      const reasons: string[] = [];
+
+      for (let j = i + 1; j < list.length; j++) {
+        const b = list[j];
+        if (usedSmart.has(b.id)) continue;
+
+        // Compatibility rule — never mix incompatible cargo profiles
+        if (rules.compatibility.enabled) {
+          const profB = cargoProfile(b);
+          if (profA !== profB) continue;
+        }
+
+        // Time window rule
+        if (rules.time_window.enabled) {
+          const da = new Date(a.needed_from).getTime();
+          const db = new Date(b.needed_from).getTime();
+          if (Math.abs(da - db) > rules.time_window.window_minutes * 60_000) continue;
+        }
+
+        // Proximity rule (drop-off radius)
+        if (rules.proximity.enabled) {
+          if (a.destination_lat != null && b.destination_lat != null) {
+            const km = haversineKm(
+              Number(a.destination_lat),
+              Number(a.destination_lng),
+              Number(b.destination_lat),
+              Number(b.destination_lng),
+            );
+            if (km > rules.proximity.radius_km) continue;
+          } else if (norm(a.destination) !== norm(b.destination)) {
+            // No GPS to check radius and destinations differ — skip
+            continue;
+          }
+        }
+
+        // Capacity utilization rule (passenger trips only)
+        if (rules.capacity.enabled && profA === "passenger") {
+          const next = combinedPassengers + Number(b.passengers || 0);
+          const utilization = (next / rules.capacity.reference_capacity) * 100;
+          if (utilization > rules.capacity.max_utilization_pct) continue;
+          combinedPassengers = next;
+        }
+
+        grp.push(b);
+      }
+
+      if (grp.length > 1) {
+        grp.forEach((g) => usedSmart.add(g.id));
+        const utilization = profA === "passenger"
+          ? Math.round((combinedPassengers / rules.capacity.reference_capacity) * 100)
+          : null;
+        if (rules.capacity.enabled) reasons.push(`Capacity ≤ ${rules.capacity.max_utilization_pct}%`);
+        if (rules.proximity.enabled) reasons.push(`Within ${rules.proximity.radius_km} km`);
+        if (rules.time_window.enabled) reasons.push(`±${rules.time_window.window_minutes} min`);
+        if (rules.compatibility.enabled) reasons.push(`Same cargo type (${profA})`);
+
+        smartGroups.push({
+          strategy: "smart_rules",
+          key: `smart:${a.id}`,
+          count: grp.length,
+          requests: grp,
+          combined_passengers: combinedPassengers,
+          utilization_pct: utilization,
+          cargo_profile: profA,
+          reasons,
+        });
+      }
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
         total_requests: list.length,
-        groups: { exact_route: exactGroups, dest_window: destWindow, geofence_pair: geoPair },
+        rules,
+        groups: {
+          exact_route: exactGroups,
+          dest_window: destWindow,
+          geofence_pair: geoPair,
+          smart_rules: smartGroups,
+        },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
