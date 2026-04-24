@@ -1567,13 +1567,21 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     };
                   });
                 };
+                // Suppress the passengers validation error whenever the
+                // field is rendered as a non-editable "N/A" — there's no
+                // human-correctable mistake to flag (the cargo/courier
+                // vehicle simply doesn't carry passengers). Only show the
+                // error on the live numeric input.
+                const passengersError =
+                  nonPaxVehicle || mode === "cargo_only"
+                    ? undefined
+                    : getError("passengers");
                 return (
                   <>
                     <VRField
                       id="vr-trip-type"
                       label="Trip Type"
                       icon={Users}
-                      error={getError("passengers")}
                     >
                       {nonPaxVehicle ? (
                         <Input
@@ -1600,7 +1608,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                       id="vr-passengers"
                       label="Passengers"
                       icon={Users}
-                      error={getError("passengers")}
+                      error={passengersError}
                     >
                       {nonPaxVehicle || mode === "cargo_only" ? (
                         <Input
