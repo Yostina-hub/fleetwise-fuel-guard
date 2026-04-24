@@ -251,11 +251,15 @@ export function validateVRField(
     }
 
     case "passengers": {
+      const cargo = sanitizeText(ctx.cargo_load) as CargoLoad | "";
       const n = Number(value);
-      // -1 is the sentinel for "not applicable" (cargo / courier vehicles).
+      // -1 is the sentinel for "Cargo Only" (driver only, no passengers).
       if (n === -1) return;
-      if (!Number.isFinite(n) || n < 1)
-        return "Enter at least 1 passenger (the driver counts only if traveling).";
+      if (!Number.isFinite(n) || n < 1) {
+        return cargo && cargo !== "none"
+          ? "Passenger count is required for Passengers + Cargo. Enter at least 1, or switch to Cargo Only."
+          : "Passenger count is required for Passengers Only. Enter at least 1.";
+      }
       if (!Number.isInteger(n))
         return "Passengers must be a whole number.";
       if (n > 100)
