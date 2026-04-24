@@ -470,6 +470,7 @@ export function validateVehicleRequestForm(values: VRFormValues): {
     "project_number",
     "priority",
     "contact_phone",
+    "cargo_weight_kg",
   ];
   const errors: Partial<Record<VRFieldName, string>> = {};
   for (const f of fields) {
