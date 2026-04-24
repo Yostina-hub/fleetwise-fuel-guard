@@ -159,6 +159,13 @@ const buildInitialForm = () => {
   };
 };
 
+// NOTE: We intentionally do NOT compute `initialForm` at module-load time
+// because the form's default Date + Start Time should reflect the *current*
+// machine clock when the requester opens the form — not whenever the JS
+// bundle was first parsed (which can be hours or days earlier on a long
+// running tab). The form computes a fresh default per-mount inside the
+// component body via `useMemo`. The exported type below preserves the
+// shape for `useFormDraft<typeof initialForm>` consumers.
 const initialForm = buildInitialForm();
 
 // FieldHint is imported from @/components/ui/field-hint so all forms share
@@ -219,11 +226,17 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const legacyDraftKey = user?.id ? `vehicle-request:${user.id}:${source ?? "default"}` : null;
   const draftKey = user?.id ? `vehicle-request:v2:${user.id}:${source ?? "default"}` : null;
   const initialWithPrefill = useMemo(() => ({
-    ...initialForm,
+    // Recompute defaults each time the dialog opens so the Date field
+    // reflects the *current* machine clock — not whenever the JS bundle
+    // first parsed `initialForm`. Without this, a long-lived tab can
+    // present yesterday's date as today's default.
+    ...buildInitialForm(),
     ...(prefill?.purpose ? { purpose: String(prefill.purpose) } : {}),
     ...(prefill?.departure_place ? { departure_place: String(prefill.departure_place) } : {}),
     ...(prefill?.destination ? { destination: String(prefill.destination) } : {}),
-  }), [prefill?.purpose, prefill?.departure_place, prefill?.destination]);
+  // `open` is in the deps so a re-open after midnight gets the correct date.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [prefill?.purpose, prefill?.departure_place, prefill?.destination, open]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !legacyDraftKey) return;
@@ -266,6 +279,35 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restoredAt]);
+
+  // Refresh stale defaults whenever the dialog (re-)opens. If the persisted
+  // draft has a date in the past — or no date / start_time at all — bump it
+  // to the current machine clock so requesters never land on a form that's
+  // already invalid before they touch it.
+  useEffect(() => {
+    if (!open) return;
+    setForm((prev) => {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const next: any = { ...prev };
+      let changed = false;
+
+      const isStaleDate = (d: unknown) => {
+        if (!d) return true;
+        const dt = d instanceof Date ? d : new Date(d as any);
+        return isNaN(dt.getTime()) || dt < today;
+      };
+
+      if (isStaleDate(prev.date)) { next.date = today; changed = true; }
+      if (isStaleDate(prev.start_date)) { next.start_date = today; changed = true; }
+      if (!prev.start_time) { next.start_time = nowHHMM; changed = true; }
+      if (!prev.start_date_time) { next.start_date_time = nowHHMM; changed = true; }
+
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Super-admin / manager: file the request on behalf of another user or driver.
   // The selection is persisted to localStorage alongside the form draft so a
