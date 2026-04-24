@@ -40,6 +40,7 @@ export function MapLocationPickerDialog({
   const [lng, setLng] = useState(initialLng);
   const [locationName, setLocationName] = useState("");
   const [isLocating, setIsLocating] = useState(false);
+  const [mapStyle, setMapStyle] = useState<"streets" | "satellite">("streets");
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
