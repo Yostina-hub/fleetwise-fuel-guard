@@ -67,6 +67,8 @@ export type VRFieldName =
   | "pool_category"
   | "pool_name"
   | "purpose"
+  | "purpose_category"
+  | "cargo_load"
   | "project_number"
   | "priority"
   | "contact_phone";
@@ -87,11 +89,12 @@ export interface VRFormValues {
   pool_category?: string;
   pool_name?: string;
   purpose?: string;
+  purpose_category?: string;
   project_number?: string;
   priority?: string;
   contact_phone?: string;
   /** Drives passenger+cargo fitness check on vehicle_type. */
-  cargo_load?: CargoLoad;
+  cargo_load?: CargoLoad | "";
   /** Optional cargo total weight (kg) — validated against vehicle max payload. */
   cargo_weight_kg?: string | number | null;
 }
