@@ -40,7 +40,7 @@ export function MobileNav({
               <img
                 src={ethioTelecomLogo}
                 alt="ethio telecom"
-                className="h-9 w-auto object-contain dark:[filter:invert(1)_hue-rotate(180deg)]"
+                className="h-9 w-auto object-contain [filter:invert(1)_hue-rotate(180deg)]"
               />
             </div>
             <Button
