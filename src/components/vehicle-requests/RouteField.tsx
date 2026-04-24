@@ -85,8 +85,8 @@ export const RouteField: React.FC<Props> = ({
         >
           {/* Departure */}
           <div>
-            <Label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-green-500" /> Departure Place
+            <Label className="text-xs font-medium text-muted-foreground mb-1 block">
+              Departure Place
             </Label>
             <LocationPickerField
               label=""
@@ -199,8 +199,8 @@ export const RouteField: React.FC<Props> = ({
 
           {/* Destination */}
           <div>
-            <Label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-red-500" /> Final Destination
+            <Label className="text-xs font-medium text-muted-foreground mb-1 block">
+              Final Destination
             </Label>
             <LocationPickerField
               label=""
