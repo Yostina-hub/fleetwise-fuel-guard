@@ -37,6 +37,7 @@ import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
 import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetList";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
 import { OperatorToolsTabs } from "@/components/vehicle-requests/OperatorToolsTabs";
+import { AssignmentDetailsPanel } from "@/components/vehicle-requests/AssignmentDetailsPanel";
 import type { RequestAssignment } from "@/hooks/useRequestAssignments";
 import {
   getVehicleClassProfile,
@@ -746,6 +747,12 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         )}
         {request.status === "approved" && canManageAll && (
           <div className="space-y-2 w-full">
+            {/* Rich assignment context — vehicle/driver/trip details */}
+            <AssignmentDetailsPanel
+              request={request}
+              vehicleId={selectedVehicleId}
+              driverId={selectedDriver}
+            />
             {/* Smart suggestions */}
             {suggested.length > 0 && (
               <div className="rounded-md border bg-muted/30 p-2 space-y-1.5">
