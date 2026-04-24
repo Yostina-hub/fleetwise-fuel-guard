@@ -1015,6 +1015,13 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     });
   }, [form.passengers, form.cargo_load, cargoWeightKgNum, recommendation?.value, isMessenger]);
 
+  // Whenever passengers/cargo/weight change, clear the manual-override flag
+  // so the recommender takes back control and downgrades/upgrades the
+  // vehicle type to match the new load (e.g. 30 pax → bus, then 4 pax → sedan).
+  useEffect(() => {
+    userPickedVehicleTypeRef.current = false;
+  }, [form.passengers, form.cargo_load, cargoWeightKgNum]);
+
   // Keep `vehicle_type` in sync with the live recommendation whenever
   // passengers/cargo change — UNLESS the user has manually overridden it.
   // This way, increasing passengers upgrades the recommendation (sedan → van
