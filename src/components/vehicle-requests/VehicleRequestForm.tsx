@@ -1852,13 +1852,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   />
                 </VRField>
               </div>
-            </div>
-          </section>
-
-          {/* DETAILS SECTION */}
-          <section className="space-y-3">
-            <SectionHeader icon={FileText} title="Purpose & Details" />
-            <div className="grid grid-cols-1 gap-3">
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
                   Business Purpose <span className="text-destructive">*</span>
@@ -1897,6 +1890,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <FieldError field="purpose_category" />
               </div>
             </div>
+          </section>
+
+          {/* DETAILS SECTION */}
+          <section className="space-y-3">
+            <SectionHeader icon={FileText} title="Purpose & Details" />
             <VRField
               id="vr-purpose"
               label="Trip Description"
