@@ -351,7 +351,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
   });
 
   // Send in-app notifications on assignment
-  const sendInAppNotifications = async (vehicleId: string) => {
+  const sendInAppNotifications = async (vehicleId: string, driverId?: string) => {
     try {
       const { data: vehicle } = await (supabase as any)
         .from("vehicles")
@@ -371,8 +371,9 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       }
 
       // Notify driver in-app (find user_id from driver profile)
-      if (selectedDriver) {
-        const driver = drivers.find((d: any) => d.id === selectedDriver);
+      const targetDriverId = driverId || selectedDriver;
+      if (targetDriverId) {
+        const driver = drivers.find((d: any) => d.id === targetDriverId);
         if (driver) {
           const { data: driverProfile } = await supabase
             .from("profiles")
