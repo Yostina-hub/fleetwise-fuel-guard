@@ -1651,6 +1651,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     id="vr-passengers"
                     label="No. of Passengers"
                     icon={Users}
+                    required
                     error={getError("passengers")}
                   >
                     <Input
