@@ -1340,7 +1340,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         <div className="space-y-5">
           {/* TYPE SECTION */}
           <section className="space-y-3">
-            <SectionHeader icon={Sparkles} title="Operation Type" />
+            <SectionHeader icon={Sparkles} title="Vehicle Request Type" />
             <Select value={form.request_type} onValueChange={(v) => update("request_type", v)}>
               <SelectTrigger className="w-full md:max-w-sm h-9 text-sm">
                 <SelectValue placeholder="Please select operation type…" />
@@ -1792,36 +1792,34 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
       {(() => {
         const FooterInner = (
-          <div className="flex w-full flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+          <div className="flex w-full items-center justify-end gap-2 flex-wrap">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => { setForm(buildInitialForm()); validation.reset(); }}
-              className="text-muted-foreground self-start sm:self-auto h-8 px-2"
+              className="text-muted-foreground h-8 px-2"
             >
               Clear
             </Button>
-            <div className="flex items-center justify-end gap-2 flex-wrap">
-              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-                {t('common.cancel', 'Cancel')}
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSubmit}
-                disabled={createMutation.isPending || hasPendingRatings}
-                title={
-                  hasPendingRatings
-                    ? "Rate your previous trips before submitting"
-                    : !canSubmit
-                      ? "Some required fields are missing — click to see what's needed"
-                      : undefined
-                }
-                className="gap-1.5"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                {createMutation.isPending ? "Submitting..." : "Submit Request"}
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSubmit}
+              disabled={createMutation.isPending || hasPendingRatings}
+              title={
+                hasPendingRatings
+                  ? "Rate your previous trips before submitting"
+                  : !canSubmit
+                    ? "Some required fields are missing — click to see what's needed"
+                    : undefined
+              }
+              className="gap-1.5"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {createMutation.isPending ? "Submitting..." : "Submit Request"}
+            </Button>
           </div>
         );
         return embedded ? (
