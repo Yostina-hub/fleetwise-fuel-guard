@@ -1852,7 +1852,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                             ...subs.map((s: any) => (
                               <SelectItem key={s.value} value={s.value}>
                                 <span className="flex items-center gap-2 pl-4 text-sm">
-                                  <span className="text-muted-foreground">└</span>
                                   <span className="truncate">{s.label}</span>
                                   {s.shift && s.shift !== "all" && (
                                     <span className="ml-auto text-[10px] uppercase text-muted-foreground">{s.shift}</span>
