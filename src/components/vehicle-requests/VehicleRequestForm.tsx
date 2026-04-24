@@ -1557,31 +1557,41 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                       <Select
                         value={mode}
                         onValueChange={(next) => {
-                          if (next === "passengers_only") {
-                            setForm((f) => ({
+                          if (next === mode) return;
+                          setForm((f) => {
+                            // Always normalize: strip sentinel + clear cargo
+                            // residue first, then apply the target mode's
+                            // initial values. This guarantees no stale
+                            // weight / size / sentinel leaks across modes.
+                            const base = {
                               ...f,
-                              passengers: f.passengers === String(NON_PASSENGER_SENTINEL) ? "1" : f.passengers,
+                              passengers:
+                                f.passengers === String(NON_PASSENGER_SENTINEL)
+                                  ? ""
+                                  : f.passengers,
                               cargo_load: "none" as CargoLoad,
                               cargo_weight_kg: "",
-                            }));
-                          } else if (next === "passengers_cargo") {
-                            setForm((f) => ({
-                              ...f,
-                              passengers: f.passengers === String(NON_PASSENGER_SENTINEL) ? "1" : f.passengers,
-                              cargo_load: (f.cargo_load && f.cargo_load !== "none"
-                                ? f.cargo_load
-                                : "small") as CargoLoad,
-                            }));
-                          } else {
+                            };
+                            if (next === "passengers_only") {
+                              return {
+                                ...base,
+                                passengers: base.passengers || "1",
+                              };
+                            }
+                            if (next === "passengers_cargo") {
+                              return {
+                                ...base,
+                                passengers: base.passengers || "1",
+                                cargo_load: "small" as CargoLoad,
+                              };
+                            }
                             // cargo_only
-                            setForm((f) => ({
-                              ...f,
+                            return {
+                              ...base,
                               passengers: String(NON_PASSENGER_SENTINEL),
-                              cargo_load: (f.cargo_load && f.cargo_load !== "none"
-                                ? f.cargo_load
-                                : "medium") as CargoLoad,
-                            }));
-                          }
+                              cargo_load: "medium" as CargoLoad,
+                            };
+                          });
                         }}
                       >
                         <SelectTrigger className="h-9 text-sm">
