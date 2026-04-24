@@ -104,7 +104,7 @@ export const RouteField: React.FC<Props> = ({
           <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <RouteIcon className="w-3.5 h-3.5" /> Intermediate Stops
+                <RouteIcon className="w-3.5 h-3.5" />
               </Label>
               <Button
                 type="button"
