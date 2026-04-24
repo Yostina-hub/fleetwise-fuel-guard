@@ -48,7 +48,7 @@ const sendAssignmentSMS = async (request: any, vehicleId: string, driverId?: str
       : null;
 
     if (driverInfo?.data?.phone) {
-      const msg = `Trip Assignment ${request.request_number}: Vehicle ${vehicle?.plate_number || ""}. From ${request.departure_place || "—"} to ${request.destination || "—"} at ${format(new Date(request.needed_from), "MMM dd HH:mm")}. Purpose: ${(request.purpose || "").substring(0, 60)}`;
+      const msg = `Trip Assignment ${request.request_number}: Vehicle ${vehicle?.plate_number || ""}. From ${request.departure_place || "—"} to ${request.destination || "—"} at ${format(new Date(request.needed_from), "MMM dd h:mm a")}. Purpose: ${(request.purpose || "").substring(0, 60)}`;
       await supabase.functions.invoke("send-sms", {
         body: { to: driverInfo.data.phone, message: msg, type: "trip_assignment" },
       });

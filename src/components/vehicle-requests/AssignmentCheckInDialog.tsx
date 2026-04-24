@@ -167,7 +167,7 @@ export const AssignmentCheckInDialog = ({ request, assignment, open, onClose }: 
             <div className="flex items-center gap-2 text-sm">
               <Badge className="bg-success text-success-foreground">Started</Badge>
               <span className="text-xs text-muted-foreground">
-                {format(new Date(assignment.driver_checked_in_at!), "MMM dd, HH:mm")}
+                {format(new Date(assignment.driver_checked_in_at!), "MMM dd, h:mm a")}
               </span>
               {assignment.checkin_odometer && (
                 <span className="text-xs text-muted-foreground">| {assignment.checkin_odometer} km</span>

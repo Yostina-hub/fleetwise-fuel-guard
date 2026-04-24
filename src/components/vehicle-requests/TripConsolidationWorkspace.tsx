@@ -268,7 +268,7 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
                <div style="color:hsl(var(--muted-foreground));font-size:11px;">${r.pool_name || "Unassigned"} · ${r.passengers ?? 0} pax</div>
                <div style="margin-top:4px;font-size:11px;">📍 ${r.departure_place || "Pickup"}</div>
                <div style="font-size:11px;">🏁 ${r.destination || "Drop"}</div>
-               <div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:2px;">${format(new Date(r.needed_from), "MMM d HH:mm")}</div>
+               <div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:2px;">${format(new Date(r.needed_from), "MMM d h:mm a")}</div>
              </div>`,
           ),
         )
@@ -491,10 +491,10 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
                     <div className="rounded-md border p-2">
                       <div className="text-muted-foreground">Time window</div>
                       <div className="text-xs font-medium">
-                        {format(preview.earliest, "MMM d HH:mm")}
+                        {format(preview.earliest, "MMM d h:mm a")}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        → {format(preview.latest, "HH:mm")}
+                        → {format(preview.latest, "h:mm a")}
                       </div>
                     </div>
                   </div>
@@ -633,7 +633,7 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
                               <div className="text-[10px] text-muted-foreground flex items-center gap-2 mt-0.5">
                                 <span className="flex items-center gap-0.5">
                                   <Clock className="w-2.5 h-2.5" />
-                                  {format(new Date(r.needed_from), "MMM d HH:mm")}
+                                  {format(new Date(r.needed_from), "MMM d h:mm a")}
                                 </span>
                                 <span className="flex items-center gap-0.5">
                                   <Users className="w-2.5 h-2.5" />

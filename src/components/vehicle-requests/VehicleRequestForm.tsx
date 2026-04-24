@@ -8,6 +8,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -371,6 +381,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   }, [onBehalfOf, onBehalfDraftKey]);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [tripTypeTouched, setTripTypeTouched] = useState(false);
+  // Confirmation dialog gating — Submit clicks now go through an "Are you sure?"
+  // step so users don't accidentally fire off a request mid-edit.
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const fieldAnchors = useRef<Partial<Record<"date" | "start_time" | "end_time" | "start_date" | "end_date" | "project_number", HTMLDivElement | null>>>({});
 
   // Mandatory rating gate — block new requests until prior completed trips are rated.
@@ -1195,7 +1208,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       return;
     }
 
-    createMutation.mutate();
+    // All validation passed — ask the user to confirm before firing off the
+    // request. The actual mutation runs from the AlertDialog's confirm action.
+    setConfirmOpen(true);
   };
 
   const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) => {
@@ -2045,6 +2060,34 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         );
       })()}
 
+      {/* Submit confirmation — fires the createMutation only on explicit
+          user confirmation. Cancel just closes and leaves the form intact. */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit this vehicle request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {form.request_type === "project_operation"
+                ? "Project requests are routed to fleet & finance approvers and cannot be edited after submission."
+                : "Once submitted, this request goes into the dispatch queue. You can still cancel it from My Requests if plans change."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={createMutation.isPending}>
+              No, keep editing
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={createMutation.isPending}
+              onClick={() => {
+                setConfirmOpen(false);
+                createMutation.mutate();
+              }}
+            >
+              {createMutation.isPending ? "Submitting…" : "Yes, submit"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 

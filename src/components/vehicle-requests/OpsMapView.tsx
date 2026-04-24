@@ -669,7 +669,7 @@ const BorrowList = ({ rows, onApprove, onReject }: BorrowListProps) => {
           </div>
           {b.reason && <div className="text-muted-foreground line-clamp-2">{b.reason}</div>}
           <div className="text-[10px] text-muted-foreground">
-            {format(new Date(b.created_at), "MMM d, HH:mm")}
+            {format(new Date(b.created_at), "MMM d, h:mm a")}
           </div>
           {b.status === "pending" && onApprove && onReject && (
             <div className="flex gap-1.5 pt-1">

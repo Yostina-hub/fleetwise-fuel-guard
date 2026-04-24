@@ -436,7 +436,7 @@ export const VehicleRequestsPanel = () => {
                           : r.destination || r.departure_place || "—"}
                       </td>
                       <td className="py-2 px-3 text-muted-foreground">
-                        {r.needed_from ? format(new Date(r.needed_from), "MMM dd, HH:mm") : "—"}
+                        {r.needed_from ? format(new Date(r.needed_from), "MMM dd, h:mm a") : "—"}
                       </td>
                       <td className="py-2 px-3 text-muted-foreground">{r.assigned_vehicle?.plate_number || "—"}</td>
                       <td className="py-2 px-3 text-center">
