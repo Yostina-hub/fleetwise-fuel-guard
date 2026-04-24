@@ -83,6 +83,13 @@ export interface VRFormValues {
   end_date?: Date | string | null;
   departure_place?: string;
   destination?: string;
+  /** Coordinates required so the trip resolves to a real map location. */
+  departure_lat?: number | null;
+  departure_lng?: number | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
+  /** Ordered intermediate waypoints — each must have a real map coordinate. */
+  stops?: Array<{ name?: string; lat?: number | null; lng?: number | null }>;
   num_vehicles?: string | number;
   passengers?: string | number;
   vehicle_type?: string;
