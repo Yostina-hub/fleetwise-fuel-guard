@@ -1649,9 +1649,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </div>
               )}
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">Priority</Label>
-                <Select value={form.priority} onValueChange={v => update("priority", v)}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Please select priority…" /></SelectTrigger>
+                <Label className="text-primary font-medium text-sm mb-1 block">
+                  Priority <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.priority}
+                  onValueChange={v => { update("priority", v); handleBlur("priority", v, form as any); }}
+                >
+                  <SelectTrigger
+                    className={`h-9 text-sm ${getError("priority") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("priority")}
+                  >
+                    <SelectValue placeholder="Please select priority…" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">🟢 Low — flexible timing</SelectItem>
                     <SelectItem value="normal">🔵 Normal — standard priority</SelectItem>
@@ -1659,15 +1669,17 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <SelectItem value="urgent">🔴 Urgent — immediate dispatch</SelectItem>
                   </SelectContent>
                 </Select>
+                <FieldError field="priority" />
               </div>
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
-                  Pool Category
+                  Pool Category <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.pool_category}
                   onValueChange={v => {
                     update("pool_category", v);
+                    handleBlur("pool_category", v, form as any);
                     // Reset the dependent location whenever category changes
                     const meta = POOL_CATEGORY_META[v as keyof typeof POOL_CATEGORY_META];
                     const cur = ASSIGNED_LOCATIONS.find(l => l.value === form.pool_name);
@@ -1676,7 +1688,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     }
                   }}
                 >
-                  <SelectTrigger className="h-9 text-sm">
+                  <SelectTrigger
+                    className={`h-9 text-sm ${getError("pool_category") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("pool_category")}
+                  >
                     <SelectValue placeholder="Please select category…">
                       {form.pool_category && <PoolCategoryChip value={form.pool_category} />}
                     </SelectValue>
@@ -1687,6 +1702,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     <SelectItem value="region"><PoolCategoryChip value="region" /></SelectItem>
                   </SelectContent>
                 </Select>
+                <FieldError field="pool_category" />
               </div>
 
               <div>
