@@ -1707,14 +1707,17 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               <div>
                 <Label className="text-primary font-medium text-sm mb-1 block">
-                  Assigned Location
+                  Assigned Location <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.pool_name}
-                  onValueChange={v => update("pool_name", v)}
+                  onValueChange={v => { update("pool_name", v); handleBlur("pool_name", v, { ...form, pool_name: v } as any); }}
                   disabled={!form.pool_category}
                 >
-                  <SelectTrigger className={`h-9 text-sm ${!form.pool_category ? "opacity-50" : ""}`}>
+                  <SelectTrigger
+                    className={`h-9 text-sm ${!form.pool_category ? "opacity-50" : ""} ${getError("pool_name") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("pool_name")}
+                  >
                     <SelectValue placeholder={form.pool_category ? "Select location..." : "Pick category first"}>
                       {form.pool_name && (
                         <span className="flex items-center gap-2">
@@ -1768,6 +1771,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     )}
                   </SelectContent>
                 </Select>
+                <FieldError field="pool_name" />
               </div>
               <div>
                 <VRField
