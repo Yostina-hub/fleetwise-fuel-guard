@@ -17,7 +17,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Loader2,
   MapPin,
@@ -28,8 +27,6 @@ import {
   ArrowDown,
   ExternalLink,
   Send,
-  ArrowUp,
-  ArrowDownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { RouteMapPreview, type RoutePoint } from "./RouteMapPreview";
