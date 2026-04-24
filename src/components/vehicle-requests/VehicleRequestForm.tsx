@@ -1559,7 +1559,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   >
                     <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
                       <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="Select trip type…" />
+                        <SelectValue placeholder="Please select trip type…" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="passengers_only">Passengers Only</SelectItem>
