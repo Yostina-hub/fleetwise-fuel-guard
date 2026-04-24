@@ -1519,81 +1519,93 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
               </VRField>
-              <VRField
-                id="vr-passengers"
-                label="Trip Type"
-                icon={Users}
-                error={getError("passengers")}
-              >
-                {/*
-                 * Three-option professional load mode:
-                 *  • Passengers Only   → cargo cleared to "none", passengers required
-                 *  • Passengers + Cargo → cargo size required, passengers required
-                 *  • Cargo Only         → passengers set to N/A sentinel, cargo required
+              {(() => {
+                /*
+                 * Trip Type (load mode) + Passengers count rendered as TWO
+                 * adjacent grid cells so they sit side-by-side instead of
+                 * stacked. Both are derived from the same state machine:
+                 *  • Passengers Only   → cargo cleared, passengers required
+                 *  • Passengers + Cargo → cargo + passengers required
+                 *  • Cargo Only         → passengers = N/A sentinel
                  * Becomes read-only "N/A" only when a non-passenger vehicle
                  * type (courier/cargo truck) is explicitly chosen.
-                 */}
-                {form.vehicle_type && !isPassengerVehicleType(form.vehicle_type) ? (
-                  <Input
-                    type="text"
-                    value="N/A"
-                    readOnly
-                    disabled
-                    className="h-9 text-sm bg-muted/40"
-                  />
-                ) : (() => {
-                  const passengersIsNA = form.passengers === String(NON_PASSENGER_SENTINEL);
-                  const hasCargo = !!form.cargo_load && form.cargo_load !== "none";
-                  const mode = passengersIsNA
-                    ? "cargo_only"
-                    : hasCargo
-                      ? "passengers_cargo"
-                      : "passengers_only";
-                  const switchMode = (next: "passengers_only" | "passengers_cargo" | "cargo_only") => {
-                    if (next === mode) return;
-                    setForm((f) => {
-                      const base = {
-                        ...f,
-                        passengers:
-                          f.passengers === String(NON_PASSENGER_SENTINEL)
-                            ? ""
-                            : f.passengers,
-                        cargo_load: "none" as CargoLoad,
-                        cargo_weight_kg: "",
-                      };
-                      if (next === "passengers_only") {
-                        return { ...base, passengers: base.passengers || "1" };
-                      }
-                      if (next === "passengers_cargo") {
-                        return {
-                          ...base,
-                          passengers: base.passengers || "1",
-                          cargo_load: "small" as CargoLoad,
-                        };
-                      }
+                 */
+                const nonPaxVehicle = !!form.vehicle_type && !isPassengerVehicleType(form.vehicle_type);
+                const passengersIsNA = form.passengers === String(NON_PASSENGER_SENTINEL);
+                const hasCargo = !!form.cargo_load && form.cargo_load !== "none";
+                const mode: "passengers_only" | "passengers_cargo" | "cargo_only" = passengersIsNA
+                  ? "cargo_only"
+                  : hasCargo
+                    ? "passengers_cargo"
+                    : "passengers_only";
+                const switchMode = (next: "passengers_only" | "passengers_cargo" | "cargo_only") => {
+                  if (next === mode) return;
+                  setForm((f) => {
+                    const base = {
+                      ...f,
+                      passengers:
+                        f.passengers === String(NON_PASSENGER_SENTINEL)
+                          ? ""
+                          : f.passengers,
+                      cargo_load: "none" as CargoLoad,
+                      cargo_weight_kg: "",
+                    };
+                    if (next === "passengers_only") {
+                      return { ...base, passengers: base.passengers || "1" };
+                    }
+                    if (next === "passengers_cargo") {
                       return {
                         ...base,
-                        passengers: String(NON_PASSENGER_SENTINEL),
-                        cargo_load: "medium" as CargoLoad,
+                        passengers: base.passengers || "1",
+                        cargo_load: "small" as CargoLoad,
                       };
-                    });
-                  };
-                  return (
-                    <div className="space-y-2">
-                      <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
-                        <SelectTrigger className="h-9 text-sm">
-                          <SelectValue placeholder="Select trip type…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="passengers_only">Passengers Only</SelectItem>
-                          <SelectItem value="passengers_cargo">Passengers + Cargo</SelectItem>
-                          <SelectItem value="cargo_only">Cargo Only</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {mode === "cargo_only" ? (
+                    }
+                    return {
+                      ...base,
+                      passengers: String(NON_PASSENGER_SENTINEL),
+                      cargo_load: "medium" as CargoLoad,
+                    };
+                  });
+                };
+                return (
+                  <>
+                    <VRField
+                      id="vr-trip-type"
+                      label="Trip Type"
+                      icon={Users}
+                      error={getError("passengers")}
+                    >
+                      {nonPaxVehicle ? (
                         <Input
                           type="text"
-                          value="N/A — driver only"
+                          value="N/A"
+                          readOnly
+                          disabled
+                          className="h-9 text-sm bg-muted/40"
+                        />
+                      ) : (
+                        <Select value={mode} onValueChange={(v) => switchMode(v as "passengers_only" | "passengers_cargo" | "cargo_only")}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue placeholder="Select trip type…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="passengers_only">Passengers Only</SelectItem>
+                            <SelectItem value="passengers_cargo">Passengers + Cargo</SelectItem>
+                            <SelectItem value="cargo_only">Cargo Only</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </VRField>
+                    <VRField
+                      id="vr-passengers"
+                      label="Passengers"
+                      icon={Users}
+                      error={getError("passengers")}
+                    >
+                      {nonPaxVehicle || mode === "cargo_only" ? (
+                        <Input
+                          type="text"
+                          value={nonPaxVehicle ? "N/A" : "N/A — driver only"}
                           readOnly
                           disabled
                           className="h-9 text-sm bg-muted/40"
@@ -1610,10 +1622,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                           className="h-9 text-sm"
                         />
                       )}
-                    </div>
-                  );
-                })()}
-              </VRField>
+                    </VRField>
+                  </>
+                );
+              })()}
               {(() => {
                 // Cargo fields appear only when the load mode is
                 // "Passengers + Cargo" or "Cargo Only". In "Passengers Only"
