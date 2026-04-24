@@ -766,7 +766,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                                 </span>
                               </span>
                               <span className="text-muted-foreground">
-                                {format(new Date(r.needed_from), "HH:mm")}
+                                {format(new Date(r.needed_from), "h:mm a")}
                               </span>
                             </div>
                           ))}

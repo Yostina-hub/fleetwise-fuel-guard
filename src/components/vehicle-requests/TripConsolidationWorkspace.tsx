@@ -494,7 +494,7 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
                         {format(preview.earliest, "MMM d h:mm a")}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        → {format(preview.latest, "HH:mm")}
+                        → {format(preview.latest, "h:mm a")}
                       </div>
                     </div>
                   </div>
