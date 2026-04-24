@@ -211,7 +211,7 @@ export const DriverViewRequestDialog = ({
       const { data } = await (supabase as any)
         .from("vehicle_requests")
         .select(
-          "id, requester_id, requester_name, passengers, departure_place, departure_lat, departure_lng, department_name, pool_location, assigned_by, assigned_at, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes, driver_checkout_notes",
+          "id, requester_id, requester_name, passengers, departure_place, departure_lat, departure_lng, destination, destination_lat, destination_lng, department_name, pool_location, assigned_by, assigned_at, driver_checkin_odometer, driver_checkout_odometer, driver_checkin_notes, driver_checkout_notes",
         )
         .eq("id", request!.id)
         .maybeSingle();
@@ -664,9 +664,9 @@ export const DriverViewRequestDialog = ({
                 label: departurePlace || poolLocation || "Start",
               }}
               destination={{
-                lat: null,
-                lng: null,
-                label: request.destination || "Destination",
+                lat: hydrated?.destination_lat ?? request?.destination_lat ?? null,
+                lng: hydrated?.destination_lng ?? request?.destination_lng ?? null,
+                label: (hydrated?.destination ?? request.destination) || "Destination",
               }}
               heightPx={220}
             />
