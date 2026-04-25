@@ -102,7 +102,7 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
     model: formData.model,
     year: formData.year,
   });
-  const v = useFieldValidation(vehicleSchema, validatedSnapshot);
+  const fv = useFieldValidation(vehicleSchema, validatedSnapshot);
 
   useEffect(() => {
     if (open && vehicle?.vehicleId) {
@@ -274,7 +274,7 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
       is_active: formData.status !== "out_of_service",
     };
 
-    const validation = v.validateAll(cleanData);
+    const validation = fv.validateAll(cleanData);
     if (!validation.success) {
       const firstMessage = Object.values(validation.errors)[0];
       toast.error("Please fix the highlighted fields", { description: firstMessage });
