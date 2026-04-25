@@ -36,6 +36,8 @@ interface GeofenceLiveVisualizerProps {
 const SOURCE_PREFIX = 'geofence-viz-';
 const FILL_LAYER_PREFIX = 'geofence-fill-';
 const LINE_LAYER_PREFIX = 'geofence-line-';
+const LABEL_SOURCE_ID = 'geofence-viz-labels';
+const LABEL_LAYER_ID = 'geofence-viz-label-layer';
 
 export const GeofenceLiveVisualizer = ({ map, vehicles, visible, onClose }: GeofenceLiveVisualizerProps) => {
   const { organizationId } = useOrganization();
@@ -121,12 +123,22 @@ export const GeofenceLiveVisualizer = ({ map, vehicles, visible, onClose }: Geof
     }
   }, [vehicles, geofences, visible, isPointInPolygon, isPointInCircle]);
 
-  // Render geofence layers on map
+  // Render geofence layers + labels + click popups on map
   useEffect(() => {
     if (!map || !visible || geofences.length === 0) return;
 
+    const popupRef: { current: maplibregl.Popup | null } = { current: null };
+    const labelFeatures: GeoJSON.Feature[] = [];
+    const clickHandlers: Array<{ id: string; fn: (e: any) => void }> = [];
+    const enterHandlers: Array<{ id: string; fn: () => void }> = [];
+    const leaveHandlers: Array<{ id: string; fn: () => void }> = [];
+
     const addLayers = () => {
       if (!map.isStyleLoaded()) return;
+
+      // Bounds aggregator so we can fit-to-fences once
+      let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+      let hasBounds = false;
 
       geofences.forEach(gf => {
         const sourceId = SOURCE_PREFIX + gf.id;
@@ -142,15 +154,20 @@ export const GeofenceLiveVisualizer = ({ map, vehicles, visible, onClose }: Geof
 
         try {
           let geojson: GeoJSON.Feature | null = null;
+          let labelLat: number | null = null;
+          let labelLng: number | null = null;
 
           if (gf.geometry_type === 'polygon' && gf.polygon_points) {
             const points = typeof gf.polygon_points === 'string' ? JSON.parse(gf.polygon_points) : gf.polygon_points;
-            if (Array.isArray(points)) {
+            if (Array.isArray(points) && points.length >= 3) {
               const coords = points.map((p: any) => [Number(p[0] ?? p.lng), Number(p[1] ?? p.lat)]);
-              geojson = { type: 'Feature', properties: { name: gf.name }, geometry: { type: 'Polygon', coordinates: [coords] } };
+              geojson = { type: 'Feature', properties: { name: gf.name, id: gf.id }, geometry: { type: 'Polygon', coordinates: [coords] } };
+              // centroid (avg) for label
+              const sum = coords.reduce((acc: [number, number], c: number[]) => [acc[0] + c[0], acc[1] + c[1]], [0, 0]);
+              labelLng = sum[0] / coords.length;
+              labelLat = sum[1] / coords.length;
             }
           } else if (gf.geometry_type === 'circle' && gf.center_lat != null && gf.center_lng != null) {
-            // Postgres numeric arrives as strings via PostgREST — coerce before arithmetic
             const centerLat = Number(gf.center_lat);
             const centerLng = Number(gf.center_lng);
             const radiusM = Number(gf.radius_meters) || 500;
@@ -159,29 +176,121 @@ export const GeofenceLiveVisualizer = ({ map, vehicles, visible, onClose }: Geof
             const coords: number[][] = [];
             for (let i = 0; i <= pts; i++) {
               const angle = (i / pts) * 2 * Math.PI;
-              const dx = radiusM * Math.cos(angle); // east-west, meters
-              const dy = radiusM * Math.sin(angle); // north-south, meters
+              const dx = radiusM * Math.cos(angle);
+              const dy = radiusM * Math.sin(angle);
               const lat = centerLat + dy / 111320;
               const lng = centerLng + dx / (111320 * Math.cos((centerLat * Math.PI) / 180));
               coords.push([lng, lat]);
             }
-            geojson = { type: 'Feature', properties: { name: gf.name }, geometry: { type: 'Polygon', coordinates: [coords] } };
+            geojson = { type: 'Feature', properties: { name: gf.name, id: gf.id }, geometry: { type: 'Polygon', coordinates: [coords] } };
+            labelLat = centerLat;
+            labelLng = centerLng;
           }
 
           if (!geojson) return;
 
           map.addSource(sourceId, { type: 'geojson', data: { type: 'FeatureCollection', features: [geojson] } });
-          map.addLayer({ id: fillId, type: 'fill', source: sourceId, paint: { 'fill-color': color, 'fill-opacity': 0.15 } });
-          map.addLayer({ id: lineId, type: 'line', source: sourceId, paint: { 'line-color': color, 'line-width': 2, 'line-dasharray': [3, 2] } });
+          map.addLayer({ id: fillId, type: 'fill', source: sourceId, paint: { 'fill-color': color, 'fill-opacity': 0.18 } });
+          map.addLayer({
+            id: lineId,
+            type: 'line',
+            source: sourceId,
+            paint: { 'line-color': color, 'line-width': 2, 'line-dasharray': [3, 2] },
+          });
           layersAdded.current.add(gf.id);
+
+          // Bounds
+          if (labelLat != null && labelLng != null) {
+            minLat = Math.min(minLat, labelLat);
+            maxLat = Math.max(maxLat, labelLat);
+            minLng = Math.min(minLng, labelLng);
+            maxLng = Math.max(maxLng, labelLng);
+            hasBounds = true;
+
+            labelFeatures.push({
+              type: 'Feature',
+              properties: { name: gf.name },
+              geometry: { type: 'Point', coordinates: [labelLng, labelLat] },
+            });
+          }
+
+          // Click → popup with name + radius + Fly to
+          const onClick = (e: any) => {
+            const lngLat = e.lngLat;
+            popupRef.current?.remove();
+            const html = `
+              <div style="min-width:180px;font-family:inherit;">
+                <div style="font-weight:600;font-size:12px;margin-bottom:4px;color:${color};">${gf.name}</div>
+                <div style="font-size:11px;opacity:.75;">
+                  ${gf.geometry_type === 'circle' ? `Radius: ${gf.radius_meters || 0} m` : 'Polygon zone'}
+                </div>
+                <div style="font-size:10px;opacity:.6;margin-top:4px;">Click outside to close</div>
+              </div>`;
+            popupRef.current = new maplibregl.Popup({ closeButton: true, closeOnClick: true, maxWidth: '240px' })
+              .setLngLat(lngLat)
+              .setHTML(html)
+              .addTo(map);
+          };
+          const onEnter = () => { map.getCanvas().style.cursor = 'pointer'; };
+          const onLeave = () => { map.getCanvas().style.cursor = ''; };
+
+          map.on('click', fillId, onClick);
+          map.on('mouseenter', fillId, onEnter);
+          map.on('mouseleave', fillId, onLeave);
+          clickHandlers.push({ id: fillId, fn: onClick });
+          enterHandlers.push({ id: fillId, fn: onEnter });
+          leaveHandlers.push({ id: fillId, fn: onLeave });
         } catch {}
       });
+
+      // Add a single label layer (toggleable via showLabels)
+      try {
+        if (map.getLayer(LABEL_LAYER_ID)) map.removeLayer(LABEL_LAYER_ID);
+        if (map.getSource(LABEL_SOURCE_ID)) map.removeSource(LABEL_SOURCE_ID);
+        map.addSource(LABEL_SOURCE_ID, {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: labelFeatures },
+        });
+        map.addLayer({
+          id: LABEL_LAYER_ID,
+          type: 'symbol',
+          source: LABEL_SOURCE_ID,
+          layout: {
+            'text-field': ['get', 'name'],
+            'text-size': 11,
+            'text-offset': [0, 0.6],
+            'text-anchor': 'top',
+            'text-allow-overlap': false,
+            'visibility': showLabels ? 'visible' : 'none',
+          },
+          paint: {
+            'text-color': '#ffffff',
+            'text-halo-color': '#000000',
+            'text-halo-width': 1.2,
+          },
+        });
+      } catch {}
+
+      // Auto-fit to all fences on first render of this batch (only if user hasn't zoomed in already)
+      if (hasBounds && !layersAdded.current.has('__fitted__')) {
+        try {
+          map.fitBounds(
+            [[minLng, minLat], [maxLng, maxLat]],
+            { padding: 60, maxZoom: 13, duration: 800 },
+          );
+          layersAdded.current.add('__fitted__');
+        } catch {}
+      }
     };
 
     if (map.isStyleLoaded()) addLayers();
     else map.once('style.load', addLayers);
 
     return () => {
+      clickHandlers.forEach(h => { try { map.off('click', h.id, h.fn); } catch {} });
+      enterHandlers.forEach(h => { try { map.off('mouseenter', h.id, h.fn); } catch {} });
+      leaveHandlers.forEach(h => { try { map.off('mouseleave', h.id, h.fn); } catch {} });
+      popupRef.current?.remove();
       geofences.forEach(gf => {
         try {
           if (map.getLayer(FILL_LAYER_PREFIX + gf.id)) map.removeLayer(FILL_LAYER_PREFIX + gf.id);
@@ -189,9 +298,13 @@ export const GeofenceLiveVisualizer = ({ map, vehicles, visible, onClose }: Geof
           if (map.getSource(SOURCE_PREFIX + gf.id)) map.removeSource(SOURCE_PREFIX + gf.id);
         } catch {}
       });
+      try {
+        if (map.getLayer(LABEL_LAYER_ID)) map.removeLayer(LABEL_LAYER_ID);
+        if (map.getSource(LABEL_SOURCE_ID)) map.removeSource(LABEL_SOURCE_ID);
+      } catch {}
       layersAdded.current.clear();
     };
-  }, [map, visible, geofences]);
+  }, [map, visible, geofences, showLabels]);
 
   if (!visible) return null;
 
