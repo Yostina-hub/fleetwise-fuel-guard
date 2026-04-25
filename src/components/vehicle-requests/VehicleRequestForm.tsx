@@ -43,6 +43,8 @@ import { DateRangeField } from "./DateRangeField";
 import { RouteField } from "./RouteField";
 import { deriveVisibility } from "./visibility";
 import { RouteMapPreview } from "./RouteMapPreview";
+import { SharedRideMatchSuggestions } from "./SharedRideMatchSuggestions";
+import { useJoinSharedRide, type SharedRideMatch } from "@/hooks/useSharedRides";
 
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
@@ -395,6 +397,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // Confirmation dialog gating — Submit clicks now go through an "Are you sure?"
   // step so users don't accidentally fire off a request mid-edit.
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedRide, setSelectedRide] = useState<SharedRideMatch | null>(null);
+  const joinRide = useJoinSharedRide();
   const fieldAnchors = useRef<Partial<Record<"date" | "start_time" | "end_time" | "start_date" | "end_date" | "project_number", HTMLDivElement | null>>>({});
 
   // Mandatory rating gate — block new requests until prior completed trips are rated.
@@ -801,6 +805,20 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       return data;
     },
     onSuccess: (data: any) => {
+      // If the requester picked a Tier-1 shared-ride match, link them now.
+      if (selectedRide && data?.id) {
+        joinRide.mutate({
+          rideId: selectedRide.ride_id,
+          vehicleRequestId: data.id,
+          passengerUserId: user?.id ?? null,
+          seats: Math.max(1, Number(form.passengers) || 1),
+          pickupLabel: form.departure_place || null,
+          pickupLat: form.departure_lat ?? null,
+          pickupLng: form.departure_lng ?? null,
+          dropoffLabel: form.destination || null,
+        });
+        setSelectedRide(null);
+      }
       toast.success(
         canFileOnBehalf && onBehalfOf && onBehalfOf.id !== user?.id
           ? `Vehicle request submitted on behalf of ${onBehalfOf.name}`
@@ -1575,6 +1593,20 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <FieldError field="destination" />
                 <FieldError field="stops" />
               </div>
+              {/* Tier-1 Direct Match — surfaced as soon as origin/destination/time are picked. */}
+              <SharedRideMatchSuggestions
+                poolCode={form.pool_name || null}
+                originLat={form.departure_lat}
+                originLng={form.departure_lng}
+                destinationLat={form.destination_lat}
+                destinationLng={form.destination_lng}
+                departureAt={form.start_date instanceof Date ? form.start_date : null}
+                passengers={Math.max(1, Number(form.passengers) || 1)}
+                selectedRideId={selectedRide?.ride_id ?? null}
+                onSelect={(ride) =>
+                  setSelectedRide((cur) => (cur?.ride_id === ride.ride_id ? null : ride))
+                }
+              />
             </section>
           </div>
 
