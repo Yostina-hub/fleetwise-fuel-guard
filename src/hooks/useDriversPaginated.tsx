@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
+import { useRegistryRefresh } from "./useRegistryRefresh";
 import type { Driver } from "./useDrivers";
 
 export type DriverSortField =
@@ -284,6 +285,10 @@ export const useDriversPaginated = (
     isFirstLoad.current = false;
     loadPage(currentPage, { forceCountsRefresh: true });
   }, [loadPage, currentPage]);
+
+  // Refresh instantly when any code invalidates the "drivers" query key
+  // (covers all CreateDriverDialog / EditDriverDialog success paths).
+  useRegistryRefresh("drivers", refetch);
 
   // Only treat the very first mount per organization as "initial loading"
   // so filter/sort changes do NOT trigger the full-page skeleton (avoids reload feel).
