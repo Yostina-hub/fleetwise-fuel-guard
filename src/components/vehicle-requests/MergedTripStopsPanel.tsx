@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPreviewSafeMapStyle } from "@/lib/lemat";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import {
   GitMerge,
   MapPin,
@@ -35,6 +36,8 @@ import {
   Loader2,
   Flag,
   CircleDot,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -49,6 +52,8 @@ interface Props {
   mergeStrategy?: string | null;
   neededFrom?: string | null;
   neededUntil?: string | null;
+  /** Start expanded? Defaults to false (compact summary only). */
+  defaultOpen?: boolean;
 }
 
 interface Child {
