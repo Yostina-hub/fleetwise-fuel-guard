@@ -560,7 +560,7 @@ export const MergedTripStopsPanel = ({
                 <div className="relative">
                   <div
                     ref={containerRef}
-                    className="w-full h-[280px] bg-muted"
+                    className="w-full h-[360px] bg-muted"
                     aria-label="Consolidated trip map"
                   />
                   {/* Floating legend overlay */}
