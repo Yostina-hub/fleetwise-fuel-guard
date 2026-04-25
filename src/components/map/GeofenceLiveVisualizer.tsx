@@ -146,18 +146,24 @@ export const GeofenceLiveVisualizer = ({ map, vehicles, visible, onClose }: Geof
           if (gf.geometry_type === 'polygon' && gf.polygon_points) {
             const points = typeof gf.polygon_points === 'string' ? JSON.parse(gf.polygon_points) : gf.polygon_points;
             if (Array.isArray(points)) {
-              const coords = points.map((p: any) => [p[0] || p.lng, p[1] || p.lat]);
+              const coords = points.map((p: any) => [Number(p[0] ?? p.lng), Number(p[1] ?? p.lat)]);
               geojson = { type: 'Feature', properties: { name: gf.name }, geometry: { type: 'Polygon', coordinates: [coords] } };
             }
-          } else if (gf.geometry_type === 'circle' && gf.center_lat && gf.center_lng) {
-            const radius = (gf.radius_meters || 500) / 1000;
+          } else if (gf.geometry_type === 'circle' && gf.center_lat != null && gf.center_lng != null) {
+            // Postgres numeric arrives as strings via PostgREST — coerce before arithmetic
+            const centerLat = Number(gf.center_lat);
+            const centerLng = Number(gf.center_lng);
+            const radiusM = Number(gf.radius_meters) || 500;
+            if (!Number.isFinite(centerLat) || !Number.isFinite(centerLng)) return;
             const pts = 64;
             const coords: number[][] = [];
             for (let i = 0; i <= pts; i++) {
               const angle = (i / pts) * 2 * Math.PI;
-              const dx = (radius / 111.32) * Math.cos(angle);
-              const dy = (radius / (111.32 * Math.cos((gf.center_lat * Math.PI) / 180))) * Math.sin(angle);
-              coords.push([gf.center_lng + dy, gf.center_lat + dx]);
+              const dx = radiusM * Math.cos(angle); // east-west, meters
+              const dy = radiusM * Math.sin(angle); // north-south, meters
+              const lat = centerLat + dy / 111320;
+              const lng = centerLng + dx / (111320 * Math.cos((centerLat * Math.PI) / 180));
+              coords.push([lng, lat]);
             }
             geojson = { type: 'Feature', properties: { name: gf.name }, geometry: { type: 'Polygon', coordinates: [coords] } };
           }
