@@ -84,17 +84,20 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     vrScope.tier === "driver" && request.assigned_driver_id === vrScope.driverId;
   const canCheckInOut = canManageAll || isAssignedDriver;
 
-  // Fetch drivers for assignment
+  // Fetch drivers for assignment — scoped to the request's pool unless the
+  // current user has org-wide reach.
   const { data: drivers = [] } = useQuery({
-    queryKey: ["drivers-for-assignment", request.organization_id],
+    queryKey: ["drivers-for-assignment", request.organization_id, requestPool, poolUnrestricted],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("drivers")
-        .select("id, first_name, last_name, phone")
+        .select("id, first_name, last_name, phone, assigned_pool")
         .eq("organization_id", request.organization_id)
-        .eq("status", "active")
-        .order("first_name")
-        .limit(50);
+        .eq("status", "active");
+      if (!poolUnrestricted && requestPool) {
+        q = q.eq("assigned_pool", requestPool);
+      }
+      const { data, error } = await q.order("first_name").limit(50);
       if (error) throw error;
       return data || [];
     },
