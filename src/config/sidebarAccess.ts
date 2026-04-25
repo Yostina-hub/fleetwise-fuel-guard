@@ -55,6 +55,8 @@ export const PATH_ROLE_ACCESS: Record<string, string[]> = {
   // Vehicle Requests admin queue: NOT for driver-only users — drivers
   // see their assigned trips on /driver-portal instead.
   "/vehicle-requests": [...OPS_ROLES, "fleet_owner", "auditor", "dispatcher"],
+  // OLA Compliance dashboard — for managers + auditors (CxQMD reporting).
+  "/ola-compliance":   [...OPS_ROLES, "fleet_owner", "auditor"],
   // Pool Supervisors workspace — allocate vehicle + driver from the pool.
   "/pool-supervisors": [...OPS_ROLES, "fleet_owner", "fleet_supervisor", "dispatcher"],
 
