@@ -38,6 +38,7 @@ import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetLi
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
 import { OperatorToolsTabs } from "@/components/vehicle-requests/OperatorToolsTabs";
 import { AssignmentDetailsPanel } from "@/components/vehicle-requests/AssignmentDetailsPanel";
+import { AssignVehicleDriverDialog } from "@/components/vehicle-requests/AssignVehicleDriverDialog";
 import type { RequestAssignment } from "@/hooks/useRequestAssignments";
 import {
   getVehicleClassProfile,
