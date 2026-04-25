@@ -49,6 +49,7 @@ import { usePendingRatings } from "@/hooks/usePendingRatings";
 import { useCan } from "@/hooks/useCan";
 
 import { useDepartments } from "@/hooks/useDepartments";
+import { usePoolMembership } from "@/hooks/usePoolMembership";
 import {
   recommendVehicleClass,
   isUpgradeOverRecommendation,
