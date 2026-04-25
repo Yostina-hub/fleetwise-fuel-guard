@@ -132,10 +132,21 @@ export const MergedTripStopsPanel = ({
     [children],
   );
 
-  // ── Lazy-mounted map ────────────────────────────────────────────────
+  // ── Lazy-mounted map + OSRM-based optimized route alternatives ────
+  // We send the ordered pickup→drop sequence to OSRM
+  // (router.project-osrm.org) with `alternatives=3` and render up to three
+  // real driving routes. The fastest by `duration` is highlighted as
+  // "Best" — others are dimmed. No API key needed; the public demo server
+  // is rate-limited but adequate for occasional dispatcher previews.
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+
+  const [routesInfo, setRoutesInfo] = useState<
+    Array<{ label: string; distanceKm: number; durationMin: number; isBest: boolean; color: string }>
+  >([]);
+  const [routesError, setRoutesError] = useState<string | null>(null);
+  const [routesLoading, setRoutesLoading] = useState(false);
 
   useEffect(() => {
     if (!showMap || !open) return;
@@ -152,55 +163,27 @@ export const MergedTripStopsPanel = ({
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
-    map.on("load", () => {
-      const features = stopsWithCoords.map((c) => ({
-        type: "Feature" as const,
-        properties: { id: c.id },
-        geometry: {
-          type: "LineString" as const,
-          coordinates: [
-            [c.departure_lng!, c.departure_lat!],
-            [c.destination_lng!, c.destination_lat!],
-          ],
-        },
-      }));
-      map.addSource("legs", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features },
-      });
-      map.addLayer({
-        id: "legs-line",
-        type: "line",
-        source: "legs",
-        paint: {
-          "line-color": "hsl(217 91% 60%)",
-          "line-width": 2.5,
-          "line-opacity": 0.7,
-          "line-dasharray": [2, 1.5],
-        },
-      });
-
+    map.on("load", async () => {
       const bounds = new maplibregl.LngLatBounds();
 
+      // ── Markers (numbered pickups + drops) ─────────────────────────
       stopsWithCoords.forEach((c, idx) => {
-        // Numbered pickup marker
         const pickupEl = document.createElement("div");
         pickupEl.style.cssText = `
-          width:24px;height:24px;border-radius:9999px;
+          width:26px;height:26px;border-radius:9999px;
           background:hsl(217 91% 60%);color:white;
-          font:700 11px system-ui;display:flex;align-items:center;justify-content:center;
-          border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3);
+          font:700 12px system-ui;display:flex;align-items:center;justify-content:center;
+          border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.35);
           cursor:pointer;
         `;
-        pickupEl.textContent = String(idx + 1);
+        pickupEl.textContent = `P${idx + 1}`;
         const m1 = new maplibregl.Marker({ element: pickupEl })
           .setLngLat([c.departure_lng!, c.departure_lat!])
           .setPopup(
             new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(
               `<div style="font:500 11px system-ui;padding:2px;min-width:160px;">
-                 <div style="font-weight:700">Stop ${idx + 1} · ${c.requester_name || c.request_number}</div>
+                 <div style="font-weight:700">Pickup ${idx + 1} · ${c.requester_name || c.request_number}</div>
                  <div style="color:#666;margin-top:2px;">📍 ${c.departure_place || "Pickup"}</div>
-                 <div style="color:#666;">🏁 ${c.destination || "Drop"}</div>
                  <div style="margin-top:3px;font-size:10px;">${c.passengers ?? 0} pax · ${format(new Date(c.needed_from), "HH:mm")}</div>
                </div>`,
             ),
@@ -208,15 +191,24 @@ export const MergedTripStopsPanel = ({
           .addTo(map);
         markersRef.current.push(m1);
 
-        // Drop marker (square)
         const dropEl = document.createElement("div");
         dropEl.style.cssText = `
-          width:12px;height:12px;border-radius:2px;
-          background:white;border:2px solid hsl(217 91% 60%);
-          box-shadow:0 1px 3px rgba(0,0,0,.25);
+          width:22px;height:22px;border-radius:4px;
+          background:white;color:hsl(217 91% 50%);
+          font:700 10px system-ui;display:flex;align-items:center;justify-content:center;
+          border:2px solid hsl(217 91% 50%);box-shadow:0 2px 5px rgba(0,0,0,.25);
         `;
+        dropEl.textContent = `D${idx + 1}`;
         const m2 = new maplibregl.Marker({ element: dropEl })
           .setLngLat([c.destination_lng!, c.destination_lat!])
+          .setPopup(
+            new maplibregl.Popup({ offset: 12, closeButton: false }).setHTML(
+              `<div style="font:500 11px system-ui;padding:2px;min-width:160px;">
+                 <div style="font-weight:700">Drop ${idx + 1} · ${c.requester_name || c.request_number}</div>
+                 <div style="color:#666;margin-top:2px;">🏁 ${c.destination || "Drop"}</div>
+               </div>`,
+            ),
+          )
           .addTo(map);
         markersRef.current.push(m2);
 
@@ -225,9 +217,135 @@ export const MergedTripStopsPanel = ({
       });
 
       try {
-        map.fitBounds(bounds, { padding: 40, maxZoom: 14, duration: 0 });
+        map.fitBounds(bounds, { padding: 50, maxZoom: 14, duration: 0 });
       } catch {
         /* noop */
+      }
+
+      // ── Fetch OSRM alternatives ────────────────────────────────────
+      // Build ordered waypoint sequence: pickup1, drop1, pickup2, drop2 ...
+      const waypoints: Array<[number, number]> = [];
+      stopsWithCoords.forEach((c) => {
+        waypoints.push([c.departure_lng!, c.departure_lat!]);
+        waypoints.push([c.destination_lng!, c.destination_lat!]);
+      });
+
+      // OSRM demo server requires at least 2 coordinates
+      if (waypoints.length < 2) return;
+
+      setRoutesLoading(true);
+      setRoutesError(null);
+      const coordsStr = waypoints.map(([lng, lat]) => `${lng},${lat}`).join(";");
+      // alternatives=3 → request up to 3 alternative routes
+      const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?alternatives=3&overview=full&geometries=geojson&steps=false`;
+
+      // Fallback colors for up to 3 alternatives. Best = primary blue.
+      const palette = [
+        { name: "Route A", color: "hsl(217 91% 55%)" },
+        { name: "Route B", color: "hsl(38 92% 50%)" },
+        { name: "Route C", color: "hsl(280 70% 60%)" },
+      ];
+
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) throw new Error(`OSRM ${res.status}`);
+        const json = await res.json();
+        if (json.code !== "Ok" || !Array.isArray(json.routes) || json.routes.length === 0) {
+          throw new Error(json.message || "No routes returned");
+        }
+
+        const routes: Array<{ geometry: any; distance: number; duration: number }> = json.routes.slice(0, 3);
+
+        // Determine best by shortest duration
+        const bestIdx = routes.reduce(
+          (best, r, i, arr) => (r.duration < arr[best].duration ? i : best),
+          0,
+        );
+
+        // Render in reverse so the best route (added last) sits on top
+        const order = routes.map((_, i) => i).sort((a, b) => (a === bestIdx ? 1 : b === bestIdx ? -1 : 0));
+
+        if (!mapRef.current) return;
+
+        order.forEach((i) => {
+          const r = routes[i];
+          const isBest = i === bestIdx;
+          const meta = palette[i] ?? palette[0];
+          const sourceId = `route-alt-${i}`;
+          const layerId = `route-alt-layer-${i}`;
+          map.addSource(sourceId, {
+            type: "geojson",
+            data: { type: "Feature", properties: {}, geometry: r.geometry },
+          });
+          map.addLayer({
+            id: layerId,
+            type: "line",
+            source: sourceId,
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": isBest ? "hsl(217 91% 50%)" : meta.color,
+              "line-width": isBest ? 5 : 3,
+              "line-opacity": isBest ? 0.95 : 0.5,
+              ...(isBest ? {} : { "line-dasharray": [1.5, 1] }),
+            },
+          });
+        });
+
+        // Fit bounds around the best route
+        try {
+          const coords: Array<[number, number]> = routes[bestIdx].geometry.coordinates;
+          const b = new maplibregl.LngLatBounds();
+          coords.forEach((c) => b.extend(c as any));
+          stopsWithCoords.forEach((s) => {
+            b.extend([s.departure_lng!, s.departure_lat!]);
+            b.extend([s.destination_lng!, s.destination_lat!]);
+          });
+          map.fitBounds(b, { padding: 50, maxZoom: 14, duration: 400 });
+        } catch {
+          /* noop */
+        }
+
+        setRoutesInfo(
+          routes.map((r, i) => ({
+            label: palette[i]?.name ?? `Route ${i + 1}`,
+            distanceKm: r.distance / 1000,
+            durationMin: r.duration / 60,
+            isBest: i === bestIdx,
+            color: i === bestIdx ? "hsl(217 91% 50%)" : palette[i].color,
+          })),
+        );
+      } catch (err: any) {
+        setRoutesError(err?.message || "Could not load route alternatives");
+        // Fallback: render straight dashed legs so the user still sees connectivity
+        if (!mapRef.current) return;
+        const features = stopsWithCoords.map((c) => ({
+          type: "Feature" as const,
+          properties: {},
+          geometry: {
+            type: "LineString" as const,
+            coordinates: [
+              [c.departure_lng!, c.departure_lat!],
+              [c.destination_lng!, c.destination_lat!],
+            ],
+          },
+        }));
+        map.addSource("legs-fallback", {
+          type: "geojson",
+          data: { type: "FeatureCollection", features },
+        });
+        map.addLayer({
+          id: "legs-fallback-line",
+          type: "line",
+          source: "legs-fallback",
+          paint: {
+            "line-color": "hsl(217 91% 60%)",
+            "line-width": 2.5,
+            "line-opacity": 0.6,
+            "line-dasharray": [2, 1.5],
+          },
+        });
+      } finally {
+        setRoutesLoading(false);
       }
     });
 
@@ -236,6 +354,9 @@ export const MergedTripStopsPanel = ({
       markersRef.current = [];
       mapRef.current?.remove();
       mapRef.current = null;
+      setRoutesInfo([]);
+      setRoutesError(null);
+      setRoutesLoading(false);
     };
   }, [showMap, open, stopsWithCoords]);
 
