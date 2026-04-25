@@ -10,6 +10,7 @@ export interface AvailableVehicle {
   make: string;
   model: string;
   status: string;
+  specific_pool?: string | null;
   isAvailable: boolean;
   unavailableReason?: string;
 }
@@ -71,6 +72,7 @@ export const useAvailableVehicles = () => {
         make: vehicle.make,
         model: vehicle.model,
         status: vehicle.status,
+        specific_pool: (vehicle as any).specific_pool ?? null,
         isAvailable: !isMaintenanceStatus && !hasScheduledMaintenance && !isInactive && !isLocked,
         unavailableReason,
       } as AvailableVehicle;
