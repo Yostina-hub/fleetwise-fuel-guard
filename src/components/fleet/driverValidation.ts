@@ -295,6 +295,29 @@ const crossFieldRules: CrossFieldRule[] = [
     }
     return {};
   },
+  // #10 — Require an expiry date whenever a license number is captured.
+  // Prevents drivers being saved with no traceable validity window.
+  (f) => {
+    if (f.license_number && !f.license_expiry) {
+      return { license_expiry: "License expiry date is required to verify the license is still valid" };
+    }
+    return {};
+  },
+  // #10 — Reject outdated license issue dates. Ethiopian driving licenses
+  // are issued for at most 5 years, so an issue date older than 10 years
+  // indicates a stale/non-current document even if the operator typed a
+  // future expiry by mistake.
+  (f) => {
+    if (f.license_issue_date) {
+      const issued = new Date(f.license_issue_date);
+      const tenYearsAgo = new Date();
+      tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
+      if (issued < tenYearsAgo) {
+        return { license_issue_date: "License issue date is more than 10 years old — please use the current renewed license" };
+      }
+    }
+    return {};
+  },
   // Joining date must be after date of birth + min age
   (f) => {
     if (f.date_of_birth && f.joining_date) {
