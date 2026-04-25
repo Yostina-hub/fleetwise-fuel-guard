@@ -84,6 +84,7 @@ const initialForm = {
   contract_end_date: "", // #6 — required when employment_type === "contract"
   joining_date: "", department: "", experience_years: "",
   assigned_pool: "", // #5 — replaces route_type
+  pool_category: "", // UI-only — Corporate / Zone / Region (drives the Assigned Location list)
   telebirr_account: "", // #8 — replaces bank fields
   emergency_contact_name: "", emergency_contact_phone: "", blood_type: "",
   password: "", notes: "",
