@@ -49,6 +49,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useTranslation } from 'react-i18next';
 import DriverTripsView from "@/components/trips/DriverTripsView";
+import { useSharedRideMembership } from "@/hooks/useSharedRideMembership";
 
 const TripManagement = () => {
   const { t } = useTranslation();
@@ -206,6 +207,14 @@ const TripManagement = () => {
     }
     return trips;
   }, [requests, statusFilter, searchQuery]);
+
+  // Lookup of which filtered trips are part of a shared ride — drives the
+  // "Shared" badge on each card without per-card queries.
+  const tripIdsForShared = useMemo(
+    () => filteredTrips.map((t: any) => t.id).filter(Boolean),
+    [filteredTrips],
+  );
+  const { membership: sharedRideMap } = useSharedRideMembership(tripIdsForShared);
 
   const handleViewDetails = (trip: any) => {
     setSelectedTrip(trip);
@@ -508,6 +517,7 @@ const TripManagement = () => {
                 onViewDetails={handleViewDetails}
                 onAssign={(req) => { setSelectedTrip(req); setAssignOpen(true); }}
                 visibleColumns={statusFilter ? [statusFilter] : undefined}
+                sharedRideMap={sharedRideMap}
               />
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -520,6 +530,7 @@ const TripManagement = () => {
                       onReject={canApprove ? handleQuickReject : undefined}
                       onViewDetails={handleViewDetails}
                       onAssign={(r) => { setSelectedTrip(r); setAssignOpen(true); }}
+                      sharedRide={sharedRideMap[req.id] ?? null}
                     />
                   ))}
                 </AnimatePresence>

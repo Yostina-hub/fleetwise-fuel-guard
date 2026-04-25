@@ -13,8 +13,9 @@ import { Button } from "@/components/ui/button";
 import {
   MapPin, Clock, Users, CheckCircle, XCircle, Eye,
   Truck, ChevronRight, Package, MoreHorizontal, Briefcase, CalendarRange, Building2,
-  GripVertical, Moon,
+  GripVertical, Moon, Share2,
 } from "lucide-react";
+import type { SharedRideMembership } from "@/hooks/useSharedRideMembership";
 import { format, formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import {
@@ -32,6 +33,8 @@ interface VehicleRequestCardProps {
   dragHandleProps?: Record<string, any>;
   /** Visual feedback while being dragged. */
   isDragging?: boolean;
+  /** If this request is part of a shared ride, show a "Shared" badge. */
+  sharedRide?: SharedRideMembership | null;
 }
 
 const priorityConfig: Record<string, { color: string; label: string }> = {
@@ -50,7 +53,7 @@ const TYPE_META: Record<string, { label: string; icon: React.ReactNode }> = {
 
 export const VehicleRequestCard = ({
   request, onViewDetails, onApprove, onReject, onAssign,
-  dragHandleProps, isDragging,
+  dragHandleProps, isDragging, sharedRide,
 }: VehicleRequestCardProps) => {
   const priority = request.priority || "normal";
   const pConfig = priorityConfig[priority] || priorityConfig.normal;
@@ -107,6 +110,15 @@ export const VehicleRequestCard = ({
             slaBreached={request.sla_breached}
             operationType={request.operation_type}
           />
+          {sharedRide && (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 h-4 gap-1 bg-primary/10 text-primary border-primary/30"
+              title={`Shared ride · ${sharedRide.poolCode ?? "pool"}`}
+            >
+              <Share2 className="w-3 h-3" /> Shared
+            </Badge>
+          )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
