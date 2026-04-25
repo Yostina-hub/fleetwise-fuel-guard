@@ -110,6 +110,15 @@ export const VehicleRequestCard = ({
             slaBreached={request.sla_breached}
             operationType={request.operation_type}
           />
+          {sharedRide && (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 h-4 gap-1 bg-primary/10 text-primary border-primary/30"
+              title={`Shared ride · ${sharedRide.poolCode ?? "pool"}`}
+            >
+              <Share2 className="w-3 h-3" /> Shared
+            </Badge>
+          )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
