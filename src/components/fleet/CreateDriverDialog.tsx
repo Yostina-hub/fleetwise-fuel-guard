@@ -755,23 +755,26 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                 {/* Password strength meter */}
                 {formData.password && <PasswordStrengthMeter password={formData.password} />}
               </Field>
-              <div className="flex items-end gap-2">
-                <Button type="button" variant="outline" onClick={() => {
-                  const pwd = generatePassword();
-                  set("password", pwd);
-                  validation.validateField("password", pwd);
-                  setShowPassword(true);
-                }}>
-                  <RefreshCw className="w-4 h-4 mr-2" /> Generate
-                </Button>
-                {formData.password && (
-                  <Button type="button" variant="outline" size="icon" onClick={() => {
-                    navigator.clipboard.writeText(formData.password);
-                    toast({ title: "Copied", description: "Password copied to clipboard" });
-                  }} aria-label="Copy password">
-                    <Copy className="w-4 h-4" />
+              <div className="space-y-1.5">
+                <Label className="text-sm text-muted-foreground">Quick actions</Label>
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => {
+                    const pwd = generatePassword();
+                    set("password", pwd);
+                    validation.validateField("password", pwd);
+                    setShowPassword(true);
+                  }}>
+                    <RefreshCw className="w-4 h-4 mr-2" /> Generate
                   </Button>
-                )}
+                  {formData.password && (
+                    <Button type="button" variant="outline" size="icon" onClick={() => {
+                      navigator.clipboard.writeText(formData.password);
+                      toast({ title: "Copied", description: "Password copied to clipboard" });
+                    }} aria-label="Copy password">
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </Section>
