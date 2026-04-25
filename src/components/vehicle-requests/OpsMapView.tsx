@@ -113,13 +113,15 @@ export const OpsMapView = ({ organizationId }: Props) => {
     requestId?: string;
   }>(null);
   const [borrowReason, setBorrowReason] = useState("");
+  const [selectedPool, setSelectedPool] = useState<string | null>(null);
 
   const { available, allVehicles } = useAvailableVehicles();
   const { data: borrowRows = [], refetch: refetchBorrow } = useCrossPoolBorrowRequests(organizationId);
   const createBorrow = useCreateBorrowRequest();
   const respondBorrow = useRespondBorrowRequest();
 
-  // Pending vehicle requests with coordinates
+  // Pending vehicle requests with coordinates (also includes consolidated parents
+  // and richer fields for KPI calculations)
   const { data: requests = [], refetch: refetchRequests } = useQuery({
     queryKey: ["ops-map-requests", organizationId],
     enabled: !!organizationId,
@@ -128,14 +130,32 @@ export const OpsMapView = ({ organizationId }: Props) => {
       const { data, error } = await (supabase as any)
         .from("vehicle_requests")
         .select(
-          "id, request_number, pool_name, departure_lat, departure_lng, destination_lat, destination_lng, departure_place, destination, needed_from, status, priority",
+          "id, request_number, pool_name, departure_lat, departure_lng, destination_lat, destination_lng, departure_place, destination, needed_from, status, priority, passengers, vehicle_type, is_consolidated_parent, consolidated_request_count",
         )
         .eq("organization_id", organizationId)
         .in("status", ["pending", "approved"])
+        .is("merged_into_request_id", null)
         .order("needed_from", { ascending: true })
         .limit(200);
       if (error) throw error;
       return (data || []) as PendingRequest[];
+    },
+  });
+
+  // Idle (active, free) drivers per pool — used to surface driver supply alongside vehicles
+  const { data: idleDrivers = [] } = useQuery({
+    queryKey: ["ops-map-idle-drivers", organizationId],
+    enabled: !!organizationId,
+    refetchInterval: 60000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("drivers")
+        .select("id, first_name, last_name, status, assigned_pool")
+        .eq("organization_id", organizationId)
+        .eq("status", "active")
+        .limit(500);
+      if (error) throw error;
+      return (data || []) as any[];
     },
   });
 
