@@ -531,6 +531,9 @@ export const AssignVehicleDriverDialog = ({
                                     </span>
                                   </span>
                                 </span>
+                                {d.license && (
+                                  <LicenseBadge evaluation={d.license} />
+                                )}
                               </button>
                             );
                           })}
