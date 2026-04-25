@@ -47,6 +47,7 @@ import {
 import { AssignmentDetailsPanel } from "./AssignmentDetailsPanel";
 import { OpsMapView } from "./OpsMapView";
 import { ConsolidationPanel } from "./ConsolidationPanel";
+import { MergedTripStopsPanel } from "./MergedTripStopsPanel";
 import { cn } from "@/lib/utils";
 
 interface VehicleOption {
