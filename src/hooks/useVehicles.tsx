@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
+import { useRegistryRefresh } from "./useRegistryRefresh";
 
 export interface AssignedDriver {
   id: string;
@@ -140,28 +141,32 @@ export const useVehicles = (skip = false) => {
     };
   }, [organizationId, skip, isViewingAllOrgs]);
 
+  const refetch = useCallback(() => {
+    if (!organizationId && !isViewingAllOrgs) return;
+    setLoading(true);
+    let query = supabase
+      .from("vehicles")
+      .select(`
+        *,
+        assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url),
+        depot:depots!vehicles_depot_id_fkey(id, name, address)
+      `);
+    if (!isViewingAllOrgs && organizationId) {
+      query = query.eq("organization_id", organizationId);
+    }
+    query.then(({ data }) => {
+      setVehicles((data as any) || []);
+      setLoading(false);
+    });
+  }, [organizationId, isViewingAllOrgs]);
+
+  // Refresh instantly when any code invalidates the "vehicles" query key
+  useRegistryRefresh("vehicles", refetch);
+
   return {
     vehicles,
     loading,
     error,
-    refetch: () => {
-      if (organizationId || isViewingAllOrgs) {
-        setLoading(true);
-        let query = supabase
-          .from("vehicles")
-          .select(`
-            *,
-            assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url),
-            depot:depots!vehicles_depot_id_fkey(id, name, address)
-          `);
-        if (!isViewingAllOrgs && organizationId) {
-          query = query.eq("organization_id", organizationId);
-        }
-        query.then(({ data }) => {
-            setVehicles((data as any) || []);
-            setLoading(false);
-          });
-      }
-    }
+    refetch,
   };
 };

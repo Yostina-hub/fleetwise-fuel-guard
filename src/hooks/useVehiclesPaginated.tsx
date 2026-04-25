@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
+import { useRegistryRefresh } from "./useRegistryRefresh";
 
 export interface AssignedDriver {
   id: string;
@@ -261,6 +262,10 @@ export const useVehiclesPaginated = (
   const refetch = useCallback(async () => {
     await loadPage(1);
   }, [loadPage]);
+
+  // Refresh instantly when any code invalidates the "vehicles" query key
+  // (covers all CreateVehicleDialog / EditVehicleDialog success paths).
+  useRegistryRefresh("vehicles", refetch);
 
   // Initial load and reload on filter/sort changes
   useEffect(() => {
