@@ -497,7 +497,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                 regionLabel="Region"
                 required
               />
-              <div className="md:col-span-3">
+              <div className="sm:col-span-2 lg:col-span-3">
                 <Field label="Specific Address" error={validation.getError("address_specific")}>
                   <Input value={formData.address_specific} onChange={e => set("address_specific", e.target.value)} onBlur={() => onBlur("address_specific")} placeholder="Building name, street, directions..." maxLength={500} className={errClass("address_specific")} />
                 </Field>
