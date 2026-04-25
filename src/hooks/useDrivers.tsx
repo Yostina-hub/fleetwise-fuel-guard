@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
+import { useRegistryRefresh } from "./useRegistryRefresh";
 
 export interface Driver {
   id: string;
@@ -146,6 +147,9 @@ export const useDrivers = () => {
       supabase.removeChannel(channel);
     };
   }, [organizationId, fetchDrivers]);
+
+  // Refresh instantly when any code invalidates the "drivers" query key
+  useRegistryRefresh("drivers", fetchDrivers);
 
   return {
     drivers,

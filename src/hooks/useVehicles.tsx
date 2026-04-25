@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
+import { useRegistryRefresh } from "./useRegistryRefresh";
 
 export interface AssignedDriver {
   id: string;
