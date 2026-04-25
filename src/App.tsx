@@ -61,6 +61,7 @@ const TripManagement = lazyWithRetry(() => import("./pages/TripManagement"), "Tr
 const Organizations = lazyWithRetry(() => import("./pages/Organizations"), "Organizations");
 const EVManagement = lazyWithRetry(() => import("./pages/EVManagement"), "EVManagement");
 const VehicleRequests = lazyWithRetry(() => import("./pages/VehicleRequests"), "VehicleRequests");
+const OlaCompliance = lazyWithRetry(() => import("./pages/OlaCompliance"), "OlaCompliance");
 const RequesterPortal = lazyWithRetry(() => import("./pages/RequesterPortal"), "RequesterPortal");
 const PoolSupervisors = lazyWithRetry(() => import("./pages/PoolSupervisors"), "PoolSupervisors");
 const TripReviews = lazyWithRetry(() => import("./pages/TripReviews"), "TripReviews");
@@ -224,6 +225,7 @@ const App = () => {
                         <Route path="/trip-management" element={<ProtectedRoute><TripManagement /></ProtectedRoute>} />
                         <Route path="/ev-management" element={<ProtectedRoute><EVManagement /></ProtectedRoute>} />
                         <Route path="/vehicle-requests" element={<ProtectedRoute><VehicleRequests /></ProtectedRoute>} />
+                        <Route path="/ola-compliance" element={<ProtectedRoute><OlaCompliance /></ProtectedRoute>} />
                         <Route path="/pool-supervisors" element={<ProtectedRoute><PoolSupervisors /></ProtectedRoute>} />
                         <Route path="/my-requests" element={<ProtectedRoute><RequesterPortal /></ProtectedRoute>} />
                         <Route path="/trip-reviews" element={<ProtectedRoute><TripReviews /></ProtectedRoute>} />
