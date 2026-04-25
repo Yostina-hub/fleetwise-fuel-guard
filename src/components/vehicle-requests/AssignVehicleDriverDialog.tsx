@@ -205,6 +205,12 @@ export const AssignVehicleDriverDialog = ({
                       {request.passenger_count} pax
                     </Badge>
                   )}
+                  {request?.is_consolidated_parent && (
+                    <Badge variant="default" className="text-[10px] h-4 px-1.5 gap-1">
+                      <Layers className="w-2.5 h-2.5" />
+                      Consolidated · {request.consolidated_request_count ?? "?"} requests
+                    </Badge>
+                  )}
                 </DialogDescription>
               </div>
             </div>
