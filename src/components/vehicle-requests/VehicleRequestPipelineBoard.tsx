@@ -27,6 +27,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import type { SharedRideMembership } from "@/hooks/useSharedRideMembership";
 
 interface PipelineColumn {
   id: string;
@@ -56,12 +57,14 @@ interface Props {
   onAssign?: (req: any) => void;
   /** restrict columns shown */
   visibleColumns?: string[];
+  /** Map of vehicle_request_id → shared ride info, used to render badges. */
+  sharedRideMap?: Record<string, SharedRideMembership>;
 }
 
 // ─── Sortable card wrapper ──────────────────────────────────────────────
 const SortableCard = ({
-  req, onViewDetails, onApprove, onReject, onAssign,
-}: { req: any } & Omit<Props, "requests" | "visibleColumns">) => {
+  req, onViewDetails, onApprove, onReject, onAssign, sharedRide,
+}: { req: any; sharedRide?: SharedRideMembership | null } & Omit<Props, "requests" | "visibleColumns" | "sharedRideMap">) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: req.id, data: { type: "card", request: req } });
 
@@ -80,6 +83,7 @@ const SortableCard = ({
         onAssign={onAssign}
         dragHandleProps={{ ...attributes, ...listeners }}
         isDragging={isDragging}
+        sharedRide={sharedRide}
       />
     </div>
   );
@@ -125,7 +129,7 @@ const DroppableColumn = ({
 };
 
 export const VehicleRequestPipelineBoard = ({
-  requests, onViewDetails, onApprove, onReject, onAssign, visibleColumns,
+  requests, onViewDetails, onApprove, onReject, onAssign, visibleColumns, sharedRideMap,
 }: Props) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -222,6 +226,7 @@ export const VehicleRequestPipelineBoard = ({
                     onApprove={onApprove}
                     onReject={onReject}
                     onAssign={onAssign}
+                    sharedRide={sharedRideMap?.[req.id] ?? null}
                   />
                 ))}
               </AnimatePresence>
