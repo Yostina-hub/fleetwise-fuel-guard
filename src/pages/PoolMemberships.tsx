@@ -1,6 +1,7 @@
 import Layout from "@/components/Layout";
 import PoolMembershipsManager from "@/components/admin/PoolMembershipsManager";
 import PoolCorridorSettings from "@/components/admin/PoolCorridorSettings";
+import PoolSharedRidesOverview from "@/components/admin/PoolSharedRidesOverview";
 import { Users } from "lucide-react";
 
 const PoolMemberships = () => {
@@ -20,6 +21,7 @@ const PoolMemberships = () => {
         </div>
         <PoolMembershipsManager />
         <PoolCorridorSettings />
+        <PoolSharedRidesOverview />
       </div>
     </Layout>
   );
