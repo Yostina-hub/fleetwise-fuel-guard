@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface MaintenanceSchedule {
   id: string;
@@ -191,7 +192,7 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
       fetchSchedules();
       return data;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return null;
     }
   };
@@ -207,7 +208,7 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
       toast({ title: "Schedule updated", description: "Maintenance schedule updated" });
       fetchSchedules();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -247,7 +248,7 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
       toast({ title: "Service recorded", description: "Maintenance service logged" });
       fetchSchedules();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -262,7 +263,7 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
       toast({ title: "Schedule deleted", description: "Maintenance schedule removed" });
       fetchSchedules();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -284,7 +285,7 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
       fetchInspections();
       return data;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return null;
     }
   };
@@ -300,7 +301,7 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
       toast({ title: "Inspection updated", description: "Vehicle inspection updated" });
       fetchInspections();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -315,7 +316,7 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
       toast({ title: "Inspection deleted", description: "Vehicle inspection removed" });
       fetchInspections();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 

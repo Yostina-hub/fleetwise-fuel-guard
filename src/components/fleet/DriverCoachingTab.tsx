@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageSquare, Plus, CheckCircle, Clock, Send } from "lucide-react";
 import { format } from "date-fns";
 import type { Driver } from "@/hooks/useDrivers";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface CoachingNote {
   id: string;
@@ -67,7 +68,7 @@ export function DriverCoachingTab({ driver }: DriverCoachingTabProps) {
       setNewNote("");
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 

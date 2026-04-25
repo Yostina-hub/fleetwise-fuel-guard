@@ -12,6 +12,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Send, AlertTriangle, Gauge, Power, StopCircle, Phone } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface Vehicle {
   id: string;
@@ -115,11 +116,7 @@ export function SendGovernorCommandDialog({
 
   const handleSend = async () => {
     if (!vehicleId || !organizationId || !user) {
-      toast({
-        title: "Error",
-        description: "Please select a vehicle",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Please select a vehicle" });
       return;
     }
 

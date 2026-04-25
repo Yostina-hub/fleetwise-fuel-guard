@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface ApiKeyFormData {
   name: string;
@@ -111,11 +112,7 @@ const ApiKeysTab = () => {
       });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create API key",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Failed to create API key" });
     },
   });
 

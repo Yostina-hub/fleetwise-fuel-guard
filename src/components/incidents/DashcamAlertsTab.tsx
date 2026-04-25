@@ -14,6 +14,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const severityColors: Record<string, string> = {
   critical: "bg-destructive/20 text-destructive border-destructive/30",
@@ -103,7 +104,7 @@ const DashcamAlertsTab = () => {
       setLinkNotes("");
     },
     onError: (err: any) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     },
   });
 

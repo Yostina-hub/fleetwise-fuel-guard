@@ -22,6 +22,7 @@ import { RawTelemetryTab } from "@/components/devices/RawTelemetryTab";
 import { deviceTemplates, DeviceTemplate } from "@/data/deviceTemplates";
 import { DeviceSetupGuide } from "@/components/devices/DeviceSetupGuide";
 import { useTranslation } from "react-i18next";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const DeviceIntegration = () => {
   const { t } = useTranslation();
@@ -164,11 +165,7 @@ const DeviceIntegration = () => {
       setIsDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

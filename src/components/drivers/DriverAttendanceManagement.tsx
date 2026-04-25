@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend } from "date-fns";
 import { CalendarDays, Clock, LogIn, Plane, ChevronLeft, ChevronRight, Search, Users } from "lucide-react";
 import { type Employee, EMPLOYEE_TYPE_LABELS, EMPLOYEE_TYPE_COLORS } from "@/hooks/useEmployees";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface DriverAttendanceManagementProps {
   driverId: string;
@@ -155,7 +156,7 @@ export const DriverAttendanceManagement = ({ driverId, driverName, employeeId, e
       status: "present",
       notes: clockForm.notes || null,
     });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (error) friendlyToastError(error);
     else { toast({ title: "Attendance recorded" }); setShowClockDialog(false); fetchData(); }
   };
 
@@ -174,7 +175,7 @@ export const DriverAttendanceManagement = ({ driverId, driverName, employeeId, e
       total_days: days,
       reason: leaveForm.reason || null,
     });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (error) friendlyToastError(error);
     else { toast({ title: "Leave request submitted" }); setShowLeaveDialog(false); setLeaveForm({ leave_type: "annual", start_date: "", end_date: "", reason: "" }); fetchData(); }
   };
 

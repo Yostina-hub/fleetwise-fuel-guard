@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useOrganization } from "@/hooks/useOrganization";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const LAWFUL_BASES = [
   { value: "consent", label: "Consent" },
@@ -74,7 +75,7 @@ const ProcessingActivitiesTab = () => {
       toast({ title: "Activity Registered", description: "Processing activity added to ROPA" });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to create activity", variant: "destructive" });
+      friendlyToastError(null, { title: "Failed to create activity" });
     },
   });
 

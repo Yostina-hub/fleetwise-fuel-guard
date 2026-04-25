@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const CONSENT_TYPES = [
   { value: "gps_tracking", label: "GPS Tracking" },
@@ -70,7 +71,7 @@ const ConsentManagementTab = () => {
       toast({ title: "Consent Recorded", description: "Consent record has been created" });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to record consent", variant: "destructive" });
+      friendlyToastError(null, { title: "Failed to record consent" });
     },
   });
 

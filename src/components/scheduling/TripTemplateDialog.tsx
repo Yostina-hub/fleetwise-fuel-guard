@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface TripTemplateDialogProps {
   open: boolean;
@@ -82,11 +83,7 @@ export const TripTemplateDialog = ({
       resetForm();
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create template. Please try again.",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Failed to create template. Please try again." });
     },
   });
 

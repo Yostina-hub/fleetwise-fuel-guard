@@ -34,6 +34,7 @@ import type { DriverFieldName } from "./driverValidation";
 import { DatePickerField } from "@/components/shared/DatePickerField";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { DraftStatus } from "@/components/inbox/DraftStatus";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 /**
  * Driver-of-birth must be at least 18 years ago. We compute this once at
@@ -239,7 +240,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
       onOpenChange(false);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to register driver", variant: "destructive" });
+      friendlyToastError(error, { fallback: "Failed to register driver" });
     },
   });
 

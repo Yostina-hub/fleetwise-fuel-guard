@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { History, Clock, CheckCircle, XCircle, Loader2, Send, User, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface CommandLog {
   id: string;
@@ -89,11 +90,7 @@ export const CommandHistoryCard = () => {
       });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to acknowledge command",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Failed to acknowledge command" });
     },
   });
 

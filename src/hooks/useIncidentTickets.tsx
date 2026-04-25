@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface IncidentTicket {
   id: string;
@@ -111,7 +112,7 @@ export const useIncidentTickets = (filters?: {
       fetchTickets();
       return data;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return null;
     }
   };
@@ -131,7 +132,7 @@ export const useIncidentTickets = (filters?: {
       toast({ title: "Ticket updated", description: `Status changed to ${status}` });
       fetchTickets();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 

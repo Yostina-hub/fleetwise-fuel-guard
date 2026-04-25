@@ -20,6 +20,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface SpeedCutoffSettingsProps {
   vehicleId: string;
@@ -68,11 +69,7 @@ export function SpeedCutoffSettings({
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

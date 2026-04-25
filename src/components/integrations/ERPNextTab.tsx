@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { Settings, RefreshCw, CheckCircle2, XCircle, Loader2, Database, Users, Fuel, Wrench, TrendingUp, AlertTriangle, MapPin, Activity, ChevronDown } from "lucide-react";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const ERPNextTab = () => {
   const { toast } = useToast();
@@ -179,11 +180,7 @@ const ERPNextTab = () => {
     }
 
     if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     } else {
       toast({
         title: "Success",

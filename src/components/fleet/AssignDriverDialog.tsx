@@ -26,6 +26,7 @@ import { Loader2, User, Car, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface AssignDriverDialogProps {
   open: boolean;
@@ -101,11 +102,7 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
       onOpenChange(false);
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to assign driver",
-        variant: "destructive",
-      });
+      friendlyToastError(error, { fallback: "Failed to assign driver" });
     },
   });
 

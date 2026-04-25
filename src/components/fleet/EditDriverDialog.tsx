@@ -52,6 +52,7 @@ import { uploadFleetFile } from "./uploadFleetFile";
 import { useDriverValidation } from "./useDriverValidation";
 import type { DriverFieldName } from "./driverValidation";
 import { DatePickerField } from "@/components/shared/DatePickerField";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const today = () => new Date().toISOString().split("T")[0];
 const MAX_DOB = (() => {
@@ -206,11 +207,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
         setLoading(false);
 
         if (error) {
-          toast({
-            title: "Error",
-            description: error.message || "Failed to load driver details",
-            variant: "destructive",
-          });
+          friendlyToastError(error, { fallback: "Failed to load driver details" });
           return;
         }
 
@@ -322,11 +319,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
       onOpenChange(false);
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to update driver",
-        variant: "destructive",
-      });
+      friendlyToastError(error, { fallback: "Failed to update driver" });
     },
   });
 

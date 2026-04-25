@@ -52,6 +52,7 @@ import { z } from "zod";
 import WorkOrderPartsDialog from "./WorkOrderPartsDialog";
 import WorkOrderApprovalFlow from "./WorkOrderApprovalFlow";
 import WorkOrderSupplierCollabPanel from "./WorkOrderSupplierCollabPanel";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const workOrderSchema = z.object({
   vehicle_id: z.string().uuid("Please select a vehicle"),
@@ -296,11 +297,7 @@ const WorkOrdersTab = () => {
     onError: (error: any) => {
       const message = error?.message || "Failed to create work order";
       setFormError(message);
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      friendlyToastError(message);
     },
   });
 
@@ -319,11 +316,7 @@ const WorkOrdersTab = () => {
       setSelectedWorkOrder(null);
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to update work order",
-        variant: "destructive",
-      });
+      friendlyToastError(error, { fallback: "Failed to update work order" });
     },
   });
 
@@ -342,11 +335,7 @@ const WorkOrdersTab = () => {
       setSelectedWorkOrder(null);
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to delete work order",
-        variant: "destructive",
-      });
+      friendlyToastError(error, { fallback: "Failed to delete work order" });
     },
   });
 

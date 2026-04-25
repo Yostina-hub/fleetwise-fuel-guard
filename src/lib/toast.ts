@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { friendlyError } from "@/lib/errorMessages";
 
 /**
  * Centralized CRUD toast helpers.
@@ -72,8 +73,8 @@ export const crudToast = {
    * Produces title "Failed to save driver" and description with the error message.
    */
   error: (action: string, error?: unknown, opts?: ToastOpts) =>
-    toast.error(`Failed to ${action}`, {
-      description: errMessage(error),
+    toast.error(`Couldn't ${action}`, {
+      description: friendlyError(error),
       ...opts,
     }),
 
@@ -95,7 +96,7 @@ export const crudToast = {
       error: (err) =>
         typeof msgs.error === "function"
           ? msgs.error(err)
-          : msgs.error ?? errMessage(err),
+          : msgs.error ?? friendlyError(err),
     }),
 
   /** Dismiss a specific toast (or all if no id). */

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { useDriverScope } from "./useDriverScope";
 import { toast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface Incident {
   id: string;
@@ -213,7 +214,7 @@ export const useIncidentsManagement = (filters?: {
       fetchIncidents();
       return data;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return null;
     }
   };
@@ -233,7 +234,7 @@ export const useIncidentsManagement = (filters?: {
       toast({ title: "Status updated", description: `Incident marked as ${status}` });
       fetchIncidents();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -259,7 +260,7 @@ export const useIncidentsManagement = (filters?: {
       fetchClaims();
       return data;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return null;
     }
   };
@@ -278,7 +279,7 @@ export const useIncidentsManagement = (filters?: {
       toast({ title: "Payment recorded", description: "Violation marked as paid" });
       fetchViolations();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 

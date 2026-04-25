@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface DriverScore {
   id: string;
@@ -111,11 +112,7 @@ export const useDriverScores = () => {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

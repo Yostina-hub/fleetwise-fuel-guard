@@ -14,6 +14,7 @@ import { Plus, Trash2, MoveUp, MoveDown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface ApprovalStep {
   step: number;
@@ -52,11 +53,7 @@ export const ApprovalChainConfig = () => {
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

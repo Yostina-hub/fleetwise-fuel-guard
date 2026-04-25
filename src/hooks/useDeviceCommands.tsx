@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "./useOrganization";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface DeviceCommand {
   id: string;
@@ -115,11 +116,7 @@ export const useDeviceCommands = (deviceId?: string) => {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 
@@ -141,11 +138,7 @@ export const useDeviceCommands = (deviceId?: string) => {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 
@@ -187,11 +180,7 @@ export const useDeviceCommands = (deviceId?: string) => {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

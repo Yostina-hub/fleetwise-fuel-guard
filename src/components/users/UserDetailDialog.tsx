@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import type { UserProfile } from "./UserTable";
 import { Link } from "react-router-dom";
 import UserActivitySummary from "./UserActivitySummary";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const ROLES = [
   { value: "super_admin", label: "Super Admin" },
@@ -185,7 +186,7 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
       toast({ title: "Profile Updated", description: "User profile saved successfully." });
       onUserUpdated();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     } finally {
       setSaving(false);
     }
@@ -213,7 +214,7 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
       toast({ title: "HR Details Saved", description: "Employment information updated." });
       onUserUpdated();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     } finally {
       setSavingHR(false);
     }
@@ -237,7 +238,7 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
       setNewRole("");
       onUserUpdated();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     } finally {
       setRoleLoading(false);
     }
@@ -256,7 +257,7 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
       toast({ title: "Role Removed", description: `${ROLES.find(r => r.value === role)?.label} removed.` });
       onUserUpdated();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     } finally {
       setRoleLoading(false);
     }

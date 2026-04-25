@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Edit2, Trash2 } from "lucide-react";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 import { useToast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface IPFormData {
   name: string;
@@ -74,7 +75,7 @@ const IPAllowlistTab = () => {
       toast({ title: "IP range added" });
       closeDialog();
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => friendlyToastError(e),
   });
 
   const updateMutation = useMutation({
@@ -93,7 +94,7 @@ const IPAllowlistTab = () => {
       toast({ title: "IP range updated" });
       closeDialog();
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => friendlyToastError(e),
   });
 
   const deleteMutation = useMutation({
@@ -105,7 +106,7 @@ const IPAllowlistTab = () => {
       queryClient.invalidateQueries({ queryKey: ["ip_allowlists"] });
       toast({ title: "IP range deleted" });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => friendlyToastError(e),
   });
 
   const closeDialog = () => {

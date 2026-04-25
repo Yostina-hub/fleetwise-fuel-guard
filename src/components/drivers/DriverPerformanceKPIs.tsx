@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { BarChart3, TrendingUp, Target, Award, Shield, Clock, Fuel, AlertTriangle, Plus, Star, Search } from "lucide-react";
 import { type Employee, EMPLOYEE_TYPE_LABELS, EMPLOYEE_TYPE_COLORS } from "@/hooks/useEmployees";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface DriverPerformanceKPIsProps {
   driverId: string;
@@ -148,7 +149,7 @@ export const DriverPerformanceKPIs = ({ driverId, driverName, employeeId, employ
       goals: reviewForm.goals ? [reviewForm.goals] : null,
       status: "submitted",
     });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (error) friendlyToastError(error);
     else {
       toast({ title: "Review submitted" });
       setShowReviewDialog(false);

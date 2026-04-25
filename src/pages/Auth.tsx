@@ -25,6 +25,7 @@ import ethioTelecomBg from "@/assets/ethio-telecom-bg.webp";
 import ethioTelecomCyberBg from "@/assets/ethio-telecom-cyber-bg.webp";
 import { KeyRound } from "lucide-react";
 import { getPostLoginPath } from "@/lib/auth/postLoginRedirect";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 /**
  * Resolve the correct landing route for a freshly authenticated user.
@@ -281,7 +282,7 @@ const Auth = () => {
       }
     } catch (err) {
       console.error("2FA verification error:", err);
-      toast({ title: "Error", description: "Verification failed. Please try again.", variant: "destructive" });
+      friendlyToastError(null, { title: "Verification failed. Please try again." });
     }
     
     setVerifying2FA(false);
@@ -310,11 +311,7 @@ const Auth = () => {
     const fullName = formData.get("fullName") as string;
 
     if (password !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Passwords do not match" });
       setLoading(false);
       return;
     }

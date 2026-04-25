@@ -13,6 +13,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 import { useState, useEffect } from "react";
 import { CreateAssignmentDialog } from "./CreateAssignmentDialog";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const statusColors: Record<string, string> = {
   scheduled: "bg-blue-500",
@@ -111,7 +112,7 @@ export const ActiveAssignments = () => {
       toast({ title: "Updated", description: "Assignment status updated" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 

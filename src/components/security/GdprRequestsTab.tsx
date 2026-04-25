@@ -15,6 +15,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const GdprRequestsTab = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -67,11 +68,7 @@ const GdprRequestsTab = () => {
       });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to submit GDPR request",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Failed to submit GDPR request" });
     },
   });
 

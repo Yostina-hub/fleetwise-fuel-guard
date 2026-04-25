@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Bell, Mail, Smartphone, Save } from "lucide-react";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export const NotificationPreferences = () => {
   const { user } = useAuth();
@@ -61,11 +62,7 @@ export const NotificationPreferences = () => {
       });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to save preferences. Please try again.",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Failed to save preferences. Please try again." });
     },
   });
 

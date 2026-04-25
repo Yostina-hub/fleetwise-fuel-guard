@@ -24,6 +24,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Loader2, Search, Trash2, UserCog, ShieldCheck, ShieldOff, Plus } from "lucide-react";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface Permission {
   id: string;
@@ -114,7 +115,7 @@ export const UserOverridesTab = () => {
           .order("created_at", { ascending: false });
         setOverrides((ovRows || []) as OverrideRow[]);
       } catch {
-        toast({ title: "Error", description: err.message, variant: "destructive" });
+        friendlyToastError(err);
       }
     } finally {
       setLoading(false);
@@ -182,7 +183,7 @@ export const UserOverridesTab = () => {
       setReason("");
       fetchData();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     } finally {
       setSaving(false);
     }
@@ -198,7 +199,7 @@ export const UserOverridesTab = () => {
       setOverrides((prev) => prev.filter((o) => o.id !== id));
       toast({ title: "Removed", description: "Override deleted." });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 

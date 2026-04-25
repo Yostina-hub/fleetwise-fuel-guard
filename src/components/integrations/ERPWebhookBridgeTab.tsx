@@ -15,6 +15,7 @@ import { Plus, Trash2, Zap, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const BRIDGE_EVENTS = [
   "vehicle.created", "vehicle.updated", "vehicle.deleted",
@@ -71,7 +72,7 @@ const ERPWebhookBridgeTab = () => {
       toast({ title: "Bridge Created", description: "ERP webhook bridge configured successfully" });
     },
     onError: (e: any) => {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      friendlyToastError(e);
     },
   });
 

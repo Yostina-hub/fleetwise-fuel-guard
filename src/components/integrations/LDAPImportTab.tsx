@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Users, RefreshCw, Shield, Server, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useOrganization } from "@/hooks/useOrganization";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const LDAPImportTab = () => {
   const { toast } = useToast();
@@ -92,7 +93,7 @@ const LDAPImportTab = () => {
       toast({ title: "Saved", description: "LDAP configuration saved successfully" });
     },
     onError: (e: any) => {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      friendlyToastError(e);
     },
   });
 

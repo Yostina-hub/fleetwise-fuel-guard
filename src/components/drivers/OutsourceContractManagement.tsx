@@ -11,6 +11,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { Handshake, FileText, DollarSign, AlertTriangle, Plus, Building2, Calendar, CreditCard } from "lucide-react";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface OutsourceContractManagementProps {}
 
@@ -123,7 +124,7 @@ export const OutsourceContractManagement = ({}: OutsourceContractManagementProps
       notes: contractForm.notes || null,
       status: "active",
     });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (error) friendlyToastError(error);
     else { toast({ title: "Contract created" }); setShowContractDialog(false); fetchData(); }
   };
 
@@ -139,7 +140,7 @@ export const OutsourceContractManagement = ({}: OutsourceContractManagementProps
       notes: paymentForm.notes || null,
       status: "pending",
     });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (error) friendlyToastError(error);
     else { toast({ title: "Payment recorded" }); setShowPaymentDialog(false); fetchData(); }
   };
 

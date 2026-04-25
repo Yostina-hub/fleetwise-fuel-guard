@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, AlertTriangle } from "lucide-react";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface DeleteVehicleDialogProps {
   open: boolean;
@@ -55,11 +56,7 @@ export default function DeleteVehicleDialog({
       onSuccess?.();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete vehicle. It may have related records.",
-        variant: "destructive",
-      });
+      friendlyToastError(error, { fallback: "Failed to delete vehicle. It may have related records." });
     },
   });
 

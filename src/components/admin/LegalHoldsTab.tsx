@@ -15,6 +15,7 @@ import { Plus, Edit2, Trash2, ShieldOff, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 import { useToast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface HoldFormData {
   hold_name: string;
@@ -88,7 +89,7 @@ const LegalHoldsTab = () => {
       toast({ title: "Legal hold created" });
       closeDialog();
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => friendlyToastError(e),
   });
 
   const updateMutation = useMutation({
@@ -108,7 +109,7 @@ const LegalHoldsTab = () => {
       toast({ title: "Legal hold updated" });
       closeDialog();
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => friendlyToastError(e),
   });
 
   const releaseMutation = useMutation({
@@ -124,7 +125,7 @@ const LegalHoldsTab = () => {
       queryClient.invalidateQueries({ queryKey: ["legal_holds"] });
       toast({ title: "Legal hold released" });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => friendlyToastError(e),
   });
 
   const deleteMutation = useMutation({
@@ -136,7 +137,7 @@ const LegalHoldsTab = () => {
       queryClient.invalidateQueries({ queryKey: ["legal_holds"] });
       toast({ title: "Legal hold deleted" });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => friendlyToastError(e),
   });
 
   const closeDialog = () => {

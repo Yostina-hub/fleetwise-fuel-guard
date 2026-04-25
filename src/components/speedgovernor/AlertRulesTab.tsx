@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
 import type { Json } from "@/integrations/supabase/types";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface AlertRule {
   id: string;
@@ -128,11 +129,7 @@ export const AlertRulesTab = () => {
       setDialogOpen(false);
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

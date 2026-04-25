@@ -54,6 +54,7 @@ import {
 import { ManageCustomRolesDialog } from "@/components/rbac/ManageCustomRolesDialog";
 import { UserOverridesTab } from "@/components/rbac/UserOverridesTab";
 import { useNavigate } from "react-router-dom";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface Permission {
   id: string;
@@ -188,7 +189,7 @@ const RBACManagement = () => {
       });
       setUserCounts(counts);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     } finally {
       setLoading(false);
     }
@@ -216,7 +217,7 @@ const RBACManagement = () => {
       });
       setLocations(locs);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     } finally {
       setLocationLoading(false);
     }
@@ -292,7 +293,7 @@ const RBACManagement = () => {
         description: `Updated ${toAdd.length + toRemove.length} permission mapping${toAdd.length + toRemove.length === 1 ? "" : "s"}.`,
       });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     } finally {
       setSaving(false);
     }
@@ -321,7 +322,7 @@ const RBACManagement = () => {
       setNewRule({ role: "", location_type: "depot", location_id: "", access_level: "read" });
       fetchLocationData();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -332,7 +333,7 @@ const RBACManagement = () => {
       setLocationRules((prev) => prev.filter((r) => r.id !== id));
       toast({ title: "Deleted", description: "Location access rule removed." });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 

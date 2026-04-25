@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { verifyTotpCode } from "@/lib/security/totp";
 import { Shield, ShieldCheck, ShieldOff, Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 function generateSecret(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -114,7 +115,7 @@ const TwoFactorTab = () => {
       toast({ title: "2FA Enabled", description: "Two-factor authentication has been activated." });
     },
     onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     },
   });
 
@@ -134,7 +135,7 @@ const TwoFactorTab = () => {
       toast({ title: "2FA Disabled" });
     },
     onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     },
   });
 
@@ -157,7 +158,7 @@ const TwoFactorTab = () => {
       toast({ title: "Backup codes regenerated" });
     },
     onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     },
   });
 

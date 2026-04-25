@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "./useOrganization";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface DeviceTerminalSettings {
   id: string;
@@ -144,11 +145,7 @@ export const useDeviceTerminalSettings = (deviceId?: string) => {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

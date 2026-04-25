@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Bell, Key, ExternalLink, Copy, Check, AlertCircle, Loader2, Send } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { friendlyToastError } from "@/lib/errorMessages";
 const PushNotificationSettings = () => {
   const { organizationId } = useOrganization();
   const { toast } = useToast();
@@ -117,7 +118,7 @@ const PushNotificationSettings = () => {
       toast({ title: "Push notification settings saved" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 

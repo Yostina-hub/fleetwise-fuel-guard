@@ -4,6 +4,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useState } from "react";
 import * as XLSX from "xlsx";
 import { VEHICLE_COLUMNS } from "./vehicleTableColumns";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export type ExportFormat = "csv" | "xlsx";
 
@@ -170,7 +171,7 @@ export function useFleetExport() {
   // Export EVERY vehicle in the database with EVERY column (bypasses pagination)
   const handleExportAll = async (format: ExportFormat = "csv") => {
     if (!organizationId) {
-      toast({ title: "Error", description: "Organization not found", variant: "destructive" });
+      friendlyToastError(null, { title: "Organization not found" });
       return;
     }
 

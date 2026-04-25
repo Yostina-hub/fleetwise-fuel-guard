@@ -25,6 +25,7 @@ import {
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const incidentSchema = z.object({
   incident_type: z.enum(["accident", "breakdown", "violation", "theft", "damage"]),
@@ -79,11 +80,7 @@ const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDi
       resetForm();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

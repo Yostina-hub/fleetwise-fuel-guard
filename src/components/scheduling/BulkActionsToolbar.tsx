@@ -5,6 +5,7 @@ import { CheckCircle, XCircle, X } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface BulkActionsToolbarProps {
   selectedItems: string[];
@@ -48,11 +49,7 @@ export const BulkActionsToolbar = ({
       onClearSelection();
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Some approvals failed. Please try again.",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Some approvals failed. Please try again." });
     },
   });
 
@@ -83,11 +80,7 @@ export const BulkActionsToolbar = ({
       onClearSelection();
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Some rejections failed. Please try again.",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Some rejections failed. Please try again." });
     },
   });
 

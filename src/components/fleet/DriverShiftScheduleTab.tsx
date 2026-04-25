@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { Clock, Plus, Trash2, Calendar, Edit } from "lucide-react";
 import type { Driver } from "@/hooks/useDrivers";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const DAYS_OF_WEEK = [
   { value: 0, label: "Sunday" },
@@ -80,7 +81,7 @@ export function DriverShiftScheduleTab({ driver }: DriverShiftScheduleTabProps) 
       resetForm();
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -100,7 +101,7 @@ export function DriverShiftScheduleTab({ driver }: DriverShiftScheduleTabProps) 
       resetForm();
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 

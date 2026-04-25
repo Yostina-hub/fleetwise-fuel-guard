@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "./useOrganization";
 import { useEffect, useRef } from "react";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface PenaltyConfig {
   id: string;
@@ -147,7 +148,7 @@ export const usePenaltyConfigs = () => {
       toast({ title: "Success", description: "Penalty configuration updated" });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -167,7 +168,7 @@ export const usePenaltyConfigs = () => {
       toast({ title: "Success", description: "Penalty configuration created" });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -185,7 +186,7 @@ export const usePenaltyConfigs = () => {
       toast({ title: "Success", description: "Penalty configuration deleted" });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -252,7 +253,7 @@ export const useDriverPenalties = (driverId?: string) => {
       toast({ title: "Success", description: "Penalty status updated" });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 

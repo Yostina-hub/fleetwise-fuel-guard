@@ -47,6 +47,7 @@ import {
 import { Plus, Pencil, Trash2, Search, Download, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 // Type definition for customer site
 interface CustomerSite {
@@ -181,11 +182,7 @@ const CustomerSitesTab = () => {
       resetForm();
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 
@@ -205,11 +202,7 @@ const CustomerSitesTab = () => {
       resetForm();
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 
@@ -225,11 +218,7 @@ const CustomerSitesTab = () => {
       setDeletingSite(null);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 
@@ -246,11 +235,7 @@ const CustomerSitesTab = () => {
       toast({ title: "Status updated successfully" });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 
