@@ -87,7 +87,7 @@ serve(async (req) => {
         result = await sendTwilioWhatsApp(phone, message, waConfig);
         break;
       default:
-        return secureJsonResponse({ error: `Unknown WhatsApp provider: ${provider}` }, 400, corsHeaders);
+        return secureJsonResponse({ error: `Unknown WhatsApp provider: ${provider}` }, req, 400);
     }
 
     // Audit log
