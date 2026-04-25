@@ -233,7 +233,7 @@ export const AssignVehicleDriverDialog = ({
 
         {/* ===== MERGED-TRIP STOPS (only for consolidated parent trips) ===== */}
         {request?.is_consolidated_parent && request?.organization_id && (
-          <div className="px-6 pt-3">
+          <div className="px-6 pt-3 pb-1">
             <MergedTripStopsPanel
               parentRequestId={request.id}
               organizationId={request.organization_id}
