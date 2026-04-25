@@ -27,6 +27,8 @@ import {
   ArrowRight,
   Map as MapIcon,
   EyeOff,
+  Route as RouteIcon,
+  Trophy,
 } from "lucide-react";
 import { format } from "date-fns";
 import maplibregl from "maplibre-gl";
