@@ -11701,6 +11701,9 @@ export type Database = {
           resolution_notes: string | null
           resolved_at: string | null
           resolved_by: string | null
+          sla_breach_notified: boolean
+          sla_breached_at: string | null
+          sla_deadline_at: string | null
           status: string
           subject: string
           ticket_number: string
@@ -11725,6 +11728,9 @@ export type Database = {
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          sla_breach_notified?: boolean
+          sla_breached_at?: string | null
+          sla_deadline_at?: string | null
           status?: string
           subject: string
           ticket_number: string
@@ -11749,6 +11755,9 @@ export type Database = {
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          sla_breach_notified?: boolean
+          sla_breached_at?: string | null
+          sla_deadline_at?: string | null
           status?: string
           subject?: string
           ticket_number?: string
@@ -11811,6 +11820,9 @@ export type Database = {
           resolved_at: string | null
           resolved_by: string | null
           severity: string
+          sla_breach_notified: boolean
+          sla_breached_at: string | null
+          sla_deadline_at: string | null
           status: string
           trip_id: string | null
           updated_at: string
@@ -11839,6 +11851,9 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           severity: string
+          sla_breach_notified?: boolean
+          sla_breached_at?: string | null
+          sla_deadline_at?: string | null
           status?: string
           trip_id?: string | null
           updated_at?: string
@@ -11867,6 +11882,9 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           severity?: string
+          sla_breach_notified?: boolean
+          sla_breached_at?: string | null
+          sla_deadline_at?: string | null
           status?: string
           trip_id?: string | null
           updated_at?: string
