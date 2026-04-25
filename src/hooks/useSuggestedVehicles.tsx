@@ -179,10 +179,11 @@ export const useSuggestedVehicles = ({
             in_geofence = isInsideGeofence(tele, pickupFence);
           }
         }
+        // Strict capacity check — when seating_capacity is unknown we still
+        // include the vehicle (just flag fits_capacity=false so the UI warns).
         const fitsCapacity =
           passengers == null ||
-          v.seating_capacity == null ||
-          v.seating_capacity >= passengers;
+          (v.seating_capacity != null && v.seating_capacity >= passengers);
         const in_pool = !!(poolName && v.specific_pool === poolName);
         const trip = tripByVehicle.get(v.id);
         const is_idle = !trip;
@@ -204,10 +205,20 @@ export const useSuggestedVehicles = ({
           active_trip_id: trip?.id ?? null,
           active_trip_status: trip?.status ?? null,
           availability,
+          fits_capacity: fitsCapacity,
           // Capacity mismatch: heavily down-rank
           _capacityPenalty: fitsCapacity ? 0 : 1000,
         } as SuggestedVehicle & { _capacityPenalty: number };
       });
+
+      // 5b. Hard capacity filter — drop undersized vehicles entirely when the
+      //     caller asked for strict mode AND the request actually has a
+      //     known passenger count.
+      const filtered = (strictCapacity && passengers != null)
+        ? scored.filter((v: any) =>
+            v.seating_capacity != null && v.seating_capacity >= passengers,
+          )
+        : scored;
 
       // 6. Sort: available first (in-pool > idle > geofence > distance), then busy, then maintenance/inactive.
       const availabilityRank: Record<string, number> = {
@@ -216,7 +227,7 @@ export const useSuggestedVehicles = ({
         maintenance: 2,
         inactive: 3,
       };
-      scored.sort((a: any, b: any) => {
+      filtered.sort((a: any, b: any) => {
         if (a._capacityPenalty !== b._capacityPenalty) {
           return a._capacityPenalty - b._capacityPenalty;
         }
@@ -233,10 +244,10 @@ export const useSuggestedVehicles = ({
       });
 
       // Mark top pick — the first *available* vehicle (not just first row).
-      const topAvailable = scored.find((v: any) => v.availability === "available");
+      const topAvailable = filtered.find((v: any) => v.availability === "available");
       if (topAvailable) (topAvailable as any).is_top_pick = true;
       // Strip internal field
-      return scored.map(({ _capacityPenalty, ...v }: any) => v);
+      return filtered.map(({ _capacityPenalty, ...v }: any) => v);
     },
   });
 };
