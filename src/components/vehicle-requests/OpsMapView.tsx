@@ -498,7 +498,33 @@ export const OpsMapView = ({ organizationId }: Props) => {
   }).length;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-3">
+    <div className="space-y-3">
+      {/* ===================== TOP KPI STRIP ===================== */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+        <KpiTile icon={<RouteIcon className="w-3.5 h-3.5" />} label="Open requests" value={kpis.totalRequests} tone="primary" />
+        <KpiTile icon={<Users className="w-3.5 h-3.5" />} label="Pax demand" value={kpis.totalPax} tone="default" />
+        <KpiTile icon={<Flame className="w-3.5 h-3.5" />} label="Urgent" value={kpis.urgent} tone={kpis.urgent > 0 ? "danger" : "default"} />
+        <KpiTile icon={<GitMerge className="w-3.5 h-3.5" />} label="Consolidated" value={kpis.consolidatedParents} tone="primary" />
+        <KpiTile icon={<Layers className="w-3.5 h-3.5" />} label="Merge candidates" value={kpis.mergeCandidates} tone={kpis.mergeCandidates > 0 ? "warning" : "default"} />
+        <KpiTile icon={<Truck className="w-3.5 h-3.5" />} label="Idle vehicles" value={kpis.totalIdleVeh} tone="success" />
+        <KpiTile icon={<IdCard className="w-3.5 h-3.5" />} label="Idle drivers" value={kpis.totalIdleDrv} tone="success" />
+        <KpiTile icon={<AlertTriangle className="w-3.5 h-3.5" />} label="Deficit pools" value={kpis.deficitPools} tone={kpis.deficitPools > 0 ? "danger" : "default"} />
+      </div>
+
+      {selectedPool && (
+        <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5">
+          <CircleDot className="w-3.5 h-3.5 text-primary" />
+          <span className="text-xs">
+            Filtering map by pool <span className="font-semibold text-primary">{selectedPool}</span>
+            <span className="text-muted-foreground ml-1">({visibleRequests.length} of {requests.length} requests)</span>
+          </span>
+          <Button size="sm" variant="ghost" className="h-6 ml-auto text-[11px]" onClick={() => setSelectedPool(null)}>
+            <X className="w-3 h-3 mr-1" /> Clear
+          </Button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-3">
       {/* MAP */}
       <Card className="overflow-hidden">
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
