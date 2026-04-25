@@ -1,11 +1,10 @@
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Users, History, Cable } from "lucide-react";
+import { Shield, Users, History } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AuthorityMatrixTab } from "@/components/delegation/AuthorityMatrixTab";
 import { SubstitutionsTab } from "@/components/delegation/SubstitutionsTab";
 import { DelegationHistoryTab } from "@/components/delegation/DelegationHistoryTab";
-import { ErpOracleQueueCard } from "@/components/delegation/ErpOracleQueueCard";
 
 const DelegationMatrix = () => {
   const { t } = useTranslation();
