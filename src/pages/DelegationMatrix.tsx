@@ -40,10 +40,6 @@ const DelegationMatrix = () => {
               <History className="h-4 w-4" />
               History
             </TabsTrigger>
-            <TabsTrigger value="erp" className="gap-2">
-              <Cable className="h-4 w-4" />
-              ERP Hand-off
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="authority">
@@ -56,10 +52,6 @@ const DelegationMatrix = () => {
 
           <TabsContent value="history">
             <DelegationHistoryTab />
-          </TabsContent>
-
-          <TabsContent value="erp">
-            <ErpOracleQueueCard />
           </TabsContent>
         </Tabs>
       </div>
