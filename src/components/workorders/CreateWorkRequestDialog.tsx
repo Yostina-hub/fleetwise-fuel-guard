@@ -80,6 +80,30 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
   const { organizationId } = useOrganization();
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const validateField = (field: string, value: unknown, ctx?: Record<string, unknown>) => {
+    const candidate = { ...form, ...(ctx ?? {}), [field]: value };
+    const parsed = workRequestSchema.safeParse({
+      ...candidate,
+      km_reading: candidate.km_reading ? Number(candidate.km_reading) : undefined,
+      fuel_level: candidate.fuel_level ? Number(candidate.fuel_level) : undefined,
+    });
+    const issue = parsed.success ? null : parsed.error.issues.find(i => i.path[0] === field);
+    setFieldErrors(prev => {
+      const next = { ...prev };
+      if (issue) next[field] = issue.message;
+      else delete next[field];
+      return next;
+    });
+  };
+
+  const handleBlur = (field: string, value: unknown) => {
+    setTouched(prev => (prev[field] ? prev : { ...prev, [field]: true }));
+    validateField(field, value);
+  };
+
+  const errorOf = (field: string) => (touched[field] ? fieldErrors[field] : undefined);
 
   const now = format(new Date(), "yyyy-MM-dd'T'HH:mm");
 
@@ -110,6 +134,7 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
       const nowStr = format(new Date(), "yyyy-MM-dd'T'HH:mm");
       setForm(f => ({ ...f, request_start_date: nowStr, request_completion_date: "" }));
       setFieldErrors({});
+      setTouched({});
     }
   }, [open, embedded]);
 
@@ -208,6 +233,12 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
         if (typeof key === "string" && !errs[key]) errs[key] = issue.message;
       }
       setFieldErrors(errs);
+      // Mark every errored field as touched so messages render via errorOf().
+      setTouched(prev => {
+        const next = { ...prev };
+        for (const k of Object.keys(errs)) next[k] = true;
+        return next;
+      });
       return;
     }
 
@@ -286,8 +317,17 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label>Asset Number *</Label>
-          <Select value={form.vehicle_id} onValueChange={v => setForm(f => ({ ...f, vehicle_id: v }))}>
-            <SelectTrigger><SelectValue placeholder="Select vehicle..." /></SelectTrigger>
+          <Select
+            value={form.vehicle_id}
+            onValueChange={v => {
+              setForm(f => ({ ...f, vehicle_id: v }));
+              validateField("vehicle_id", v);
+              setTouched(prev => ({ ...prev, vehicle_id: true }));
+            }}
+          >
+            <SelectTrigger className={errorOf("vehicle_id") ? "border-destructive" : undefined}>
+              <SelectValue placeholder="Select vehicle..." />
+            </SelectTrigger>
             <SelectContent>
               {vehiclesLoading ? (
                 <SelectItem value="__loading" disabled>Loading...</SelectItem>
@@ -296,7 +336,7 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
               ))}
             </SelectContent>
           </Select>
-          {fieldErrors.vehicle_id && <p className="text-xs text-destructive mt-1">{fieldErrors.vehicle_id}</p>}
+          {errorOf("vehicle_id") && <p className="text-xs text-destructive mt-1">{errorOf("vehicle_id")}</p>}
         </div>
 
         <div>
@@ -344,9 +384,12 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
           <Input
             type="datetime-local"
             value={form.request_start_date}
-            onChange={e => setForm(f => ({ ...f, request_start_date: e.target.value }))}
+            onChange={e => { setForm(f => ({ ...f, request_start_date: e.target.value })); validateField("request_start_date", e.target.value); }}
+            onBlur={e => handleBlur("request_start_date", e.target.value)}
+            aria-invalid={!!errorOf("request_start_date")}
+            className={errorOf("request_start_date") ? "border-destructive focus-visible:ring-destructive" : undefined}
           />
-          {fieldErrors.request_start_date && <p className="text-xs text-destructive mt-1">{fieldErrors.request_start_date}</p>}
+          {errorOf("request_start_date") && <p className="text-xs text-destructive mt-1">{errorOf("request_start_date")}</p>}
         </div>
 
         <div>
@@ -354,9 +397,12 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
           <Input
             type="datetime-local"
             value={form.request_completion_date}
-            onChange={e => setForm(f => ({ ...f, request_completion_date: e.target.value }))}
+            onChange={e => { setForm(f => ({ ...f, request_completion_date: e.target.value })); validateField("request_completion_date", e.target.value); }}
+            onBlur={e => handleBlur("request_completion_date", e.target.value)}
+            aria-invalid={!!errorOf("request_completion_date")}
+            className={errorOf("request_completion_date") ? "border-destructive focus-visible:ring-destructive" : undefined}
           />
-          {fieldErrors.request_completion_date && <p className="text-xs text-destructive mt-1">{fieldErrors.request_completion_date}</p>}
+          {errorOf("request_completion_date") && <p className="text-xs text-destructive mt-1">{errorOf("request_completion_date")}</p>}
         </div>
 
         <div>
@@ -392,11 +438,14 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
         <Label>Additional Description *</Label>
         <Textarea
           value={form.service_description}
-          onChange={e => setForm(f => ({ ...f, service_description: e.target.value }))}
+          onChange={e => { setForm(f => ({ ...f, service_description: e.target.value })); validateField("service_description", e.target.value); }}
+          onBlur={e => handleBlur("service_description", e.target.value)}
           placeholder="Describe the work needed..."
           rows={3}
+          aria-invalid={!!errorOf("service_description")}
+          className={errorOf("service_description") ? "border-destructive focus-visible:ring-destructive" : undefined}
         />
-        {fieldErrors.service_description && <p className="text-xs text-destructive mt-1">{fieldErrors.service_description}</p>}
+        {errorOf("service_description") && <p className="text-xs text-destructive mt-1">{errorOf("service_description")}</p>}
       </div>
 
       {/* Section 3: Creation Information */}

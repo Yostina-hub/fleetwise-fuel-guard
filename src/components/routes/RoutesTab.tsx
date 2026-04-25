@@ -66,6 +66,24 @@ const RoutesTab = () => {
     description: "",
     frequency: "adhoc" as const,
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const validateField = (field: string, value: unknown) => {
+    const candidate = { ...formData, [field]: value };
+    const parsed = routeSchema.safeParse(candidate);
+    const issue = parsed.success ? null : parsed.error.issues.find(i => i.path[0] === field);
+    setFieldErrors(prev => {
+      const next = { ...prev };
+      if (issue) next[field] = issue.message;
+      else delete next[field];
+      return next;
+    });
+  };
+  const handleBlur = (field: string, value: unknown) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    validateField(field, value);
+  };
+  const errorOf = (field: string) => (touched[field] ? fieldErrors[field] : undefined);
 
   const { data: routes, isLoading } = useQuery({
     queryKey: ["routes", organizationId],
@@ -220,21 +238,24 @@ const RoutesTab = () => {
                   <Input
                     id="route_name"
                     value={formData.route_name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, route_name: e.target.value })
-                    }
-                    required
+                    onChange={(e) => { setFormData({ ...formData, route_name: e.target.value }); validateField("route_name", e.target.value); }}
+                    onBlur={(e) => handleBlur("route_name", e.target.value)}
+                    aria-invalid={!!errorOf("route_name")}
+                    className={errorOf("route_name") ? "border-destructive focus-visible:ring-destructive" : undefined}
                   />
+                  {errorOf("route_name") && <p className="text-xs text-destructive mt-1">{errorOf("route_name")}</p>}
                 </div>
                 <div>
                   <Label htmlFor="route_code">Route Code</Label>
                   <Input
                     id="route_code"
                     value={formData.route_code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, route_code: e.target.value })
-                    }
+                    onChange={(e) => { setFormData({ ...formData, route_code: e.target.value }); validateField("route_code", e.target.value); }}
+                    onBlur={(e) => handleBlur("route_code", e.target.value)}
+                    aria-invalid={!!errorOf("route_code")}
+                    className={errorOf("route_code") ? "border-destructive focus-visible:ring-destructive" : undefined}
                   />
+                  {errorOf("route_code") && <p className="text-xs text-destructive mt-1">{errorOf("route_code")}</p>}
                 </div>
                 <div>
                   <Label htmlFor="frequency">Frequency *</Label>
@@ -259,11 +280,13 @@ const RoutesTab = () => {
                   <Textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
+                    onChange={(e) => { setFormData({ ...formData, description: e.target.value }); validateField("description", e.target.value); }}
+                    onBlur={(e) => handleBlur("description", e.target.value)}
                     rows={3}
+                    aria-invalid={!!errorOf("description")}
+                    className={errorOf("description") ? "border-destructive focus-visible:ring-destructive" : undefined}
                   />
+                  {errorOf("description") && <p className="text-xs text-destructive mt-1">{errorOf("description")}</p>}
                 </div>
               </div>
               <DialogFooter className="mt-4">

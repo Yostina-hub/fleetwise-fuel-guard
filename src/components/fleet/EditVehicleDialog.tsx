@@ -29,12 +29,14 @@ import { AssignedLocationPicker } from "./AssignedLocationPicker";
 import { DatePickerField } from "./DatePickerField";
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
+import { cn } from "@/lib/utils";
 
 const vehicleSchema = z.object({
-  plate_number: z.string().trim().min(1, "Plate number is required"),
-  make: z.string().trim().min(1, "Make is required"),
-  model: z.string().trim().min(1, "Model is required"),
-  year: z.number().min(1900).max(new Date().getFullYear() + 2),
+  plate_number: z.string().trim().min(1, "Plate number is required").regex(/^\d+-[A-Z]+-\d+$/, "Plate number is incomplete"),
+  make: z.string().trim().min(1, "Make is required").max(50, "Make must be 50 characters or fewer"),
+  model: z.string().trim().min(1, "Model is required").max(50, "Model must be 50 characters or fewer"),
+  year: z.number({ invalid_type_error: "Year must be a number" }).min(1900, "Year must be 1900 or later").max(new Date().getFullYear() + 2, `Year must be ${new Date().getFullYear() + 2} or earlier`),
 });
 
 interface EditVehicleDialogProps {
@@ -93,6 +95,14 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
   const [photoRightFile, setPhotoRightFile] = useState<File | null>(null);
 
   const set = (field: string, value: string | number) => setFormData(prev => ({ ...prev, [field]: value }));
+
+  const validatedSnapshot = () => ({
+    plate_number: `${formData.plate_code}-${formData.plate_region}-${formData.plate_number_part}`,
+    make: formData.make,
+    model: formData.model,
+    year: formData.year,
+  });
+  const fv = useFieldValidation(vehicleSchema, validatedSnapshot);
 
   useEffect(() => {
     if (open && vehicle?.vehicleId) {
@@ -264,9 +274,10 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
       is_active: formData.status !== "out_of_service",
     };
 
-    const validation = vehicleSchema.safeParse(cleanData);
+    const validation = fv.validateAll(cleanData);
     if (!validation.success) {
-      toast.error("Validation Error", { description: validation.error.errors[0].message });
+      const firstMessage = Object.values(validation.errors)[0];
+      toast.error("Please fix the highlighted fields", { description: firstMessage });
       return;
     }
     updateMutation.mutate(cleanData);
@@ -297,21 +308,36 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                   <div className="md:col-span-3">
                     <Label className="text-sm">Plate Number *</Label>
                     <div className="grid grid-cols-3 gap-2 mt-1.5">
-                      <Select value={formData.plate_code} onValueChange={v => set("plate_code", v)}>
+                      <Select value={formData.plate_code} onValueChange={v => { set("plate_code", v); fv.handleChange("plate_number", `${v}-${formData.plate_region}-${formData.plate_number_part}`); }}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {PLATE_CODES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
-                      <Select value={formData.plate_region} onValueChange={v => set("plate_region", v)}>
+                      <Select value={formData.plate_region} onValueChange={v => { set("plate_region", v); fv.handleChange("plate_number", `${formData.plate_code}-${v}-${formData.plate_number_part}`); }}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {PLATE_REGIONS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
-                      <Input value={formData.plate_number_part} onChange={e => set("plate_number_part", e.target.value.replace(/\D/g, "").slice(0, 5))} placeholder="12345" maxLength={5} />
+                      <Input
+                        value={formData.plate_number_part}
+                        onChange={e => {
+                          const next = e.target.value.replace(/\D/g, "").slice(0, 5);
+                          set("plate_number_part", next);
+                          fv.handleChange("plate_number", `${formData.plate_code}-${formData.plate_region}-${next}`);
+                        }}
+                        onBlur={() => fv.handleBlur("plate_number", `${formData.plate_code}-${formData.plate_region}-${formData.plate_number_part}`)}
+                        placeholder="12345"
+                        maxLength={5}
+                        aria-invalid={!!fv.getError("plate_number")}
+                        className={cn(fv.getError("plate_number") && "border-destructive focus-visible:ring-destructive")}
+                      />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">Preview: {plateNumber}</p>
+                    {fv.getError("plate_number") && (
+                      <p className="text-xs text-destructive mt-1">{fv.getError("plate_number")}</p>
+                    )}
                   </div>
                   <Field label="Vehicle Type">
                     <Select value={formData.vehicle_type || "none"} onValueChange={v => set("vehicle_type", v === "none" ? "" : v)}>
@@ -348,9 +374,34 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                       </SelectContent>
                     </Select>
                   </Field>
-                  <Field label="Make *"><Input value={formData.make} onChange={e => set("make", e.target.value)} /></Field>
-                  <Field label="Model *"><Input value={formData.model} onChange={e => set("model", e.target.value)} /></Field>
-                  <Field label="Year *"><Input type="number" value={formData.year} onChange={e => set("year", parseInt(e.target.value) || 0)} /></Field>
+                  <Field label="Make *" error={fv.getError("make")}>
+                    <Input
+                      value={formData.make}
+                      onChange={e => { set("make", e.target.value); fv.handleChange("make", e.target.value); }}
+                      onBlur={e => fv.handleBlur("make", e.target.value)}
+                      aria-invalid={!!fv.getError("make")}
+                      className={cn(fv.getError("make") && "border-destructive focus-visible:ring-destructive")}
+                    />
+                  </Field>
+                  <Field label="Model *" error={fv.getError("model")}>
+                    <Input
+                      value={formData.model}
+                      onChange={e => { set("model", e.target.value); fv.handleChange("model", e.target.value); }}
+                      onBlur={e => fv.handleBlur("model", e.target.value)}
+                      aria-invalid={!!fv.getError("model")}
+                      className={cn(fv.getError("model") && "border-destructive focus-visible:ring-destructive")}
+                    />
+                  </Field>
+                  <Field label="Year *" error={fv.getError("year")}>
+                    <Input
+                      type="number"
+                      value={formData.year}
+                      onChange={e => { const n = parseInt(e.target.value) || 0; set("year", n); fv.handleChange("year", n); }}
+                      onBlur={e => fv.handleBlur("year", parseInt(e.target.value) || 0)}
+                      aria-invalid={!!fv.getError("year")}
+                      className={cn(fv.getError("year") && "border-destructive focus-visible:ring-destructive")}
+                    />
+                  </Field>
                   <Field label="Color"><Input value={formData.color} onChange={e => set("color", e.target.value)} /></Field>
                   <Field label="VIN"><Input value={formData.vin} onChange={e => set("vin", e.target.value)} maxLength={17} /></Field>
                   <Field label="Energy Type">
@@ -539,11 +590,12 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) {
   return (
     <div className="space-y-1.5">
       <Label className="text-sm">{label}</Label>
       {children}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

@@ -26,14 +26,16 @@ import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { friendlyToastError } from "@/lib/errorMessages";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
+import { cn } from "@/lib/utils";
 
 const incidentSchema = z.object({
   incident_type: z.enum(["accident", "breakdown", "violation", "theft", "damage"]),
   severity: z.enum(["low", "medium", "high", "critical"]),
-  description: z.string().trim().min(1, "Description is required").max(1000),
-  location: z.string().trim().max(200).optional(),
-  incident_time: z.string(),
-  estimated_cost: z.number().min(0).optional(),
+  description: z.string().trim().min(1, "Description is required").max(1000, "Description must be 1000 characters or fewer"),
+  location: z.string().trim().max(200, "Location must be 200 characters or fewer").optional(),
+  incident_time: z.string().min(1, "Date and time are required"),
+  estimated_cost: z.number().min(0, "Estimated cost cannot be negative").optional(),
 });
 
 interface CreateIncidentDialogProps {
@@ -55,6 +57,7 @@ const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDi
     incident_time: new Date().toISOString().slice(0, 16),
     estimated_cost: 0,
   });
+  const v = useFieldValidation(incidentSchema, () => formData);
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -93,10 +96,13 @@ const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDi
       incident_time: new Date().toISOString().slice(0, 16),
       estimated_cost: 0,
     });
+    v.reset();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const result = v.validateAll(formData);
+    if (!result.success) return;
     createMutation.mutate(formData);
   };
 
@@ -165,24 +171,37 @@ const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDi
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, description: e.target.value });
+                  v.handleChange("description", e.target.value);
+                }}
+                onBlur={(e) => v.handleBlur("description", e.target.value)}
                 placeholder="Provide detailed description of the incident..."
                 rows={4}
-                required
+                aria-invalid={!!v.getError("description")}
+                className={cn(v.getError("description") && "border-destructive focus-visible:ring-destructive")}
               />
+              {v.getError("description") && (
+                <p className="text-sm text-destructive mt-1">{v.getError("description")}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="location">Location</Label>
               <Input
                 id="location"
                 value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, location: e.target.value });
+                  v.handleChange("location", e.target.value);
+                }}
+                onBlur={(e) => v.handleBlur("location", e.target.value)}
                 placeholder="Enter incident location"
+                aria-invalid={!!v.getError("location")}
+                className={cn(v.getError("location") && "border-destructive focus-visible:ring-destructive")}
               />
+              {v.getError("location") && (
+                <p className="text-sm text-destructive mt-1">{v.getError("location")}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="incident_time">Date & Time *</Label>
@@ -190,11 +209,17 @@ const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDi
                 id="incident_time"
                 type="datetime-local"
                 value={formData.incident_time}
-                onChange={(e) =>
-                  setFormData({ ...formData, incident_time: e.target.value })
-                }
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, incident_time: e.target.value });
+                  v.handleChange("incident_time", e.target.value);
+                }}
+                onBlur={(e) => v.handleBlur("incident_time", e.target.value)}
+                aria-invalid={!!v.getError("incident_time")}
+                className={cn(v.getError("incident_time") && "border-destructive focus-visible:ring-destructive")}
               />
+              {v.getError("incident_time") && (
+                <p className="text-sm text-destructive mt-1">{v.getError("incident_time")}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="estimated_cost">Estimated Cost ($)</Label>
@@ -203,10 +228,18 @@ const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDi
                 type="number"
                 step="0.01"
                 value={formData.estimated_cost}
-                onChange={(e) =>
-                  setFormData({ ...formData, estimated_cost: parseFloat(e.target.value) || 0 })
-                }
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value) || 0;
+                  setFormData({ ...formData, estimated_cost: val });
+                  v.handleChange("estimated_cost", val);
+                }}
+                onBlur={(e) => v.handleBlur("estimated_cost", parseFloat(e.target.value) || 0)}
+                aria-invalid={!!v.getError("estimated_cost")}
+                className={cn(v.getError("estimated_cost") && "border-destructive focus-visible:ring-destructive")}
               />
+              {v.getError("estimated_cost") && (
+                <p className="text-sm text-destructive mt-1">{v.getError("estimated_cost")}</p>
+              )}
             </div>
           </div>
           <DialogFooter className="mt-6">
