@@ -134,6 +134,7 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
       const nowStr = format(new Date(), "yyyy-MM-dd'T'HH:mm");
       setForm(f => ({ ...f, request_start_date: nowStr, request_completion_date: "" }));
       setFieldErrors({});
+      setTouched({});
     }
   }, [open, embedded]);
 
@@ -232,6 +233,12 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
         if (typeof key === "string" && !errs[key]) errs[key] = issue.message;
       }
       setFieldErrors(errs);
+      // Mark every errored field as touched so messages render via errorOf().
+      setTouched(prev => {
+        const next = { ...prev };
+        for (const k of Object.keys(errs)) next[k] = true;
+        return next;
+      });
       return;
     }
 
