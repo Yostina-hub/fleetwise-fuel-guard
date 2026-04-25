@@ -751,8 +751,9 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
     }
 
     device = { ...deviceData, cachedAt: Date.now() };
-    knownDeviceCache.set(record.imei, device);
+    knownDeviceCache.set(record.imei, device!);
   }
+  if (!device) return { success: false, error: 'Device unavailable', code: 'DEVICE_UNAVAILABLE' };
 
   // In-memory rate limit (no DB queries)
   const rateCheck = checkRateLimitInMemory(device.id);
