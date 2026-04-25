@@ -952,6 +952,10 @@ const DriverPortal = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="shared">
+            <SharedTripsTab />
+          </TabsContent>
+
           <TabsContent value="history">
             <DriverTripHistory driverId={driverId} />
           </TabsContent>
