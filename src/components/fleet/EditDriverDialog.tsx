@@ -235,6 +235,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
           license_issue_date: (data as any).license_issue_date || "",
           license_expiry: data.license_expiry || "",
           employment_type: (data as any).employment_type || "regular",
+          contract_end_date: (data as any).contract_end_date || "",
           status: data.status || "active",
           joining_date: (data as any).joining_date || (data as any).hire_date || "",
           department: (data as any).department || (data as any).assigned_pool || "",
