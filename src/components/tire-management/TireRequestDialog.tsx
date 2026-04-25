@@ -287,21 +287,54 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
     if (prefill?.vehicle_id) setHeader(h => ({ ...h, vehicle_id: prefill.vehicle_id! }));
   }, [prefill?.vehicle_id]);
 
+  const HeaderInner = (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
+          <CircleDot className="h-4 w-4 text-primary" />
+        </div>
+        <div className="flex flex-col min-w-0 leading-tight">
+          <span className="text-[11px] text-muted-foreground truncate">Maintenance Home ›</span>
+          <h3 className="text-sm font-semibold tracking-tight truncate">Create Tire Request</h3>
+        </div>
+      </div>
+      <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <span className="text-destructive">*</span> Required field · Approval requires previous tire returned (iPROC)
+      </span>
+    </div>
+  );
+
+  const SectionTitle = ({ icon: Icon, title }: { icon: any; title: string }) => (
+    <div className="flex items-center gap-2 pb-1">
+      <Icon className="w-3.5 h-3.5 text-primary" />
+      <h4 className="text-sm font-semibold tracking-tight">{title}</h4>
+    </div>
+  );
+
   const body = (
     <>
-      {!embedded && (
-        <DialogHeader>
-          <div className="text-xs text-muted-foreground">Maintenance Home &gt;</div>
-          <DialogTitle className="text-2xl">Create Tire Request</DialogTitle>
-          <DialogDescription>
-            <span className="text-destructive">*</span> Indicates required field. Approval requires the previous tire to be returned to the warehouse (iPROC).
-          </DialogDescription>
-        </DialogHeader>
+      {embedded ? (
+        <div className="px-5 sm:px-6 py-3 border-b border-border bg-card">
+          {HeaderInner}
+        </div>
+      ) : (
+        <div className="px-3 sm:px-5 md:px-6 py-3 border-b border-border bg-card sticky top-0 z-10">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Create Tire Request</DialogTitle>
+            <DialogDescription className="sr-only">
+              Tire request form — fill in the sections and submit.
+            </DialogDescription>
+            {HeaderInner}
+          </DialogHeader>
+        </div>
       )}
 
-        <div className="space-y-6">
-          {/* ===== Header section ===== */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-md border bg-muted/20 p-4">
+      <div className={`${embedded ? "px-1" : "px-3 sm:px-5 md:px-6"} pt-2 pb-1 space-y-3`}>
+        <div className="space-y-5">
+          {/* ===== Header / Request meta ===== */}
+          <section className="space-y-3">
+            <SectionTitle icon={Layers} title="Request Details" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label><span className="text-destructive">*</span> Asset Number (Vehicle)</Label>
               <Select value={header.vehicle_id} onValueChange={v => setHeader(h => ({ ...h, vehicle_id: v }))}>
@@ -372,11 +405,12 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
               <Label>Estimated Cost (ETB)</Label>
               <Input type="number" value={header.estimated_cost} onChange={e => setHeader(h => ({ ...h, estimated_cost: e.target.value }))} />
             </div>
-          </div>
+            </div>
+          </section>
 
           {/* Quick-add department popover */}
           {showNewDept && (
-            <div className="flex items-center gap-2 rounded-md border bg-accent/30 p-3">
+            <div className="flex items-center gap-2 rounded-lg border bg-accent/30 p-3">
               <Input
                 autoFocus
                 placeholder="New department name"
@@ -394,23 +428,23 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
           )}
 
           {/* ===== Request Description ===== */}
-          <div>
-            <h3 className="text-sm font-semibold mb-2">Request Description</h3>
-            <Label><span className="text-destructive">*</span> Additional Description</Label>
-            <Textarea
-              rows={3}
-              value={header.additional_description}
-              onChange={e => setHeader(h => ({ ...h, additional_description: e.target.value }))}
-              placeholder="Describe the tire issue, observation, or context..."
-            />
-          </div>
+          <section className="space-y-3">
+            <SectionTitle icon={FileText} title="Request Description" />
+            <div>
+              <Label><span className="text-destructive">*</span> Additional Description</Label>
+              <Textarea
+                rows={3}
+                value={header.additional_description}
+                onChange={e => setHeader(h => ({ ...h, additional_description: e.target.value }))}
+                placeholder="Describe the tire issue, observation, or context..."
+              />
+            </div>
+          </section>
 
           {/* ===== Attachments ===== */}
-          <div>
-            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-              <Paperclip className="w-4 h-4" /> Request Attachments
-            </h3>
-            <div className="rounded-md border border-dashed p-3 space-y-2">
+          <section className="space-y-3">
+            <SectionTitle icon={Paperclip} title="Request Attachments" />
+            <div className="rounded-lg border border-dashed p-3 space-y-2">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -441,11 +475,11 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                 </div>
               )}
             </div>
-          </div>
+          </section>
 
           {/* ===== Creation Information ===== */}
-          <div>
-            <h3 className="text-sm font-semibold mb-2">Creation Information</h3>
+          <section className="space-y-3">
+            <SectionTitle icon={User} title="Creation Information" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Created By</Label>
@@ -480,11 +514,11 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                 </Select>
               </div>
             </div>
-          </div>
+          </section>
 
           {/* ===== Descriptive Information (vehicle/driver) ===== */}
-          <div>
-            <h3 className="text-sm font-semibold mb-2">Descriptive Information</h3>
+          <section className="space-y-3">
+            <SectionTitle icon={Info} title="Descriptive Information" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Context Value</Label>
@@ -550,13 +584,11 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                 <Input value={header.notes} onChange={e => setHeader(h => ({ ...h, notes: e.target.value }))} />
               </div>
             </div>
-          </div>
-
-          <Separator />
+          </section>
 
           {/* ===== Tire-specific items ===== */}
-          <div>
-            <h3 className="text-sm font-semibold mb-2">Tire Request Lines</h3>
+          <section className="space-y-3">
+            <SectionTitle icon={Wrench} title="Tire Request Lines" />
             <Tabs value={mode} onValueChange={(v) => { setMode(v as any); if (v === "single") setItems(prev => prev.slice(0, 1)); }}>
               <TabsList className="grid grid-cols-2 w-full">
                 <TabsTrigger value="single">Single Position</TabsTrigger>
@@ -569,7 +601,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
 
               <TabsContent value="batch" className="mt-3 space-y-3">
                 {items.map((it, idx) => (
-                  <div key={idx} className="rounded-md border p-3 space-y-2 relative">
+                  <div key={idx} className="rounded-lg border p-3 space-y-2 relative">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-muted-foreground">Item #{idx + 1}</span>
                       {items.length > 1 && (
@@ -586,41 +618,52 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                 </Button>
               </TabsContent>
             </Tabs>
-          </div>
+          </section>
 
-          <div>
-            <Label>Reason</Label>
-            <Input value={header.reason} onChange={e => setHeader(h => ({ ...h, reason: e.target.value }))} placeholder="Worn out, puncture, scheduled rotation, etc." />
-          </div>
+          <section className="space-y-3">
+            <div>
+              <Label>Reason</Label>
+              <Input value={header.reason} onChange={e => setHeader(h => ({ ...h, reason: e.target.value }))} placeholder="Worn out, puncture, scheduled rotation, etc." />
+            </div>
+          </section>
         </div>
+      </div>
 
-        <div className={embedded ? "flex justify-end gap-2 pt-4 border-t mt-4" : ""}>
-          {embedded ? (
-            <>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-                {mutation.isPending ? "Submitting..." : "Apply / Submit"}
-              </Button>
-            </>
-          ) : (
-            <DialogFooter>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-                {mutation.isPending ? "Submitting..." : "Apply / Submit"}
-              </Button>
-            </DialogFooter>
-          )}
-        </div>
+      {(() => {
+        const FooterInner = (
+          <div className="flex w-full items-center justify-end gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => mutation.mutate()}
+              disabled={mutation.isPending}
+              className="gap-1.5"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {mutation.isPending ? "Submitting..." : "Submit"}
+            </Button>
+          </div>
+        );
+        return embedded ? (
+          <div className="pt-4 border-t border-border/60 mt-4">{FooterInner}</div>
+        ) : (
+          <DialogFooter className="px-3 sm:px-5 md:px-6 py-3 mt-4 bg-muted/30 border-t border-border/60 sm:justify-between sticky bottom-0 z-10">
+            {FooterInner}
+          </DialogFooter>
+        );
+      })()}
     </>
   );
 
   if (embedded) {
-    return <div className="space-y-6">{body}</div>;
+    return <div className="space-y-3">{body}</div>;
   }
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-6xl max-h-[94vh] overflow-y-auto p-0 gap-0">
         {body}
       </DialogContent>
     </Dialog>
