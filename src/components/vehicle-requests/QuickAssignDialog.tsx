@@ -21,8 +21,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Clock, Layers, UserCheck } from "lucide-react";
+import { MapPin, Users, Clock, Layers, UserCheck, GitMerge } from "lucide-react";
 import { PoolAssignmentPicker } from "./PoolAssignmentPicker";
+import { MergedTripStopsPanel } from "./MergedTripStopsPanel";
 
 interface Props {
   request: any;
@@ -163,9 +164,11 @@ export const QuickAssignDialog = ({ request, organizationId, open, onClose }: Pr
     onError: (err: any) => toast.error(err?.message || "Failed to update"),
   });
 
+  const isMerged = !!request?.is_consolidated_parent;
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className={isMerged ? "max-w-4xl max-h-[92vh] overflow-y-auto" : "max-w-2xl max-h-[90vh] overflow-y-auto"}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-primary" />
@@ -186,6 +189,12 @@ export const QuickAssignDialog = ({ request, organizationId, open, onClose }: Pr
             <Badge variant="outline" className="text-[10px] font-mono">
               {request.request_number}
             </Badge>
+            {isMerged && (
+              <Badge variant="default" className="text-[10px] gap-1">
+                <GitMerge className="w-2.5 h-2.5" />
+                Consolidated · {request.consolidated_request_count ?? "?"} requests
+              </Badge>
+            )}
             {request.pool_name && (
               <Badge variant="secondary" className="text-[10px] gap-1">
                 <Layers className="w-2.5 h-2.5" />
@@ -203,14 +212,18 @@ export const QuickAssignDialog = ({ request, organizationId, open, onClose }: Pr
             )}
           </div>
 
-          <div className="flex items-start gap-1.5 text-xs">
-            <MapPin className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
-            <span className="text-foreground">
-              <span className="text-muted-foreground">From</span> {request.departure_place || "—"}{" "}
-              <span className="text-muted-foreground">→</span>{" "}
-              {request.destination || "—"}
-            </span>
-          </div>
+          {/* For non-merged requests, show simple route line. For merged trips,
+              the full stops list + map is rendered separately below. */}
+          {!isMerged && (
+            <div className="flex items-start gap-1.5 text-xs">
+              <MapPin className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+              <span className="text-foreground">
+                <span className="text-muted-foreground">From</span> {request.departure_place || "—"}{" "}
+                <span className="text-muted-foreground">→</span>{" "}
+                {request.destination || "—"}
+              </span>
+            </div>
+          )}
 
           {request.needed_from && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -227,11 +240,25 @@ export const QuickAssignDialog = ({ request, organizationId, open, onClose }: Pr
 
           {request.requester_name && (
             <div className="text-xs text-muted-foreground">
-              Requested by{" "}
+              {isMerged ? "Created by" : "Requested by"}{" "}
               <span className="text-foreground font-medium">{request.requester_name}</span>
             </div>
           )}
         </div>
+
+        {/* Full merged-trip visualisation: ordered stops + mini map */}
+        {isMerged && (
+          <MergedTripStopsPanel
+            parentRequestId={request.id}
+            organizationId={organizationId}
+            poolName={request.pool_name}
+            totalPassengers={request.passengers}
+            childCount={request.consolidated_request_count}
+            mergeStrategy={request.merge_strategy}
+            neededFrom={request.needed_from}
+            neededUntil={request.needed_until}
+          />
+        )}
 
         <PoolAssignmentPicker
           request={request}
