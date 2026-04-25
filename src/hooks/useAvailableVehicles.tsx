@@ -72,6 +72,7 @@ export const useAvailableVehicles = () => {
         make: vehicle.make,
         model: vehicle.model,
         status: vehicle.status,
+        specific_pool: (vehicle as any).specific_pool ?? null,
         isAvailable: !isMaintenanceStatus && !hasScheduledMaintenance && !isInactive && !isLocked,
         unavailableReason,
       } as AvailableVehicle;
