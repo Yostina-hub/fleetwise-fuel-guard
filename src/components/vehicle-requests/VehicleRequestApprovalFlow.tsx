@@ -34,6 +34,7 @@ import { sendDispatchSms } from "@/services/smsNotificationService";
 import { notifyRequesterDecisionSms, notifyAssignmentSms, getAppUrl } from "@/services/vehicleRequestSmsService";
 import { notifyFleetOpsRequestApproved } from "@/services/fleetApprovalPushService";
 import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
+import { usePoolMembership } from "@/hooks/usePoolMembership";
 import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetList";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
 import { OperatorToolsTabs } from "@/components/vehicle-requests/OperatorToolsTabs";
@@ -58,6 +59,14 @@ interface Props {
 export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onCheckIn, onCrossPool }: Props) => {
   const { t } = useTranslation();
   const { available } = useAvailableVehicles();
+  // Pool scoping: a manager working a request only sees vehicles & drivers
+  // from THE REQUEST'S pool. Org-wide roles (admin / fleet_owner / etc.)
+  // bypass this filter via `poolUnrestricted`.
+  const { unrestricted: poolUnrestricted } = usePoolMembership();
+  const requestPool: string | null = (request as any).pool_name || null;
+  const scopedAvailable = poolUnrestricted || !requestPool
+    ? available
+    : available.filter((v) => v.specific_pool === requestPool);
   const queryClient = useQueryClient();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
