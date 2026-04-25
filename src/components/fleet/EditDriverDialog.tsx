@@ -711,13 +711,25 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                       <Section icon={<Building2 className="w-5 h-5 text-primary" />} title="Employment Details">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <Field label="Employment Status">
-                            <Select value={formData.employment_type} onValueChange={(value) => set("employment_type", value)}>
+                            <Select value={formData.employment_type} onValueChange={(value) => { set("employment_type", value); if (value !== "contract") set("contract_end_date", ""); }}>
                               <SelectTrigger><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 {EMPLOYMENT_STATUSES.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
                               </SelectContent>
                             </Select>
                           </Field>
+                          {formData.employment_type === "contract" && (
+                            <Field label="Contract End Date" required error={validation.getError("contract_end_date" as any)} fieldRef={registerRef("contract_end_date" as any)}>
+                              <DatePickerField
+                                value={formData.contract_end_date}
+                                onChange={(value) => { set("contract_end_date", value); validation.validateField("contract_end_date" as any, value); }}
+                                onBlur={() => onBlur("contract_end_date" as any)}
+                                min={today()}
+                                placeholder="Select end date"
+                                ariaInvalid={!!validation.getError("contract_end_date" as any)}
+                              />
+                            </Field>
+                          )}
                           <Field label="Driver Status" required error={validation.getError("status")}>
                             <Select value={formData.status} onValueChange={(value) => { set("status", value); validation.validateField("status", value); }}>
                               <SelectTrigger className={errClass("status")}><SelectValue /></SelectTrigger>
