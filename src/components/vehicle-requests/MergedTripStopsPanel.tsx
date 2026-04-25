@@ -183,7 +183,9 @@ export const MergedTripStopsPanel = ({
   defaultOpen = false,
 }: Props) => {
   const [open, setOpen] = useState(defaultOpen);
-  const [showMap, setShowMap] = useState(false);
+  // Map auto-shows when the panel is expanded and stops have coordinates.
+  // Dispatchers asked to see optimized routes immediately without an extra click.
+  const [showMap, setShowMap] = useState(true);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["merged-children", parentRequestId],
