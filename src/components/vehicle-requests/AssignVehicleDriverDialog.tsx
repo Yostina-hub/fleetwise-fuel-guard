@@ -40,6 +40,9 @@ import {
   Map as MapIcon,
   Phone,
   IdCard,
+  Users as UsersIcon,
+  AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 import { AssignmentDetailsPanel } from "./AssignmentDetailsPanel";
 import { OpsMapView } from "./OpsMapView";
@@ -53,7 +56,12 @@ interface VehicleOption {
   model?: string | null;
   vehicle_class?: string | null;
   vehicle_type?: string | null;
+  vehicle_category?: string | null;
+  seating_capacity?: number | null;
   status?: string | null;
+  fits_capacity?: boolean;
+  availability?: string | null;
+  in_pool?: boolean;
 }
 
 interface DriverOption {
@@ -63,6 +71,18 @@ interface DriverOption {
   phone?: string | null;
   license_class?: string | null;
   status?: string | null;
+  /** Computed license suitability for the currently selected vehicle. */
+  license?: {
+    matches: boolean;
+    expired: boolean;
+    expiresSoon: boolean;
+    unverified: boolean;
+    summary: string;
+    required: string;
+  } | null;
+  availability?: string | null;
+  in_pool?: boolean;
+  is_top_pick?: boolean;
 }
 
 interface SuggestedVehicle {
@@ -74,6 +94,8 @@ interface SuggestedVehicle {
   in_geofence?: boolean;
   is_top_pick?: boolean;
   assigned_driver_id?: string | null;
+  seating_capacity?: number | null;
+  fits_capacity?: boolean;
 }
 
 interface Props {
