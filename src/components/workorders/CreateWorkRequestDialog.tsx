@@ -80,6 +80,30 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
   const { organizationId } = useOrganization();
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const validateField = (field: string, value: unknown, ctx?: Record<string, unknown>) => {
+    const candidate = { ...form, ...(ctx ?? {}), [field]: value };
+    const parsed = workRequestSchema.safeParse({
+      ...candidate,
+      km_reading: candidate.km_reading ? Number(candidate.km_reading) : undefined,
+      fuel_level: candidate.fuel_level ? Number(candidate.fuel_level) : undefined,
+    });
+    const issue = parsed.success ? null : parsed.error.issues.find(i => i.path[0] === field);
+    setFieldErrors(prev => {
+      const next = { ...prev };
+      if (issue) next[field] = issue.message;
+      else delete next[field];
+      return next;
+    });
+  };
+
+  const handleBlur = (field: string, value: unknown) => {
+    setTouched(prev => (prev[field] ? prev : { ...prev, [field]: true }));
+    validateField(field, value);
+  };
+
+  const errorOf = (field: string) => (touched[field] ? fieldErrors[field] : undefined);
 
   const now = format(new Date(), "yyyy-MM-dd'T'HH:mm");
 
