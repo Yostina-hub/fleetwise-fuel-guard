@@ -26,13 +26,13 @@ serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return secureJsonResponse({ error: "Missing authorization header" }, 401, corsHeaders);
+      return secureJsonResponse({ error: "Missing authorization header" }, req, 401);
     }
 
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) {
-      return secureJsonResponse({ error: "Invalid token" }, 401, corsHeaders);
+      return secureJsonResponse({ error: "Invalid token" }, req, 401);
     }
 
     const { data: profile } = await supabase
@@ -42,7 +42,7 @@ serve(async (req) => {
       .single();
 
     if (!profile?.organization_id) {
-      return secureJsonResponse({ error: "User has no organization" }, 400, corsHeaders);
+      return secureJsonResponse({ error: "User has no organization" }, req, 400);
     }
 
     // Get WhatsApp config from organization settings
@@ -56,19 +56,19 @@ serve(async (req) => {
     const waConfig = config?.whatsapp;
 
     if (!waConfig || !waConfig.is_active) {
-      return secureJsonResponse({ error: "WhatsApp not configured or inactive" }, 400, corsHeaders);
+      return secureJsonResponse({ error: "WhatsApp not configured or inactive" }, req, 400);
     }
 
     let body: WhatsAppRequest;
     try {
       body = await req.json();
     } catch {
-      return secureJsonResponse({ error: "Invalid request body" }, 400, corsHeaders);
+      return secureJsonResponse({ error: "Invalid request body" }, req, 400);
     }
 
     const { to, message, template_name, template_params } = body;
     if (!to || (!message && !template_name)) {
-      return secureJsonResponse({ error: "Missing 'to' and 'message' or 'template_name'" }, 400, corsHeaders);
+      return secureJsonResponse({ error: "Missing 'to' and 'message' or 'template_name'" }, req, 400);
     }
 
     // Normalize phone to +251 format
@@ -87,7 +87,7 @@ serve(async (req) => {
         result = await sendTwilioWhatsApp(phone, message, waConfig);
         break;
       default:
-        return secureJsonResponse({ error: `Unknown WhatsApp provider: ${provider}` }, 400, corsHeaders);
+        return secureJsonResponse({ error: `Unknown WhatsApp provider: ${provider}` }, req, 400);
     }
 
     // Audit log
@@ -103,10 +103,10 @@ serve(async (req) => {
     });
 
     if (!result.success) {
-      return secureJsonResponse({ error: result.error }, 500, corsHeaders);
+      return secureJsonResponse({ error: result.error }, req, 500);
     }
 
-    return secureJsonResponse({ success: true, messageId: result.messageId }, 200, corsHeaders);
+    return secureJsonResponse({ success: true, messageId: result.messageId }, req, 200);
   } catch (error: unknown) {
     console.error("WhatsApp function error:", error);
     return new Response(
