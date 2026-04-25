@@ -26823,6 +26823,54 @@ export type Database = {
           },
         ]
       }
+      latest_vehicle_telemetry: {
+        Row: {
+          altitude_meters: number | null
+          battery_voltage: number | null
+          can_data: Json | null
+          created_at: string | null
+          device_connected: boolean | null
+          driver_rfid: string | null
+          dtc_codes: Json | null
+          engine_hours: number | null
+          engine_on: boolean | null
+          external_voltage: number | null
+          fuel_level_percent: number | null
+          gps_fix_type: string | null
+          gps_hdop: number | null
+          gps_jamming_detected: boolean | null
+          gps_satellites_count: number | null
+          gps_signal_strength: number | null
+          gps_spoofing_detected: boolean | null
+          gsm_signal_strength: number | null
+          harsh_acceleration: boolean | null
+          harsh_braking: boolean | null
+          harsh_cornering: boolean | null
+          heading: number | null
+          id: string | null
+          ignition_on: boolean | null
+          io_elements: Json | null
+          last_communication_at: string | null
+          latitude: number | null
+          longitude: number | null
+          odometer_km: number | null
+          organization_id: string | null
+          speed_kmh: number | null
+          temperature_1: number | null
+          temperature_2: number | null
+          updated_at: string | null
+          vehicle_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_telemetry_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       telemetry_daily_agg: {
         Row: {
           alarm_count: number | null
