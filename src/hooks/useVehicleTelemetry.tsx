@@ -112,20 +112,21 @@ export const useVehicleTelemetry = () => {
         if (showLoading && isFirstLoad) {
           setLoading(true);
         }
+        // Use the latest_vehicle_telemetry view to get exactly one (most recent)
+        // row per vehicle. Querying the raw table with limit(5000) caused only
+        // the 3 most-active vehicles to ever appear because they alone produced
+        // far more than 5000 recent rows.
         const { data, error } = await supabase
-          .from("vehicle_telemetry")
+          .from("latest_vehicle_telemetry" as any)
           .select("*")
           .eq("organization_id", organizationId)
-          .order("last_communication_at", { ascending: false })
           .limit(5000);
 
         if (error) throw error;
 
         const telemetryMap: Record<string, VehicleTelemetry> = {};
         (data || []).forEach((item: any) => {
-          if (!telemetryMap[item.vehicle_id]) {
-            telemetryMap[item.vehicle_id] = item;
-          }
+          telemetryMap[item.vehicle_id] = item;
         });
 
         if (isMounted) {
