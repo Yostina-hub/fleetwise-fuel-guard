@@ -270,7 +270,11 @@ export const AssignVehicleDriverDialog = ({
                     <SectionLabel
                       icon={<Sparkles className="w-3.5 h-3.5 text-primary" />}
                       title="Smart suggestions"
-                      hint="Closest GPS · pool roster"
+                      hint={
+                        request?.passengers
+                          ? `Fits ${request.passengers} pax · closest GPS · in pool`
+                          : "Closest GPS · pool roster"
+                      }
                     />
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {suggested.slice(0, 5).map((s) => {
@@ -296,6 +300,12 @@ export const AssignVehicleDriverDialog = ({
                             <span className="font-semibold">
                               {s.plate_number}
                             </span>
+                            {s.seating_capacity != null && (
+                              <span className="flex items-center gap-0.5 text-muted-foreground">
+                                <UsersIcon className="w-2.5 h-2.5" />
+                                {s.seating_capacity}
+                              </span>
+                            )}
                             <span className="text-muted-foreground">
                               {s.distance_km != null
                                 ? `${s.distance_km} km`
