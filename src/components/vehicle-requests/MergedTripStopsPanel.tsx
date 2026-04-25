@@ -370,12 +370,15 @@ export const MergedTripStopsPanel = ({
           0,
         );
 
-        // Render in reverse so the best route (added last) sits on top
-        const order = results.map((_, i) => i).sort((a, b) => (a === bestIdx ? 1 : b === bestIdx ? -1 : 0));
+        // Render alternates first, then the best route on top so it visually wins.
+        const renderOrder = [
+          ...results.map((_, i) => i).filter((i) => i !== bestIdx),
+          bestIdx,
+        ];
 
         if (!mapRef.current) return;
 
-        order.forEach((i) => {
+        renderOrder.forEach((i) => {
           const r = results[i];
           const isBest = i === bestIdx;
           const meta = palette[i] ?? palette[0];
@@ -392,8 +395,8 @@ export const MergedTripStopsPanel = ({
             layout: { "line-cap": "round", "line-join": "round" },
             paint: {
               "line-color": isBest ? "hsl(217 91% 50%)" : meta.color,
-              "line-width": isBest ? 5 : 3,
-              "line-opacity": isBest ? 0.95 : 0.5,
+              "line-width": isBest ? 6 : 3,
+              "line-opacity": isBest ? 0.95 : 0.45,
               ...(isBest ? {} : { "line-dasharray": [1.5, 1] }),
             },
           });
