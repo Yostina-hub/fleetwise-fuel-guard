@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
 import { useLockedVehicles } from "@/hooks/useLockedVehicles";
+import { usePoolMembership } from "@/hooks/usePoolMembership";
 import { sendDispatchSms } from "@/services/smsNotificationService";
 import { toast } from "sonner";
 
@@ -21,22 +22,37 @@ interface Props {
 /**
  * Multi-vehicle assignment for outsource requests with num_vehicles > 1.
  * Drivers are optional (outsource may bring their own).
+ *
+ * Pool scoping: vehicles & drivers are limited to the REQUEST'S pool
+ * (`request.pool_name`). Org-wide roles (admin / fleet_owner / ops_manager)
+ * still see everything.
  */
 export const MultiVehicleAssignDialog = ({ request, open, onClose }: Props) => {
   const queryClient = useQueryClient();
   const { available } = useAvailableVehicles();
   const { lockedById } = useLockedVehicles();
+  const { unrestricted: poolUnrestricted } = usePoolMembership();
+  const requestPool: string | null = request.pool_name || null;
+
+  // Restrict vehicle picker to the request's pool unless the user is org-wide.
+  const scopedAvailable = poolUnrestricted || !requestPool
+    ? available
+    : available.filter((v) => v.specific_pool === requestPool);
+
   const [picks, setPicks] = useState<Record<string, string | null>>({}); // vehicleId -> driverId|null
 
   const { data: drivers = [] } = useQuery({
-    queryKey: ["drivers-for-multi-assign", request.organization_id],
+    queryKey: ["drivers-for-multi-assign", request.organization_id, requestPool, poolUnrestricted],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("drivers")
-        .select("id, first_name, last_name, phone")
+        .select("id, first_name, last_name, phone, assigned_pool")
         .eq("organization_id", request.organization_id)
-        .eq("status", "active")
-        .order("first_name").limit(100);
+        .eq("status", "active");
+      if (!poolUnrestricted && requestPool) {
+        q = q.eq("assigned_pool", requestPool);
+      }
+      const { data, error } = await q.order("first_name").limit(100);
       if (error) throw error;
       return data || [];
     },
@@ -100,7 +116,7 @@ export const MultiVehicleAssignDialog = ({ request, open, onClose }: Props) => {
 
       // Send dispatch SMS to every assigned driver (best-effort, errors logged)
       const driverById = new Map(drivers.map((d: any) => [d.id, d]));
-      const vehicleById = new Map(available.map((v: any) => [v.id, v]));
+      const vehicleById = new Map(scopedAvailable.map((v: any) => [v.id, v]));
       await Promise.allSettled(
         Object.entries(picks)
           .filter(([, did]) => !!did)
@@ -162,7 +178,7 @@ export const MultiVehicleAssignDialog = ({ request, open, onClose }: Props) => {
                 </tr>
               </thead>
               <tbody>
-                {available.slice(0, 50).map((v: any) => {
+                {scopedAvailable.slice(0, 50).map((v: any) => {
                   const checked = v.id in picks;
                   const lock = lockedById[v.id];
                   const isLocked = !!lock;

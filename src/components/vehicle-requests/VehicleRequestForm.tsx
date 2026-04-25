@@ -49,6 +49,7 @@ import { usePendingRatings } from "@/hooks/usePendingRatings";
 import { useCan } from "@/hooks/useCan";
 
 import { useDepartments } from "@/hooks/useDepartments";
+import { usePoolMembership } from "@/hooks/usePoolMembership";
 import {
   recommendVehicleClass,
   isUpgradeOverRecommendation,
@@ -201,6 +202,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   } = useAuth();
   const queryClient = useQueryClient();
   const { departments } = useDepartments();
+  // Pool memberships drive which Specific-Pool entries the requester can pick.
+  // Org-wide roles (super_admin, org_admin, fleet_owner/manager, ops_manager,
+  // dispatcher, auditor) bypass this filter and see every pool. Everyone else
+  // sees ONLY pools they're assigned to via `pool_memberships`.
+  const {
+    poolCodes: userPoolCodes,
+    unrestricted: poolUnrestricted,
+    hasAnyMembership,
+    loading: poolMembershipLoading,
+  } = usePoolMembership();
 
   // When a super_admin is impersonating, the override puts the impersonated
   // user into `useAuth().user` — but `supabase.auth.getUser()` still returns
@@ -1901,43 +1912,66 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
-                    {form.pool_category === "corporate" ? (
-                      ASSIGNED_LOCATIONS
-                        .filter(l => l.group === "Corporate" && !(l as any).parent)
-                        .flatMap(parent => {
-                          const subs = ASSIGNED_LOCATIONS.filter(
-                            (l: any) => l.group === "Corporate" && l.parent === parent.value
-                          );
-                          return [
-                            <SelectItem key={parent.value} value={parent.value}>
-                              <span className="flex items-center gap-2 font-semibold">
-                                {parent.label}
-                              </span>
-                            </SelectItem>,
-                            ...subs.map((s: any) => (
-                              <SelectItem key={s.value} value={s.value}>
-                                <span className="flex items-center gap-2 pl-4 text-sm">
-                                  <span className="truncate">{s.label}</span>
-                                  {s.shift && s.shift !== "all" && (
-                                    <span className="ml-auto text-[10px] uppercase text-muted-foreground">{s.shift}</span>
-                                  )}
+                    {(() => {
+                      // Build the candidate list, then restrict to pools the
+                      // user is a member of (unless they have org-wide reach).
+                      const inCategory = ASSIGNED_LOCATIONS.filter(
+                        (l: any) =>
+                          form.pool_category === "corporate"
+                            ? l.group === "Corporate"
+                            : l.group === POOL_CATEGORY_META[form.pool_category as keyof typeof POOL_CATEGORY_META]?.locationGroup,
+                      );
+                      const allowed = poolUnrestricted
+                        ? inCategory
+                        : inCategory.filter((l: any) => userPoolCodes.includes(l.value));
+
+                      if (!poolUnrestricted && allowed.length === 0) {
+                        return (
+                          <div className="px-3 py-4 text-xs text-muted-foreground">
+                            {hasAnyMembership
+                              ? "No pools in this category are assigned to you."
+                              : "You aren't assigned to any pool yet. Ask your fleet admin to add you to a pool."}
+                          </div>
+                        );
+                      }
+
+                      if (form.pool_category === "corporate") {
+                        return allowed
+                          .filter((l: any) => !l.parent)
+                          .flatMap((parent: any) => {
+                            const subs = allowed.filter((l: any) => l.parent === parent.value);
+                            // If user can't see this parent and has no subs, skip entirely.
+                            if (!poolUnrestricted && subs.length === 0 && !userPoolCodes.includes(parent.value)) {
+                              return [];
+                            }
+                            return [
+                              <SelectItem key={parent.value} value={parent.value}>
+                                <span className="flex items-center gap-2 font-semibold">
+                                  {parent.label}
                                 </span>
-                              </SelectItem>
-                            )),
-                          ];
-                        })
-                    ) : (
-                      ASSIGNED_LOCATIONS
-                        .filter(l => l.group === POOL_CATEGORY_META[form.pool_category as keyof typeof POOL_CATEGORY_META]?.locationGroup)
-                        .map(l => (
-                          <SelectItem key={l.value} value={l.value}>
-                            <span className="flex items-center gap-2">
-                              <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                              {l.label}
-                            </span>
-                          </SelectItem>
-                        ))
-                    )}
+                              </SelectItem>,
+                              ...subs.map((s: any) => (
+                                <SelectItem key={s.value} value={s.value}>
+                                  <span className="flex items-center gap-2 pl-4 text-sm">
+                                    <span className="truncate">{s.label}</span>
+                                    {s.shift && s.shift !== "all" && (
+                                      <span className="ml-auto text-[10px] uppercase text-muted-foreground">{s.shift}</span>
+                                    )}
+                                  </span>
+                                </SelectItem>
+                              )),
+                            ];
+                          });
+                      }
+                      return allowed.map((l: any) => (
+                        <SelectItem key={l.value} value={l.value}>
+                          <span className="flex items-center gap-2">
+                            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                            {l.label}
+                          </span>
+                        </SelectItem>
+                      ));
+                    })()}
                   </SelectContent>
                 </Select>
                 <FieldError field="pool_name" />

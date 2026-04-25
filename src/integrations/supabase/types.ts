@@ -16298,6 +16298,44 @@ export type Database = {
         }
         Relationships: []
       }
+      pool_memberships: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          pool_code: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id: string
+          pool_code: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string
+          pool_code?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pool_memberships_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_maintenance_inspections: {
         Row: {
           checklist: Json | null
@@ -27459,6 +27497,10 @@ export type Database = {
       }
       is_basic_user_only: { Args: { _user_id: string }; Returns: boolean }
       is_driver_only: { Args: { _user_id: string }; Returns: boolean }
+      is_pool_manager: {
+        Args: { _pool_code: string; _user_id: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_vehicle_online: { Args: { vehicle_uuid: string }; Returns: boolean }
       log_audit_event: {
@@ -27686,10 +27728,16 @@ export type Database = {
         Args: { _event_data: Json; _event_type: string }
         Returns: undefined
       }
+      user_belongs_to_pool: {
+        Args: { _pool_code: string; _user_id: string }
+        Returns: boolean
+      }
       user_in_organization: {
         Args: { _organization_id: string; _user_id: string }
         Returns: boolean
       }
+      user_managed_pool_codes: { Args: { _user_id: string }; Returns: string[] }
+      user_pool_codes: { Args: { _user_id: string }; Returns: string[] }
       verify_vehicle_at_supplier: {
         Args: { p_default_radius_m?: number; p_request_id: string }
         Returns: {

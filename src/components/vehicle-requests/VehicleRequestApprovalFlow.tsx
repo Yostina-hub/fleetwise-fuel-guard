@@ -34,6 +34,7 @@ import { sendDispatchSms } from "@/services/smsNotificationService";
 import { notifyRequesterDecisionSms, notifyAssignmentSms, getAppUrl } from "@/services/vehicleRequestSmsService";
 import { notifyFleetOpsRequestApproved } from "@/services/fleetApprovalPushService";
 import { useVehicleRequestScope } from "@/hooks/useVehicleRequestScope";
+import { usePoolMembership } from "@/hooks/usePoolMembership";
 import { AssignedFleetList } from "@/components/vehicle-requests/AssignedFleetList";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
 import { OperatorToolsTabs } from "@/components/vehicle-requests/OperatorToolsTabs";
@@ -58,6 +59,14 @@ interface Props {
 export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onCheckIn, onCrossPool }: Props) => {
   const { t } = useTranslation();
   const { available } = useAvailableVehicles();
+  // Pool scoping: a manager working a request only sees vehicles & drivers
+  // from THE REQUEST'S pool. Org-wide roles (admin / fleet_owner / etc.)
+  // bypass this filter via `poolUnrestricted`.
+  const { unrestricted: poolUnrestricted } = usePoolMembership();
+  const requestPool: string | null = (request as any).pool_name || null;
+  const scopedAvailable = poolUnrestricted || !requestPool
+    ? available
+    : available.filter((v) => v.specific_pool === requestPool);
   const queryClient = useQueryClient();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -75,17 +84,20 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     vrScope.tier === "driver" && request.assigned_driver_id === vrScope.driverId;
   const canCheckInOut = canManageAll || isAssignedDriver;
 
-  // Fetch drivers for assignment
+  // Fetch drivers for assignment — scoped to the request's pool unless the
+  // current user has org-wide reach.
   const { data: drivers = [] } = useQuery({
-    queryKey: ["drivers-for-assignment", request.organization_id],
+    queryKey: ["drivers-for-assignment", request.organization_id, requestPool, poolUnrestricted],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("drivers")
-        .select("id, first_name, last_name, phone")
+        .select("id, first_name, last_name, phone, assigned_pool")
         .eq("organization_id", request.organization_id)
-        .eq("status", "active")
-        .order("first_name")
-        .limit(50);
+        .eq("status", "active");
+      if (!poolUnrestricted && requestPool) {
+        q = q.eq("assigned_pool", requestPool);
+      }
+      const { data, error } = await q.order("first_name").limit(50);
       if (error) throw error;
       return data || [];
     },
@@ -766,7 +778,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
               open={assignDialogOpen}
               onOpenChange={setAssignDialogOpen}
               request={request}
-              vehicles={available as any}
+              vehicles={scopedAvailable as any}
               drivers={drivers as any}
               suggested={suggested as any}
               initialVehicleId={selectedVehicleId}
