@@ -2,6 +2,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { checkRateLimit, rateLimitResponse, getClientId } from "../_shared/rate-limiter.ts";
 import { buildCorsHeaders, handleCorsPreflightRequest, secureJsonResponse } from "../_shared/cors.ts";
 
+// Module-level fallback CORS headers used inside helper functions
+// (request-scoped headers are still used in the main handler)
+const corsHeaders: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+};
+
 interface PenaltyConfig {
   id: string;
   organization_id: string;
