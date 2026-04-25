@@ -120,6 +120,46 @@ export const useFindSharedRides = (params: FindMatchesParams, enabled = true) =>
 };
 
 /**
+ * Tier-2 Proximity sweep: rides whose route passes near the requester's
+ * pickup, even if they don't *start* there. Uses the per-pool `corridor_km`
+ * setting (default 3 km).
+ */
+export const useFindProximityRides = (params: FindMatchesParams, enabled = true) => {
+  const { organizationId } = useOrganization();
+  return useQuery({
+    queryKey: [
+      "shared-rides-proximity",
+      organizationId,
+      params.poolCode,
+      params.originLat,
+      params.originLng,
+      params.destinationLat,
+      params.destinationLng,
+      params.departureAt?.toISOString(),
+      params.seatsNeeded,
+    ],
+    enabled: enabled && !!organizationId && isReady(params),
+    staleTime: 30_000,
+    queryFn: async (): Promise<SharedRideProximityMatch[]> => {
+      const { data, error } = await (supabase as any).rpc("find_proximity_match_rides", {
+        _organization_id: organizationId,
+        _pool_code: params.poolCode,
+        _origin_lat: params.originLat,
+        _origin_lng: params.originLng,
+        _destination_lat: params.destinationLat,
+        _destination_lng: params.destinationLng,
+        _departure_at: params.departureAt!.toISOString(),
+        _seats_needed: params.seatsNeeded ?? 1,
+        _wait_window_min: 10,
+        _destination_radius_km: params.destinationRadiusKm ?? 5.0,
+      });
+      if (error) throw error;
+      return (data || []) as SharedRideProximityMatch[];
+    },
+  });
+};
+
+/**
  * Active shared rides where the signed-in driver is the assigned driver.
  * Used by the driver-portal "Shared Trip" tab.
  */
