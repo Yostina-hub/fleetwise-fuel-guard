@@ -56,6 +56,11 @@ import {
   Route as RouteIcon,
   Users,
   TrendingUp,
+  GitMerge,
+  IdCard,
+  Clock,
+  Flame,
+  CircleDot,
 } from "lucide-react";
 import { format } from "date-fns";
 
