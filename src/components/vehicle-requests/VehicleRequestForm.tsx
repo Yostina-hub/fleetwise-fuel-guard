@@ -660,6 +660,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         // sanitized + Zod-validated payload). Lat/lng + dates remain raw
         // because they're not free-text user input.
         request_type: safe.request_type,
+        // OLA operation type drives SLA timer (10m / 30m / 1.5d / 30d)
+        operation_type:
+          (safe.request_type as string) === "incident_urgent" ? "incident_urgent" :
+          safe.request_type === "field_operation" ? "field_work" :
+          safe.request_type === "project_operation" ? "project_work" :
+          "daily_operation",
         purpose:
           safe.purpose +
           filedOnBehalfNote +
@@ -1436,10 +1442,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <SelectValue placeholder="Please select request type…" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="daily_operation">Day Request (8:30 AM – 5:30 PM)</SelectItem>
+                <SelectItem value="incident_urgent">🚨 Incident / Urgent (10 min SLA)</SelectItem>
+                <SelectItem value="daily_operation">Day Request (8:30 AM – 5:30 PM) — 30 min SLA</SelectItem>
                 <SelectItem value="nighttime_operation">Night Request (8:00 PM – 6:00 AM)</SelectItem>
-                <SelectItem value="project_operation">Project Request</SelectItem>
-                <SelectItem value="field_operation">Field Request</SelectItem>
+                <SelectItem value="field_operation">Field Request — 1.5 day SLA</SelectItem>
+                <SelectItem value="project_operation">Project Request — 30 day SLA</SelectItem>
                 <SelectItem value="group_operation">Group Request</SelectItem>
                 <SelectItem value="messenger_service">Messenger Request</SelectItem>
               </SelectContent>

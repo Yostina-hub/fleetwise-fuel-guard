@@ -14590,6 +14590,65 @@ export type Database = {
         }
         Relationships: []
       }
+      ola_breach_escalations: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          escalated_to_cxqmd_at: string | null
+          id: string
+          organization_id: string
+          raised_by: string
+          reason: string
+          request_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          root_cause: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          escalated_to_cxqmd_at?: string | null
+          id?: string
+          organization_id: string
+          raised_by: string
+          reason: string
+          request_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          root_cause?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          escalated_to_cxqmd_at?: string | null
+          id?: string
+          organization_id?: string
+          raised_by?: string
+          reason?: string
+          request_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          root_cause?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ola_breach_escalations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_settings: {
         Row: {
           avg_insurance_per_vehicle_annual: number
@@ -23731,6 +23790,56 @@ export type Database = {
           },
         ]
       }
+      vehicle_request_extensions: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_notes: string | null
+          id: string
+          organization_id: string
+          reason: string
+          request_id: string
+          requested_by: string
+          requested_until: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          id?: string
+          organization_id: string
+          reason: string
+          request_id: string
+          requested_by: string
+          requested_until: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          id?: string
+          organization_id?: string
+          reason?: string
+          request_id?: string
+          requested_by?: string
+          requested_until?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_request_extensions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_request_ratings: {
         Row: {
           comment: string | null
@@ -23926,6 +24035,9 @@ export type Database = {
           driver_checkout_odometer: number | null
           driver_rating: number | null
           end_time: string | null
+          extension_reason: string | null
+          extension_status: string | null
+          extension_until: string | null
           filed_by_name: string | null
           filed_by_user_id: string | null
           filed_on_behalf: boolean
@@ -23936,7 +24048,11 @@ export type Database = {
           merged_into_request_id: string | null
           needed_from: string
           needed_until: string | null
+          no_show_due_at: string | null
+          no_show_released_at: string | null
+          no_show_released_by: string | null
           num_vehicles: number | null
+          operation_type: string | null
           organization_id: string
           original_pool_name: string | null
           passengers: number | null
@@ -23967,6 +24083,9 @@ export type Database = {
           requester_id: string
           requester_name: string
           requester_rating: number | null
+          sla_breached: boolean
+          sla_breached_at: string | null
+          sla_due_at: string | null
           sms_notification_sent: boolean | null
           sms_sent_at: string | null
           start_time: string | null
@@ -24027,6 +24146,9 @@ export type Database = {
           driver_checkout_odometer?: number | null
           driver_rating?: number | null
           end_time?: string | null
+          extension_reason?: string | null
+          extension_status?: string | null
+          extension_until?: string | null
           filed_by_name?: string | null
           filed_by_user_id?: string | null
           filed_on_behalf?: boolean
@@ -24037,7 +24159,11 @@ export type Database = {
           merged_into_request_id?: string | null
           needed_from: string
           needed_until?: string | null
+          no_show_due_at?: string | null
+          no_show_released_at?: string | null
+          no_show_released_by?: string | null
           num_vehicles?: number | null
+          operation_type?: string | null
           organization_id: string
           original_pool_name?: string | null
           passengers?: number | null
@@ -24068,6 +24194,9 @@ export type Database = {
           requester_id: string
           requester_name: string
           requester_rating?: number | null
+          sla_breached?: boolean
+          sla_breached_at?: string | null
+          sla_due_at?: string | null
           sms_notification_sent?: boolean | null
           sms_sent_at?: string | null
           start_time?: string | null
@@ -24128,6 +24257,9 @@ export type Database = {
           driver_checkout_odometer?: number | null
           driver_rating?: number | null
           end_time?: string | null
+          extension_reason?: string | null
+          extension_status?: string | null
+          extension_until?: string | null
           filed_by_name?: string | null
           filed_by_user_id?: string | null
           filed_on_behalf?: boolean
@@ -24138,7 +24270,11 @@ export type Database = {
           merged_into_request_id?: string | null
           needed_from?: string
           needed_until?: string | null
+          no_show_due_at?: string | null
+          no_show_released_at?: string | null
+          no_show_released_by?: string | null
           num_vehicles?: number | null
+          operation_type?: string | null
           organization_id?: string
           original_pool_name?: string | null
           passengers?: number | null
@@ -24169,6 +24305,9 @@ export type Database = {
           requester_id?: string
           requester_name?: string
           requester_rating?: number | null
+          sla_breached?: boolean
+          sla_breached_at?: string | null
+          sla_due_at?: string | null
           sms_notification_sent?: boolean | null
           sms_sent_at?: string | null
           start_time?: string | null
@@ -26904,6 +27043,22 @@ export type Database = {
           source: string
         }[]
       }
+      compute_ola_compliance: {
+        Args: {
+          p_end: string
+          p_group_by?: string
+          p_org_id: string
+          p_start: string
+        }
+        Returns: {
+          avg_assignment_minutes: number
+          breached: number
+          bucket: string
+          compliance_pct: number
+          on_time: number
+          total: number
+        }[]
+      }
       compute_predictive_scores: {
         Args: { p_org_id: string }
         Returns: {
@@ -27163,6 +27318,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      ola_sla_minutes: { Args: { p_operation_type: string }; Returns: number }
       recalculate_driver_stats: {
         Args: { p_organization_id?: string }
         Returns: undefined

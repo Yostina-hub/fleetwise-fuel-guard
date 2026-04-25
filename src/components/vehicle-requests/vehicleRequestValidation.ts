@@ -549,6 +549,7 @@ export function sanitizeVehicleRequestForm(values: VRFormValues): VRFormValues {
  */
 export const vehicleRequestZodSchema = z.object({
   request_type: z.enum([
+    "incident_urgent",
     "daily_operation",
     "nighttime_operation",
     "project_operation",
