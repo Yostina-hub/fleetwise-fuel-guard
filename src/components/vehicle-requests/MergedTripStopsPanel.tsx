@@ -109,8 +109,9 @@ export const MergedTripStopsPanel = ({
     },
   });
 
-  // ── Map lifecycle ───────────────────────────────────────────────────────
+  // ── Map lifecycle (only when expanded — container must exist) ───────────
   useEffect(() => {
+    if (!open) return;
     if (!containerRef.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -145,8 +146,9 @@ export const MergedTripStopsPanel = ({
       markersRef.current = [];
       map.remove();
       mapRef.current = null;
+      setReady(false);
     };
-  }, []);
+  }, [open]);
 
   // ── Sync stops onto the map ─────────────────────────────────────────────
   useEffect(() => {
