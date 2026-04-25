@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Edit2, Trash2 } from "lucide-react";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 import { useToast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface SSOFormData {
   provider_name: string;
@@ -97,7 +98,7 @@ const SSOConfigTab = () => {
       toast({ title: "SSO provider created" });
       closeDialog();
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => friendlyToastError(e),
   });
 
   const updateMutation = useMutation({
@@ -124,7 +125,7 @@ const SSOConfigTab = () => {
       toast({ title: "SSO provider updated" });
       closeDialog();
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => friendlyToastError(e),
   });
 
   const deleteMutation = useMutation({
@@ -136,7 +137,7 @@ const SSOConfigTab = () => {
       queryClient.invalidateQueries({ queryKey: ["sso_configurations"] });
       toast({ title: "SSO provider deleted" });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => friendlyToastError(e),
   });
 
   const closeDialog = () => {

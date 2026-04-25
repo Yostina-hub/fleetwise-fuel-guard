@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Lock, ShieldCheck } from "lucide-react";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const PasswordPoliciesTab = () => {
   const { organizationId } = useOrganization();
@@ -78,7 +79,7 @@ const PasswordPoliciesTab = () => {
       toast({ title: "Password policies updated" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 

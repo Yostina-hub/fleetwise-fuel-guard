@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Shield, Loader2 } from "lucide-react";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const ROLES = [
   { value: "super_admin", label: "Super Admin" },
@@ -90,7 +91,7 @@ const BulkRoleAssignDialog = ({ open, onOpenChange, users, onComplete }: BulkRol
       onOpenChange(false);
       onComplete();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     } finally {
       setLoading(false);
     }

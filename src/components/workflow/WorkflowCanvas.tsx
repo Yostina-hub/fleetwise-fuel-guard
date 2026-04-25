@@ -37,6 +37,7 @@ import { accentTokenFor } from "./nodeAccents";
 import type { PaletteItem, WorkflowNode, WorkflowEdge } from "./types";
 import type { WorkflowTemplate } from "./workflowTemplates";
 import { AnimatePresence } from "framer-motion";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const nodeTypes = {
   trigger: TriggerNode,
@@ -88,7 +89,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
       .then(({ data, error }) => {
         setIsLoading(false);
         if (error || !data) {
-          toast({ title: "Error", description: "Workflow not found in this organization", variant: "destructive" });
+          friendlyToastError(null, { title: "Workflow not found in this organization" });
           return;
         }
         setWorkflowName(data.name);
@@ -211,7 +212,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
 
   const handleSave = useCallback(async () => {
     if (!organizationId) {
-      toast({ title: "Error", description: "Organization not found", variant: "destructive" });
+      friendlyToastError(null, { title: "Organization not found" });
       return;
     }
     setIsSaving(true);
@@ -252,7 +253,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
       queryClient.invalidateQueries({ queryKey: ["workflows", organizationId] });
       toast({ title: "Saved!", description: "Workflow saved successfully" });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     } finally {
       setIsSaving(false);
     }
@@ -310,7 +311,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
           toast({ title: "Imported", description: "Workflow loaded successfully" });
         }
       } catch {
-        toast({ title: "Error", description: "Invalid workflow file", variant: "destructive" });
+        friendlyToastError(null, { title: "Invalid workflow file" });
       }
     };
     input.click();

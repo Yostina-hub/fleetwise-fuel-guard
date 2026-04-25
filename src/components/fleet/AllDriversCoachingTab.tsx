@@ -27,6 +27,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { MessageSquare, Plus, CheckCircle, Clock, Send, User, Filter } from "lucide-react";
 import { format } from "date-fns";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface CoachingNote {
   id: string;
@@ -82,7 +83,7 @@ export function AllDriversCoachingTab() {
       setSelectedDriverId("");
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 

@@ -35,6 +35,7 @@ import {
   sanitizeWhileTyping, sanitizeEmail, sanitizePhone, sanitizeNumeric,
 } from "./formSanitizers";
 import { CheckCircle2 } from "lucide-react";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const DRAFT_KEY = "create-vehicle";
 
@@ -188,7 +189,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       onOpenChange(false);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to add vehicle", variant: "destructive" });
+      friendlyToastError(error, { fallback: "Failed to add vehicle" });
     },
   });
 

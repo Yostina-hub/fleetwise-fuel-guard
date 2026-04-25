@@ -32,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface Driver {
   id: string;
@@ -109,11 +110,7 @@ export function DriverVerificationPanel({ driver, canVerify = true }: DriverVeri
       setNotes("");
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

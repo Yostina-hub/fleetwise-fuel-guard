@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -143,7 +144,7 @@ const TrafficViolationsTab = () => {
       });
       refetch();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 

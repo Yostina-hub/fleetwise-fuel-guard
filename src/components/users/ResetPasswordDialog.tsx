@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { KeyRound, Loader2, AlertTriangle } from "lucide-react";
 import type { UserProfile } from "./UserTable";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface ResetPasswordDialogProps {
   open: boolean;
@@ -23,11 +24,11 @@ const ResetPasswordDialog = ({ open, onOpenChange, user }: ResetPasswordDialogPr
   const handleReset = async () => {
     if (!user) return;
     if (newPassword.length < 8) {
-      toast({ title: "Error", description: "Password must be at least 8 characters", variant: "destructive" });
+      friendlyToastError(null, { title: "Password must be at least 8 characters" });
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+      friendlyToastError(null, { title: "Passwords do not match" });
       return;
     }
 
@@ -43,7 +44,7 @@ const ResetPasswordDialog = ({ open, onOpenChange, user }: ResetPasswordDialogPr
       setConfirmPassword("");
       onOpenChange(false);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to reset password", variant: "destructive" });
+      friendlyToastError(err, { fallback: "Failed to reset password" });
     } finally {
       setLoading(false);
     }

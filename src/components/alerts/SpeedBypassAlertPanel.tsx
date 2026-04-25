@@ -18,6 +18,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface SpeedBypassAlertPanelProps {
   vehicleId: string;
@@ -93,11 +94,7 @@ export function SpeedBypassAlertPanel({ vehicleId, vehiclePlate }: SpeedBypassAl
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

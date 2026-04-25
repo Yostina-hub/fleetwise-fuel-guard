@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import InviteUserDialog from "@/components/users/InviteUserDialog";
 
 import { useTranslation } from 'react-i18next';
+import { friendlyToastError } from "@/lib/errorMessages";
 const Organizations = () => {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
@@ -62,7 +63,7 @@ const Organizations = () => {
       setForm({ name: "", slug: "", type: "cpo", contact_email: "", contact_phone: "", address: "" });
     },
     onError: (err: any) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     },
   });
 

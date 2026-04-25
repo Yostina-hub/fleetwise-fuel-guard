@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Car, Search, Check, Lock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Driver } from "@/hooks/useDrivers";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface AssignVehicleToDriverDialogProps {
   open: boolean;
@@ -113,11 +114,7 @@ export default function AssignVehicleToDriverDialog({ open, onOpenChange, driver
       onOpenChange(false);
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to assign vehicle",
-        variant: "destructive",
-      });
+      friendlyToastError(error, { fallback: "Failed to assign vehicle" });
     },
   });
 

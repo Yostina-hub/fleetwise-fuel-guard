@@ -4,6 +4,7 @@ import { useOrganization } from "./useOrganization";
 import { useDriverScope } from "./useDriverScope";
 import { toast } from "@/hooks/use-toast";
 import { sendDispatchSms } from "@/services/smsNotificationService";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface DispatchJob {
   id: string;
@@ -224,7 +225,7 @@ export const useDispatchJobs = (filters?: {
       fetchJobs();
       return data;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return null;
     }
   };
@@ -249,7 +250,7 @@ export const useDispatchJobs = (filters?: {
       toast({ title: "Status updated", description: `Job marked as ${status}` });
       fetchJobs();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -314,7 +315,7 @@ export const useDispatchJobs = (filters?: {
       
       fetchJobs();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -335,7 +336,7 @@ export const useDispatchJobs = (filters?: {
       toast({ title: "POD captured", description: "Proof of delivery recorded" });
       return data;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return null;
     }
   };

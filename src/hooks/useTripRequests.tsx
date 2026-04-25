@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useDriverScope } from "./useDriverScope";
 import { logActivity } from "@/lib/sessionTracker";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export const useTripRequests = () => {
   const { toast } = useToast();
@@ -106,7 +107,7 @@ export const useTripRequests = () => {
       toast({ title: "Success", description: "Trip request created successfully" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -167,7 +168,7 @@ export const useTripRequests = () => {
       toast({ title: "Success", description: "Trip request submitted for approval" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -184,7 +185,7 @@ export const useTripRequests = () => {
       toast({ title: "Cancelled", description: "Trip request has been cancelled" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -201,7 +202,7 @@ export const useTripRequests = () => {
       toast({ title: "Updated", description: "Trip request updated" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 

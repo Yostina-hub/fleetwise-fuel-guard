@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const ENTITY_TYPES = [
   "vehicles",
@@ -76,11 +77,7 @@ const BulkJobsTab = () => {
       });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create job",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Failed to create job" });
     },
   });
 

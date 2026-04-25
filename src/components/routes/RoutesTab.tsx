@@ -41,6 +41,7 @@ import {
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const routeSchema = z.object({
   route_name: z.string().trim().min(1, "Route name is required").max(100),
@@ -122,11 +123,7 @@ const RoutesTab = () => {
       resetForm();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 
@@ -146,11 +143,7 @@ const RoutesTab = () => {
       resetForm();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 
@@ -164,11 +157,7 @@ const RoutesTab = () => {
       toast({ title: "Route deleted successfully" });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

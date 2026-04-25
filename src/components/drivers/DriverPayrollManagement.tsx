@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { DollarSign, Calculator, Settings, Search, Users, Wallet } from "lucide-react";
 import { type Employee, EMPLOYEE_TYPE_LABELS, EMPLOYEE_TYPE_COLORS } from "@/hooks/useEmployees";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface DriverPayrollManagementProps {
   driverId: string;
@@ -161,7 +162,7 @@ export const DriverPayrollManagement = ({ driverId, driverName, employeeId, empl
       weekend_multiplier: parseFloat(configForm.weekend_multiplier) || 1.5,
       night_shift_multiplier: parseFloat(configForm.night_shift_multiplier) || 1.25,
     });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (error) friendlyToastError(error);
     else { toast({ title: "Pay config saved" }); setShowConfigDialog(false); }
   };
 
@@ -192,7 +193,7 @@ export const DriverPayrollManagement = ({ driverId, driverName, employeeId, empl
       deductions, total_deductions: totalDeductions, gross_pay: grossPay, net_pay: netPay,
       payment_method: payrollForm.payment_method, notes: payrollForm.notes || null, status: "calculated",
     });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (error) friendlyToastError(error);
     else { toast({ title: "Payroll created" }); setShowPayrollDialog(false); }
   };
 

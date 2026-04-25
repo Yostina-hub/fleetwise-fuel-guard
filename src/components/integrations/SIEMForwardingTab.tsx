@@ -15,6 +15,7 @@ import { Shield, Send, Loader2, RefreshCw, Trash2, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { useOrganization } from "@/hooks/useOrganization";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const EVENT_TYPES = ["auth", "data_access", "admin_action", "security", "data_mutation", "api_access", "login_failure"];
 const FORMATS = [
@@ -84,7 +85,7 @@ const SIEMForwardingTab = () => {
       toast({ title: "SIEM Endpoint Created", description: "Audit log forwarding configured" });
     },
     onError: (e: any) => {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      friendlyToastError(e);
     },
   });
 

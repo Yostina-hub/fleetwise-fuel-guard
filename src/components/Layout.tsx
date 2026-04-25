@@ -77,6 +77,7 @@ import { isPathAccessible } from "@/config/sidebarAccess";
 import { getRoleSpecificNav } from "@/config/roleNavTemplates";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 import {
+import { friendlyToastError } from "@/lib/errorMessages";
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -362,11 +363,7 @@ const LayoutInner = ({ children }: LayoutProps) => {
       await signOut();
     } catch (error: any) {
       console.error("Sign out error:", error);
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to sign out",
-        variant: "destructive",
-      });
+      friendlyToastError(error, { fallback: "Failed to sign out" });
       return;
     }
     {

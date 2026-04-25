@@ -27,6 +27,7 @@ import ResetPasswordDialog from "@/components/users/ResetPasswordDialog";
 import ConfirmActionDialog from "@/components/users/ConfirmActionDialog";
 import type { UserProfile } from "@/components/users/UserTable";
 import { ROLE_LABELS } from "@/lib/roleMapping";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 type TabKey = "all" | "users" | "drivers" | "workforce";
 
@@ -214,7 +215,7 @@ const UserManagement = () => {
       setBannedMap((prev) => ({ ...prev, [statusActionUser.id]: action === "deactivate" }));
       refresh();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || `Failed to ${action} user`, variant: "destructive" });
+      friendlyToastError(err, { fallback: `Failed to ${action} user` });
     } finally {
       setStatusActionLoading(false);
     }
@@ -233,7 +234,7 @@ const UserManagement = () => {
       setDeleteUser(null);
       refresh();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to delete user", variant: "destructive" });
+      friendlyToastError(err, { fallback: "Failed to delete user" });
     } finally {
       setDeleteLoading(false);
     }

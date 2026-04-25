@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -78,11 +79,7 @@ const IntegrationsTab = () => {
       });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create integration",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Failed to create integration" });
     },
   });
 

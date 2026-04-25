@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface Message {
   role: "user" | "assistant";
@@ -200,11 +201,7 @@ export const AIAssistant = () => {
       }
     } catch (error) {
       console.error("Chat error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to get AI response. Please try again.",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Failed to get AI response. Please try again." });
       setMessages([
         ...newMessages,
         {

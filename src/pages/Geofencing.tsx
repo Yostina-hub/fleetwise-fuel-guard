@@ -50,6 +50,7 @@ import { startOfDay } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 import { useTranslation } from "react-i18next";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const Geofencing = () => {
   const { t } = useTranslation();
@@ -312,7 +313,7 @@ const Geofencing = () => {
       resetForm();
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -333,7 +334,7 @@ const Geofencing = () => {
       resetForm();
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 

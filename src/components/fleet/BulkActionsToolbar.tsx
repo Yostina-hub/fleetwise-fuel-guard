@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { 
+import { friendlyToastError } from "@/lib/errorMessages";
   Trash2, 
   Power, 
   Wrench, 
@@ -53,11 +54,7 @@ export default function BulkActionsToolbar({
       onClearSelection();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update vehicles",
-        variant: "destructive",
-      });
+      friendlyToastError(error, { fallback: "Failed to update vehicles" });
     },
   });
 
@@ -79,11 +76,7 @@ export default function BulkActionsToolbar({
       onClearSelection();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete vehicles",
-        variant: "destructive",
-      });
+      friendlyToastError(error, { fallback: "Failed to delete vehicles" });
     },
   });
 

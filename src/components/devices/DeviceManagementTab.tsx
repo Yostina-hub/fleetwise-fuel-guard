@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { TestEndpointResult } from "@/hooks/useDevices";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -239,11 +240,7 @@ export const DeviceManagementTab = () => {
         description: `${selectedDevices.length} devices have been deleted`,
       });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Some devices could not be deleted",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Some devices could not be deleted" });
     }
     
     setSelectedDevices([]);
@@ -868,7 +865,7 @@ export const DeviceManagementTab = () => {
                       toast({ title: "Status Updated", description: `${selectedDevices.length} devices set to ${newStatus}` });
                       setSelectedDevices([]);
                     } catch {
-                      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+                      friendlyToastError(null, { title: "Failed to update status" });
                     }
                   }}
                 >

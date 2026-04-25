@@ -11,6 +11,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { Bell, Mail, MessageSquare, Save, RefreshCw, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export const OfflineAlertsConfig = () => {
   const { toast } = useToast();
@@ -109,11 +110,7 @@ export const OfflineAlertsConfig = () => {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 
@@ -139,11 +136,7 @@ export const OfflineAlertsConfig = () => {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

@@ -13,6 +13,7 @@ import { CreditCard, Link, RefreshCw, DollarSign, Receipt, Loader2, Trash2 } fro
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const billingProviders = [
   { value: "custom_erp", label: "Custom ERP Billing" },
@@ -118,7 +119,7 @@ const BillingIntegrationTab = () => {
       toast({ title: "Saved", description: "Billing integration configuration saved" });
     },
     onError: (e: any) => {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      friendlyToastError(e);
     },
   });
 

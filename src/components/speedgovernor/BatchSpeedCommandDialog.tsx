@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useQueryClient } from "@tanstack/react-query";
 import { Gauge, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface Vehicle {
   id: string;
@@ -68,11 +69,7 @@ export function BatchSpeedCommandDialog({
 
   const handleSendBatch = async () => {
     if (!organizationId || !user || selectedVehicleIds.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one vehicle",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Please select at least one vehicle" });
       return;
     }
 

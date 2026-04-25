@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOrganization } from "@/hooks/useOrganization";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const AVAILABLE_TABLES = [
   "telemetry",
@@ -72,11 +73,7 @@ const DataRetentionTab = () => {
       });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create retention policy",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Failed to create retention policy" });
     },
   });
 

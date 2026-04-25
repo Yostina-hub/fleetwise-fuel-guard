@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { useDriverScope } from "./useDriverScope";
 import { toast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface Alert {
   id: string;
@@ -174,11 +175,7 @@ export const useAlerts = (filters?: AlertFilters) => {
       return true;
     } catch (err: any) {
       console.error("Error acknowledging alert:", err);
-      toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive"
-      });
+      friendlyToastError(err);
       return false;
     }
   };
@@ -209,11 +206,7 @@ export const useAlerts = (filters?: AlertFilters) => {
       return true;
     } catch (err: any) {
       console.error("Error resolving alert:", err);
-      toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive"
-      });
+      friendlyToastError(err);
       return false;
     }
   };
@@ -243,11 +236,7 @@ export const useAlerts = (filters?: AlertFilters) => {
       return true;
     } catch (err: any) {
       console.error("Error bulk acknowledging alerts:", err);
-      toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive"
-      });
+      friendlyToastError(err);
       return false;
     }
   };
@@ -277,11 +266,7 @@ export const useAlerts = (filters?: AlertFilters) => {
       return true;
     } catch (err: any) {
       console.error("Error bulk resolving alerts:", err);
-      toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive"
-      });
+      friendlyToastError(err);
       return false;
     }
   };

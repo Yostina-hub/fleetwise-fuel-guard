@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface ImmobilizationSequence {
   id: string;
@@ -134,7 +135,7 @@ export const useImmobilization = () => {
       return true;
     } catch (err: any) {
       console.error("Error initiating immobilization:", err);
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return false;
     }
   };
@@ -167,7 +168,7 @@ export const useImmobilization = () => {
       await fetchSequences();
       return true;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return false;
     }
   };

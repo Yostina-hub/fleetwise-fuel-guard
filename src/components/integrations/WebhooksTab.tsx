@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const WEBHOOK_EVENTS = [
   "alert.created",
@@ -99,11 +100,7 @@ const WebhooksTab = () => {
       });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create webhook",
-        variant: "destructive",
-      });
+      friendlyToastError(null, { title: "Failed to create webhook" });
     },
   });
 

@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const BreachNotificationTab = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -68,7 +69,7 @@ const BreachNotificationTab = () => {
       toast({ title: "Breach Incident Reported", description: "72-hour notification countdown has started" });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to report breach", variant: "destructive" });
+      friendlyToastError(null, { title: "Failed to report breach" });
     },
   });
 

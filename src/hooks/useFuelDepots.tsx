@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface FuelDepot {
   id: string;
@@ -228,7 +229,7 @@ export const useFuelDepots = () => {
       toast({ title: "Depot created", description: "Fuel depot added successfully" });
       return data;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return null;
     }
   };
@@ -243,7 +244,7 @@ export const useFuelDepots = () => {
       if (error) throw error;
       toast({ title: "Depot updated", description: "Fuel depot updated successfully" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -257,7 +258,7 @@ export const useFuelDepots = () => {
       if (error) throw error;
       toast({ title: "Depot deleted", description: "Fuel depot removed" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -292,7 +293,7 @@ export const useFuelDepots = () => {
       toast({ title: "Fuel dispensed", description: `${dispensing.liters_dispensed}L recorded` });
       return data;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return null;
     }
   };
@@ -312,7 +313,7 @@ export const useFuelDepots = () => {
       if (error) throw error;
       toast({ title: "Fuel received", description: `${litersReceived}L added to ${depot.name}` });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -326,7 +327,7 @@ export const useFuelDepots = () => {
       if (error) throw error;
       toast({ title: "Stock updated", description: "Depot stock level updated" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface WorkOrderPart {
   id: string;
@@ -119,11 +120,7 @@ export const useWorkOrderParts = (workOrderId?: string) => {
       toast({ title: "Part added", description: "Part added to work order" });
     },
     onError: (error: any) => {
-      toast({ 
-        title: "Error", 
-        description: error.message || "Failed to add part", 
-        variant: "destructive" 
-      });
+      friendlyToastError(error, { fallback: "Failed to add part" });
     },
   });
 
@@ -142,11 +139,7 @@ export const useWorkOrderParts = (workOrderId?: string) => {
       toast({ title: "Part removed", description: "Part removed from work order" });
     },
     onError: (error: any) => {
-      toast({ 
-        title: "Error", 
-        description: error.message || "Failed to remove part", 
-        variant: "destructive" 
-      });
+      friendlyToastError(error, { fallback: "Failed to remove part" });
     },
   });
 

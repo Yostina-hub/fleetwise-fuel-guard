@@ -14,6 +14,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, AlertTriangle } from "lucide-react";
 import type { Driver } from "@/hooks/useDrivers";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface DeleteDriverDialogProps {
   open: boolean;
@@ -43,11 +44,7 @@ export default function DeleteDriverDialog({ open, onOpenChange, driver }: Delet
       onOpenChange(false);
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete driver",
-        variant: "destructive",
-      });
+      friendlyToastError(error, { fallback: "Failed to delete driver" });
     },
   });
 

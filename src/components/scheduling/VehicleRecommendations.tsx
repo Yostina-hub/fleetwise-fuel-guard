@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import {
+import { friendlyToastError } from "@/lib/errorMessages";
   Select,
   SelectContent,
   SelectItem,
@@ -258,11 +259,7 @@ export const VehicleRecommendations = ({
       setAssignDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

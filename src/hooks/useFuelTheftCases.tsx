@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface FuelTheftCase {
   id: string;
@@ -152,7 +153,7 @@ export const useFuelTheftCases = (filters?: {
       toast({ title: "Case created", description: "Fuel theft case opened for investigation" });
       return data;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return null;
     }
   };
@@ -167,7 +168,7 @@ export const useFuelTheftCases = (filters?: {
       if (error) throw error;
       toast({ title: "Case updated", description: "Investigation details saved" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 
@@ -186,7 +187,7 @@ export const useFuelTheftCases = (filters?: {
       if (error) throw error;
       toast({ title: "Case closed", description: `Case marked as ${resolution}` });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 

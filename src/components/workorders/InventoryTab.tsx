@@ -34,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 const inventorySchema = z.object({
   part_number: z.string().trim().min(1, "Part number is required").max(50),
@@ -134,11 +135,7 @@ const InventoryTab = () => {
       resetForm();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      friendlyToastError(error);
     },
   });
 

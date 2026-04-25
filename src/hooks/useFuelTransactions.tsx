@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export interface FuelTransaction {
   id: string;
@@ -189,7 +190,7 @@ export const useFuelTransactions = (filters?: {
       toast({ title: "Transaction created", description: "Fuel transaction recorded successfully" });
       return data;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
       return null;
     }
   };
@@ -209,7 +210,7 @@ export const useFuelTransactions = (filters?: {
       if (error) throw error;
       toast({ title: "Reconciled", description: "Transaction marked as reconciled" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      friendlyToastError(err);
     }
   };
 

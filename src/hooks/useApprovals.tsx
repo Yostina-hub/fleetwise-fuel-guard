@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/hooks/useImpersonation";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 export const useApprovals = () => {
   const { toast } = useToast();
@@ -188,7 +189,7 @@ export const useApprovals = () => {
       });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -215,7 +216,7 @@ export const useApprovals = () => {
       });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -236,7 +237,7 @@ export const useApprovals = () => {
       toast({ title: "Rejected", description: "Fuel request has been rejected" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -273,7 +274,7 @@ export const useApprovals = () => {
       toast({ title: "Rejected", description: "Request has been rejected" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
@@ -298,7 +299,7 @@ export const useApprovals = () => {
       toast({ title: "Escalated", description: "Approval has been escalated to next level" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      friendlyToastError(error);
     },
   });
 
