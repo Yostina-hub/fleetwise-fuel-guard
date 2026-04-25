@@ -151,5 +151,5 @@ async function maybeAlert(
     .select("id")
     .single();
 
-  if (!error && alert) acc.push(alert.id);
+  if (!error && alert) acc.push(String((alert as { id: string }).id));
 }
