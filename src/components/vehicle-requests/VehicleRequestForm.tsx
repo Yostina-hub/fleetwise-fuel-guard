@@ -660,6 +660,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         // sanitized + Zod-validated payload). Lat/lng + dates remain raw
         // because they're not free-text user input.
         request_type: safe.request_type,
+        // OLA operation type drives SLA timer (10m / 30m / 1.5d / 30d)
+        operation_type:
+          safe.request_type === "incident_urgent" ? "incident_urgent" :
+          safe.request_type === "field_operation" ? "field_work" :
+          safe.request_type === "project_operation" ? "project_work" :
+          "daily_operation",
         purpose:
           safe.purpose +
           filedOnBehalfNote +
