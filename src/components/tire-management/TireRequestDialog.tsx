@@ -16,7 +16,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useDepartments } from "@/hooks/useDepartments";
 import { toast } from "sonner";
-import { Plus, Trash2, Upload, FileText, X, Paperclip } from "lucide-react";
+import { Plus, Trash2, Upload, FileText, X, Paperclip, CircleDot, CheckCircle2, Layers, User, Info, Wrench } from "lucide-react";
 
 const POSITIONS = ["Front Left", "Front Right", "Rear Left Outer", "Rear Left Inner", "Rear Right Outer", "Rear Right Inner", "Spare"];
 
