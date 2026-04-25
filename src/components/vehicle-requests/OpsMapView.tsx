@@ -191,29 +191,118 @@ export const OpsMapView = ({ organizationId }: Props) => {
     return map;
   }, [mergeData, showMerges]);
 
-  // Pool aggregations: demand vs idle supply
+  // Pool aggregations: demand vs idle supply (vehicles + drivers + passengers)
   const poolStats = useMemo(() => {
-    const pools: Record<string, { demand: number; idle: number; vehicles: any[] }> = {};
+    const pools: Record<
+      string,
+      {
+        demand: number;
+        passengers: number;
+        urgent: number;
+        merged: number;
+        idle: number;
+        idleDrivers: number;
+        vehicles: any[];
+        topVehicleType: string | null;
+      }
+    > = {};
+    const typeCount: Record<string, Record<string, number>> = {};
     requests.forEach((r) => {
       const k = r.pool_name || "Unassigned";
-      pools[k] = pools[k] || { demand: 0, idle: 0, vehicles: [] };
+      pools[k] = pools[k] || {
+        demand: 0,
+        passengers: 0,
+        urgent: 0,
+        merged: 0,
+        idle: 0,
+        idleDrivers: 0,
+        vehicles: [],
+        topVehicleType: null,
+      };
       pools[k].demand += 1;
+      pools[k].passengers += r.passengers || 0;
+      if (r.priority === "urgent" || r.priority === "high") pools[k].urgent += 1;
+      if (r.is_consolidated_parent) pools[k].merged += 1;
+      if (r.vehicle_type) {
+        typeCount[k] = typeCount[k] || {};
+        typeCount[k][r.vehicle_type] = (typeCount[k][r.vehicle_type] || 0) + 1;
+      }
     });
     available.forEach((v: any) => {
-      // Vehicle pool comes from vehicles.specific_pool — fetch from allVehicles join
       const fullV = allVehicles.find((x: any) => x.id === v.id);
       const pool = (fullV as any)?.specific_pool || "Unassigned";
-      pools[pool] = pools[pool] || { demand: 0, idle: 0, vehicles: [] };
+      pools[pool] = pools[pool] || {
+        demand: 0,
+        passengers: 0,
+        urgent: 0,
+        merged: 0,
+        idle: 0,
+        idleDrivers: 0,
+        vehicles: [],
+        topVehicleType: null,
+      };
       pools[pool].idle += 1;
       pools[pool].vehicles.push({ ...v, specific_pool: pool });
     });
+    idleDrivers.forEach((d: any) => {
+      const pool = d.assigned_pool || "Unassigned";
+      pools[pool] = pools[pool] || {
+        demand: 0,
+        passengers: 0,
+        urgent: 0,
+        merged: 0,
+        idle: 0,
+        idleDrivers: 0,
+        vehicles: [],
+        topVehicleType: null,
+      };
+      pools[pool].idleDrivers += 1;
+    });
+    // Resolve top requested vehicle type per pool
+    Object.entries(typeCount).forEach(([pool, counts]) => {
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+      if (pools[pool] && top) pools[pool].topVehicleType = top[0];
+    });
     return Object.entries(pools)
       .map(([name, s]) => ({ name, ...s, deficit: s.demand - s.idle }))
-      .sort((a, b) => b.deficit - a.deficit);
-  }, [requests, available, allVehicles]);
+      .sort((a, b) => b.deficit - a.deficit || b.demand - a.demand);
+  }, [requests, available, allVehicles, idleDrivers]);
 
   const poolsWithDeficit = poolStats.filter((p) => p.deficit > 0);
   const poolsWithSurplus = poolStats.filter((p) => p.idle > p.demand);
+
+  // Map-visible requests (filtered by selected pool when set)
+  const visibleRequests = useMemo(
+    () =>
+      selectedPool
+        ? requests.filter((r) => (r.pool_name || "Unassigned") === selectedPool)
+        : requests,
+    [requests, selectedPool],
+  );
+
+  // KPI totals
+  const kpis = useMemo(() => {
+    const totalPax = requests.reduce((s, r) => s + (r.passengers || 0), 0);
+    const urgent = requests.filter(
+      (r) => r.priority === "urgent" || r.priority === "high",
+    ).length;
+    const consolidatedParents = requests.filter((r) => r.is_consolidated_parent).length;
+    const mergeCandidates = Object.keys(mergeGroupColorByRequestId).length;
+    const totalIdleVeh = available.length;
+    const totalIdleDrv = idleDrivers.length;
+    const deficitPools = poolStats.filter((p) => p.deficit > 0).length;
+    return {
+      totalRequests: requests.length,
+      totalPax,
+      urgent,
+      consolidatedParents,
+      mergeCandidates,
+      totalIdleVeh,
+      totalIdleDrv,
+      deficitPools,
+    };
+  }, [requests, mergeGroupColorByRequestId, available, idleDrivers, poolStats]);
+
 
   // Init map
   useEffect(() => {
