@@ -274,9 +274,10 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
       is_active: formData.status !== "out_of_service",
     };
 
-    const validation = vehicleSchema.safeParse(cleanData);
+    const validation = v.validateAll(cleanData);
     if (!validation.success) {
-      toast.error("Validation Error", { description: validation.error.errors[0].message });
+      const firstMessage = Object.values(validation.errors)[0];
+      toast.error("Please fix the highlighted fields", { description: firstMessage });
       return;
     }
     updateMutation.mutate(cleanData);
