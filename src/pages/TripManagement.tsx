@@ -533,18 +533,6 @@ const TripManagement = () => {
                       sharedRide={sharedRideMap[req.id] ?? null}
                     />
                   ))}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                <AnimatePresence mode="popLayout">
-                  {filteredTrips.map((req: any) => (
-                    <VehicleRequestCard
-                      key={req.id}
-                      request={req}
-                      onApprove={canApprove ? handleQuickApprove : undefined}
-                      onReject={canApprove ? handleQuickReject : undefined}
-                      onViewDetails={handleViewDetails}
-                      onAssign={(r) => { setSelectedTrip(r); setAssignOpen(true); }}
-                    />
-                  ))}
                 </AnimatePresence>
                 {filteredTrips.length === 0 && (
                   <div className="col-span-full text-center py-16 text-muted-foreground">
