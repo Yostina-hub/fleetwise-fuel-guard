@@ -99,24 +99,41 @@ export const fetchLematMapStyle = async (
 
     const proxyBase = getProxyTileUrl();
 
-    // Rewrite vector tile URLs to go through the proxy.
-    // Slashes in the ?path= query string are valid; we keep the {z}/{x}/{y}
-    // template tokens intact so MapLibre can substitute them at fetch time.
+    // Helper: turn any Lemat-origin or relative tile/glyph URL into a proxied one.
+    // Some style JSONs use relative paths (e.g. "tiles/{z}/{x}-{y}.pbf"); when
+    // MapLibre resolves those it uses the *style URL's* origin, which after our
+    // proxy rewrite is the Supabase Functions root → that's why we were getting
+    // 404s like ".../functions/v1/4864-5119.pbf".
+    const toProxied = (raw: string): string => {
+      if (!raw) return raw;
+      // Already proxied — leave it alone.
+      if (raw.startsWith(proxyBase)) return raw;
+      // Strip Lemat origin if present, otherwise treat as relative.
+      const path = raw
+        .replace(/^https?:\/\/lemat\.goffice\.et\/+/, '')
+        .replace(/^\/+/, '');
+      return `${proxyBase}?path=${path}`;
+    };
+
+    // Rewrite vector tile URLs to go through the proxy
     if (styleJson.sources) {
       for (const src of Object.values(styleJson.sources) as any[]) {
         if (src.tiles && Array.isArray(src.tiles)) {
-          src.tiles = src.tiles.map((tileUrl: string) => {
-            const path = tileUrl.replace('https://lemat.goffice.et/', '');
-            return `${proxyBase}?path=${path}`;
-          });
+          src.tiles = src.tiles.map((tileUrl: string) => toProxied(tileUrl));
+        }
+        // Some sources use a TileJSON `url` instead of inline tiles[]
+        if (typeof src.url === 'string') {
+          src.url = toProxied(src.url);
         }
       }
     }
 
-    // Rewrite glyph URLs through proxy (keep {fontstack}/{range} tokens intact)
-    if (styleJson.glyphs && typeof styleJson.glyphs === 'string' && styleJson.glyphs.startsWith('https://lemat.goffice.et/')) {
-      const glyphPath = styleJson.glyphs.replace('https://lemat.goffice.et/', '');
-      styleJson.glyphs = `${proxyBase}?path=${glyphPath}`;
+    // Rewrite glyph + sprite URLs through proxy (keep template tokens intact)
+    if (typeof styleJson.glyphs === 'string') {
+      styleJson.glyphs = toProxied(styleJson.glyphs);
+    }
+    if (typeof (styleJson as any).sprite === 'string') {
+      (styleJson as any).sprite = toProxied((styleJson as any).sprite);
     }
 
     return styleJson;
