@@ -374,9 +374,34 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                       </SelectContent>
                     </Select>
                   </Field>
-                  <Field label="Make *"><Input value={formData.make} onChange={e => set("make", e.target.value)} /></Field>
-                  <Field label="Model *"><Input value={formData.model} onChange={e => set("model", e.target.value)} /></Field>
-                  <Field label="Year *"><Input type="number" value={formData.year} onChange={e => set("year", parseInt(e.target.value) || 0)} /></Field>
+                  <Field label="Make *" error={fv.getError("make")}>
+                    <Input
+                      value={formData.make}
+                      onChange={e => { set("make", e.target.value); fv.handleChange("make", e.target.value); }}
+                      onBlur={e => fv.handleBlur("make", e.target.value)}
+                      aria-invalid={!!fv.getError("make")}
+                      className={cn(fv.getError("make") && "border-destructive focus-visible:ring-destructive")}
+                    />
+                  </Field>
+                  <Field label="Model *" error={fv.getError("model")}>
+                    <Input
+                      value={formData.model}
+                      onChange={e => { set("model", e.target.value); fv.handleChange("model", e.target.value); }}
+                      onBlur={e => fv.handleBlur("model", e.target.value)}
+                      aria-invalid={!!fv.getError("model")}
+                      className={cn(fv.getError("model") && "border-destructive focus-visible:ring-destructive")}
+                    />
+                  </Field>
+                  <Field label="Year *" error={fv.getError("year")}>
+                    <Input
+                      type="number"
+                      value={formData.year}
+                      onChange={e => { const n = parseInt(e.target.value) || 0; set("year", n); fv.handleChange("year", n); }}
+                      onBlur={e => fv.handleBlur("year", parseInt(e.target.value) || 0)}
+                      aria-invalid={!!fv.getError("year")}
+                      className={cn(fv.getError("year") && "border-destructive focus-visible:ring-destructive")}
+                    />
+                  </Field>
                   <Field label="Color"><Input value={formData.color} onChange={e => set("color", e.target.value)} /></Field>
                   <Field label="VIN"><Input value={formData.vin} onChange={e => set("vin", e.target.value)} maxLength={17} /></Field>
                   <Field label="Energy Type">
@@ -565,11 +590,12 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) {
   return (
     <div className="space-y-1.5">
       <Label className="text-sm">{label}</Label>
       {children}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }
