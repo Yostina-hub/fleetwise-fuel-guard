@@ -865,10 +865,15 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
 
 function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">{icon}{title}</h3>
+    <section className="rounded-lg border bg-card/40 p-4 md:p-5 space-y-4">
+      <header className="flex items-center gap-2 pb-3 border-b">
+        <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary/10">
+          {icon}
+        </span>
+        <h3 className="text-sm md:text-base font-semibold tracking-tight text-foreground">{title}</h3>
+      </header>
       {children}
-    </div>
+    </section>
   );
 }
 
