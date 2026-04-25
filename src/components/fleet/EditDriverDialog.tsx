@@ -93,6 +93,7 @@ const initialForm = {
   license_issue_date: "",
   license_expiry: "",
   employment_type: "regular",
+  contract_end_date: "",
   status: "active",
   joining_date: "",
   department: "",
