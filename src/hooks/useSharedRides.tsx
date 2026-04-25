@@ -49,6 +49,29 @@ export interface FindMatchesParams {
   destinationRadiusKm?: number;
 }
 
+/** Tier-2: a ride that *passes through* the requester's pickup, instead of
+ *  starting nearby. Includes the actual detour the driver would take. */
+export interface SharedRideProximityMatch {
+  ride_id: string;
+  vehicle_id: string | null;
+  driver_id: string | null;
+  pool_code: string | null;
+  origin_label: string;
+  destination_label: string;
+  departure_at: string;
+  available_seats: number;
+  total_seats: number;
+  origin_lat: number;
+  origin_lng: number;
+  destination_lat: number;
+  destination_lng: number;
+  detour_km: number;
+  destination_distance_km: number;
+  time_delta_minutes: number;
+  corridor_km_used: number;
+  match_score: number;
+}
+
 const isReady = (p: FindMatchesParams) =>
   p.originLat != null &&
   p.originLng != null &&
