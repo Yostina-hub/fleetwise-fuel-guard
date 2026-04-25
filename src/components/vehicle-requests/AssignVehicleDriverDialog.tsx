@@ -40,6 +40,9 @@ import {
   Map as MapIcon,
   Phone,
   IdCard,
+  Users as UsersIcon,
+  AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 import { AssignmentDetailsPanel } from "./AssignmentDetailsPanel";
 import { OpsMapView } from "./OpsMapView";
@@ -53,7 +56,12 @@ interface VehicleOption {
   model?: string | null;
   vehicle_class?: string | null;
   vehicle_type?: string | null;
+  vehicle_category?: string | null;
+  seating_capacity?: number | null;
   status?: string | null;
+  fits_capacity?: boolean;
+  availability?: string | null;
+  in_pool?: boolean;
 }
 
 interface DriverOption {
@@ -63,6 +71,18 @@ interface DriverOption {
   phone?: string | null;
   license_class?: string | null;
   status?: string | null;
+  /** Computed license suitability for the currently selected vehicle. */
+  license?: {
+    matches: boolean;
+    expired: boolean;
+    expiresSoon: boolean;
+    unverified: boolean;
+    summary: string;
+    required: string;
+  } | null;
+  availability?: string | null;
+  in_pool?: boolean;
+  is_top_pick?: boolean;
 }
 
 interface SuggestedVehicle {
@@ -74,6 +94,8 @@ interface SuggestedVehicle {
   in_geofence?: boolean;
   is_top_pick?: boolean;
   assigned_driver_id?: string | null;
+  seating_capacity?: number | null;
+  fits_capacity?: boolean;
 }
 
 interface Props {
@@ -248,7 +270,11 @@ export const AssignVehicleDriverDialog = ({
                     <SectionLabel
                       icon={<Sparkles className="w-3.5 h-3.5 text-primary" />}
                       title="Smart suggestions"
-                      hint="Closest GPS · pool roster"
+                      hint={
+                        request?.passengers
+                          ? `Fits ${request.passengers} pax · closest GPS · in pool`
+                          : "Closest GPS · pool roster"
+                      }
                     />
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {suggested.slice(0, 5).map((s) => {
@@ -274,6 +300,12 @@ export const AssignVehicleDriverDialog = ({
                             <span className="font-semibold">
                               {s.plate_number}
                             </span>
+                            {s.seating_capacity != null && (
+                              <span className="flex items-center gap-0.5 text-muted-foreground">
+                                <UsersIcon className="w-2.5 h-2.5" />
+                                {s.seating_capacity}
+                              </span>
+                            )}
                             <span className="text-muted-foreground">
                               {s.distance_km != null
                                 ? `${s.distance_km} km`
@@ -391,14 +423,27 @@ export const AssignVehicleDriverDialog = ({
                                     </span>
                                   </span>
                                 </span>
-                                {v.vehicle_class && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[10px] shrink-0"
-                                  >
-                                    {v.vehicle_class}
-                                  </Badge>
-                                )}
+                                <span className="flex items-center gap-1 shrink-0">
+                                  {v.seating_capacity != null && (
+                                    <Badge
+                                      variant={v.fits_capacity === false ? "destructive" : "secondary"}
+                                      className="text-[10px] gap-0.5 px-1.5"
+                                      title={
+                                        v.fits_capacity === false
+                                          ? `Only ${v.seating_capacity} seats — request needs more`
+                                          : `${v.seating_capacity} seats`
+                                      }
+                                    >
+                                      <UsersIcon className="w-2.5 h-2.5" />
+                                      {v.seating_capacity}
+                                    </Badge>
+                                  )}
+                                  {(v.vehicle_class || v.vehicle_category) && (
+                                    <Badge variant="outline" className="text-[10px]">
+                                      {v.vehicle_class || v.vehicle_category}
+                                    </Badge>
+                                  )}
+                                </span>
                               </button>
                             );
                           })}
@@ -486,6 +531,9 @@ export const AssignVehicleDriverDialog = ({
                                     </span>
                                   </span>
                                 </span>
+                                {d.license && (
+                                  <LicenseBadge evaluation={d.license} />
+                                )}
                               </button>
                             );
                           })}
@@ -655,5 +703,40 @@ const EmptyState = ({ text }: { text: string }) => (
     {text}
   </div>
 );
+
+/**
+ * License-suitability badge — turns the LicenseEvaluation into a single
+ * colour-coded chip so dispatchers can see "Class 3 ✓" / "Needs Class 4" /
+ * "Expired" at a glance.
+ */
+const LicenseBadge = ({
+  evaluation,
+}: {
+  evaluation: NonNullable<DriverOption["license"]>;
+}) => {
+  const isBad = !evaluation.matches || evaluation.expired;
+  const isWarn = !isBad && (evaluation.expiresSoon || evaluation.unverified);
+
+  let cls = "bg-emerald-500/10 text-emerald-600 border-emerald-500/30";
+  let icon = <ShieldCheck className="w-2.5 h-2.5" />;
+  if (isBad) {
+    cls = "bg-destructive/10 text-destructive border-destructive/30";
+    icon = <AlertTriangle className="w-2.5 h-2.5" />;
+  } else if (isWarn) {
+    cls = "bg-warning/10 text-warning border-warning/30";
+    icon = <AlertTriangle className="w-2.5 h-2.5" />;
+  }
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn("text-[10px] gap-0.5 shrink-0 font-normal", cls)}
+      title={evaluation.summary}
+    >
+      {icon}
+      {evaluation.summary}
+    </Badge>
+  );
+};
 
 export default AssignVehicleDriverDialog;
