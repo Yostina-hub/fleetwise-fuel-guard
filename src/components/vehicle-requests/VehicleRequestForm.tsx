@@ -43,6 +43,8 @@ import { DateRangeField } from "./DateRangeField";
 import { RouteField } from "./RouteField";
 import { deriveVisibility } from "./visibility";
 import { RouteMapPreview } from "./RouteMapPreview";
+import { SharedRideMatchSuggestions } from "./SharedRideMatchSuggestions";
+import { useJoinSharedRide, type SharedRideMatch } from "@/hooks/useSharedRides";
 
 import { PendingRatingsBlocker } from "@/components/ratings/PendingRatingsBlocker";
 import { usePendingRatings } from "@/hooks/usePendingRatings";
