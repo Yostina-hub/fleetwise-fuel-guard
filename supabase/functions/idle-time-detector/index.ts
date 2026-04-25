@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
 });
 
 async function maybeAlert(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   vehicleId: string,
   start: any,
   end: any,
