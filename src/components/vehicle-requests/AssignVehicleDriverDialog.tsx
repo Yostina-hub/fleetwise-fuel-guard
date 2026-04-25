@@ -233,63 +233,102 @@ export const AssignVehicleDriverDialog = ({
           {/* ===== ASSIGNMENT TAB ===== */}
           <TabsContent
             value="assignment"
-            className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden"
+            className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden overflow-hidden"
           >
-            <div className="h-full grid grid-cols-1 lg:grid-cols-[minmax(340px,1fr)_minmax(420px,1.3fr)]">
-              {/* LEFT: pickers */}
-              <ScrollArea className="border-b lg:border-b-0 lg:border-r max-h-[62vh] lg:max-h-none">
-                <div className="p-5 space-y-5">
-                  {/* Smart suggestions */}
-                  {suggested.length > 0 && (
-                    <section className="space-y-2">
-                      <SectionLabel
-                        icon={<Sparkles className="w-3.5 h-3.5 text-primary" />}
-                        title="Smart suggestions"
-                        hint="Closest GPS · pool roster"
-                      />
-                      <div className="flex flex-wrap gap-1.5">
-                        {suggested.slice(0, 5).map((s) => {
-                          const isSel = vehicleId === s.id;
-                          return (
-                            <button
-                              type="button"
-                              key={s.id}
-                              onClick={() => handleSuggestionPick(s)}
-                              className={cn(
-                                "text-[11px] rounded-md border px-2.5 py-1.5 flex items-center gap-1.5 transition-all",
-                                isSel
-                                  ? "border-primary bg-primary/10 text-primary shadow-sm"
-                                  : "border-border bg-background hover:bg-accent hover:border-primary/30",
-                              )}
-                            >
-                              {s.is_top_pick && (
-                                <Sparkles className="w-3 h-3 text-primary" />
-                              )}
-                              {s.in_geofence && (
-                                <MapPin className="w-3 h-3 text-emerald-500" />
-                              )}
-                              <span className="font-semibold">
-                                {s.plate_number}
-                              </span>
-                              <span className="text-muted-foreground">
-                                {s.distance_km != null
-                                  ? `${s.distance_km} km`
-                                  : "no GPS"}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  )}
-
-                  {/* Vehicle picker */}
-                  <section className="space-y-2">
+            <div className="h-full grid grid-cols-1 lg:grid-cols-[minmax(320px,1fr)_minmax(380px,1.2fr)] min-h-0">
+              {/* LEFT: pickers (sub-tabs Vehicle | Driver) */}
+              <div className="flex flex-col min-h-0 border-b lg:border-b-0 lg:border-r overflow-hidden">
+                {/* Smart suggestions — always visible above sub-tabs */}
+                {suggested.length > 0 && (
+                  <div className="px-4 pt-4 pb-3 border-b bg-muted/20 shrink-0">
                     <SectionLabel
-                      icon={<Truck className="w-3.5 h-3.5" />}
-                      title="Vehicle"
-                      action={
-                        selectedVehicle && (
+                      icon={<Sparkles className="w-3.5 h-3.5 text-primary" />}
+                      title="Smart suggestions"
+                      hint="Closest GPS · pool roster"
+                    />
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {suggested.slice(0, 5).map((s) => {
+                        const isSel = vehicleId === s.id;
+                        return (
+                          <button
+                            type="button"
+                            key={s.id}
+                            onClick={() => handleSuggestionPick(s)}
+                            className={cn(
+                              "text-[11px] rounded-md border px-2.5 py-1.5 flex items-center gap-1.5 transition-all",
+                              isSel
+                                ? "border-primary bg-primary/10 text-primary shadow-sm"
+                                : "border-border bg-background hover:bg-accent hover:border-primary/30",
+                            )}
+                          >
+                            {s.is_top_pick && (
+                              <Sparkles className="w-3 h-3 text-primary" />
+                            )}
+                            {s.in_geofence && (
+                              <MapPin className="w-3 h-3 text-emerald-500" />
+                            )}
+                            <span className="font-semibold">
+                              {s.plate_number}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {s.distance_km != null
+                                ? `${s.distance_km} km`
+                                : "no GPS"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <Tabs
+                  value={pickerTab}
+                  onValueChange={(v) => setPickerTab(v as "vehicle" | "driver")}
+                  className="flex-1 min-h-0 flex flex-col"
+                >
+                  <div className="px-4 pt-3 pb-2 shrink-0 flex items-center gap-2">
+                    <TabsList className="h-8 grid grid-cols-2 flex-1 max-w-[260px]">
+                      <TabsTrigger value="vehicle" className="text-xs h-7">
+                        <Truck className="w-3 h-3 mr-1" />
+                        Vehicle
+                        {selectedVehicle && (
+                          <CheckCircle className="w-2.5 h-2.5 ml-1 text-emerald-500" />
+                        )}
+                      </TabsTrigger>
+                      <TabsTrigger value="driver" className="text-xs h-7">
+                        <UserCheck className="w-3 h-3 mr-1" />
+                        Driver
+                        {selectedDriver && (
+                          <CheckCircle className="w-2.5 h-2.5 ml-1 text-emerald-500" />
+                        )}
+                      </TabsTrigger>
+                    </TabsList>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="lg:hidden h-8 text-xs ml-auto shrink-0"
+                      onClick={() => setShowDetailsMobile((v) => !v)}
+                      disabled={!vehicleId && !driverId}
+                    >
+                      {showDetailsMobile ? "Hide" : "Show"} details
+                    </Button>
+                  </div>
+
+                  <TabsContent
+                    value="vehicle"
+                    className="flex-1 min-h-0 mt-0 flex flex-col data-[state=inactive]:hidden"
+                  >
+                    <div className="px-4 pb-2 shrink-0">
+                      <SearchInput
+                        value={vehicleSearch}
+                        onChange={setVehicleSearch}
+                        placeholder="Search plate, make, model, class…"
+                      />
+                      {selectedVehicle && (
+                        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          Selected:
                           <Badge
                             variant="secondary"
                             className="text-[10px] h-5 px-1.5 gap-1"
@@ -297,187 +336,196 @@ export const AssignVehicleDriverDialog = ({
                             <CheckCircle className="w-2.5 h-2.5" />
                             {selectedVehicle.plate_number}
                           </Badge>
-                        )
-                      }
-                    />
-                    <SearchInput
-                      value={vehicleSearch}
-                      onChange={setVehicleSearch}
-                      placeholder="Search plate, make, model, class…"
-                    />
-                    <div className="rounded-md border bg-card overflow-hidden">
-                      <div className="max-h-60 overflow-auto divide-y divide-border/60">
-                        {filteredVehicles.length === 0 && (
-                          <EmptyState text="No vehicles match" />
-                        )}
-                        {filteredVehicles.slice(0, 50).map((v) => {
-                          const isSel = vehicleId === v.id;
-                          return (
-                            <button
-                              type="button"
-                              key={v.id}
-                              onClick={() => setVehicleId(v.id)}
-                              className={cn(
-                                "w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent",
-                                isSel &&
-                                  "bg-primary/10 text-primary hover:bg-primary/15",
-                              )}
-                            >
-                              <span className="flex items-center gap-2 min-w-0">
-                                <span
-                                  className={cn(
-                                    "h-6 w-6 rounded-md flex items-center justify-center shrink-0",
-                                    isSel
-                                      ? "bg-primary text-primary-foreground"
-                                      : "bg-muted text-muted-foreground",
-                                  )}
-                                >
-                                  {isSel ? (
-                                    <CheckCircle className="w-3 h-3" />
-                                  ) : (
-                                    <Truck className="w-3 h-3" />
-                                  )}
-                                </span>
-                                <span className="min-w-0">
-                                  <span className="font-semibold block truncate">
-                                    {v.plate_number}
-                                  </span>
-                                  <span className="text-muted-foreground text-[10px] block truncate">
-                                    {[v.make, v.model]
-                                      .filter(Boolean)
-                                      .join(" ") || "—"}
-                                  </span>
-                                </span>
-                              </span>
-                              {v.vehicle_class && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] shrink-0"
-                                >
-                                  {v.vehicle_class}
-                                </Badge>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
+                        </div>
+                      )}
                     </div>
-                  </section>
+                    <ScrollArea className="flex-1 min-h-0 px-4 pb-4">
+                      <div className="rounded-md border bg-card overflow-hidden">
+                        <div className="divide-y divide-border/60">
+                          {filteredVehicles.length === 0 && (
+                            <EmptyState text="No vehicles match" />
+                          )}
+                          {filteredVehicles.slice(0, 100).map((v) => {
+                            const isSel = vehicleId === v.id;
+                            return (
+                              <button
+                                type="button"
+                                key={v.id}
+                                onClick={() => {
+                                  setVehicleId(v.id);
+                                  if (!driverId) setPickerTab("driver");
+                                }}
+                                className={cn(
+                                  "w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent",
+                                  isSel &&
+                                    "bg-primary/10 text-primary hover:bg-primary/15",
+                                )}
+                              >
+                                <span className="flex items-center gap-2 min-w-0">
+                                  <span
+                                    className={cn(
+                                      "h-6 w-6 rounded-md flex items-center justify-center shrink-0",
+                                      isSel
+                                        ? "bg-primary text-primary-foreground"
+                                        : "bg-muted text-muted-foreground",
+                                    )}
+                                  >
+                                    {isSel ? (
+                                      <CheckCircle className="w-3 h-3" />
+                                    ) : (
+                                      <Truck className="w-3 h-3" />
+                                    )}
+                                  </span>
+                                  <span className="min-w-0">
+                                    <span className="font-semibold block truncate">
+                                      {v.plate_number}
+                                    </span>
+                                    <span className="text-muted-foreground text-[10px] block truncate">
+                                      {[v.make, v.model]
+                                        .filter(Boolean)
+                                        .join(" ") || "—"}
+                                    </span>
+                                  </span>
+                                </span>
+                                {v.vehicle_class && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] shrink-0"
+                                  >
+                                    {v.vehicle_class}
+                                  </Badge>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </ScrollArea>
+                  </TabsContent>
 
-                  {/* Driver picker */}
-                  <section className="space-y-2">
-                    <SectionLabel
-                      icon={<UserCheck className="w-3.5 h-3.5" />}
-                      title="Driver"
-                      action={
-                        selectedDriver && (
+                  <TabsContent
+                    value="driver"
+                    className="flex-1 min-h-0 mt-0 flex flex-col data-[state=inactive]:hidden"
+                  >
+                    <div className="px-4 pb-2 shrink-0">
+                      <SearchInput
+                        value={driverSearch}
+                        onChange={setDriverSearch}
+                        placeholder="Search name, phone, license…"
+                      />
+                      {selectedDriver && (
+                        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          Selected:
                           <Badge
                             variant="secondary"
                             className="text-[10px] h-5 px-1.5 gap-1"
                           >
                             <CheckCircle className="w-2.5 h-2.5" />
-                            {selectedDriver.first_name}{" "}
-                            {selectedDriver.last_name}
+                            {selectedDriver.first_name} {selectedDriver.last_name}
                           </Badge>
-                        )
-                      }
-                    />
-                    <SearchInput
-                      value={driverSearch}
-                      onChange={setDriverSearch}
-                      placeholder="Search name, phone, license…"
-                    />
-                    <div className="rounded-md border bg-card overflow-hidden">
-                      <div className="max-h-60 overflow-auto divide-y divide-border/60">
-                        {filteredDrivers.length === 0 && (
-                          <EmptyState text="No drivers match" />
-                        )}
-                        {filteredDrivers.slice(0, 50).map((d) => {
-                          const isSel = driverId === d.id;
-                          const initials =
-                            `${d.first_name?.[0] || ""}${d.last_name?.[0] || ""}`.toUpperCase();
-                          return (
-                            <button
-                              type="button"
-                              key={d.id}
-                              onClick={() => setDriverId(d.id)}
-                              className={cn(
-                                "w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent",
-                                isSel &&
-                                  "bg-primary/10 text-primary hover:bg-primary/15",
-                              )}
-                            >
-                              <span className="flex items-center gap-2 min-w-0">
-                                <span
-                                  className={cn(
-                                    "h-6 w-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-semibold",
-                                    isSel
-                                      ? "bg-primary text-primary-foreground"
-                                      : "bg-muted text-muted-foreground",
-                                  )}
-                                >
-                                  {isSel ? (
-                                    <CheckCircle className="w-3 h-3" />
-                                  ) : (
-                                    initials || "?"
-                                  )}
-                                </span>
-                                <span className="min-w-0">
-                                  <span className="font-semibold block truncate">
-                                    {d.first_name} {d.last_name}
-                                  </span>
-                                  <span className="text-muted-foreground text-[10px] flex items-center gap-1.5 truncate">
-                                    {d.phone && (
-                                      <span className="flex items-center gap-0.5">
-                                        <Phone className="w-2.5 h-2.5" />
-                                        {d.phone}
-                                      </span>
-                                    )}
-                                    {d.license_class && (
-                                      <span className="flex items-center gap-0.5">
-                                        <IdCard className="w-2.5 h-2.5" />
-                                        {d.license_class}
-                                      </span>
-                                    )}
-                                  </span>
-                                </span>
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                        </div>
+                      )}
                     </div>
-                  </section>
-                </div>
-              </ScrollArea>
+                    <ScrollArea className="flex-1 min-h-0 px-4 pb-4">
+                      <div className="rounded-md border bg-card overflow-hidden">
+                        <div className="divide-y divide-border/60">
+                          {filteredDrivers.length === 0 && (
+                            <EmptyState text="No drivers match" />
+                          )}
+                          {filteredDrivers.slice(0, 100).map((d) => {
+                            const isSel = driverId === d.id;
+                            const initials =
+                              `${d.first_name?.[0] || ""}${d.last_name?.[0] || ""}`.toUpperCase();
+                            return (
+                              <button
+                                type="button"
+                                key={d.id}
+                                onClick={() => setDriverId(d.id)}
+                                className={cn(
+                                  "w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent",
+                                  isSel &&
+                                    "bg-primary/10 text-primary hover:bg-primary/15",
+                                )}
+                              >
+                                <span className="flex items-center gap-2 min-w-0">
+                                  <span
+                                    className={cn(
+                                      "h-6 w-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-semibold",
+                                      isSel
+                                        ? "bg-primary text-primary-foreground"
+                                        : "bg-muted text-muted-foreground",
+                                    )}
+                                  >
+                                    {isSel ? (
+                                      <CheckCircle className="w-3 h-3" />
+                                    ) : (
+                                      initials || "?"
+                                    )}
+                                  </span>
+                                  <span className="min-w-0">
+                                    <span className="font-semibold block truncate">
+                                      {d.first_name} {d.last_name}
+                                    </span>
+                                    <span className="text-muted-foreground text-[10px] flex items-center gap-1.5 truncate">
+                                      {d.phone && (
+                                        <span className="flex items-center gap-0.5">
+                                          <Phone className="w-2.5 h-2.5" />
+                                          {d.phone}
+                                        </span>
+                                      )}
+                                      {d.license_class && (
+                                        <span className="flex items-center gap-0.5">
+                                          <IdCard className="w-2.5 h-2.5" />
+                                          {d.license_class}
+                                        </span>
+                                      )}
+                                    </span>
+                                  </span>
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </ScrollArea>
+                  </TabsContent>
+                </Tabs>
+              </div>
 
-              {/* RIGHT: live assignment details */}
-              <ScrollArea className="max-h-[62vh] lg:max-h-none bg-muted/10">
-                <div className="p-5">
-                  {!vehicleId && !driverId ? (
-                    <div className="h-full min-h-[40vh] flex flex-col items-center justify-center gap-3 text-center py-12 rounded-lg border border-dashed bg-background/60">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                        <Sparkles className="w-6 h-6" />
+              {/* RIGHT: live assignment details (collapsible on mobile) */}
+              <div
+                className={cn(
+                  "min-h-0 bg-muted/10 flex-col lg:flex",
+                  showDetailsMobile ? "flex" : "hidden",
+                )}
+              >
+                <ScrollArea className="flex-1 min-h-0">
+                  <div className="p-4">
+                    {!vehicleId && !driverId ? (
+                      <div className="h-full min-h-[40vh] flex flex-col items-center justify-center gap-3 text-center py-12 rounded-lg border border-dashed bg-background/60">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                          <Sparkles className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">
+                            Pick a vehicle and driver
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                            Live specs, GPS, compliance, route, estimated cost,
+                            and the SMS preview will appear here.
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold">
-                          Pick a vehicle and driver
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                          Live specs, GPS, compliance, route, estimated cost,
-                          and the SMS preview will appear here.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <AssignmentDetailsPanel
-                      request={request}
-                      vehicleId={vehicleId}
-                      driverId={driverId}
-                    />
-                  )}
-                </div>
-              </ScrollArea>
+                    ) : (
+                      <AssignmentDetailsPanel
+                        request={request}
+                        vehicleId={vehicleId}
+                        driverId={driverId}
+                      />
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
           </TabsContent>
 
