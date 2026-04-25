@@ -274,133 +274,152 @@ export const MergedTripStopsPanel = ({
   }, [children, neededUntil]);
 
   return (
-    <div className="rounded-lg border border-primary/30 bg-primary/5 overflow-hidden">
-      {/* ── HEADER STRIP ── */}
-      <div className="px-3 py-2 bg-primary/10 border-b border-primary/20 flex flex-wrap items-center gap-2">
+    <div className="rounded-lg border border-primary/30 bg-primary/[0.03] overflow-hidden">
+      {/* ── COMPACT HEADER (always visible, click to expand) ── */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full px-3 py-2 flex items-center gap-2 text-left hover:bg-primary/5 transition-colors"
+        aria-expanded={open}
+      >
         <GitMerge className="w-4 h-4 text-primary shrink-0" />
-        <span className="text-xs font-semibold text-primary">Consolidated trip</span>
-        <Badge variant="secondary" className="text-[10px] gap-1">
+        <span className="text-xs font-semibold text-primary">
+          Consolidated trip
+        </span>
+        <Badge variant="secondary" className="text-[10px] gap-1 h-5">
           <RouteIcon className="w-2.5 h-2.5" />
           {stopCount} stop{stopCount === 1 ? "" : "s"}
         </Badge>
-        <Badge variant="secondary" className="text-[10px] gap-1">
+        <Badge variant="secondary" className="text-[10px] gap-1 h-5">
           <Users className="w-2.5 h-2.5" />
-          {totalPax} pax total
+          {totalPax} pax
         </Badge>
+        {earliest && (
+          <span className="text-[11px] text-muted-foreground hidden sm:inline-flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {format(earliest, "MMM d · HH:mm")}
+            {latest && (
+              <>
+                <span>→</span>
+                {format(latest, "HH:mm")}
+              </>
+            )}
+          </span>
+        )}
         {poolName && (
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-[10px] h-5 hidden md:inline-flex">
             {poolName}
           </Badge>
         )}
-        {mergeStrategy && (
-          <Badge variant="outline" className="text-[10px] capitalize ml-auto">
-            {String(mergeStrategy).replace(/_/g, " ")}
-          </Badge>
-        )}
-      </div>
-
-      {/* ── BODY ── */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-0">
-        {/* Stops list */}
-        <div className="border-b md:border-b-0 md:border-r border-border/40">
-          {isLoading ? (
-            <div className="text-center py-8 text-xs text-muted-foreground">
-              <Loader2 className="w-4 h-4 inline animate-spin mr-1.5" />
-              Loading merged stops…
-            </div>
-          ) : children.length === 0 ? (
-            <div className="text-center py-6 text-xs text-muted-foreground">
-              No child requests linked to this consolidated trip.
-            </div>
-          ) : (
-            <ScrollArea className="h-[260px]">
-              <ol className="divide-y divide-border/40">
-                {children.map((c, idx) => {
-                  const stopNo = idx + 1;
-                  return (
-                    <li key={c.id} className="px-3 py-2.5 text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0">
-                          {stopNo}
-                        </span>
-                        <span className="font-mono font-semibold">
-                          {c.request_number}
-                        </span>
-                        {c.requester_name && (
-                          <span className="text-muted-foreground flex items-center gap-1 truncate">
-                            <UserIcon className="w-2.5 h-2.5" />
-                            {c.requester_name}
-                          </span>
-                        )}
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] h-4 px-1 ml-auto gap-0.5"
-                        >
-                          <Users className="w-2.5 h-2.5" />
-                          {c.passengers ?? 0}
-                        </Badge>
-                      </div>
-                      <div className="pl-7 mt-1 space-y-0.5 text-[11px]">
-                        <div className="flex items-start gap-1.5">
-                          <CircleDot className="w-3 h-3 text-primary mt-0.5 shrink-0" />
-                          <span className="text-foreground truncate">
-                            <span className="text-muted-foreground">Pickup:</span>{" "}
-                            {c.departure_place || "—"}
-                          </span>
-                        </div>
-                        <div className="flex items-start gap-1.5">
-                          <Flag className="w-3 h-3 text-emerald-500 mt-0.5 shrink-0" />
-                          <span className="text-foreground truncate">
-                            <span className="text-muted-foreground">Drop:</span>{" "}
-                            {c.destination || "—"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Clock className="w-2.5 h-2.5" />
-                          {format(new Date(c.needed_from), "EEE MMM d · HH:mm")}
-                          {c.needed_until && (
-                            <>
-                              <span>→</span>
-                              {format(new Date(c.needed_until), "HH:mm")}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-            </ScrollArea>
-          )}
-        </div>
-
-        {/* Mini map */}
-        <div className="relative h-[260px]">
-          <div ref={containerRef} className="w-full h-full" />
-          <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur rounded-md border px-1.5 py-1 text-[10px] flex items-center gap-1.5 shadow-sm">
-            <MapPin className="w-3 h-3 text-primary" />
-            <span>Pickup</span>
-            <span className="w-2 h-2 border border-primary ml-1" />
-            <span>Drop</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer time window */}
-      {earliest && (
-        <div className="px-3 py-1.5 border-t border-primary/20 bg-primary/5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <Clock className="w-3 h-3" />
-          Trip window:
-          <span className="text-foreground font-medium">
-            {format(earliest, "MMM d · HH:mm")}
-          </span>
-          {latest && (
+        <span className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
+          {open ? (
             <>
-              <span>→</span>
-              <span className="text-foreground font-medium">
-                {format(latest, "MMM d · HH:mm")}
-              </span>
+              Hide stops <ChevronUp className="w-3.5 h-3.5" />
             </>
+          ) : (
+            <>
+              View stops &amp; map <ChevronDown className="w-3.5 h-3.5" />
+            </>
+          )}
+        </span>
+      </button>
+
+      {/* ── EXPANDED BODY ── */}
+      {open && (
+        <div className="border-t border-primary/20">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_240px] gap-0">
+            {/* Stops list */}
+            <div className="border-b md:border-b-0 md:border-r border-border/40">
+              {isLoading ? (
+                <div className="text-center py-8 text-xs text-muted-foreground">
+                  <Loader2 className="w-4 h-4 inline animate-spin mr-1.5" />
+                  Loading merged stops…
+                </div>
+              ) : children.length === 0 ? (
+                <div className="text-center py-6 text-xs text-muted-foreground">
+                  No child requests linked to this consolidated trip.
+                </div>
+              ) : (
+                <ScrollArea className="h-[220px]">
+                  <ol className="divide-y divide-border/40">
+                    {children.map((c, idx) => {
+                      const stopNo = idx + 1;
+                      return (
+                        <li key={c.id} className="px-3 py-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0">
+                              {stopNo}
+                            </span>
+                            <span className="font-mono font-semibold">
+                              {c.request_number}
+                            </span>
+                            {c.requester_name && (
+                              <span className="text-muted-foreground flex items-center gap-1 truncate">
+                                <UserIcon className="w-2.5 h-2.5" />
+                                {c.requester_name}
+                              </span>
+                            )}
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] h-4 px-1 ml-auto gap-0.5"
+                            >
+                              <Users className="w-2.5 h-2.5" />
+                              {c.passengers ?? 0}
+                            </Badge>
+                          </div>
+                          <div className="pl-7 mt-1 space-y-0.5 text-[11px]">
+                            <div className="flex items-start gap-1.5">
+                              <CircleDot className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+                              <span className="text-foreground truncate">
+                                <span className="text-muted-foreground">Pickup:</span>{" "}
+                                {c.departure_place || "—"}
+                              </span>
+                            </div>
+                            <div className="flex items-start gap-1.5">
+                              <Flag className="w-3 h-3 text-emerald-500 mt-0.5 shrink-0" />
+                              <span className="text-foreground truncate">
+                                <span className="text-muted-foreground">Drop:</span>{" "}
+                                {c.destination || "—"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Clock className="w-2.5 h-2.5" />
+                              {format(new Date(c.needed_from), "EEE MMM d · HH:mm")}
+                              {c.needed_until && (
+                                <>
+                                  <span>→</span>
+                                  {format(new Date(c.needed_until), "HH:mm")}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </ScrollArea>
+              )}
+            </div>
+
+            {/* Mini map */}
+            <div className="relative h-[220px]">
+              <div ref={containerRef} className="w-full h-full" />
+              <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur rounded-md border px-1.5 py-1 text-[10px] flex items-center gap-1.5 shadow-sm">
+                <MapPin className="w-3 h-3 text-primary" />
+                <span>Pickup</span>
+                <span className="w-2 h-2 border border-primary ml-1" />
+                <span>Drop</span>
+              </div>
+            </div>
+          </div>
+
+          {mergeStrategy && (
+            <div className="px-3 py-1.5 border-t border-primary/20 bg-primary/[0.04] flex items-center gap-2 text-[10px] text-muted-foreground">
+              <span>Strategy:</span>
+              <Badge variant="outline" className="text-[10px] capitalize h-4">
+                {String(mergeStrategy).replace(/_/g, " ")}
+              </Badge>
+            </div>
           )}
         </div>
       )}
