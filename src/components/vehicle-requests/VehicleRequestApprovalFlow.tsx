@@ -64,6 +64,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
   const [selectedDriver, setSelectedDriver] = useState("");
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [activeAssignment, setActiveAssignment] = useState<RequestAssignment | null>(null);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
 
   // Role-based action gating (mirrors row visibility scope)
   const vrScope = useVehicleRequestScope();
