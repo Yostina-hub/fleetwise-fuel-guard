@@ -93,6 +93,7 @@ const initialForm = {
   license_issue_date: "",
   license_expiry: "",
   employment_type: "regular",
+  contract_end_date: "",
   status: "active",
   joining_date: "",
   department: "",
@@ -234,6 +235,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
           license_issue_date: (data as any).license_issue_date || "",
           license_expiry: data.license_expiry || "",
           employment_type: (data as any).employment_type || "regular",
+          contract_end_date: (data as any).contract_end_date || "",
           status: data.status || "active",
           joining_date: (data as any).joining_date || (data as any).hire_date || "",
           department: (data as any).department || (data as any).assigned_pool || "",
@@ -412,6 +414,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
       license_issue_date: formData.license_issue_date || null,
       license_expiry: formData.license_expiry || null,
       employment_type: formData.employment_type || null,
+      contract_end_date: formData.employment_type === "contract" ? (formData.contract_end_date || null) : null,
       status: formData.status,
       joining_date: formData.joining_date || null,
       hire_date: formData.joining_date || null,
@@ -708,13 +711,25 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                       <Section icon={<Building2 className="w-5 h-5 text-primary" />} title="Employment Details">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <Field label="Employment Status">
-                            <Select value={formData.employment_type} onValueChange={(value) => set("employment_type", value)}>
+                            <Select value={formData.employment_type} onValueChange={(value) => { set("employment_type", value); if (value !== "contract") set("contract_end_date", ""); }}>
                               <SelectTrigger><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 {EMPLOYMENT_STATUSES.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
                               </SelectContent>
                             </Select>
                           </Field>
+                          {formData.employment_type === "contract" && (
+                            <Field label="Contract End Date" required error={validation.getError("contract_end_date" as any)} fieldRef={registerRef("contract_end_date" as any)}>
+                              <DatePickerField
+                                value={formData.contract_end_date}
+                                onChange={(value) => { set("contract_end_date", value); validation.validateField("contract_end_date" as any, value); }}
+                                onBlur={() => onBlur("contract_end_date" as any)}
+                                min={today()}
+                                placeholder="Select end date"
+                                ariaInvalid={!!validation.getError("contract_end_date" as any)}
+                              />
+                            </Field>
+                          )}
                           <Field label="Driver Status" required error={validation.getError("status")}>
                             <Select value={formData.status} onValueChange={(value) => { set("status", value); validation.validateField("status", value); }}>
                               <SelectTrigger className={errClass("status")}><SelectValue /></SelectTrigger>

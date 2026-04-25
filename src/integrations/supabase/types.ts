@@ -7254,6 +7254,7 @@ export type Database = {
           bank_name: string | null
           blood_type: string | null
           bluetooth_id: string | null
+          contract_end_date: string | null
           created_at: string
           date_of_birth: string | null
           department: string | null
@@ -7319,6 +7320,7 @@ export type Database = {
           bank_name?: string | null
           blood_type?: string | null
           bluetooth_id?: string | null
+          contract_end_date?: string | null
           created_at?: string
           date_of_birth?: string | null
           department?: string | null
@@ -7384,6 +7386,7 @@ export type Database = {
           bank_name?: string | null
           blood_type?: string | null
           bluetooth_id?: string | null
+          contract_end_date?: string | null
           created_at?: string
           date_of_birth?: string | null
           department?: string | null
