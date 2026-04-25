@@ -1455,7 +1455,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </section>
 
           {/* SCHEDULE + ROUTE — placed side by side on wider screens */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <section className="space-y-3">
               <SectionHeader icon={CalendarDays} title="Schedule" />
               {isDaily ? (
