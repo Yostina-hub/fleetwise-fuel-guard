@@ -247,7 +247,25 @@ export const driverFieldSchemas = {
   rfid_tag: trimmedOptional("RFID tag", 100),
   ibutton_id: trimmedOptional("iButton ID", 100),
   bluetooth_id: trimmedOptional("Bluetooth ID", 100),
-  medical_certificate_expiry: optionalDate("Medical certificate expiry"),
+  // Medical certificate must not be expired when provided.
+  medical_certificate_expiry: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (v) => !v || !Number.isNaN(Date.parse(v)),
+      "Medical certificate expiry is not a valid date",
+    )
+    .refine(
+      (v) => {
+        if (!v) return true;
+        const d = new Date(v);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return d.getTime() >= today.getTime();
+      },
+      "Medical certificate is expired — please upload a renewed one",
+    ),
 
   // ----- Credentials -----
   password: z
