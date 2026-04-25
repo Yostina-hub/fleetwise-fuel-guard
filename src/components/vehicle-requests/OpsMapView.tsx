@@ -56,6 +56,11 @@ import {
   Route as RouteIcon,
   Users,
   TrendingUp,
+  GitMerge,
+  IdCard,
+  Clock,
+  Flame,
+  CircleDot,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -76,6 +81,10 @@ interface PendingRequest {
   needed_from: string;
   status: string;
   priority: string | null;
+  passengers: number | null;
+  vehicle_type: string | null;
+  is_consolidated_parent: boolean | null;
+  consolidated_request_count: number | null;
 }
 
 // Stable color per pool (deterministic hash → HSL)
@@ -104,13 +113,15 @@ export const OpsMapView = ({ organizationId }: Props) => {
     requestId?: string;
   }>(null);
   const [borrowReason, setBorrowReason] = useState("");
+  const [selectedPool, setSelectedPool] = useState<string | null>(null);
 
   const { available, allVehicles } = useAvailableVehicles();
   const { data: borrowRows = [], refetch: refetchBorrow } = useCrossPoolBorrowRequests(organizationId);
   const createBorrow = useCreateBorrowRequest();
   const respondBorrow = useRespondBorrowRequest();
 
-  // Pending vehicle requests with coordinates
+  // Pending vehicle requests with coordinates (also includes consolidated parents
+  // and richer fields for KPI calculations)
   const { data: requests = [], refetch: refetchRequests } = useQuery({
     queryKey: ["ops-map-requests", organizationId],
     enabled: !!organizationId,
@@ -119,14 +130,32 @@ export const OpsMapView = ({ organizationId }: Props) => {
       const { data, error } = await (supabase as any)
         .from("vehicle_requests")
         .select(
-          "id, request_number, pool_name, departure_lat, departure_lng, destination_lat, destination_lng, departure_place, destination, needed_from, status, priority",
+          "id, request_number, pool_name, departure_lat, departure_lng, destination_lat, destination_lng, departure_place, destination, needed_from, status, priority, passengers, vehicle_type, is_consolidated_parent, consolidated_request_count",
         )
         .eq("organization_id", organizationId)
         .in("status", ["pending", "approved"])
+        .is("merged_into_request_id", null)
         .order("needed_from", { ascending: true })
         .limit(200);
       if (error) throw error;
       return (data || []) as PendingRequest[];
+    },
+  });
+
+  // Idle (active, free) drivers per pool — used to surface driver supply alongside vehicles
+  const { data: idleDrivers = [] } = useQuery({
+    queryKey: ["ops-map-idle-drivers", organizationId],
+    enabled: !!organizationId,
+    refetchInterval: 60000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("drivers")
+        .select("id, first_name, last_name, status, assigned_pool")
+        .eq("organization_id", organizationId)
+        .eq("status", "active")
+        .limit(500);
+      if (error) throw error;
+      return (data || []) as any[];
     },
   });
 
@@ -162,29 +191,118 @@ export const OpsMapView = ({ organizationId }: Props) => {
     return map;
   }, [mergeData, showMerges]);
 
-  // Pool aggregations: demand vs idle supply
+  // Pool aggregations: demand vs idle supply (vehicles + drivers + passengers)
   const poolStats = useMemo(() => {
-    const pools: Record<string, { demand: number; idle: number; vehicles: any[] }> = {};
+    const pools: Record<
+      string,
+      {
+        demand: number;
+        passengers: number;
+        urgent: number;
+        merged: number;
+        idle: number;
+        idleDrivers: number;
+        vehicles: any[];
+        topVehicleType: string | null;
+      }
+    > = {};
+    const typeCount: Record<string, Record<string, number>> = {};
     requests.forEach((r) => {
       const k = r.pool_name || "Unassigned";
-      pools[k] = pools[k] || { demand: 0, idle: 0, vehicles: [] };
+      pools[k] = pools[k] || {
+        demand: 0,
+        passengers: 0,
+        urgent: 0,
+        merged: 0,
+        idle: 0,
+        idleDrivers: 0,
+        vehicles: [],
+        topVehicleType: null,
+      };
       pools[k].demand += 1;
+      pools[k].passengers += r.passengers || 0;
+      if (r.priority === "urgent" || r.priority === "high") pools[k].urgent += 1;
+      if (r.is_consolidated_parent) pools[k].merged += 1;
+      if (r.vehicle_type) {
+        typeCount[k] = typeCount[k] || {};
+        typeCount[k][r.vehicle_type] = (typeCount[k][r.vehicle_type] || 0) + 1;
+      }
     });
     available.forEach((v: any) => {
-      // Vehicle pool comes from vehicles.specific_pool — fetch from allVehicles join
       const fullV = allVehicles.find((x: any) => x.id === v.id);
       const pool = (fullV as any)?.specific_pool || "Unassigned";
-      pools[pool] = pools[pool] || { demand: 0, idle: 0, vehicles: [] };
+      pools[pool] = pools[pool] || {
+        demand: 0,
+        passengers: 0,
+        urgent: 0,
+        merged: 0,
+        idle: 0,
+        idleDrivers: 0,
+        vehicles: [],
+        topVehicleType: null,
+      };
       pools[pool].idle += 1;
       pools[pool].vehicles.push({ ...v, specific_pool: pool });
     });
+    idleDrivers.forEach((d: any) => {
+      const pool = d.assigned_pool || "Unassigned";
+      pools[pool] = pools[pool] || {
+        demand: 0,
+        passengers: 0,
+        urgent: 0,
+        merged: 0,
+        idle: 0,
+        idleDrivers: 0,
+        vehicles: [],
+        topVehicleType: null,
+      };
+      pools[pool].idleDrivers += 1;
+    });
+    // Resolve top requested vehicle type per pool
+    Object.entries(typeCount).forEach(([pool, counts]) => {
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+      if (pools[pool] && top) pools[pool].topVehicleType = top[0];
+    });
     return Object.entries(pools)
       .map(([name, s]) => ({ name, ...s, deficit: s.demand - s.idle }))
-      .sort((a, b) => b.deficit - a.deficit);
-  }, [requests, available, allVehicles]);
+      .sort((a, b) => b.deficit - a.deficit || b.demand - a.demand);
+  }, [requests, available, allVehicles, idleDrivers]);
 
   const poolsWithDeficit = poolStats.filter((p) => p.deficit > 0);
   const poolsWithSurplus = poolStats.filter((p) => p.idle > p.demand);
+
+  // Map-visible requests (filtered by selected pool when set)
+  const visibleRequests = useMemo(
+    () =>
+      selectedPool
+        ? requests.filter((r) => (r.pool_name || "Unassigned") === selectedPool)
+        : requests,
+    [requests, selectedPool],
+  );
+
+  // KPI totals
+  const kpis = useMemo(() => {
+    const totalPax = requests.reduce((s, r) => s + (r.passengers || 0), 0);
+    const urgent = requests.filter(
+      (r) => r.priority === "urgent" || r.priority === "high",
+    ).length;
+    const consolidatedParents = requests.filter((r) => r.is_consolidated_parent).length;
+    const mergeCandidates = Object.keys(mergeGroupColorByRequestId).length;
+    const totalIdleVeh = available.length;
+    const totalIdleDrv = idleDrivers.length;
+    const deficitPools = poolStats.filter((p) => p.deficit > 0).length;
+    return {
+      totalRequests: requests.length,
+      totalPax,
+      urgent,
+      consolidatedParents,
+      mergeCandidates,
+      totalIdleVeh,
+      totalIdleDrv,
+      deficitPools,
+    };
+  }, [requests, mergeGroupColorByRequestId, available, idleDrivers, poolStats]);
+
 
   // Init map
   useEffect(() => {
@@ -237,7 +355,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
     let hasBounds = false;
 
     if (showRoutes) {
-      requests.forEach((r) => {
+      visibleRequests.forEach((r) => {
         if (
           r.departure_lat == null ||
           r.departure_lng == null ||
@@ -246,10 +364,11 @@ export const OpsMapView = ({ organizationId }: Props) => {
         )
           return;
         const merged = !!mergeGroupColorByRequestId[r.id];
+        const isParent = !!r.is_consolidated_parent;
         const color = merged ? mergeGroupColorByRequestId[r.id] : poolColor(r.pool_name);
         features.push({
           type: "Feature",
-          properties: { color, merged, id: r.id, pool: r.pool_name || "Unassigned" },
+          properties: { color, merged: merged || isParent, id: r.id, pool: r.pool_name || "Unassigned" },
           geometry: {
             type: "LineString",
             coordinates: [
@@ -259,19 +378,38 @@ export const OpsMapView = ({ organizationId }: Props) => {
           },
         });
 
-        // pickup marker
+        // pickup marker — consolidated parents get a "merge" badge ring
         const pickupEl = document.createElement("div");
-        pickupEl.style.cssText = `width:14px;height:14px;border-radius:9999px;background:${color};border:2px solid hsl(var(--background));box-shadow:0 0 0 1px ${color};`;
+        const isUrgent = r.priority === "urgent" || r.priority === "high";
+        pickupEl.style.cssText = `
+          position:relative;width:${isParent ? 18 : 14}px;height:${isParent ? 18 : 14}px;
+          border-radius:9999px;background:${color};
+          border:2px solid hsl(var(--background));
+          box-shadow:0 0 0 ${isParent ? 3 : 1}px ${isParent ? "hsl(var(--primary))" : color}${isUrgent ? ", 0 0 0 5px hsl(0 84% 60% / .35)" : ""};
+        `;
+        if (isParent) {
+          const tag = document.createElement("span");
+          tag.textContent = String(r.consolidated_request_count ?? "·");
+          tag.style.cssText = `
+            position:absolute;top:-8px;right:-10px;min-width:14px;height:14px;
+            padding:0 3px;border-radius:9999px;background:hsl(var(--primary));
+            color:hsl(var(--primary-foreground));font:700 9px system-ui;
+            display:flex;align-items:center;justify-content:center;border:1px solid hsl(var(--background));
+          `;
+          pickupEl.appendChild(tag);
+        }
         const m1 = new maplibregl.Marker({ element: pickupEl })
           .setLngLat([r.departure_lng, r.departure_lat])
           .setPopup(
             new maplibregl.Popup({ offset: 12 }).setHTML(
-              `<div style="font:500 12px system-ui;padding:4px;">
-                 <div style="font-weight:700">${r.request_number}</div>
-                 <div style="color:hsl(var(--muted-foreground));font-size:11px;">${r.pool_name || "Unassigned"}</div>
+              `<div style="font:500 12px system-ui;padding:4px;min-width:170px;">
+                 <div style="font-weight:700">${r.request_number}${isParent ? " · 🔗 merged" : ""}</div>
+                 <div style="color:hsl(var(--muted-foreground));font-size:11px;">${r.pool_name || "Unassigned"}${r.passengers ? ` · ${r.passengers} pax` : ""}</div>
                  <div style="margin-top:4px;font-size:11px;">📍 ${r.departure_place || "Pickup"}</div>
                  <div style="font-size:11px;">🏁 ${r.destination || "Drop"}</div>
+                 ${isUrgent ? '<div style="margin-top:4px;color:hsl(0 84% 60%);font-weight:600;font-size:10px;">⚠ URGENT</div>' : ""}
                  ${merged ? '<div style="margin-top:4px;color:hsl(38 92% 50%);font-weight:600;font-size:10px;">⚡ Merge candidate</div>' : ""}
+                 ${isParent ? `<div style="margin-top:4px;color:hsl(var(--primary));font-weight:600;font-size:10px;">🔗 Consolidated · ${r.consolidated_request_count ?? "?"} requests</div>` : ""}
                </div>`,
             ),
           )
@@ -331,7 +469,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
         /* ignore */
       }
     }
-  }, [ready, requests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId]);
+  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId]);
 
   const handleSubmitBorrow = async () => {
     if (!borrowDialog) return;
@@ -360,7 +498,33 @@ export const OpsMapView = ({ organizationId }: Props) => {
   }).length;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-3">
+    <div className="space-y-3">
+      {/* ===================== TOP KPI STRIP ===================== */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+        <KpiTile icon={<RouteIcon className="w-3.5 h-3.5" />} label="Open requests" value={kpis.totalRequests} tone="primary" />
+        <KpiTile icon={<Users className="w-3.5 h-3.5" />} label="Pax demand" value={kpis.totalPax} tone="default" />
+        <KpiTile icon={<Flame className="w-3.5 h-3.5" />} label="Urgent" value={kpis.urgent} tone={kpis.urgent > 0 ? "danger" : "default"} />
+        <KpiTile icon={<GitMerge className="w-3.5 h-3.5" />} label="Consolidated" value={kpis.consolidatedParents} tone="primary" />
+        <KpiTile icon={<Layers className="w-3.5 h-3.5" />} label="Merge candidates" value={kpis.mergeCandidates} tone={kpis.mergeCandidates > 0 ? "warning" : "default"} />
+        <KpiTile icon={<Truck className="w-3.5 h-3.5" />} label="Idle vehicles" value={kpis.totalIdleVeh} tone="success" />
+        <KpiTile icon={<IdCard className="w-3.5 h-3.5" />} label="Idle drivers" value={kpis.totalIdleDrv} tone="success" />
+        <KpiTile icon={<AlertTriangle className="w-3.5 h-3.5" />} label="Deficit pools" value={kpis.deficitPools} tone={kpis.deficitPools > 0 ? "danger" : "default"} />
+      </div>
+
+      {selectedPool && (
+        <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5">
+          <CircleDot className="w-3.5 h-3.5 text-primary" />
+          <span className="text-xs">
+            Filtering map by pool <span className="font-semibold text-primary">{selectedPool}</span>
+            <span className="text-muted-foreground ml-1">({visibleRequests.length} of {requests.length} requests)</span>
+          </span>
+          <Button size="sm" variant="ghost" className="h-6 ml-auto text-[11px]" onClick={() => setSelectedPool(null)}>
+            <X className="w-3 h-3 mr-1" /> Clear
+          </Button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-3">
       {/* MAP */}
       <Card className="overflow-hidden">
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
@@ -630,9 +794,39 @@ export const OpsMapView = ({ organizationId }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };
+
+interface KpiTileProps {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+  tone?: "default" | "primary" | "success" | "warning" | "danger";
+}
+const KpiTile = ({ icon, label, value, tone = "default" }: KpiTileProps) => {
+  const toneClass =
+    tone === "danger"
+      ? "border-destructive/40 bg-destructive/5 text-destructive"
+      : tone === "warning"
+      ? "border-amber-500/40 bg-amber-500/5 text-amber-600 dark:text-amber-400"
+      : tone === "success"
+      ? "border-emerald-500/40 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
+      : tone === "primary"
+      ? "border-primary/40 bg-primary/5 text-primary"
+      : "border-border bg-card text-foreground";
+  return (
+    <div className={`rounded-lg border px-2.5 py-1.5 ${toneClass}`}>
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide opacity-80">
+        {icon}
+        <span className="truncate">{label}</span>
+      </div>
+      <div className="text-lg font-bold leading-tight tabular-nums">{value}</div>
+    </div>
+  );
+};
+
 
 interface BorrowListProps {
   rows: any[];
