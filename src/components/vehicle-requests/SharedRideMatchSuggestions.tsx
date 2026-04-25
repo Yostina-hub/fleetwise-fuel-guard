@@ -12,10 +12,15 @@
  * `useJoinSharedRide`.
  */
 import { useMemo, useState } from "react";
-import { useFindSharedRides, type SharedRideMatch } from "@/hooks/useSharedRides";
+import {
+  useFindSharedRides,
+  useFindProximityRides,
+  type SharedRideMatch,
+  type SharedRideProximityMatch,
+} from "@/hooks/useSharedRides";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Clock, Sparkles, ArrowRight } from "lucide-react";
+import { MapPin, Users, Clock, Sparkles, ArrowRight, Route } from "lucide-react";
 import { format } from "date-fns";
 import { SharedRideMatchMap } from "./SharedRideMatchMap";
 
