@@ -836,7 +836,7 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
     return {
       success: true,
       device_id: device.id,
-      vehicle_id: device.vehicle_id,
+      vehicle_id: device.vehicle_id ?? undefined,
       processed_at: processedAt,
     };
   }
@@ -1224,7 +1224,7 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
   return { 
     success: true, 
     device_id: device.id, 
-    vehicle_id: device.vehicle_id,
+    vehicle_id: device.vehicle_id ?? undefined,
     processed_at: processedAt 
   };
 }
