@@ -98,7 +98,7 @@ export const useFindSharedRides = (params: FindMatchesParams, enabled = true) =>
  */
 export const useDriverSharedRides = () => {
   const { organizationId } = useOrganization();
-  const { driverId } = useCurrentDriverId();
+  const driverId = useCurrentDriverId();
   return useQuery({
     queryKey: ["driver-shared-rides", organizationId, driverId],
     enabled: !!organizationId && !!driverId,
