@@ -939,8 +939,8 @@ async function processStatusUpdate(
     return { error: 'Device not found with IMEI: ' + imei, status: 404 };
   }
 
-  let device = knownDeviceCache.get(imei);
-  if (!device || (Date.now() - device.cachedAt) > KNOWN_DEVICE_CACHE_TTL_MS) {
+  let cachedDevice = knownDeviceCache.get(imei);
+  if (!cachedDevice || (Date.now() - cachedDevice.cachedAt) > KNOWN_DEVICE_CACHE_TTL_MS) {
     const { data: deviceData, error: deviceError } = await supabase
       .from('devices')
       .select('id, vehicle_id, organization_id, auth_token')
@@ -957,10 +957,10 @@ async function processStatusUpdate(
       unknownImeiCache.set(imei, Date.now());
       return { error: 'Device not found with IMEI: ' + imei, status: 404 };
     }
-    device = { ...deviceData, cachedAt: Date.now() };
-    knownDeviceCache.set(imei, device!);
+    cachedDevice = { ...deviceData, cachedAt: Date.now() };
+    knownDeviceCache.set(imei, cachedDevice!);
   }
-  if (!device) return { error: 'Device unavailable', status: 503 };
+  const device = cachedDevice!;
 
   // Debounced heartbeat update
   const now = Date.now();
