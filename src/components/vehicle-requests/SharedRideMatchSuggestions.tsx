@@ -59,13 +59,55 @@ export const SharedRideMatchSuggestions = ({
     departureAt,
     seatsNeeded: passengers,
   });
+  const { data: proxData, isLoading: proxLoading } = useFindProximityRides({
+    poolCode,
+    originLat,
+    originLng,
+    destinationLat,
+    destinationLng,
+    departureAt,
+    seatsNeeded: passengers,
+  });
 
   const matches = useMemo(() => data ?? [], [data]);
+  const proximityMatches = useMemo(() => proxData ?? [], [proxData]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Hide entirely until the form has enough data to query.
   if (!originLat || !destinationLat || !departureAt) return null;
-  if (!isLoading && matches.length === 0) return null;
+  if (
+    !isLoading &&
+    !proxLoading &&
+    matches.length === 0 &&
+    proximityMatches.length === 0
+  )
+    return null;
+
+  // For the SVG map: combine direct + proximity matches so all candidate
+  // routes are visible at once. Proximity rides are flagged so the map can
+  // (optionally) style them differently in a future iteration.
+  const allMapPoints: SharedRideMatch[] = [
+    ...matches,
+    ...proximityMatches.map<SharedRideMatch>((p) => ({
+      ride_id: p.ride_id,
+      vehicle_id: p.vehicle_id,
+      driver_id: p.driver_id,
+      pool_code: p.pool_code,
+      origin_label: p.origin_label,
+      destination_label: p.destination_label,
+      departure_at: p.departure_at,
+      available_seats: p.available_seats,
+      total_seats: p.total_seats,
+      origin_lat: p.origin_lat,
+      origin_lng: p.origin_lng,
+      destination_lat: p.destination_lat,
+      destination_lng: p.destination_lng,
+      origin_distance_km: p.detour_km,
+      destination_distance_km: p.destination_distance_km,
+      time_delta_minutes: p.time_delta_minutes,
+      match_score: p.match_score,
+    })),
+  ];
 
   return (
     <Card className="p-3 border-primary/30 bg-primary/5">
