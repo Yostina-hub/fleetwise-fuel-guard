@@ -203,6 +203,15 @@ const IncidentTicketsTab = () => {
                       {getPriorityBadge(ticket.priority)}
                       {getStatusBadge(ticket.status)}
                       {getTypeBadge(ticket.ticket_type)}
+                      {ticket.priority === "urgent" && (ticket as any).sla_deadline_at && (
+                        <SlaCountdownBadge
+                          createdAt={ticket.created_at}
+                          slaDueAt={(ticket as any).sla_deadline_at}
+                          assignedAt={ticket.status === "resolved" || ticket.status === "closed" ? ticket.updated_at : null}
+                          slaBreached={!!(ticket as any).sla_breached_at}
+                          operationType="incident_urgent"
+                        />
+                      )}
                     </div>
                     <p className="text-sm font-medium">{ticket.subject}</p>
                     {ticket.description && <p className="text-sm text-muted-foreground line-clamp-2">{ticket.description}</p>}
