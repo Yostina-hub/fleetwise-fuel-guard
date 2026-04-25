@@ -21,7 +21,7 @@ const DelegationMatrix = () => {
               {t("pages.delegation_matrix.title", "Delegation of Authority")}
             </h1>
             <p className="text-muted-foreground text-xs">
-              Configure approval rules and temporary substitutions
+              Managed in FMS · Configure approval rules and temporary substitutions
             </p>
           </div>
         </div>
