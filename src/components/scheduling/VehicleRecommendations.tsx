@@ -16,13 +16,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import {
-import { friendlyToastError } from "@/lib/errorMessages";
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface VehicleRecommendationsProps {
   requestId: string;

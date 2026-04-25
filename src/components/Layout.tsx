@@ -77,11 +77,11 @@ import { isPathAccessible } from "@/config/sidebarAccess";
 import { getRoleSpecificNav } from "@/config/roleNavTemplates";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 import {
-import { friendlyToastError } from "@/lib/errorMessages";
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface LayoutProps {
   children: ReactNode;
