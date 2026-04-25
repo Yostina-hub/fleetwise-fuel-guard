@@ -8639,6 +8639,7 @@ export type Database = {
         Row: {
           category: string
           code: string
+          corridor_km: number
           created_at: string
           description: string | null
           id: string
@@ -8653,6 +8654,7 @@ export type Database = {
         Insert: {
           category: string
           code: string
+          corridor_km?: number
           created_at?: string
           description?: string | null
           id?: string
@@ -8667,6 +8669,7 @@ export type Database = {
         Update: {
           category?: string
           code?: string
+          corridor_km?: number
           created_at?: string
           description?: string | null
           id?: string
@@ -18630,6 +18633,7 @@ export type Database = {
           origin_lat: number
           origin_lng: number
           pool_code: string | null
+          route_geom: unknown
           route_path: string | null
           status: string
           total_seats: number
@@ -18656,6 +18660,7 @@ export type Database = {
           origin_lat: number
           origin_lng: number
           pool_code?: string | null
+          route_geom?: unknown
           route_path?: string | null
           status?: string
           total_seats: number
@@ -18682,6 +18687,7 @@ export type Database = {
           origin_lat?: number
           origin_lng?: number
           pool_code?: string | null
+          route_geom?: unknown
           route_path?: string | null
           status?: string
           total_seats?: number
@@ -27769,6 +27775,40 @@ export type Database = {
           driver_id: string
           match_score: number
           origin_distance_km: number
+          origin_label: string
+          origin_lat: number
+          origin_lng: number
+          pool_code: string
+          ride_id: string
+          time_delta_minutes: number
+          total_seats: number
+          vehicle_id: string
+        }[]
+      }
+      find_proximity_match_rides: {
+        Args: {
+          _departure_at: string
+          _destination_lat: number
+          _destination_lng: number
+          _destination_radius_km?: number
+          _organization_id: string
+          _origin_lat: number
+          _origin_lng: number
+          _pool_code: string
+          _seats_needed?: number
+          _wait_window_min?: number
+        }
+        Returns: {
+          available_seats: number
+          corridor_km_used: number
+          departure_at: string
+          destination_distance_km: number
+          destination_label: string
+          destination_lat: number
+          destination_lng: number
+          detour_km: number
+          driver_id: string
+          match_score: number
           origin_label: string
           origin_lat: number
           origin_lng: number
