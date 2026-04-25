@@ -181,10 +181,10 @@ async function notifySupervisors(
     user_id: p.user_id,
     organization_id: organizationId,
     title: payload.title,
-    body: payload.body,
-    url: payload.url,
-    kind: payload.kind,
-    severity: "critical",
+    message: payload.body,
+    link: payload.url,
+    type: payload.kind,
+    metadata: { severity: "critical", auto_generated: true },
     created_at: new Date().toISOString(),
   }));
 
