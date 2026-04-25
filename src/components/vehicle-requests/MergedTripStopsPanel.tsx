@@ -5,11 +5,10 @@
  *
  * Layout:
  *   - Always-visible 1-line summary (count, pax, time window, pool).
- *   - Expand → clean numbered stop list + an OPTIONAL small map view.
- *   - The map is lazy-mounted (only when "Show on map" is toggled) so we
- *     don't load MapLibre on dialog open. This keeps the assignment dialog
- *     fast and uncluttered while still letting dispatchers visualise the
- *     route when they need to.
+ *   - Expand → clean numbered stop list + an OPTIONAL route map.
+ *   - The map is lazy-mounted and routes are fetched through the backend
+ *     routing proxy so the dispatcher sees real road geometry, not browser-
+ *     blocked public routing calls or straight-line placeholders.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -62,6 +61,116 @@ interface Child {
   destination_lat: number | null;
   destination_lng: number | null;
 }
+
+type RoutePoint = {
+  coord: [number, number];
+  label: string;
+};
+
+type RouteCandidate = {
+  label: string;
+  strategy: string;
+  points: RoutePoint[];
+};
+
+const pointKey = (points: RoutePoint[]) =>
+  points.map((p) => `${p.coord[0].toFixed(5)},${p.coord[1].toFixed(5)}`).join("|");
+
+const distanceSq = (a: [number, number], b: [number, number]) => {
+  const dx = a[0] - b[0];
+  const dy = a[1] - b[1];
+  return dx * dx + dy * dy;
+};
+
+const buildPairedRoute = (stops: Child[], order: number[], label: string, strategy: string): RouteCandidate => ({
+  label,
+  strategy,
+  points: order.flatMap((idx) => {
+    const c = stops[idx];
+    return [
+      { coord: [c.departure_lng!, c.departure_lat!] as [number, number], label: `P${idx + 1}` },
+      { coord: [c.destination_lng!, c.destination_lat!] as [number, number], label: `D${idx + 1}` },
+    ];
+  }),
+});
+
+const buildNearestPairRoute = (stops: Child[]): RouteCandidate => {
+  const remaining = stops.map((_, idx) => idx);
+  const order: number[] = [];
+  let current: [number, number] = [stops[0].departure_lng!, stops[0].departure_lat!];
+
+  while (remaining.length > 0) {
+    remaining.sort((a, b) =>
+      distanceSq(current, [stops[a].departure_lng!, stops[a].departure_lat!]) -
+      distanceSq(current, [stops[b].departure_lng!, stops[b].departure_lat!]),
+    );
+    const next = remaining.shift()!;
+    order.push(next);
+    current = [stops[next].destination_lng!, stops[next].destination_lat!];
+  }
+
+  return buildPairedRoute(stops, order, "Route B", "Nearest request order");
+};
+
+const buildSharedRideRoute = (stops: Child[]): RouteCandidate => {
+  const pickupOrder: number[] = [];
+  const remainingPickups = stops.map((_, idx) => idx);
+  let current: [number, number] = [stops[0].departure_lng!, stops[0].departure_lat!];
+
+  while (remainingPickups.length > 0) {
+    remainingPickups.sort((a, b) =>
+      distanceSq(current, [stops[a].departure_lng!, stops[a].departure_lat!]) -
+      distanceSq(current, [stops[b].departure_lng!, stops[b].departure_lat!]),
+    );
+    const next = remainingPickups.shift()!;
+    pickupOrder.push(next);
+    current = [stops[next].departure_lng!, stops[next].departure_lat!];
+  }
+
+  const dropOrder: number[] = [];
+  const remainingDrops = [...pickupOrder];
+  while (remainingDrops.length > 0) {
+    remainingDrops.sort((a, b) =>
+      distanceSq(current, [stops[a].destination_lng!, stops[a].destination_lat!]) -
+      distanceSq(current, [stops[b].destination_lng!, stops[b].destination_lat!]),
+    );
+    const next = remainingDrops.shift()!;
+    dropOrder.push(next);
+    current = [stops[next].destination_lng!, stops[next].destination_lat!];
+  }
+
+  return {
+    label: "Route C",
+    strategy: "Pickup-first shared ride",
+    points: [
+      ...pickupOrder.map((idx) => ({
+        coord: [stops[idx].departure_lng!, stops[idx].departure_lat!] as [number, number],
+        label: `P${idx + 1}`,
+      })),
+      ...dropOrder.map((idx) => ({
+        coord: [stops[idx].destination_lng!, stops[idx].destination_lat!] as [number, number],
+        label: `D${idx + 1}`,
+      })),
+    ],
+  };
+};
+
+const buildRouteCandidates = (stops: Child[]): RouteCandidate[] => {
+  const order = stops.map((_, idx) => idx);
+  const candidates = [
+    buildPairedRoute(stops, order, "Route A", "Time order"),
+    buildNearestPairRoute(stops),
+    buildSharedRideRoute(stops),
+    buildPairedRoute(stops, [...order].reverse(), "Route D", "Reverse time order"),
+  ];
+  const seen = new Set<string>();
+  return candidates.filter((candidate) => {
+    const key = pointKey(candidate.points);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return candidate.points.length >= 2;
+  }).slice(0, 3);
+};
 
 export const MergedTripStopsPanel = ({
   parentRequestId,
@@ -132,18 +241,16 @@ export const MergedTripStopsPanel = ({
     [children],
   );
 
-  // ── Lazy-mounted map + OSRM-based optimized route alternatives ────
-  // We send the ordered pickup→drop sequence to OSRM
-  // (router.project-osrm.org) with `alternatives=3` and render up to three
-  // real driving routes. The fastest by `duration` is highlighted as
-  // "Best" — others are dimmed. No API key needed; the public demo server
-  // is rate-limited but adequate for occasional dispatcher previews.
+  // ── Lazy-mounted map + backend-proxied optimized route options ────
+  // The browser no longer calls the public routing service directly. Each
+  // candidate stop order is sent through the backend route proxy, which avoids
+  // preview CORS failures and returns real road geometry for rendering.
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
 
   const [routesInfo, setRoutesInfo] = useState<
-    Array<{ label: string; distanceKm: number; durationMin: number; isBest: boolean; color: string }>
+    Array<{ label: string; strategy: string; distanceKm: number; durationMin: number; isBest: boolean; color: string }>
   >([]);
   const [routesError, setRoutesError] = useState<string | null>(null);
   const [routesLoading, setRoutesLoading] = useState(false);
@@ -222,22 +329,11 @@ export const MergedTripStopsPanel = ({
         /* noop */
       }
 
-      // ── Fetch OSRM alternatives ────────────────────────────────────
-      // Build ordered waypoint sequence: pickup1, drop1, pickup2, drop2 ...
-      const waypoints: Array<[number, number]> = [];
-      stopsWithCoords.forEach((c) => {
-        waypoints.push([c.departure_lng!, c.departure_lat!]);
-        waypoints.push([c.destination_lng!, c.destination_lat!]);
-      });
-
-      // OSRM demo server requires at least 2 coordinates
-      if (waypoints.length < 2) return;
+      const candidates = buildRouteCandidates(stopsWithCoords);
+      if (candidates.length === 0) return;
 
       setRoutesLoading(true);
       setRoutesError(null);
-      const coordsStr = waypoints.map(([lng, lat]) => `${lng},${lat}`).join(";");
-      // alternatives=3 → request up to 3 alternative routes
-      const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?alternatives=3&overview=full&geometries=geojson&steps=false`;
 
       // Fallback colors for up to 3 alternatives. Best = primary blue.
       const palette = [
@@ -247,28 +343,38 @@ export const MergedTripStopsPanel = ({
       ];
 
       try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-        if (!res.ok) throw new Error(`OSRM ${res.status}`);
-        const json = await res.json();
-        if (json.code !== "Ok" || !Array.isArray(json.routes) || json.routes.length === 0) {
-          throw new Error(json.message || "No routes returned");
-        }
-
-        const routes: Array<{ geometry: any; distance: number; duration: number }> = json.routes.slice(0, 3);
+        const resolved = await Promise.all(
+          candidates.map(async (candidate) => {
+            const { data, error } = await supabase.functions.invoke("route-directions", {
+              body: { coordinates: candidate.points.map((p) => p.coord) },
+            });
+            if (error || !data?.ok || !Array.isArray(data?.geometry) || data.geometry.length < 2) {
+              throw new Error(data?.error || error?.message || "Route service unavailable");
+            }
+            return {
+              ...candidate,
+              geometry: { type: "LineString" as const, coordinates: data.geometry as [number, number][] },
+              distance: Number(data.distance_m) || 0,
+              duration: Number(data.duration_s) || 0,
+            };
+          }).map((promise) => promise.catch(() => null)),
+        );
+        const results = resolved.filter((route): route is NonNullable<typeof route> => route !== null);
+        if (results.length === 0) throw new Error("Route service unavailable");
 
         // Determine best by shortest duration
-        const bestIdx = routes.reduce(
+        const bestIdx = results.reduce(
           (best, r, i, arr) => (r.duration < arr[best].duration ? i : best),
           0,
         );
 
         // Render in reverse so the best route (added last) sits on top
-        const order = routes.map((_, i) => i).sort((a, b) => (a === bestIdx ? 1 : b === bestIdx ? -1 : 0));
+        const order = results.map((_, i) => i).sort((a, b) => (a === bestIdx ? 1 : b === bestIdx ? -1 : 0));
 
         if (!mapRef.current) return;
 
         order.forEach((i) => {
-          const r = routes[i];
+          const r = results[i];
           const isBest = i === bestIdx;
           const meta = palette[i] ?? palette[0];
           const sourceId = `route-alt-${i}`;
@@ -293,7 +399,7 @@ export const MergedTripStopsPanel = ({
 
         // Fit bounds around the best route
         try {
-          const coords: Array<[number, number]> = routes[bestIdx].geometry.coordinates;
+          const coords: Array<[number, number]> = results[bestIdx].geometry.coordinates;
           const b = new maplibregl.LngLatBounds();
           coords.forEach((c) => b.extend(c as any));
           stopsWithCoords.forEach((s) => {
@@ -306,8 +412,9 @@ export const MergedTripStopsPanel = ({
         }
 
         setRoutesInfo(
-          routes.map((r, i) => ({
+          results.map((r, i) => ({
             label: palette[i]?.name ?? `Route ${i + 1}`,
+            strategy: r.strategy,
             distanceKm: r.distance / 1000,
             durationMin: r.duration / 60,
             isBest: i === bestIdx,
