@@ -11374,6 +11374,69 @@ export type Database = {
           },
         ]
       }
+      identity_provider_configs: {
+        Row: {
+          attribute_mapping: Json
+          auto_provision_users: boolean
+          client_id: string | null
+          client_secret_ref: string | null
+          created_at: string
+          created_by: string | null
+          default_role: string | null
+          display_name: string
+          domains: string[]
+          entity_id: string | null
+          id: string
+          is_active: boolean
+          metadata_url: string | null
+          organization_id: string
+          provider_type: string
+          role_mapping: Json
+          sso_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          attribute_mapping?: Json
+          auto_provision_users?: boolean
+          client_id?: string | null
+          client_secret_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_role?: string | null
+          display_name: string
+          domains?: string[]
+          entity_id?: string | null
+          id?: string
+          is_active?: boolean
+          metadata_url?: string | null
+          organization_id: string
+          provider_type: string
+          role_mapping?: Json
+          sso_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attribute_mapping?: Json
+          auto_provision_users?: boolean
+          client_id?: string | null
+          client_secret_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_role?: string | null
+          display_name?: string
+          domains?: string[]
+          entity_id?: string | null
+          id?: string
+          is_active?: boolean
+          metadata_url?: string | null
+          organization_id?: string
+          provider_type?: string
+          role_mapping?: Json
+          sso_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       immobilization_sequences: {
         Row: {
           cancel_reason: string | null
@@ -19116,6 +19179,53 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sso_login_events: {
+        Row: {
+          created_at: string
+          email: string | null
+          failure_reason: string | null
+          id: string
+          ip_address: unknown
+          provider_config_id: string | null
+          raw_attributes: Json | null
+          status: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          provider_config_id?: string | null
+          raw_attributes?: Json | null
+          status: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          provider_config_id?: string | null
+          raw_attributes?: Json | null
+          status?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sso_login_events_provider_config_id_fkey"
+            columns: ["provider_config_id"]
+            isOneToOne: false
+            referencedRelation: "identity_provider_configs"
             referencedColumns: ["id"]
           },
         ]
