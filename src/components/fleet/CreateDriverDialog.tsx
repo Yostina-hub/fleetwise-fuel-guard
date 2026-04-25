@@ -84,6 +84,7 @@ const initialForm = {
   contract_end_date: "", // #6 — required when employment_type === "contract"
   joining_date: "", department: "", experience_years: "",
   assigned_pool: "", // #5 — replaces route_type
+  pool_category: "", // UI-only — Corporate / Zone / Region (drives the Assigned Location list)
   telebirr_account: "", // #8 — replaces bank fields
   emergency_contact_name: "", emergency_contact_phone: "", blood_type: "",
   password: "", notes: "",
@@ -621,20 +622,77 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
                   ariaInvalid={!!validation.getError("joining_date")}
                 />
               </Field>
-              <Field label="Assigned Pool" required error={validation.getError("department")} hint="Corporate, Zone or Regional pool" fieldRef={registerRef("department")}>
-                <Select value={formData.department} onValueChange={v => { set("department", v); set("assigned_pool", v); validation.validateField("department", v); }}>
-                  <SelectTrigger className={errClass("department")} onBlur={() => onBlur("department")}>
-                    <SelectValue placeholder="Select pool..." />
-                  </SelectTrigger>
+              <Field label="Pool Category" required hint="Corporate / Zone / Region">
+                <Select
+                  value={formData.pool_category}
+                  onValueChange={v => {
+                    set("pool_category", v);
+                    // Reset dependent location when category changes
+                    const cur = ASSIGNED_LOCATIONS.find(l => l.value === formData.department);
+                    if (!cur || cur.group !== v) {
+                      set("department", "");
+                      set("assigned_pool", "");
+                      validation.validateField("department", "");
+                    }
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
                   <SelectContent>
-                    {["Corporate Pools", "Regional Pools", "Other"].map(group => (
-                      <SelectGroup key={group}>
-                        <SelectLabel>{group}</SelectLabel>
-                        {ASSIGNED_POOLS.filter(p => p.group === group).map(p => (
-                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
+                    <SelectItem value="Corporate">Corporate</SelectItem>
+                    <SelectItem value="Zone">Zone</SelectItem>
+                    <SelectItem value="Region">Region</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Assigned Pool" required error={validation.getError("department")} hint="Filtered by Pool Category" fieldRef={registerRef("department")}>
+                <Select
+                  value={formData.department}
+                  onValueChange={v => { set("department", v); set("assigned_pool", v); validation.validateField("department", v); }}
+                  disabled={!formData.pool_category}
+                >
+                  <SelectTrigger className={cn(errClass("department"), !formData.pool_category && "opacity-50")} onBlur={() => onBlur("department")}>
+                    <SelectValue placeholder={formData.pool_category ? "Select pool..." : "Pick category first"} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {formData.pool_category === "Corporate" ? (
+                      ASSIGNED_LOCATIONS
+                        .filter(l => l.group === "Corporate" && !(l as any).parent)
+                        .flatMap(parent => {
+                          const subs = ASSIGNED_LOCATIONS.filter(
+                            (l: any) => l.group === "Corporate" && l.parent === parent.value,
+                          );
+                          return [
+                            <SelectItem key={parent.value} value={parent.value}>
+                              <span className="flex items-center gap-2 font-semibold">
+                                <MapPin className="h-3.5 w-3.5 text-primary" />
+                                {parent.label}
+                              </span>
+                            </SelectItem>,
+                            ...subs.map((s: any) => (
+                              <SelectItem key={s.value} value={s.value}>
+                                <span className="flex items-center gap-2 pl-4 text-sm">
+                                  <span className="text-muted-foreground">└</span>
+                                  <span className="truncate">{s.label}</span>
+                                  {s.shift && s.shift !== "all" && (
+                                    <span className="ml-auto text-[10px] uppercase text-muted-foreground">{s.shift}</span>
+                                  )}
+                                </span>
+                              </SelectItem>
+                            )),
+                          ];
+                        })
+                    ) : (
+                      ASSIGNED_LOCATIONS
+                        .filter(l => l.group === formData.pool_category)
+                        .map(l => (
+                          <SelectItem key={l.value} value={l.value}>
+                            <span className="flex items-center gap-2">
+                              <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                              {l.label}
+                            </span>
+                          </SelectItem>
+                        ))
+                    )}
                   </SelectContent>
                 </Select>
               </Field>
