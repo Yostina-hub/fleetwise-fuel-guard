@@ -164,9 +164,11 @@ export const QuickAssignDialog = ({ request, organizationId, open, onClose }: Pr
     onError: (err: any) => toast.error(err?.message || "Failed to update"),
   });
 
+  const isMerged = !!request?.is_consolidated_parent;
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className={isMerged ? "max-w-4xl max-h-[92vh] overflow-y-auto" : "max-w-2xl max-h-[90vh] overflow-y-auto"}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-primary" />
