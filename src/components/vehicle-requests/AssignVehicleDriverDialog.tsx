@@ -110,6 +110,8 @@ export const AssignVehicleDriverDialog = ({
   const [tab, setTab] = useState<"assignment" | "ops_map" | "consolidate">(
     "assignment",
   );
+  const [pickerTab, setPickerTab] = useState<"vehicle" | "driver">("vehicle");
+  const [showDetailsMobile, setShowDetailsMobile] = useState(false);
 
   useEffect(() => {
     if (open) {
