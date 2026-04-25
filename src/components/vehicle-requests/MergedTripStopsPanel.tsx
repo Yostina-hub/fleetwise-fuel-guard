@@ -241,18 +241,16 @@ export const MergedTripStopsPanel = ({
     [children],
   );
 
-  // ── Lazy-mounted map + OSRM-based optimized route alternatives ────
-  // We send the ordered pickup→drop sequence to OSRM
-  // (router.project-osrm.org) with `alternatives=3` and render up to three
-  // real driving routes. The fastest by `duration` is highlighted as
-  // "Best" — others are dimmed. No API key needed; the public demo server
-  // is rate-limited but adequate for occasional dispatcher previews.
+  // ── Lazy-mounted map + backend-proxied optimized route options ────
+  // The browser no longer calls the public routing service directly. Each
+  // candidate stop order is sent through the backend route proxy, which avoids
+  // preview CORS failures and returns real road geometry for rendering.
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
 
   const [routesInfo, setRoutesInfo] = useState<
-    Array<{ label: string; distanceKm: number; durationMin: number; isBest: boolean; color: string }>
+    Array<{ label: string; strategy: string; distanceKm: number; durationMin: number; isBest: boolean; color: string }>
   >([]);
   const [routesError, setRoutesError] = useState<string | null>(null);
   const [routesLoading, setRoutesLoading] = useState(false);
@@ -331,22 +329,11 @@ export const MergedTripStopsPanel = ({
         /* noop */
       }
 
-      // ── Fetch OSRM alternatives ────────────────────────────────────
-      // Build ordered waypoint sequence: pickup1, drop1, pickup2, drop2 ...
-      const waypoints: Array<[number, number]> = [];
-      stopsWithCoords.forEach((c) => {
-        waypoints.push([c.departure_lng!, c.departure_lat!]);
-        waypoints.push([c.destination_lng!, c.destination_lat!]);
-      });
-
-      // OSRM demo server requires at least 2 coordinates
-      if (waypoints.length < 2) return;
+      const candidates = buildRouteCandidates(stopsWithCoords);
+      if (candidates.length === 0) return;
 
       setRoutesLoading(true);
       setRoutesError(null);
-      const coordsStr = waypoints.map(([lng, lat]) => `${lng},${lat}`).join(";");
-      // alternatives=3 → request up to 3 alternative routes
-      const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?alternatives=3&overview=full&geometries=geojson&steps=false`;
 
       // Fallback colors for up to 3 alternatives. Best = primary blue.
       const palette = [
@@ -356,28 +343,36 @@ export const MergedTripStopsPanel = ({
       ];
 
       try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-        if (!res.ok) throw new Error(`OSRM ${res.status}`);
-        const json = await res.json();
-        if (json.code !== "Ok" || !Array.isArray(json.routes) || json.routes.length === 0) {
-          throw new Error(json.message || "No routes returned");
-        }
-
-        const routes: Array<{ geometry: any; distance: number; duration: number }> = json.routes.slice(0, 3);
+        const results = await Promise.all(
+          candidates.map(async (candidate) => {
+            const { data, error } = await supabase.functions.invoke("route-directions", {
+              body: { coordinates: candidate.points.map((p) => p.coord) },
+            });
+            if (error || !data?.ok || !Array.isArray(data?.geometry) || data.geometry.length < 2) {
+              throw new Error(data?.error || error?.message || "Route service unavailable");
+            }
+            return {
+              ...candidate,
+              geometry: { type: "LineString", coordinates: data.geometry as [number, number][] },
+              distance: Number(data.distance_m) || 0,
+              duration: Number(data.duration_s) || 0,
+            };
+          }),
+        );
 
         // Determine best by shortest duration
-        const bestIdx = routes.reduce(
+        const bestIdx = results.reduce(
           (best, r, i, arr) => (r.duration < arr[best].duration ? i : best),
           0,
         );
 
         // Render in reverse so the best route (added last) sits on top
-        const order = routes.map((_, i) => i).sort((a, b) => (a === bestIdx ? 1 : b === bestIdx ? -1 : 0));
+        const order = results.map((_, i) => i).sort((a, b) => (a === bestIdx ? 1 : b === bestIdx ? -1 : 0));
 
         if (!mapRef.current) return;
 
         order.forEach((i) => {
-          const r = routes[i];
+          const r = results[i];
           const isBest = i === bestIdx;
           const meta = palette[i] ?? palette[0];
           const sourceId = `route-alt-${i}`;
@@ -402,7 +397,7 @@ export const MergedTripStopsPanel = ({
 
         // Fit bounds around the best route
         try {
-          const coords: Array<[number, number]> = routes[bestIdx].geometry.coordinates;
+          const coords: Array<[number, number]> = results[bestIdx].geometry.coordinates;
           const b = new maplibregl.LngLatBounds();
           coords.forEach((c) => b.extend(c as any));
           stopsWithCoords.forEach((s) => {
@@ -415,8 +410,9 @@ export const MergedTripStopsPanel = ({
         }
 
         setRoutesInfo(
-          routes.map((r, i) => ({
+          results.map((r, i) => ({
             label: palette[i]?.name ?? `Route ${i + 1}`,
+            strategy: r.strategy,
             distanceKm: r.distance / 1000,
             durationMin: r.duration / 60,
             isBest: i === bestIdx,
