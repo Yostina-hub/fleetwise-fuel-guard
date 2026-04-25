@@ -20,6 +20,7 @@ import { motion } from "framer-motion";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SlaCountdownBadge } from "./SlaCountdownBadge";
 
 interface VehicleRequestCardProps {
   request: any;
@@ -99,6 +100,13 @@ export const VehicleRequestCard = ({
           <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 gap-1 border-border/60">
             {tMeta.icon} {tMeta.label}
           </Badge>
+          <SlaCountdownBadge
+            createdAt={request.created_at}
+            slaDueAt={request.sla_due_at}
+            assignedAt={request.assigned_at}
+            slaBreached={request.sla_breached}
+            operationType={request.operation_type}
+          />
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
