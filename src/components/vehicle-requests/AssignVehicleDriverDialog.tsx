@@ -704,4 +704,39 @@ const EmptyState = ({ text }: { text: string }) => (
   </div>
 );
 
+/**
+ * License-suitability badge — turns the LicenseEvaluation into a single
+ * colour-coded chip so dispatchers can see "Class 3 ✓" / "Needs Class 4" /
+ * "Expired" at a glance.
+ */
+const LicenseBadge = ({
+  evaluation,
+}: {
+  evaluation: NonNullable<DriverOption["license"]>;
+}) => {
+  const isBad = !evaluation.matches || evaluation.expired;
+  const isWarn = !isBad && (evaluation.expiresSoon || evaluation.unverified);
+
+  let cls = "bg-emerald-500/10 text-emerald-600 border-emerald-500/30";
+  let icon = <ShieldCheck className="w-2.5 h-2.5" />;
+  if (isBad) {
+    cls = "bg-destructive/10 text-destructive border-destructive/30";
+    icon = <AlertTriangle className="w-2.5 h-2.5" />;
+  } else if (isWarn) {
+    cls = "bg-warning/10 text-warning border-warning/30";
+    icon = <AlertTriangle className="w-2.5 h-2.5" />;
+  }
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn("text-[10px] gap-0.5 shrink-0 font-normal", cls)}
+      title={evaluation.summary}
+    >
+      {icon}
+      {evaluation.summary}
+    </Badge>
+  );
+};
+
 export default AssignVehicleDriverDialog;
