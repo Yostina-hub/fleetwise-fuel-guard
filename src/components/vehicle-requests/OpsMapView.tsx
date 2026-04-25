@@ -81,6 +81,10 @@ interface PendingRequest {
   needed_from: string;
   status: string;
   priority: string | null;
+  passengers: number | null;
+  vehicle_type: string | null;
+  is_consolidated_parent: boolean | null;
+  consolidated_request_count: number | null;
 }
 
 // Stable color per pool (deterministic hash → HSL)
