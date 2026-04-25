@@ -26,14 +26,16 @@ import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { friendlyToastError } from "@/lib/errorMessages";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
+import { cn } from "@/lib/utils";
 
 const incidentSchema = z.object({
   incident_type: z.enum(["accident", "breakdown", "violation", "theft", "damage"]),
   severity: z.enum(["low", "medium", "high", "critical"]),
-  description: z.string().trim().min(1, "Description is required").max(1000),
-  location: z.string().trim().max(200).optional(),
-  incident_time: z.string(),
-  estimated_cost: z.number().min(0).optional(),
+  description: z.string().trim().min(1, "Description is required").max(1000, "Description must be 1000 characters or fewer"),
+  location: z.string().trim().max(200, "Location must be 200 characters or fewer").optional(),
+  incident_time: z.string().min(1, "Date and time are required"),
+  estimated_cost: z.number().min(0, "Estimated cost cannot be negative").optional(),
 });
 
 interface CreateIncidentDialogProps {
@@ -55,6 +57,7 @@ const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDi
     incident_time: new Date().toISOString().slice(0, 16),
     estimated_cost: 0,
   });
+  const v = useFieldValidation(incidentSchema, () => formData);
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -93,10 +96,13 @@ const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDi
       incident_time: new Date().toISOString().slice(0, 16),
       estimated_cost: 0,
     });
+    v.reset();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const result = v.validateAll(formData);
+    if (!result.success) return;
     createMutation.mutate(formData);
   };
 
