@@ -171,24 +171,37 @@ const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDi
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, description: e.target.value });
+                  v.handleChange("description", e.target.value);
+                }}
+                onBlur={(e) => v.handleBlur("description", e.target.value)}
                 placeholder="Provide detailed description of the incident..."
                 rows={4}
-                required
+                aria-invalid={!!v.getError("description")}
+                className={cn(v.getError("description") && "border-destructive focus-visible:ring-destructive")}
               />
+              {v.getError("description") && (
+                <p className="text-sm text-destructive mt-1">{v.getError("description")}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="location">Location</Label>
               <Input
                 id="location"
                 value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, location: e.target.value });
+                  v.handleChange("location", e.target.value);
+                }}
+                onBlur={(e) => v.handleBlur("location", e.target.value)}
                 placeholder="Enter incident location"
+                aria-invalid={!!v.getError("location")}
+                className={cn(v.getError("location") && "border-destructive focus-visible:ring-destructive")}
               />
+              {v.getError("location") && (
+                <p className="text-sm text-destructive mt-1">{v.getError("location")}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="incident_time">Date & Time *</Label>
@@ -196,11 +209,17 @@ const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDi
                 id="incident_time"
                 type="datetime-local"
                 value={formData.incident_time}
-                onChange={(e) =>
-                  setFormData({ ...formData, incident_time: e.target.value })
-                }
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, incident_time: e.target.value });
+                  v.handleChange("incident_time", e.target.value);
+                }}
+                onBlur={(e) => v.handleBlur("incident_time", e.target.value)}
+                aria-invalid={!!v.getError("incident_time")}
+                className={cn(v.getError("incident_time") && "border-destructive focus-visible:ring-destructive")}
               />
+              {v.getError("incident_time") && (
+                <p className="text-sm text-destructive mt-1">{v.getError("incident_time")}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="estimated_cost">Estimated Cost ($)</Label>
@@ -209,10 +228,18 @@ const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDi
                 type="number"
                 step="0.01"
                 value={formData.estimated_cost}
-                onChange={(e) =>
-                  setFormData({ ...formData, estimated_cost: parseFloat(e.target.value) || 0 })
-                }
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value) || 0;
+                  setFormData({ ...formData, estimated_cost: val });
+                  v.handleChange("estimated_cost", val);
+                }}
+                onBlur={(e) => v.handleBlur("estimated_cost", parseFloat(e.target.value) || 0)}
+                aria-invalid={!!v.getError("estimated_cost")}
+                className={cn(v.getError("estimated_cost") && "border-destructive focus-visible:ring-destructive")}
               />
+              {v.getError("estimated_cost") && (
+                <p className="text-sm text-destructive mt-1">{v.getError("estimated_cost")}</p>
+              )}
             </div>
           </div>
           <DialogFooter className="mt-6">
