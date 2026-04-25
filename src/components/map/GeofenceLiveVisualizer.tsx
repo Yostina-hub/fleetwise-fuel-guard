@@ -36,6 +36,8 @@ interface GeofenceLiveVisualizerProps {
 const SOURCE_PREFIX = 'geofence-viz-';
 const FILL_LAYER_PREFIX = 'geofence-fill-';
 const LINE_LAYER_PREFIX = 'geofence-line-';
+const LABEL_SOURCE_ID = 'geofence-viz-labels';
+const LABEL_LAYER_ID = 'geofence-viz-label-layer';
 
 export const GeofenceLiveVisualizer = ({ map, vehicles, visible, onClose }: GeofenceLiveVisualizerProps) => {
   const { organizationId } = useOrganization();
