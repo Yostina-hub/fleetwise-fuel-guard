@@ -346,7 +346,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
             </div>
 
             <div>
-              <Label>Work Request Type</Label>
+              <Label className="text-primary font-medium text-sm">Work Request Type</Label>
               <Select value={header.request_type} onValueChange={v => setHeader(h => ({ ...h, request_type: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -397,12 +397,12 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
             </div>
 
             <div>
-              <Label>Requested For</Label>
+              <Label className="text-primary font-medium text-sm">Requested For</Label>
               <Input value={profile?.full_name || user?.email || ""} disabled />
             </div>
 
             <div>
-              <Label>Estimated Cost (ETB)</Label>
+              <Label className="text-primary font-medium text-sm">Estimated Cost (ETB)</Label>
               <Input type="number" value={header.estimated_cost} onChange={e => setHeader(h => ({ ...h, estimated_cost: e.target.value }))} />
             </div>
             </div>
@@ -482,27 +482,27 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
             <SectionTitle icon={User} title="Creation Information" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Created By</Label>
+                <Label className="text-primary font-medium text-sm">Created By</Label>
                 <Input value={profile?.full_name || user?.email || ""} disabled />
               </div>
               <div className="flex items-end gap-2">
                 <div className="flex-1">
-                  <Label>Notify User</Label>
+                  <Label className="text-primary font-medium text-sm">Notify User</Label>
                   <div className="h-10 flex items-center">
                     <Switch checked={header.notify_user} onCheckedChange={v => setHeader(h => ({ ...h, notify_user: v }))} />
                   </div>
                 </div>
               </div>
               <div>
-                <Label>Phone Number</Label>
+                <Label className="text-primary font-medium text-sm">Phone Number</Label>
                 <Input value={header.contact_phone} onChange={e => setHeader(h => ({ ...h, contact_phone: e.target.value }))} />
               </div>
               <div>
-                <Label>E-mail</Label>
+                <Label className="text-primary font-medium text-sm">E-mail</Label>
                 <Input type="email" value={header.contact_email} onChange={e => setHeader(h => ({ ...h, contact_email: e.target.value }))} />
               </div>
               <div>
-                <Label>Contact Preference</Label>
+                <Label className="text-primary font-medium text-sm">Contact Preference</Label>
                 <Select value={header.contact_preference} onValueChange={v => setHeader(h => ({ ...h, contact_preference: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                   <SelectContent>
@@ -521,7 +521,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
             <SectionTitle icon={Info} title="Descriptive Information" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Context Value</Label>
+                <Label className="text-primary font-medium text-sm">Context Value</Label>
                 <Input value="Vehicle Maintenance request" disabled />
               </div>
               <div>
@@ -559,7 +559,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                 </Select>
               </div>
               <div>
-                <Label>Driver Name</Label>
+                <Label className="text-primary font-medium text-sm">Driver Name</Label>
                 <Input value={header.driver_name} onChange={e => setHeader(h => ({ ...h, driver_name: e.target.value }))} />
               </div>
               <div>
@@ -580,7 +580,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                 </Select>
               </div>
               <div className="md:col-span-2">
-                <Label>Remark</Label>
+                <Label className="text-primary font-medium text-sm">Remark</Label>
                 <Input value={header.notes} onChange={e => setHeader(h => ({ ...h, notes: e.target.value }))} />
               </div>
             </div>
@@ -622,7 +622,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
 
           <section className="space-y-3">
             <div>
-              <Label>Reason</Label>
+              <Label className="text-primary font-medium text-sm">Reason</Label>
               <Input value={header.reason} onChange={e => setHeader(h => ({ ...h, reason: e.target.value }))} placeholder="Worn out, puncture, scheduled rotation, etc." />
             </div>
           </section>
@@ -675,29 +675,29 @@ function ItemFields({ item, onChange }: { item: LineItem; onChange: (p: Partial<
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs"><span className="text-destructive">*</span> Position</Label>
+          <Label className="text-primary font-medium text-xs"><span className="text-destructive">*</span> Position</Label>
           <Select value={item.position} onValueChange={v => onChange({ position: v })}>
             <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
             <SelectContent>{POSITIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
-          <Label className="text-xs">Tire Size</Label>
+          <Label className="text-primary font-medium text-xs">Tire Size</Label>
           <Input value={item.tire_size} onChange={e => onChange({ tire_size: e.target.value })} placeholder="e.g. 315/80R22.5" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs">Preferred Brand</Label>
+          <Label className="text-primary font-medium text-xs">Preferred Brand</Label>
           <Input value={item.preferred_brand} onChange={e => onChange({ preferred_brand: e.target.value })} />
         </div>
         <div>
-          <Label className="text-xs">Preferred Model</Label>
+          <Label className="text-primary font-medium text-xs">Preferred Model</Label>
           <Input value={item.preferred_model} onChange={e => onChange({ preferred_model: e.target.value })} />
         </div>
       </div>
       <div>
-        <Label className="text-xs">Item Notes</Label>
+        <Label className="text-primary font-medium text-xs">Item Notes</Label>
         <Input value={item.notes} onChange={e => onChange({ notes: e.target.value })} />
       </div>
     </div>
