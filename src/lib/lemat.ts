@@ -99,23 +99,27 @@ export const fetchLematMapStyle = async (
 
     const proxyBase = getProxyTileUrl();
 
-    // Rewrite vector tile URLs to go through the proxy
+    // Rewrite vector tile URLs to go through the proxy.
+     // We URL-encode the path so the {z}/{x}/{y} substitutions (which contain "/")
+     // don't get mis-parsed by the Supabase Functions gateway as a sub-route
+     // (which produced 404s like ".../lemat-tile-proxy/12/4864/5119.pbf").
     if (styleJson.sources) {
       for (const src of Object.values(styleJson.sources) as any[]) {
         if (src.tiles && Array.isArray(src.tiles)) {
           src.tiles = src.tiles.map((tileUrl: string) => {
-            // Strip origin, keep path with {z}/{x}/{y} template tokens intact
             const path = tileUrl.replace('https://lemat.goffice.et/', '');
-            return `${proxyBase}?path=${path}`;
+            return `${proxyBase}?path=${encodeURIComponent(path)}`;
           });
         }
       }
     }
 
-    // Rewrite glyph URLs through proxy (keep {fontstack}/{range} tokens intact)
+    // Rewrite glyph URLs through proxy (keep {fontstack}/{range} tokens intact).
+    // MapLibre substitutes those tokens before calling transformRequest, so encoding
+    // here is safe.
     if (styleJson.glyphs && typeof styleJson.glyphs === 'string' && styleJson.glyphs.startsWith('https://lemat.goffice.et/')) {
       const glyphPath = styleJson.glyphs.replace('https://lemat.goffice.et/', '');
-      styleJson.glyphs = `${proxyBase}?path=${glyphPath}`;
+      styleJson.glyphs = `${proxyBase}?path=${encodeURIComponent(glyphPath)}`;
     }
 
     return styleJson;
