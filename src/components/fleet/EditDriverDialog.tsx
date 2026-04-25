@@ -556,7 +556,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
 
                     <TabsContent value="personal" className="mt-4 space-y-6 focus-visible:outline-none">
                       <Section icon={<Briefcase className="w-5 h-5 text-primary" />} title="Employment Type">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
                           <Field label="Driver Type" required error={validation.getError("driver_type")} fieldRef={registerRef("driver_type")}>
                             <Select value={formData.driver_type} onValueChange={(value) => { set("driver_type", value); validation.validateField("driver_type", value); }}>
                               <SelectTrigger className={errClass("driver_type")} onBlur={() => onBlur("driver_type")}>
@@ -582,7 +582,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                       </Section>
 
                       <Section icon={<User className="w-5 h-5 text-primary" />} title="Personal Information">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
                           <Field label="First Name" required error={validation.getError("first_name")} success={!validation.getError("first_name") && !!formData.first_name && validation.touched.first_name} fieldRef={registerRef("first_name")}>
                             <Input value={formData.first_name} onChange={(e) => set("first_name", e.target.value)} onBlur={() => onBlur("first_name")} placeholder="e.g. Abebe" maxLength={100} className={errClass("first_name")} aria-invalid={!!validation.getError("first_name")} />
                           </Field>
@@ -625,7 +625,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
 
                     <TabsContent value="address" className="mt-4 space-y-6 focus-visible:outline-none">
                       <Section icon={<MapPin className="w-5 h-5 text-primary" />} title="Address">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
                           <CascadingLocationSelector
                             region={formData.address_region}
                             zone={formData.address_zone}
@@ -647,7 +647,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
 
                     <TabsContent value="legal" className="mt-4 space-y-6 focus-visible:outline-none">
                       <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Legal & Verification">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
                           <Field label="ID Type" required error={validation.getError("govt_id_type")} fieldRef={registerRef("govt_id_type")}>
                             <Select value={formData.govt_id_type} onValueChange={(value) => { set("govt_id_type", value); validation.validateField("govt_id_type", value); }}>
                               <SelectTrigger className={errClass("govt_id_type")} onBlur={() => onBlur("govt_id_type")}><SelectValue placeholder="Select..." /></SelectTrigger>
@@ -703,7 +703,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                       </Section>
 
                       <Section icon={<Paperclip className="w-5 h-5 text-primary" />} title="Driver Attachments">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
                           <FileUploadField label="Driver's License (Front)" accept="image/*,.pdf" currentUrl={formData.license_front_url || null} selectedFile={licenseFrontFile} onFileSelect={setLicenseFrontFile} />
                           <FileUploadField label="Driver's License (Back)" accept="image/*,.pdf" currentUrl={formData.license_back_url || null} selectedFile={licenseBackFile} onFileSelect={setLicenseBackFile} />
                           <FileUploadField label="National ID Card" accept="image/*,.pdf" currentUrl={formData.national_id_url || null} selectedFile={nationalIdFile} onFileSelect={setNationalIdFile} />
@@ -715,7 +715,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
 
                     <TabsContent value="employment" className="mt-4 space-y-6 focus-visible:outline-none">
                       <Section icon={<Building2 className="w-5 h-5 text-primary" />} title="Employment Details">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
                           <Field label="Employment Status">
                             <Select value={formData.employment_type} onValueChange={(value) => { set("employment_type", value); if (value !== "contract") set("contract_end_date", ""); }}>
                               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -833,7 +833,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                       </Section>
 
                       <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Telebirr Account (Optional)">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
                           <Field label="Telebirr Account" error={validation.getError("telebirr_account")} hint="Optional — used for payroll/payouts">
                             <Input value={formData.telebirr_account} onChange={(e) => set("telebirr_account", e.target.value.replace(/[^\d+]/g, "").slice(0, 13))} onBlur={() => onBlur("telebirr_account")} placeholder="09XXXXXXXX" maxLength={13} inputMode="tel" className={errClass("telebirr_account")} />
                           </Field>
@@ -843,7 +843,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
 
                     <TabsContent value="emergency" className="mt-4 space-y-6 focus-visible:outline-none">
                       <Section icon={<AlertCircle className="w-5 h-5 text-destructive" />} title="Emergency Contact">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
                           <Field label="Contact Name" required error={validation.getError("emergency_contact_name")} success={!validation.getError("emergency_contact_name") && !!formData.emergency_contact_name && validation.touched.emergency_contact_name} fieldRef={registerRef("emergency_contact_name")}>
                             <Input value={formData.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} onBlur={() => onBlur("emergency_contact_name")} placeholder="Family member name" maxLength={150} className={errClass("emergency_contact_name")} aria-invalid={!!validation.getError("emergency_contact_name")} />
                           </Field>
@@ -862,7 +862,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                       </Section>
 
                       <Section icon={<Droplets className="w-5 h-5 text-primary" />} title="Identification Tags (Optional)">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
                           <Field label="RFID Tag"><Input value={formData.rfid_tag} onChange={(e) => set("rfid_tag", e.target.value)} placeholder="RFID tag number" maxLength={100} /></Field>
                           <Field label="iButton ID"><Input value={formData.ibutton_id} onChange={(e) => set("ibutton_id", e.target.value)} placeholder="iButton ID" maxLength={100} /></Field>
                           <Field label="Bluetooth ID"><Input value={formData.bluetooth_id} onChange={(e) => set("bluetooth_id", e.target.value)} placeholder="Bluetooth device ID" maxLength={100} /></Field>

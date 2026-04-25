@@ -418,7 +418,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
         {/* ============ STEP 1: PERSONAL ============ */}
         <TabsContent value="personal" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<Briefcase className="w-5 h-5 text-primary" />} title="Employment Type">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
               <Field label="Driver Type" required error={validation.getError("driver_type")} fieldRef={registerRef("driver_type")} tooltip="Determines which fleet rules and pools the driver belongs to. There is no default — please pick the type that best matches the role.">
                 <Select value={formData.driver_type} onValueChange={v => { set("driver_type", v); validation.validateField("driver_type", v); }}>
                   <SelectTrigger className={errClass("driver_type")} onBlur={() => onBlur("driver_type")}><SelectValue placeholder="Select driver type..." /></SelectTrigger>
@@ -442,7 +442,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
           </Section>
 
           <Section icon={<User className="w-5 h-5 text-primary" />} title="Personal Information">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
               <Field label="First Name" required error={validation.getError("first_name")} success={!validation.getError("first_name") && !!formData.first_name && validation.touched.first_name} fieldRef={registerRef("first_name")}>
                 <Input value={formData.first_name} onChange={e => set("first_name", e.target.value)} onBlur={() => onBlur("first_name")} placeholder="e.g. Abebe" maxLength={100} className={errClass("first_name")} aria-invalid={!!validation.getError("first_name")} />
               </Field>
@@ -486,7 +486,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
         {/* ============ STEP 2: ADDRESS ============ */}
         <TabsContent value="address" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<MapPin className="w-5 h-5 text-primary" />} title="Address">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
               <CascadingLocationSelector
                 region={formData.address_region}
                 zone={formData.address_zone}
@@ -509,7 +509,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
         {/* ============ STEP 3: LEGAL & ID ============ */}
         <TabsContent value="legal" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Legal & Verification">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
               <Field label="ID Type" required error={validation.getError("govt_id_type")} fieldRef={registerRef("govt_id_type")}>
                 <Select value={formData.govt_id_type} onValueChange={v => { set("govt_id_type", v); validation.validateField("govt_id_type", v); }}>
                   <SelectTrigger className={errClass("govt_id_type")} onBlur={() => onBlur("govt_id_type")}><SelectValue placeholder="Select..." /></SelectTrigger>
@@ -565,7 +565,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
           </Section>
 
           <Section icon={<Paperclip className="w-5 h-5 text-primary" />} title="Driver Attachments">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
               <FileUploadField label="Driver's License (Front)" accept="image/*,.pdf" selectedFile={licenseFrontFile} onFileSelect={setLicenseFrontFile} />
               <FileUploadField label="Driver's License (Back)" accept="image/*,.pdf" selectedFile={licenseBackFile} onFileSelect={setLicenseBackFile} />
               <FileUploadField label="National ID Card" accept="image/*,.pdf" selectedFile={nationalIdFile} onFileSelect={setNationalIdFile} />
@@ -578,7 +578,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
         {/* ============ STEP 4: EMPLOYMENT ============ */}
         <TabsContent value="employment" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<Building2 className="w-5 h-5 text-primary" />} title="Employment Details">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
               <Field label="Employment Status" tooltip="Select the contract type. Contract drivers must have an end date.">
                 <Select value={formData.employment_type} onValueChange={v => { set("employment_type", v); if (v !== "contract") set("contract_end_date", ""); validation.validateField("contract_end_date" as DriverFieldName, formData.contract_end_date); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -703,7 +703,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
           </Section>
 
           <Section icon={<CreditCard className="w-5 h-5 text-primary" />} title="Telebirr Account (Optional)">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
               <Field label="Telebirr Account" error={validation.getError("telebirr_account")} hint="Optional — used for payroll/payouts" tooltip="Telebirr mobile money account used for payroll and trip allowances. Use 09XXXXXXXX or the 9-digit Telebirr ID.">
                 <Input value={formData.telebirr_account} onChange={e => set("telebirr_account", e.target.value.replace(/[^\d+]/g, "").slice(0, 13))} onBlur={() => onBlur("telebirr_account")} placeholder="09XXXXXXXX" maxLength={13} inputMode="tel" className={errClass("telebirr_account")} />
               </Field>
@@ -714,7 +714,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
         {/* ============ STEP 5: EMERGENCY ============ */}
         <TabsContent value="emergency" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<AlertCircle className="w-5 h-5 text-destructive" />} title="Emergency Contact">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
               <Field label="Contact Name" required error={validation.getError("emergency_contact_name")} success={!validation.getError("emergency_contact_name") && !!formData.emergency_contact_name && validation.touched.emergency_contact_name} fieldRef={registerRef("emergency_contact_name")}>
                 <Input value={formData.emergency_contact_name} onChange={e => set("emergency_contact_name", e.target.value)} onBlur={() => onBlur("emergency_contact_name")} placeholder="Family member name" maxLength={150} className={errClass("emergency_contact_name")} aria-invalid={!!validation.getError("emergency_contact_name")} />
               </Field>
@@ -733,7 +733,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
           </Section>
 
           <Section icon={<Droplets className="w-5 h-5 text-primary" />} title="Identification Tags (Optional)">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
               <Field label="RFID Tag"><Input value={formData.rfid_tag} onChange={e => set("rfid_tag", e.target.value)} placeholder="RFID tag number" maxLength={100} /></Field>
               <Field label="iButton ID"><Input value={formData.ibutton_id} onChange={e => set("ibutton_id", e.target.value)} placeholder="iButton ID" maxLength={100} /></Field>
               <Field label="Bluetooth ID"><Input value={formData.bluetooth_id} onChange={e => set("bluetooth_id", e.target.value)} placeholder="Bluetooth device ID" maxLength={100} /></Field>
@@ -744,7 +744,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
         {/* ============ STEP 6: ACCOUNT ============ */}
         <TabsContent value="credentials" className="mt-4 space-y-6 focus-visible:outline-none">
           <Section icon={<Key className="w-5 h-5 text-primary" />} title="Account Credentials">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
               <Field label="Password" required error={validation.getError("password")} success={!validation.getError("password") && !!formData.password && validation.touched.password} fieldRef={registerRef("password")} hint="Min 12 chars · upper · lower · digit · special">
                 <div className="flex gap-2">
                   <Input type={showPassword ? "text" : "password"} value={formData.password} onChange={e => set("password", e.target.value)} onBlur={() => onBlur("password")} placeholder="••••••••••••" maxLength={100} className={cn("flex-1", errClass("password"))} aria-invalid={!!validation.getError("password")} />
