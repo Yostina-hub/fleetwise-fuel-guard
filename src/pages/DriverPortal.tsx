@@ -29,6 +29,7 @@ import CreateWorkRequestDialog from "@/components/maintenance/CreateWorkRequestD
 import { TireRequestDialog } from "@/components/tire-management/TireRequestDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
+import SharedTripsTab from "@/components/driver-portal/SharedTripsTab";
 import PendingPostTripBanner from "@/components/driver-portal/PendingPostTripBanner";
 import DriverNotificationBanner from "@/components/driver-portal/DriverNotificationBanner";
 import MyRequestsPanel from "@/components/driver-portal/MyRequestsPanel";
@@ -517,6 +518,11 @@ const DriverPortal = () => {
               <FileText className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Compliance</span>
               <span className="sm:hidden">Docs</span>
+            </TabsTrigger>
+            <TabsTrigger value="shared" className="gap-2">
+              <Users className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Shared Trips</span>
+              <span className="sm:hidden">Shared</span>
             </TabsTrigger>
             <TabsTrigger value="history" className="gap-2">
               <History className="h-4 w-4" aria-hidden="true" />
