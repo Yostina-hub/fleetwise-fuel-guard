@@ -202,6 +202,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   } = useAuth();
   const queryClient = useQueryClient();
   const { departments } = useDepartments();
+  // Pool memberships drive which Specific-Pool entries the requester can pick.
+  // Org-wide roles (super_admin, org_admin, fleet_owner/manager, ops_manager,
+  // dispatcher, auditor) bypass this filter and see every pool. Everyone else
+  // sees ONLY pools they're assigned to via `pool_memberships`.
+  const {
+    poolCodes: userPoolCodes,
+    unrestricted: poolUnrestricted,
+    hasAnyMembership,
+    loading: poolMembershipLoading,
+  } = usePoolMembership();
 
   // When a super_admin is impersonating, the override puts the impersonated
   // user into `useAuth().user` — but `supabase.auth.getUser()` still returns
