@@ -355,7 +355,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
     let hasBounds = false;
 
     if (showRoutes) {
-      requests.forEach((r) => {
+      visibleRequests.forEach((r) => {
         if (
           r.departure_lat == null ||
           r.departure_lng == null ||
@@ -364,10 +364,11 @@ export const OpsMapView = ({ organizationId }: Props) => {
         )
           return;
         const merged = !!mergeGroupColorByRequestId[r.id];
+        const isParent = !!r.is_consolidated_parent;
         const color = merged ? mergeGroupColorByRequestId[r.id] : poolColor(r.pool_name);
         features.push({
           type: "Feature",
-          properties: { color, merged, id: r.id, pool: r.pool_name || "Unassigned" },
+          properties: { color, merged: merged || isParent, id: r.id, pool: r.pool_name || "Unassigned" },
           geometry: {
             type: "LineString",
             coordinates: [
@@ -377,19 +378,38 @@ export const OpsMapView = ({ organizationId }: Props) => {
           },
         });
 
-        // pickup marker
+        // pickup marker — consolidated parents get a "merge" badge ring
         const pickupEl = document.createElement("div");
-        pickupEl.style.cssText = `width:14px;height:14px;border-radius:9999px;background:${color};border:2px solid hsl(var(--background));box-shadow:0 0 0 1px ${color};`;
+        const isUrgent = r.priority === "urgent" || r.priority === "high";
+        pickupEl.style.cssText = `
+          position:relative;width:${isParent ? 18 : 14}px;height:${isParent ? 18 : 14}px;
+          border-radius:9999px;background:${color};
+          border:2px solid hsl(var(--background));
+          box-shadow:0 0 0 ${isParent ? 3 : 1}px ${isParent ? "hsl(var(--primary))" : color}${isUrgent ? ", 0 0 0 5px hsl(0 84% 60% / .35)" : ""};
+        `;
+        if (isParent) {
+          const tag = document.createElement("span");
+          tag.textContent = String(r.consolidated_request_count ?? "·");
+          tag.style.cssText = `
+            position:absolute;top:-8px;right:-10px;min-width:14px;height:14px;
+            padding:0 3px;border-radius:9999px;background:hsl(var(--primary));
+            color:hsl(var(--primary-foreground));font:700 9px system-ui;
+            display:flex;align-items:center;justify-content:center;border:1px solid hsl(var(--background));
+          `;
+          pickupEl.appendChild(tag);
+        }
         const m1 = new maplibregl.Marker({ element: pickupEl })
           .setLngLat([r.departure_lng, r.departure_lat])
           .setPopup(
             new maplibregl.Popup({ offset: 12 }).setHTML(
-              `<div style="font:500 12px system-ui;padding:4px;">
-                 <div style="font-weight:700">${r.request_number}</div>
-                 <div style="color:hsl(var(--muted-foreground));font-size:11px;">${r.pool_name || "Unassigned"}</div>
+              `<div style="font:500 12px system-ui;padding:4px;min-width:170px;">
+                 <div style="font-weight:700">${r.request_number}${isParent ? " · 🔗 merged" : ""}</div>
+                 <div style="color:hsl(var(--muted-foreground));font-size:11px;">${r.pool_name || "Unassigned"}${r.passengers ? ` · ${r.passengers} pax` : ""}</div>
                  <div style="margin-top:4px;font-size:11px;">📍 ${r.departure_place || "Pickup"}</div>
                  <div style="font-size:11px;">🏁 ${r.destination || "Drop"}</div>
+                 ${isUrgent ? '<div style="margin-top:4px;color:hsl(0 84% 60%);font-weight:600;font-size:10px;">⚠ URGENT</div>' : ""}
                  ${merged ? '<div style="margin-top:4px;color:hsl(38 92% 50%);font-weight:600;font-size:10px;">⚡ Merge candidate</div>' : ""}
+                 ${isParent ? `<div style="margin-top:4px;color:hsl(var(--primary));font-weight:600;font-size:10px;">🔗 Consolidated · ${r.consolidated_request_count ?? "?"} requests</div>` : ""}
                </div>`,
             ),
           )
