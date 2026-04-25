@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Car, FileText, Award, Clock, MapPin, Activity,
   Loader2, ChevronRight, AlertTriangle, CheckCircle2, Calendar, Shield, History,
-  Inbox, PlayCircle, StopCircle
+  Inbox, PlayCircle, StopCircle, Users
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
