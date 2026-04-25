@@ -28,6 +28,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
+import { SlaCountdownBadge } from "@/components/vehicle-requests/SlaCountdownBadge";
 import { Search, Filter } from "lucide-react";
 import { format } from "date-fns";
 import CreateIncidentDialog from "./CreateIncidentDialog";
@@ -191,7 +192,20 @@ const IncidentsTab = () => {
             <TableRow key={incident.id}>
               <TableCell className="font-medium">{incident.incident_number}</TableCell>
               <TableCell className="capitalize">{incident.incident_type}</TableCell>
-              <TableCell>{getSeverityBadge(incident.severity)}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {getSeverityBadge(incident.severity)}
+                  {incident.severity === "critical" && incident.sla_deadline_at && (
+                    <SlaCountdownBadge
+                      createdAt={incident.created_at}
+                      slaDueAt={incident.sla_deadline_at}
+                      assignedAt={incident.status === "resolved" || incident.status === "closed" ? incident.resolved_at : null}
+                      slaBreached={!!incident.sla_breached_at}
+                      operationType="incident_urgent"
+                    />
+                  )}
+                </div>
+              </TableCell>
               <TableCell>
                 {incident.vehicles
                   ? `${incident.vehicles.plate_number} (${incident.vehicles.make})`
