@@ -14,6 +14,7 @@ import { DriverLeaderboard } from "@/components/drivers/DriverLeaderboard";
 import { DriverCommunicationHub } from "@/components/drivers/DriverCommunicationHub";
 import { DriverDVIRPanel } from "@/components/drivers/DriverDVIRPanel";
 import { DriverHierarchyView } from "@/components/drivers/DriverHierarchyView";
+import BulkProvisionDriversButton from "@/components/drivers/BulkProvisionDriversButton";
 import { useTranslation } from 'react-i18next';
 
 const DriverManagement = () => {
