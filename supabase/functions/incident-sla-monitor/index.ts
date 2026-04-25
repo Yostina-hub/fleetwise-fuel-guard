@@ -187,7 +187,7 @@ async function notifySupervisors(
   // Persist an in-app notification per user. (Push delivery is handled by
   // the existing send-push-notification function listening on this table.)
   const rows = profiles.map((p: any) => ({
-    user_id: p.user_id,
+    user_id: p.id,
     organization_id: organizationId,
     title: payload.title,
     message: payload.body,
