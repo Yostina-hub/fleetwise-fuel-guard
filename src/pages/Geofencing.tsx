@@ -223,17 +223,22 @@ const Geofencing = () => {
 
         let geojsonData: GeoJSON.Feature;
 
-        if (fence.geometry_type === 'circle' && fence.center_lat && fence.center_lng) {
-          const center = [fence.center_lng, fence.center_lat];
-          const radius = fence.radius_meters || 500;
+        if (fence.geometry_type === 'circle' && fence.center_lat != null && fence.center_lng != null) {
+          // Postgres numeric columns arrive as strings via PostgREST — coerce to Number
+          // before any arithmetic, otherwise we end up with string concatenation and the
+          // geofence renders off-screen (or not at all).
+          const centerLat = Number(fence.center_lat);
+          const centerLng = Number(fence.center_lng);
+          const radius = Number(fence.radius_meters) || 500;
+          if (!Number.isFinite(centerLat) || !Number.isFinite(centerLng)) return;
           const points = 64;
-          const coords = [];
+          const coords: number[][] = [];
           for (let i = 0; i <= points; i++) {
             const angle = (i / points) * 2 * Math.PI;
             const dx = radius * Math.cos(angle);
             const dy = radius * Math.sin(angle);
-            const lat = fence.center_lat + (dy / 111320);
-            const lng = fence.center_lng + (dx / (111320 * Math.cos(fence.center_lat * Math.PI / 180)));
+            const lat = centerLat + (dy / 111320);
+            const lng = centerLng + (dx / (111320 * Math.cos((centerLat * Math.PI) / 180)));
             coords.push([lng, lat]);
           }
           geojsonData = {
@@ -242,7 +247,7 @@ const Geofencing = () => {
             geometry: { type: 'Polygon', coordinates: [coords] }
           };
         } else if (fence.geometry_type === 'polygon' && fence.polygon_points?.length >= 3) {
-          const coords = fence.polygon_points.map((p: any) => [p.lng, p.lat]);
+          const coords = fence.polygon_points.map((p: any) => [Number(p.lng), Number(p.lat)]);
           coords.push(coords[0]);
           geojsonData = {
             type: 'Feature',
