@@ -247,7 +247,25 @@ export const driverFieldSchemas = {
   rfid_tag: trimmedOptional("RFID tag", 100),
   ibutton_id: trimmedOptional("iButton ID", 100),
   bluetooth_id: trimmedOptional("Bluetooth ID", 100),
-  medical_certificate_expiry: optionalDate("Medical certificate expiry"),
+  // Medical certificate must not be expired when provided.
+  medical_certificate_expiry: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (v) => !v || !Number.isNaN(Date.parse(v)),
+      "Medical certificate expiry is not a valid date",
+    )
+    .refine(
+      (v) => {
+        if (!v) return true;
+        const d = new Date(v);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return d.getTime() >= today.getTime();
+      },
+      "Medical certificate is expired — please upload a renewed one",
+    ),
 
   // ----- Credentials -----
   password: z
@@ -273,6 +291,29 @@ const crossFieldRules: CrossFieldRule[] = [
     if (f.license_issue_date && f.license_expiry) {
       if (new Date(f.license_expiry) <= new Date(f.license_issue_date)) {
         return { license_expiry: "License expiry must be after the issue date" };
+      }
+    }
+    return {};
+  },
+  // #10 — Require an expiry date whenever a license number is captured.
+  // Prevents drivers being saved with no traceable validity window.
+  (f) => {
+    if (f.license_number && !f.license_expiry) {
+      return { license_expiry: "License expiry date is required to verify the license is still valid" };
+    }
+    return {};
+  },
+  // #10 — Reject outdated license issue dates. Ethiopian driving licenses
+  // are issued for at most 5 years, so an issue date older than 10 years
+  // indicates a stale/non-current document even if the operator typed a
+  // future expiry by mistake.
+  (f) => {
+    if (f.license_issue_date) {
+      const issued = new Date(f.license_issue_date);
+      const tenYearsAgo = new Date();
+      tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
+      if (issued < tenYearsAgo) {
+        return { license_issue_date: "License issue date is more than 10 years old — please use the current renewed license" };
       }
     }
     return {};
