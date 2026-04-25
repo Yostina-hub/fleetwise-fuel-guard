@@ -308,21 +308,36 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                   <div className="md:col-span-3">
                     <Label className="text-sm">Plate Number *</Label>
                     <div className="grid grid-cols-3 gap-2 mt-1.5">
-                      <Select value={formData.plate_code} onValueChange={v => set("plate_code", v)}>
+                      <Select value={formData.plate_code} onValueChange={v => { set("plate_code", v); fv.handleChange("plate_number", `${v}-${formData.plate_region}-${formData.plate_number_part}`); }}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {PLATE_CODES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
-                      <Select value={formData.plate_region} onValueChange={v => set("plate_region", v)}>
+                      <Select value={formData.plate_region} onValueChange={v => { set("plate_region", v); fv.handleChange("plate_number", `${formData.plate_code}-${v}-${formData.plate_number_part}`); }}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {PLATE_REGIONS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
-                      <Input value={formData.plate_number_part} onChange={e => set("plate_number_part", e.target.value.replace(/\D/g, "").slice(0, 5))} placeholder="12345" maxLength={5} />
+                      <Input
+                        value={formData.plate_number_part}
+                        onChange={e => {
+                          const next = e.target.value.replace(/\D/g, "").slice(0, 5);
+                          set("plate_number_part", next);
+                          fv.handleChange("plate_number", `${formData.plate_code}-${formData.plate_region}-${next}`);
+                        }}
+                        onBlur={() => fv.handleBlur("plate_number", `${formData.plate_code}-${formData.plate_region}-${formData.plate_number_part}`)}
+                        placeholder="12345"
+                        maxLength={5}
+                        aria-invalid={!!fv.getError("plate_number")}
+                        className={cn(fv.getError("plate_number") && "border-destructive focus-visible:ring-destructive")}
+                      />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">Preview: {plateNumber}</p>
+                    {fv.getError("plate_number") && (
+                      <p className="text-xs text-destructive mt-1">{fv.getError("plate_number")}</p>
+                    )}
                   </div>
                   <Field label="Vehicle Type">
                     <Select value={formData.vehicle_type || "none"} onValueChange={v => set("vehicle_type", v === "none" ? "" : v)}>
