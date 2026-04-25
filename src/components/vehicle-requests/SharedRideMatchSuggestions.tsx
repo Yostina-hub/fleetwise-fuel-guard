@@ -11,13 +11,13 @@
  * approval work) — the ride link is added immediately after submission via
  * `useJoinSharedRide`.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useFindSharedRides, type SharedRideMatch } from "@/hooks/useSharedRides";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { MapPin, Users, Clock, Sparkles, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
+import { SharedRideMatchMap } from "./SharedRideMatchMap";
 
 interface Props {
   poolCode: string | null;
@@ -56,6 +56,7 @@ export const SharedRideMatchSuggestions = ({
   });
 
   const matches = useMemo(() => data ?? [], [data]);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Hide entirely until the form has enough data to query.
   if (!originLat || !destinationLat || !departureAt) return null;
@@ -74,6 +75,24 @@ export const SharedRideMatchSuggestions = ({
           ±10 min wait window
         </Badge>
       </div>
+
+      {matches.length > 0 && originLng != null && destinationLng != null && (
+        <div className="mb-2">
+          <SharedRideMatchMap
+            matches={matches}
+            reqOriginLat={originLat}
+            reqOriginLng={originLng}
+            reqDestLat={destinationLat}
+            reqDestLng={destinationLng}
+            selectedRideId={hoveredId ?? selectedRideId ?? null}
+            onHover={setHoveredId}
+            onSelect={(rideId) => {
+              const m = matches.find((x) => x.ride_id === rideId);
+              if (m) onSelect(m);
+            }}
+          />
+        </div>
+      )}
 
       <div className="space-y-2">
         {matches.map((m) => {

@@ -27,6 +27,10 @@ export interface SharedRideMatch {
   departure_at: string;
   available_seats: number;
   total_seats: number;
+  origin_lat: number;
+  origin_lng: number;
+  destination_lat: number;
+  destination_lng: number;
   origin_distance_km: number;
   destination_distance_km: number;
   time_delta_minutes: number;

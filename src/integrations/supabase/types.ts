@@ -27764,10 +27764,14 @@ export type Database = {
           departure_at: string
           destination_distance_km: number
           destination_label: string
+          destination_lat: number
+          destination_lng: number
           driver_id: string
           match_score: number
           origin_distance_km: number
           origin_label: string
+          origin_lat: number
+          origin_lng: number
           pool_code: string
           ride_id: string
           time_delta_minutes: number
