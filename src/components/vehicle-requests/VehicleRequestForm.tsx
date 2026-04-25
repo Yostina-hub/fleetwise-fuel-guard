@@ -805,6 +805,20 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       return data;
     },
     onSuccess: (data: any) => {
+      // If the requester picked a Tier-1 shared-ride match, link them now.
+      if (selectedRide && data?.id) {
+        joinRide.mutate({
+          rideId: selectedRide.ride_id,
+          vehicleRequestId: data.id,
+          passengerUserId: user?.id ?? null,
+          seats: Math.max(1, Number(form.passengers) || 1),
+          pickupLabel: form.departure_place || null,
+          pickupLat: form.departure_lat ?? null,
+          pickupLng: form.departure_lng ?? null,
+          dropoffLabel: form.destination || null,
+        });
+        setSelectedRide(null);
+      }
       toast.success(
         canFileOnBehalf && onBehalfOf && onBehalfOf.id !== user?.id
           ? `Vehicle request submitted on behalf of ${onBehalfOf.name}`
@@ -1579,6 +1593,20 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <FieldError field="destination" />
                 <FieldError field="stops" />
               </div>
+              {/* Tier-1 Direct Match — surfaced as soon as origin/destination/time are picked. */}
+              <SharedRideMatchSuggestions
+                poolCode={form.pool_name || null}
+                originLat={form.departure_lat}
+                originLng={form.departure_lng}
+                destinationLat={form.destination_lat}
+                destinationLng={form.destination_lng}
+                departureAt={form.start_date instanceof Date ? form.start_date : null}
+                passengers={Math.max(1, Number(form.passengers) || 1)}
+                selectedRideId={selectedRide?.ride_id ?? null}
+                onSelect={(ride) =>
+                  setSelectedRide((cur) => (cur?.ride_id === ride.ride_id ? null : ride))
+                }
+              />
             </section>
           </div>
 
