@@ -21,8 +21,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Clock, Layers, UserCheck } from "lucide-react";
+import { MapPin, Users, Clock, Layers, UserCheck, GitMerge } from "lucide-react";
 import { PoolAssignmentPicker } from "./PoolAssignmentPicker";
+import { MergedTripStopsPanel } from "./MergedTripStopsPanel";
 
 interface Props {
   request: any;
