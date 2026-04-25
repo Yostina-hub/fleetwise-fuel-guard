@@ -958,7 +958,7 @@ async function processStatusUpdate(
       return { error: 'Device not found with IMEI: ' + imei, status: 404 };
     }
     cachedDevice = { ...deviceData, cachedAt: Date.now() };
-    knownDeviceCache.set(imei, cachedDevice);
+    knownDeviceCache.set(imei, cachedDevice!);
   }
   const device = cachedDevice!;
 
