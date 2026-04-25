@@ -167,11 +167,20 @@ async function notifySupervisors(
     "dispatcher",
   ];
 
+  // user_roles holds the role assignments; profiles holds organization_id.
+  const { data: roleRows, error: rolesErr } = await supabase
+    .from("user_roles")
+    .select("user_id, role")
+    .in("role", targetRoles);
+
+  if (rolesErr || !roleRows?.length) return 0;
+
+  const userIds = Array.from(new Set(roleRows.map((r: any) => r.user_id)));
   const { data: profiles, error } = await supabase
     .from("profiles")
-    .select("user_id, role")
+    .select("id, organization_id")
     .eq("organization_id", organizationId)
-    .in("role", targetRoles);
+    .in("id", userIds);
 
   if (error || !profiles?.length) return 0;
 
