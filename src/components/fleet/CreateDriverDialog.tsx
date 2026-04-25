@@ -363,7 +363,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
       </div>
 
       <Tabs value={activeStep} onValueChange={setActiveStep} className="mt-4">
-        <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-1 h-auto bg-muted/40 p-1">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-6 gap-1 h-auto bg-muted/40 p-1 rounded-lg">
           {STEPS.map((s, i) => {
             const Icon = s.icon;
             const hasErr = stepHasErrors(s.id);
