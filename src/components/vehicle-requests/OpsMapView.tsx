@@ -794,9 +794,39 @@ export const OpsMapView = ({ organizationId }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };
+
+interface KpiTileProps {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+  tone?: "default" | "primary" | "success" | "warning" | "danger";
+}
+const KpiTile = ({ icon, label, value, tone = "default" }: KpiTileProps) => {
+  const toneClass =
+    tone === "danger"
+      ? "border-destructive/40 bg-destructive/5 text-destructive"
+      : tone === "warning"
+      ? "border-amber-500/40 bg-amber-500/5 text-amber-600 dark:text-amber-400"
+      : tone === "success"
+      ? "border-emerald-500/40 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
+      : tone === "primary"
+      ? "border-primary/40 bg-primary/5 text-primary"
+      : "border-border bg-card text-foreground";
+  return (
+    <div className={`rounded-lg border px-2.5 py-1.5 ${toneClass}`}>
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide opacity-80">
+        {icon}
+        <span className="truncate">{label}</span>
+      </div>
+      <div className="text-lg font-bold leading-tight tabular-nums">{value}</div>
+    </div>
+  );
+};
+
 
 interface BorrowListProps {
   rows: any[];
