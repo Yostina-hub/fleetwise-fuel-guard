@@ -913,7 +913,10 @@ const VehicleRequests = () => {
         )}
 
         {/* ============== MAIN PANEL ============== */}
-
+        {/* Hide the full requests table when a workspace view is active so
+            the same approved requests don't appear twice (workspace +
+            duplicate row in the all-requests table below). */}
+        {viewMode === "requests" && (
         <Card id="vehicle-requests-table" className="overflow-hidden border-border/60 shadow-sm scroll-mt-20">
           <CardHeader className="pb-4 border-b bg-gradient-to-b from-muted/40 to-transparent">
             <div className="flex flex-col gap-4">
