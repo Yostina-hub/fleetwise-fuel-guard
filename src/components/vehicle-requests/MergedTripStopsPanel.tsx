@@ -343,7 +343,7 @@ export const MergedTripStopsPanel = ({
       ];
 
       try {
-        const results = await Promise.all(
+        const resolved = await Promise.all(
           candidates.map(async (candidate) => {
             const { data, error } = await supabase.functions.invoke("route-directions", {
               body: { coordinates: candidate.points.map((p) => p.coord) },
@@ -353,12 +353,14 @@ export const MergedTripStopsPanel = ({
             }
             return {
               ...candidate,
-              geometry: { type: "LineString", coordinates: data.geometry as [number, number][] },
+              geometry: { type: "LineString" as const, coordinates: data.geometry as [number, number][] },
               distance: Number(data.distance_m) || 0,
               duration: Number(data.duration_s) || 0,
             };
-          }),
+          }).map((promise) => promise.catch(() => null)),
         );
+        const results = resolved.filter((route): route is NonNullable<typeof route> => route !== null);
+        if (results.length === 0) throw new Error("Route service unavailable");
 
         // Determine best by shortest duration
         const bestIdx = results.reduce(
