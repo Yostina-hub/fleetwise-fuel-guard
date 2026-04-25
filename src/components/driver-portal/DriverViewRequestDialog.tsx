@@ -850,6 +850,10 @@ export const DriverViewRequestDialog = ({
                         if (v) validateNotes(v);
                         else setNotesError(null);
                       }}
+                      onBlur={(e) => {
+                        const v = sanitizeWhileTyping(e.target.value).slice(0, 500);
+                        if (v) validateNotes(v);
+                      }}
                       rows={2}
                       maxLength={500}
                       placeholder="Vehicle condition…"
@@ -927,6 +931,10 @@ export const DriverViewRequestDialog = ({
                       onChange={(e) => {
                         const v = sanitizeWhileTyping(e.target.value).slice(0, 500);
                         setCompletionRemark(v);
+                        validateCompletionRemark(v);
+                      }}
+                      onBlur={(e) => {
+                        const v = sanitizeWhileTyping(e.target.value).slice(0, 500);
                         validateCompletionRemark(v);
                       }}
                       rows={3}
