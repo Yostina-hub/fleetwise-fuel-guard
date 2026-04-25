@@ -1,11 +1,10 @@
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Users, History, Cable } from "lucide-react";
+import { Shield, Users, History } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AuthorityMatrixTab } from "@/components/delegation/AuthorityMatrixTab";
 import { SubstitutionsTab } from "@/components/delegation/SubstitutionsTab";
 import { DelegationHistoryTab } from "@/components/delegation/DelegationHistoryTab";
-import { ErpOracleQueueCard } from "@/components/delegation/ErpOracleQueueCard";
 
 const DelegationMatrix = () => {
   const { t } = useTranslation();
@@ -22,7 +21,7 @@ const DelegationMatrix = () => {
               {t("pages.delegation_matrix.title", "Delegation of Authority")}
             </h1>
             <p className="text-muted-foreground text-xs">
-              Configure approval rules and temporary substitutions
+              Managed in FMS · Configure approval rules and temporary substitutions
             </p>
           </div>
         </div>
@@ -41,10 +40,6 @@ const DelegationMatrix = () => {
               <History className="h-4 w-4" />
               History
             </TabsTrigger>
-            <TabsTrigger value="erp" className="gap-2">
-              <Cable className="h-4 w-4" />
-              ERP Hand-off
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="authority">
@@ -57,10 +52,6 @@ const DelegationMatrix = () => {
 
           <TabsContent value="history">
             <DelegationHistoryTab />
-          </TabsContent>
-
-          <TabsContent value="erp">
-            <ErpOracleQueueCard />
           </TabsContent>
         </Tabs>
       </div>
