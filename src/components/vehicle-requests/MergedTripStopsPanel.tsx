@@ -83,11 +83,13 @@ export const MergedTripStopsPanel = ({
   mergeStrategy,
   neededFrom,
   neededUntil,
+  defaultOpen = false,
 }: Props) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const [ready, setReady] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["merged-children", parentRequestId],
