@@ -414,6 +414,7 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
       license_issue_date: formData.license_issue_date || null,
       license_expiry: formData.license_expiry || null,
       employment_type: formData.employment_type || null,
+      contract_end_date: formData.employment_type === "contract" ? (formData.contract_end_date || null) : null,
       status: formData.status,
       joining_date: formData.joining_date || null,
       hire_date: formData.joining_date || null,
