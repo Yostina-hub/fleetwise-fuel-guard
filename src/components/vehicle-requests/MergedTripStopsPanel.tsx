@@ -443,13 +443,57 @@ export const MergedTripStopsPanel = ({
                 </div>
               )}
 
-              {/* Map (only when toggled) */}
+              {/* Map + alternative-routes legend (only when toggled) */}
               {showMap && stopsWithCoords.length > 0 && (
-                <div
-                  ref={containerRef}
-                  className="w-full h-[260px] bg-muted"
-                  aria-label="Consolidated trip map"
-                />
+                <div className="relative">
+                  <div
+                    ref={containerRef}
+                    className="w-full h-[280px] bg-muted"
+                    aria-label="Consolidated trip map"
+                  />
+                  {/* Floating legend overlay */}
+                  <div className="absolute top-2 left-2 bg-background/95 backdrop-blur rounded-md border shadow-sm px-2.5 py-2 max-w-[220px] space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                      <RouteIcon className="w-3 h-3 text-primary" />
+                      Route alternatives
+                    </div>
+                    {routesLoading && (
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Computing routes…
+                      </div>
+                    )}
+                    {!routesLoading && routesError && (
+                      <div className="text-[10px] text-destructive">
+                        {routesError}. Showing straight-line fallback.
+                      </div>
+                    )}
+                    {!routesLoading && routesInfo.length > 0 && (
+                      <ul className="space-y-1">
+                        {routesInfo.map((r, i) => (
+                          <li
+                            key={i}
+                            className={`flex items-center gap-1.5 text-[10px] ${
+                              r.isBest ? "font-semibold" : "text-muted-foreground"
+                            }`}
+                          >
+                            <span
+                              className="inline-block w-3 h-1.5 rounded-sm shrink-0"
+                              style={{ background: r.color, opacity: r.isBest ? 1 : 0.7 }}
+                            />
+                            <span className="truncate">{r.label}</span>
+                            <span className="ml-auto font-mono">
+                              {r.distanceKm.toFixed(1)}km · {Math.round(r.durationMin)}m
+                            </span>
+                            {r.isBest && (
+                              <Trophy className="w-3 h-3 text-primary shrink-0" />
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
               )}
 
               {/* Numbered timeline */}
