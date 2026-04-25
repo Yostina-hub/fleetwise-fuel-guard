@@ -65,16 +65,19 @@ const DriverManagement = () => {
   return (
     <Layout>
       <div className="space-y-4 animate-fade-in">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Users className="h-5 w-5 text-primary" />
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">{t('pages.driver_management.title', 'Driver Management')}</h1>
+              <p className="text-xs text-muted-foreground">
+                {view === "overview" ? t('drivers.overviewDesc', 'Fleet-wide driver overview & quick actions') : t('drivers.operationsDesc', 'Operations & real-time status')}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">{t('pages.driver_management.title', 'Driver Management')}</h1>
-            <p className="text-xs text-muted-foreground">
-              {view === "overview" ? t('drivers.overviewDesc', 'Fleet-wide driver overview & quick actions') : t('drivers.operationsDesc', 'Operations & real-time status')}
-            </p>
-          </div>
+          <BulkProvisionDriversButton />
         </div>
 
         <div className="flex gap-1 border-b pb-1">
