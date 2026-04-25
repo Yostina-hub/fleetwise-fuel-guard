@@ -10,6 +10,7 @@ export interface AvailableVehicle {
   make: string;
   model: string;
   status: string;
+  specific_pool?: string | null;
   isAvailable: boolean;
   unavailableReason?: string;
 }
