@@ -243,6 +243,10 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
           department: (data as any).department || (data as any).assigned_pool || "",
           experience_years: (data as any).experience_years?.toString() || "",
           assigned_pool: (data as any).assigned_pool || (data as any).department || "",
+          pool_category: (() => {
+            const v = (data as any).department || (data as any).assigned_pool || "";
+            return ASSIGNED_LOCATIONS.find((l) => l.value === v)?.group || "";
+          })(),
           telebirr_account: (data as any).telebirr_account || "",
           emergency_contact_name: data.emergency_contact_name || "",
           emergency_contact_phone: data.emergency_contact_phone || "",
