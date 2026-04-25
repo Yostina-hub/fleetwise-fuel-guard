@@ -217,7 +217,7 @@ function evaluateSchedule(
  * over its last N completed work orders. Returns null if fewer than 2 events.
  */
 async function computeMtbfDays(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   vehicleId: string,
   serviceType: string,
 ): Promise<number | null> {
@@ -242,7 +242,7 @@ async function computeMtbfDays(
 }
 
 async function generateWorkOrderNumber(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   organizationId: string,
 ): Promise<string> {
   const prefix = `WO-AUTO-${new Date().getFullYear()}`;
