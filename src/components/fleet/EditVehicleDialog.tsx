@@ -96,6 +96,14 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
 
   const set = (field: string, value: string | number) => setFormData(prev => ({ ...prev, [field]: value }));
 
+  const validatedSnapshot = () => ({
+    plate_number: `${formData.plate_code}-${formData.plate_region}-${formData.plate_number_part}`,
+    make: formData.make,
+    model: formData.model,
+    year: formData.year,
+  });
+  const v = useFieldValidation(vehicleSchema, validatedSnapshot);
+
   useEffect(() => {
     if (open && vehicle?.vehicleId) {
       setFetchingData(true);
