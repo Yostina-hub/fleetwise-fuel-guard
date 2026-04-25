@@ -49,6 +49,29 @@ export interface FindMatchesParams {
   destinationRadiusKm?: number;
 }
 
+/** Tier-2: a ride that *passes through* the requester's pickup, instead of
+ *  starting nearby. Includes the actual detour the driver would take. */
+export interface SharedRideProximityMatch {
+  ride_id: string;
+  vehicle_id: string | null;
+  driver_id: string | null;
+  pool_code: string | null;
+  origin_label: string;
+  destination_label: string;
+  departure_at: string;
+  available_seats: number;
+  total_seats: number;
+  origin_lat: number;
+  origin_lng: number;
+  destination_lat: number;
+  destination_lng: number;
+  detour_km: number;
+  destination_distance_km: number;
+  time_delta_minutes: number;
+  corridor_km_used: number;
+  match_score: number;
+}
+
 const isReady = (p: FindMatchesParams) =>
   p.originLat != null &&
   p.originLng != null &&
@@ -92,6 +115,46 @@ export const useFindSharedRides = (params: FindMatchesParams, enabled = true) =>
       });
       if (error) throw error;
       return (data || []) as SharedRideMatch[];
+    },
+  });
+};
+
+/**
+ * Tier-2 Proximity sweep: rides whose route passes near the requester's
+ * pickup, even if they don't *start* there. Uses the per-pool `corridor_km`
+ * setting (default 3 km).
+ */
+export const useFindProximityRides = (params: FindMatchesParams, enabled = true) => {
+  const { organizationId } = useOrganization();
+  return useQuery({
+    queryKey: [
+      "shared-rides-proximity",
+      organizationId,
+      params.poolCode,
+      params.originLat,
+      params.originLng,
+      params.destinationLat,
+      params.destinationLng,
+      params.departureAt?.toISOString(),
+      params.seatsNeeded,
+    ],
+    enabled: enabled && !!organizationId && isReady(params),
+    staleTime: 30_000,
+    queryFn: async (): Promise<SharedRideProximityMatch[]> => {
+      const { data, error } = await (supabase as any).rpc("find_proximity_match_rides", {
+        _organization_id: organizationId,
+        _pool_code: params.poolCode,
+        _origin_lat: params.originLat,
+        _origin_lng: params.originLng,
+        _destination_lat: params.destinationLat,
+        _destination_lng: params.destinationLng,
+        _departure_at: params.departureAt!.toISOString(),
+        _seats_needed: params.seatsNeeded ?? 1,
+        _wait_window_min: 10,
+        _destination_radius_km: params.destinationRadiusKm ?? 5.0,
+      });
+      if (error) throw error;
+      return (data || []) as SharedRideProximityMatch[];
     },
   });
 };
