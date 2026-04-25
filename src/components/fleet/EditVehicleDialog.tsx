@@ -29,12 +29,14 @@ import { AssignedLocationPicker } from "./AssignedLocationPicker";
 import { DatePickerField } from "./DatePickerField";
 import FileUploadField from "./FileUploadField";
 import { uploadFleetFile } from "./uploadFleetFile";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
+import { cn } from "@/lib/utils";
 
 const vehicleSchema = z.object({
-  plate_number: z.string().trim().min(1, "Plate number is required"),
-  make: z.string().trim().min(1, "Make is required"),
-  model: z.string().trim().min(1, "Model is required"),
-  year: z.number().min(1900).max(new Date().getFullYear() + 2),
+  plate_number: z.string().trim().min(1, "Plate number is required").regex(/^\d+-[A-Z]+-\d+$/, "Plate number is incomplete"),
+  make: z.string().trim().min(1, "Make is required").max(50, "Make must be 50 characters or fewer"),
+  model: z.string().trim().min(1, "Model is required").max(50, "Model must be 50 characters or fewer"),
+  year: z.number({ invalid_type_error: "Year must be a number" }).min(1900, "Year must be 1900 or later").max(new Date().getFullYear() + 2, `Year must be ${new Date().getFullYear() + 2} or earlier`),
 });
 
 interface EditVehicleDialogProps {
