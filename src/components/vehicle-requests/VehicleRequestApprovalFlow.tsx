@@ -47,6 +47,7 @@ import {
   COST_BAND_LABELS,
 } from "@/lib/vehicle-requests/vehicleClassRecommendation";
 import { useSuggestedVehicles } from "@/hooks/useSuggestedVehicles";
+import { useSuggestedDrivers } from "@/hooks/useSuggestedDrivers";
 
 interface Props {
   request: any;
@@ -84,32 +85,39 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     vrScope.tier === "driver" && request.assigned_driver_id === vrScope.driverId;
   const canCheckInOut = canManageAll || isAssignedDriver;
 
-  // Fetch drivers for assignment — scoped to the request's pool unless the
-  // current user has org-wide reach.
-  const { data: drivers = [] } = useQuery({
-    queryKey: ["drivers-for-assignment", request.organization_id, requestPool, poolUnrestricted],
-    queryFn: async () => {
-      let q = supabase
-        .from("drivers")
-        .select("id, first_name, last_name, phone, assigned_pool")
-        .eq("organization_id", request.organization_id)
-        .eq("status", "active");
-      if (!poolUnrestricted && requestPool) {
-        q = q.eq("assigned_pool", requestPool);
-      }
-      const { data, error } = await q.order("first_name").limit(50);
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Suggested vehicles (closest GPS, geofence-aware, fallback pool roster)
+  // Suggested vehicles — STRICT capacity filter so undersized vehicles don't
+  // pollute the picker. Surfaces seating + category for license matching.
   const { data: suggested = [] } = useSuggestedVehicles({
     organizationId: request.organization_id,
     poolName: request.pool_name,
     pickupLat: request.departure_lat,
     pickupLng: request.departure_lng,
     passengers: request.passengers,
+    strictCapacity: true,
+    enabled: request.status === "approved" && canManageAll,
+  });
+
+  // Resolve the chosen vehicle's spec sheet so we can drive license matching.
+  // We look it up from the suggested set first (already loaded), then fall
+  // back to nothing — the picker can still operate, just without licence
+  // ranking for that driver list.
+  const selectedVehicleSpec = useMemo(() => {
+    const v = suggested.find((s: any) => s.id === selectedVehicleId);
+    if (!v) return null;
+    return {
+      vehicle_category: (v as any).vehicle_category ?? null,
+      vehicle_type: (v as any).vehicle_type ?? null,
+      seating_capacity: (v as any).seating_capacity ?? null,
+    };
+  }, [selectedVehicleId, suggested]);
+
+  // Suggested drivers — license-aware. We don't strict-filter so supervisors
+  // still see drivers who *could* be reassigned; the dialog highlights bad
+  // matches with red badges.
+  const { data: drivers = [] } = useSuggestedDrivers({
+    organizationId: request.organization_id,
+    poolName: requestPool,
+    vehicle: selectedVehicleSpec,
     enabled: request.status === "approved" && canManageAll,
   });
 
