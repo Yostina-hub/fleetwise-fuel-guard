@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { 
-import { friendlyToastError } from "@/lib/errorMessages";
   Trash2, 
   Power, 
   Wrench, 
@@ -19,6 +18,7 @@ import { friendlyToastError } from "@/lib/errorMessages";
   ChevronDown,
   CheckSquare
 } from "lucide-react";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface BulkActionsToolbarProps {
   selectedIds: string[];
