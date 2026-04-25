@@ -1,58 +1,41 @@
 /**
  * MergedTripStopsPanel
  * --------------------
- * Professional, dense visualisation of a *consolidated parent trip*
- * (`is_consolidated_parent = true`). Solves the long-standing UX gap where the
- * Quick-Assign / Assign Vehicle dialogs treated a merged trip as a normal
- * single-leg request, hiding which child requests were rolled up and what
- * stops the driver actually has to make.
+ * Compact, scannable summary of a *consolidated parent trip*
+ * (`is_consolidated_parent = true`).
  *
- * Renders:
- *   1. A summary strip — child count, total pax, pool, time window, strategy.
- *   2. An ordered "stops" list (each child request → pickup + drop with
- *      requester, pax, ETA, departure time).
- *   3. A mini MapLibre map plotting every pickup + drop in numbered order
- *      connected by a route line so the supervisor can sanity-check the
- *      sequence before assigning.
- *
- * Pure presentation — no mutations. Safe to drop into any dialog.
+ * Design goals (per UX feedback):
+ *   - Single, calm layout. No mini-map, no badge clutter.
+ *   - Collapsed by default — one summary row tells the operator everything
+ *     they need at a glance (count, pax, time window).
+ *   - Expanded view = a clean timeline of stops. Each stop is one block
+ *     with pickup → drop, requester and pax. Generous spacing.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
 import { supabase } from "@/integrations/supabase/client";
-import { getPreviewSafeMapStyle } from "@/lib/lemat";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
 import {
   GitMerge,
-  MapPin,
   Users,
   Clock,
-  Route as RouteIcon,
-  User as UserIcon,
   Loader2,
-  Flag,
-  CircleDot,
   ChevronDown,
   ChevronUp,
+  ArrowRight,
 } from "lucide-react";
 import { format } from "date-fns";
 
 interface Props {
   parentRequestId: string;
   organizationId: string;
-  /** Optional — used to colour the strip header. */
   poolName?: string | null;
-  /** Pulled from the parent record (already known by the dialog). */
   totalPassengers?: number | null;
   childCount?: number | null;
   mergeStrategy?: string | null;
   neededFrom?: string | null;
   neededUntil?: string | null;
-  /** Start expanded? Defaults to false (compact summary only). */
   defaultOpen?: boolean;
 }
 
@@ -65,14 +48,8 @@ interface Child {
   needed_until: string | null;
   departure_place: string | null;
   destination: string | null;
-  departure_lat: number | null;
-  departure_lng: number | null;
-  destination_lat: number | null;
-  destination_lng: number | null;
   pool_name: string | null;
 }
-
-const ADDIS_CENTER: [number, number] = [38.7525, 9.0192];
 
 export const MergedTripStopsPanel = ({
   parentRequestId,
@@ -80,26 +57,21 @@ export const MergedTripStopsPanel = ({
   poolName,
   totalPassengers,
   childCount,
-  mergeStrategy,
   neededFrom,
   neededUntil,
   defaultOpen = false,
 }: Props) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<maplibregl.Marker[]>([]);
-  const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(defaultOpen);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["merged-children", parentRequestId],
-    enabled: !!parentRequestId && !!organizationId,
+    enabled: !!parentRequestId && !!organizationId && open,
     staleTime: 30_000,
     queryFn: async (): Promise<Child[]> => {
       const { data, error } = await (supabase as any)
         .from("vehicle_requests")
         .select(
-          "id, request_number, requester_name, passengers, needed_from, needed_until, departure_place, destination, departure_lat, departure_lng, destination_lat, destination_lng, pool_name",
+          "id, request_number, requester_name, passengers, needed_from, needed_until, departure_place, destination, pool_name",
         )
         .eq("organization_id", organizationId)
         .eq("merged_into_request_id", parentRequestId)
@@ -108,144 +80,6 @@ export const MergedTripStopsPanel = ({
       return (data || []) as Child[];
     },
   });
-
-  // ── Map lifecycle (only when expanded — container must exist) ───────────
-  useEffect(() => {
-    if (!open) return;
-    if (!containerRef.current || mapRef.current) return;
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: getPreviewSafeMapStyle("streets"),
-      center: ADDIS_CENTER,
-      zoom: 10,
-      attributionControl: false,
-    });
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    map.on("load", () => {
-      map.addSource("merged-route", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-      });
-      map.addLayer({
-        id: "merged-route-line",
-        type: "line",
-        source: "merged-route",
-        paint: {
-          "line-color": "hsl(var(--primary))",
-          "line-width": 3,
-          "line-opacity": 0.85,
-          "line-dasharray": [3, 2],
-        },
-      });
-      map.resize();
-      setReady(true);
-    });
-    mapRef.current = map;
-    return () => {
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
-      map.remove();
-      mapRef.current = null;
-      setReady(false);
-    };
-  }, [open]);
-
-  // ── Sync stops onto the map ─────────────────────────────────────────────
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !ready) return;
-
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
-
-    const coords: [number, number][] = [];
-    const bounds = new maplibregl.LngLatBounds();
-    let hasBounds = false;
-
-    children.forEach((c, idx) => {
-      const stopNo = idx + 1;
-
-      if (c.departure_lat != null && c.departure_lng != null) {
-        const pickupEl = document.createElement("div");
-        pickupEl.style.cssText = `
-          width:22px;height:22px;border-radius:9999px;
-          background:hsl(var(--primary));color:hsl(var(--primary-foreground));
-          border:2px solid hsl(var(--background));
-          display:flex;align-items:center;justify-content:center;
-          font:600 11px system-ui;box-shadow:0 1px 4px rgba(0,0,0,.25);
-        `;
-        pickupEl.textContent = String(stopNo);
-        const m1 = new maplibregl.Marker({ element: pickupEl })
-          .setLngLat([c.departure_lng, c.departure_lat])
-          .setPopup(
-            new maplibregl.Popup({ offset: 14 }).setHTML(
-              `<div style="font:500 12px system-ui;padding:4px;min-width:160px;">
-                 <div style="font-weight:700">Stop ${stopNo} · Pickup</div>
-                 <div>${c.request_number}</div>
-                 <div style="color:hsl(var(--muted-foreground));font-size:11px;">${c.departure_place || "—"}</div>
-                 <div style="font-size:11px;">${c.requester_name || ""} · ${c.passengers ?? 0} pax</div>
-               </div>`,
-            ),
-          )
-          .addTo(map);
-        markersRef.current.push(m1);
-        coords.push([c.departure_lng, c.departure_lat]);
-        bounds.extend([c.departure_lng, c.departure_lat]);
-        hasBounds = true;
-      }
-
-      if (c.destination_lat != null && c.destination_lng != null) {
-        const dropEl = document.createElement("div");
-        dropEl.style.cssText = `
-          width:18px;height:18px;border-radius:3px;
-          background:hsl(var(--background));border:2px solid hsl(var(--primary));
-          display:flex;align-items:center;justify-content:center;
-          font:600 10px system-ui;color:hsl(var(--primary));
-          box-shadow:0 1px 3px rgba(0,0,0,.2);
-        `;
-        dropEl.textContent = String(stopNo);
-        const m2 = new maplibregl.Marker({ element: dropEl })
-          .setLngLat([c.destination_lng, c.destination_lat])
-          .setPopup(
-            new maplibregl.Popup({ offset: 14 }).setHTML(
-              `<div style="font:500 12px system-ui;padding:4px;min-width:160px;">
-                 <div style="font-weight:700">Stop ${stopNo} · Drop-off</div>
-                 <div>${c.request_number}</div>
-                 <div style="color:hsl(var(--muted-foreground));font-size:11px;">${c.destination || "—"}</div>
-               </div>`,
-            ),
-          )
-          .addTo(map);
-        markersRef.current.push(m2);
-        coords.push([c.destination_lng, c.destination_lat]);
-        bounds.extend([c.destination_lng, c.destination_lat]);
-        hasBounds = true;
-      }
-    });
-
-    const src = map.getSource("merged-route") as maplibregl.GeoJSONSource | undefined;
-    src?.setData({
-      type: "FeatureCollection",
-      features:
-        coords.length >= 2
-          ? [
-              {
-                type: "Feature",
-                properties: {},
-                geometry: { type: "LineString", coordinates: coords },
-              },
-            ]
-          : [],
-    });
-
-    if (hasBounds) {
-      try {
-        map.fitBounds(bounds, { padding: 40, duration: 400, maxZoom: 13 });
-      } catch {
-        /* noop */
-      }
-    }
-  }, [ready, children]);
 
   // ── Derived totals (fall back to props when query is still loading) ─────
   const totalPax = useMemo(
@@ -274,152 +108,115 @@ export const MergedTripStopsPanel = ({
   }, [children, neededUntil]);
 
   return (
-    <div className="rounded-lg border border-primary/30 bg-primary/[0.03] overflow-hidden">
-      {/* ── COMPACT HEADER (always visible, click to expand) ── */}
+    <div className="rounded-lg border bg-card overflow-hidden">
+      {/* ── COMPACT SUMMARY ROW (always visible) ── */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-3 py-2 flex items-center gap-2 text-left hover:bg-primary/5 transition-colors"
+        className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-muted/40 transition-colors"
         aria-expanded={open}
       >
-        <GitMerge className="w-4 h-4 text-primary shrink-0" />
-        <span className="text-xs font-semibold text-primary">
-          Consolidated trip
-        </span>
-        <Badge variant="secondary" className="text-[10px] gap-1 h-5">
-          <RouteIcon className="w-2.5 h-2.5" />
-          {stopCount} stop{stopCount === 1 ? "" : "s"}
-        </Badge>
-        <Badge variant="secondary" className="text-[10px] gap-1 h-5">
-          <Users className="w-2.5 h-2.5" />
-          {totalPax} pax
-        </Badge>
-        {earliest && (
-          <span className="text-[11px] text-muted-foreground hidden sm:inline-flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {format(earliest, "MMM d · HH:mm")}
-            {latest && (
-              <>
-                <span>→</span>
-                {format(latest, "HH:mm")}
-              </>
-            )}
-          </span>
-        )}
-        {poolName && (
-          <Badge variant="outline" className="text-[10px] h-5 hidden md:inline-flex">
-            {poolName}
-          </Badge>
-        )}
-        <span className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
+        <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <GitMerge className="w-4 h-4" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-sm font-semibold">Consolidated trip</span>
+            <span className="text-xs text-muted-foreground">
+              {stopCount} stop{stopCount === 1 ? "" : "s"} · {totalPax} pax
+            </span>
+          </div>
+          {earliest && (
+            <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {format(earliest, "EEE MMM d · HH:mm")}
+              {latest && (
+                <>
+                  <ArrowRight className="w-3 h-3 mx-0.5" />
+                  {format(latest, "HH:mm")}
+                </>
+              )}
+              {poolName && (
+                <span className="ml-2 truncate">· {poolName}</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+          {open ? "Hide" : "View stops"}
           {open ? (
-            <>
-              Hide stops <ChevronUp className="w-3.5 h-3.5" />
-            </>
+            <ChevronUp className="w-4 h-4" />
           ) : (
-            <>
-              View stops &amp; map <ChevronDown className="w-3.5 h-3.5" />
-            </>
+            <ChevronDown className="w-4 h-4" />
           )}
         </span>
       </button>
 
-      {/* ── EXPANDED BODY ── */}
+      {/* ── EXPANDED TIMELINE ── */}
       {open && (
-        <div className="border-t border-primary/20">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_240px] gap-0">
-            {/* Stops list */}
-            <div className="border-b md:border-b-0 md:border-r border-border/40">
-              {isLoading ? (
-                <div className="text-center py-8 text-xs text-muted-foreground">
-                  <Loader2 className="w-4 h-4 inline animate-spin mr-1.5" />
-                  Loading merged stops…
-                </div>
-              ) : children.length === 0 ? (
-                <div className="text-center py-6 text-xs text-muted-foreground">
-                  No child requests linked to this consolidated trip.
-                </div>
-              ) : (
-                <ScrollArea className="h-[220px]">
-                  <ol className="divide-y divide-border/40">
-                    {children.map((c, idx) => {
-                      const stopNo = idx + 1;
-                      return (
-                        <li key={c.id} className="px-3 py-2 text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0">
-                              {stopNo}
-                            </span>
-                            <span className="font-mono font-semibold">
-                              {c.request_number}
-                            </span>
-                            {c.requester_name && (
-                              <span className="text-muted-foreground flex items-center gap-1 truncate">
-                                <UserIcon className="w-2.5 h-2.5" />
-                                {c.requester_name}
-                              </span>
-                            )}
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] h-4 px-1 ml-auto gap-0.5"
-                            >
-                              <Users className="w-2.5 h-2.5" />
-                              {c.passengers ?? 0}
-                            </Badge>
-                          </div>
-                          <div className="pl-7 mt-1 space-y-0.5 text-[11px]">
-                            <div className="flex items-start gap-1.5">
-                              <CircleDot className="w-3 h-3 text-primary mt-0.5 shrink-0" />
-                              <span className="text-foreground truncate">
-                                <span className="text-muted-foreground">Pickup:</span>{" "}
-                                {c.departure_place || "—"}
-                              </span>
-                            </div>
-                            <div className="flex items-start gap-1.5">
-                              <Flag className="w-3 h-3 text-emerald-500 mt-0.5 shrink-0" />
-                              <span className="text-foreground truncate">
-                                <span className="text-muted-foreground">Drop:</span>{" "}
-                                {c.destination || "—"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1 text-muted-foreground">
-                              <Clock className="w-2.5 h-2.5" />
-                              {format(new Date(c.needed_from), "EEE MMM d · HH:mm")}
-                              {c.needed_until && (
-                                <>
-                                  <span>→</span>
-                                  {format(new Date(c.needed_until), "HH:mm")}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </ScrollArea>
-              )}
+        <div className="border-t bg-muted/20">
+          {isLoading ? (
+            <div className="text-center py-8 text-xs text-muted-foreground">
+              <Loader2 className="w-4 h-4 inline animate-spin mr-1.5" />
+              Loading stops…
             </div>
+          ) : children.length === 0 ? (
+            <div className="text-center py-6 text-xs text-muted-foreground">
+              No child requests linked to this consolidated trip.
+            </div>
+          ) : (
+            <ScrollArea className="max-h-[260px]">
+              <ol className="py-2">
+                {children.map((c, idx) => (
+                  <li
+                    key={c.id}
+                    className="relative px-4 py-3 flex gap-3"
+                  >
+                    {/* Timeline rail */}
+                    <div className="flex flex-col items-center shrink-0">
+                      <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-bold">
+                        {idx + 1}
+                      </div>
+                      {idx < children.length - 1 && (
+                        <div className="w-px flex-1 bg-border mt-1" />
+                      )}
+                    </div>
 
-            {/* Mini map */}
-            <div className="relative h-[220px]">
-              <div ref={containerRef} className="w-full h-full" />
-              <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur rounded-md border px-1.5 py-1 text-[10px] flex items-center gap-1.5 shadow-sm">
-                <MapPin className="w-3 h-3 text-primary" />
-                <span>Pickup</span>
-                <span className="w-2 h-2 border border-primary ml-1" />
-                <span>Drop</span>
-              </div>
-            </div>
-          </div>
+                    {/* Stop content */}
+                    <div className="min-w-0 flex-1 pb-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-medium truncate">
+                          {c.requester_name || c.request_number}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] h-4 px-1 gap-0.5 font-normal"
+                        >
+                          <Users className="w-2.5 h-2.5" />
+                          {c.passengers ?? 0}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground ml-auto font-mono">
+                          {format(new Date(c.needed_from), "MMM d · HH:mm")}
+                        </span>
+                      </div>
 
-          {mergeStrategy && (
-            <div className="px-3 py-1.5 border-t border-primary/20 bg-primary/[0.04] flex items-center gap-2 text-[10px] text-muted-foreground">
-              <span>Strategy:</span>
-              <Badge variant="outline" className="text-[10px] capitalize h-4">
-                {String(mergeStrategy).replace(/_/g, " ")}
-              </Badge>
-            </div>
+                      <div className="mt-1.5 text-[11px] text-foreground leading-relaxed">
+                        <div className="truncate">
+                          <span className="text-muted-foreground">From </span>
+                          {c.departure_place || "—"}
+                        </div>
+                        <div className="truncate">
+                          <span className="text-muted-foreground">To </span>
+                          {c.destination || "—"}
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </ScrollArea>
           )}
         </div>
       )}
