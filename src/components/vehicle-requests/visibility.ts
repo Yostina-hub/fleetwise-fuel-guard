@@ -11,6 +11,7 @@
  * structural rules tied to the operation type.
  */
 export type RequestType =
+  | "incident_urgent"
   | "daily_operation"
   | "nighttime_operation"
   | "project_operation"
@@ -52,8 +53,9 @@ export function deriveVisibility(requestType: string | undefined): VRVisibility 
   // Treat the legacy "delivery_operation" the same as the new "messenger_service".
   const isMessenger = requestType === "messenger_service" || requestType === "delivery_operation";
   const isNighttime = requestType === "nighttime_operation";
-  // Messenger uses the same single-day layout as Daily (date + start/end time).
-  const isDaily = requestType === "daily_operation" || isNighttime || isMessenger;
+  const isUrgent = requestType === "incident_urgent";
+  // Messenger / Urgent use the same single-day layout as Daily.
+  const isDaily = requestType === "daily_operation" || isNighttime || isMessenger || isUrgent;
   const isProject = requestType === "project_operation";
   const isField = requestType === "field_operation";
   const isGroup = requestType === "group_operation";
