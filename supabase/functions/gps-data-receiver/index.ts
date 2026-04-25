@@ -1115,8 +1115,9 @@ async function processGPSData(
     }
 
     device = { ...deviceData, cachedAt: Date.now() };
-    knownDeviceCache.set(imei, device);
+    knownDeviceCache.set(imei, device!);
   }
+  if (!device) return { error: 'Device unavailable', status: 503 };
 
   // DRY RUN MODE - just validate and return without database writes
   if (dry_run) {
