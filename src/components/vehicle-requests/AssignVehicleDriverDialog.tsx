@@ -423,14 +423,27 @@ export const AssignVehicleDriverDialog = ({
                                     </span>
                                   </span>
                                 </span>
-                                {v.vehicle_class && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[10px] shrink-0"
-                                  >
-                                    {v.vehicle_class}
-                                  </Badge>
-                                )}
+                                <span className="flex items-center gap-1 shrink-0">
+                                  {v.seating_capacity != null && (
+                                    <Badge
+                                      variant={v.fits_capacity === false ? "destructive" : "secondary"}
+                                      className="text-[10px] gap-0.5 px-1.5"
+                                      title={
+                                        v.fits_capacity === false
+                                          ? `Only ${v.seating_capacity} seats — request needs more`
+                                          : `${v.seating_capacity} seats`
+                                      }
+                                    >
+                                      <UsersIcon className="w-2.5 h-2.5" />
+                                      {v.seating_capacity}
+                                    </Badge>
+                                  )}
+                                  {(v.vehicle_class || v.vehicle_category) && (
+                                    <Badge variant="outline" className="text-[10px]">
+                                      {v.vehicle_class || v.vehicle_category}
+                                    </Badge>
+                                  )}
+                                </span>
                               </button>
                             );
                           })}
