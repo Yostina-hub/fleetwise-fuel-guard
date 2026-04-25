@@ -116,7 +116,7 @@ export const MultiVehicleAssignDialog = ({ request, open, onClose }: Props) => {
 
       // Send dispatch SMS to every assigned driver (best-effort, errors logged)
       const driverById = new Map(drivers.map((d: any) => [d.id, d]));
-      const vehicleById = new Map(available.map((v: any) => [v.id, v]));
+      const vehicleById = new Map(scopedAvailable.map((v: any) => [v.id, v]));
       await Promise.allSettled(
         Object.entries(picks)
           .filter(([, did]) => !!did)
@@ -178,7 +178,7 @@ export const MultiVehicleAssignDialog = ({ request, open, onClose }: Props) => {
                 </tr>
               </thead>
               <tbody>
-                {available.slice(0, 50).map((v: any) => {
+                {scopedAvailable.slice(0, 50).map((v: any) => {
                   const checked = v.id in picks;
                   const lock = lockedById[v.id];
                   const isLocked = !!lock;
