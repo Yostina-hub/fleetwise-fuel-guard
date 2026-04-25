@@ -30,6 +30,10 @@ export interface SuggestedVehicle {
   status: string | null;
   specific_pool: string | null;
   seating_capacity: number | null;
+  /** Free-form category from vehicles.vehicle_category (e.g. "minibus", "truck"). */
+  vehicle_category: string | null;
+  /** Free-form type from vehicles.vehicle_type (e.g. "SUV", "pickup"). */
+  vehicle_type: string | null;
   assigned_driver_id: string | null;
   /** Display name of the driver permanently assigned to this vehicle (vehicles.assigned_driver_id). */
   assigned_driver_name: string | null;
@@ -44,6 +48,8 @@ export interface SuggestedVehicle {
   active_trip_status: string | null;
   /** Human availability summary used by the picker UI. */
   availability: "available" | "busy" | "maintenance" | "inactive";
+  /** True when seating_capacity is known and >= requested passengers. */
+  fits_capacity: boolean;
 }
 
 interface Args {
@@ -52,6 +58,9 @@ interface Args {
   pickupLat?: number | null;
   pickupLng?: number | null;
   passengers?: number | null;
+  /** When true, vehicles with seating_capacity < passengers are excluded
+   *  outright (instead of just down-ranked). */
+  strictCapacity?: boolean;
   enabled?: boolean;
 }
 
@@ -61,6 +70,7 @@ export const useSuggestedVehicles = ({
   pickupLat,
   pickupLng,
   passengers,
+  strictCapacity = false,
   enabled = true,
 }: Args) => {
   return useQuery({
@@ -71,6 +81,7 @@ export const useSuggestedVehicles = ({
       pickupLat,
       pickupLng,
       passengers,
+      strictCapacity,
     ],
     enabled: enabled && !!organizationId,
     staleTime: 30_000,
@@ -82,7 +93,7 @@ export const useSuggestedVehicles = ({
       const { data: vehicles, error } = await supabase
         .from("vehicles")
         .select(
-          "id, plate_number, make, model, status, specific_pool, seating_capacity, assigned_driver_id",
+          "id, plate_number, make, model, status, specific_pool, seating_capacity, vehicle_category, vehicle_type, assigned_driver_id",
         )
         .eq("organization_id", organizationId!)
         .limit(500);
