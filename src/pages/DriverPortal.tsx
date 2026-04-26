@@ -211,7 +211,10 @@ const DriverPortal = () => {
             vehicle:vehicle_id(id, plate_number, make, model),
             request:vehicle_request_id(
               id, request_number, status, purpose, destination,
-              needed_from, needed_until
+              departure_place, passengers,
+              needed_from, needed_until,
+              requester_name,
+              requester:requester_id(first_name, last_name, full_name, phone)
             )
           `)
           .eq("driver_id", driverId)
