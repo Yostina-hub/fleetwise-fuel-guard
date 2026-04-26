@@ -28,12 +28,14 @@ import {
   EyeOff,
   ShieldCheck,
   Route,
-  Crosshair,
   Ban,
   Building2,
   Navigation,
-  RotateCcw,
+  PanelRightClose,
+  PanelRightOpen,
+  X,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -180,6 +182,8 @@ const Geofencing = () => {
   const [draftPolygonPoints, setDraftPolygonPoints] = useState<Array<{ lat: number; lng: number }>>([]);
   const [mapReady, setMapReady] = useState(false);
   const [activeTab, setActiveTab] = useState<"geofences" | "events">("geofences");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   
   useEffect(() => {
     const token = sessionStorage.getItem('mapbox_token') || envToken || '';
@@ -652,6 +656,162 @@ const Geofencing = () => {
   const visibleGeofences = (geofences || []) as unknown as GeofenceRecord[];
   const preferCount = visibleGeofences.filter((f) => f.dispatch_policy === "prefer").length;
   const avoidCount = visibleGeofences.filter((f) => f.dispatch_policy === "avoid").length;
+  const sidebarContent = (
+    <>
+      <div className="border-b border-border p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">{t('geofencing.title')}</h1>
+            <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Operational zones for alerts & dispatch.</p>
+          </div>
+          <Badge variant="secondary" className="shrink-0">{geofenceStats.totalGeofences}</Badge>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <div className="rounded-lg border border-border bg-muted/50 p-2.5">
+            <div className="text-lg sm:text-xl font-bold text-primary">{geofenceStats.activeGeofences}</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">{t('common.active')}</div>
+          </div>
+          <div className="rounded-lg border border-success/30 bg-success/10 p-2.5">
+            <div className="text-lg sm:text-xl font-bold text-success">{preferCount}</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">Preferred</div>
+          </div>
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-2.5">
+            <div className="text-lg sm:text-xl font-bold text-warning">{avoidCount}</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">Avoided</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto p-4 sm:p-5">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="geofences">Zones</TabsTrigger>
+            <TabsTrigger value="events">{t('geofencing.events', 'Events')}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="geofences" className="mt-4 space-y-3">
+            {isLoading ? (
+              <div className="space-y-2">
+                {[1,2,3].map(i => (
+                  <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : geofences?.length === 0 ? (
+              <Card className="p-8 text-center">
+                <MapPin className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-muted-foreground">{t('geofencing.noGeofences', 'No geofences yet')}</p>
+                <p className="text-sm text-muted-foreground/70">
+                  {t('geofencing.useDrawingTools', 'Use the drawing tools to create one')}
+                </p>
+              </Card>
+            ) : (
+              visibleGeofences.map((fence) => {
+                const policy = ((fence.dispatch_policy as DispatchPolicy) || "neutral") as DispatchPolicy;
+                const PolicyIcon = policyMeta[policy].icon;
+                return (
+                <Card key={fence.id} className="overflow-hidden transition-colors hover:bg-muted/40">
+                  <button type="button" className="flex w-full items-start gap-3 p-3 sm:p-4 text-left" onClick={() => { focusFenceOnMap(fence); setMobileSheetOpen(false); }}>
+                    <span className="mt-1 h-4 w-4 shrink-0 rounded-full border border-border" style={{ backgroundColor: fence.color || '#3B82F6' }} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold text-foreground text-sm sm:text-base">{fence.name}</span>
+                      <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                        <Badge variant="outline" className="gap-1 px-1.5 py-0 text-[10px]"><Building2 className="h-3 w-3" />{categoryLabels[fence.category || ""] || fence.category}</Badge>
+                        <span>{fence.geometry_type === 'circle' ? `${Number(fence.radius_meters || 0).toLocaleString()} m` : 'Polygon'}</span>
+                        {fence.is_active === false && <Badge variant="secondary" className="text-[10px]">Disabled</Badge>}
+                      </span>
+                    </span>
+                    <Badge variant="outline" className={`gap-1 shrink-0 ${policyMeta[policy].className}`}>
+                      <PolicyIcon className="h-3 w-3" />
+                      <span className="hidden sm:inline">{policyMeta[policy].label}</span>
+                    </Badge>
+                  </button>
+                  <div className="flex items-center gap-2 border-t border-border px-3 sm:px-4 py-2.5">
+                    <Select
+                      value={policy}
+                      onValueChange={(v) =>
+                        updateDispatchPolicy.mutate({ id: fence.id, policy: v as DispatchPolicy })
+                      }
+                    >
+                      <SelectTrigger className="h-9 flex-1 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="prefer">Prefer for dispatch</SelectItem>
+                        <SelectItem value="avoid">Avoid for dispatch</SelectItem>
+                        <SelectItem value="neutral">Neutral</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <TooltipProvider>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => toggleGeofenceActive.mutate({ 
+                                id: fence.id, 
+                                isActive: !(fence.is_active ?? true) 
+                              })}
+                            >
+                              {fence.is_active !== false ? (
+                                <Eye className="h-4 w-4 text-success" />
+                              ) : (
+                                <EyeOff className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{fence.is_active !== false ? "Disable geofence" : "Enable geofence"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleEditGeofence(fence)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{t('geofencing.editGeofence', 'Edit geofence')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => deleteGeofenceMutation.mutate(fence.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{t('geofencing.deleteGeofence', 'Delete geofence')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TooltipProvider>
+                  </div>
+                </Card>
+              )})
+            )}
+          </TabsContent>
+
+          <TabsContent value="events" className="mt-4">
+            <GeofenceEventsTab />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
+  );
+
   return (
     <Layout>
       <div className="flex h-full min-h-0 bg-background">
@@ -665,7 +825,7 @@ const Geofencing = () => {
 
           {(!envToken && !mapToken) && (
             <div className="absolute top-4 right-4 z-10">
-              <Card className="p-4 bg-card/95 backdrop-blur space-y-2 w-80">
+              <Card className="p-4 bg-card/95 backdrop-blur space-y-2 w-72 max-w-[calc(100vw-2rem)]">
                 <div className="text-sm font-semibold">Add Mapbox Token</div>
                 <Input
                   placeholder="pk.eyJ..."
@@ -679,230 +839,97 @@ const Geofencing = () => {
             </div>
           )}
 
-          <div className="absolute left-4 top-4 z-10 w-[min(420px,calc(100vw-2rem))] rounded-lg border border-border bg-card/95 shadow-floating backdrop-blur">
-            <div className="border-b border-border p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Crosshair className="h-4 w-4 text-primary" />
-                    {t('geofencing.addGeofence')}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {drawingMode === "circle"
-                      ? "Click the map once, then set radius and dispatch rule."
-                      : drawingMode === "polygon"
-                        ? "Click boundary points, then double-click to save the area."
-                        : "Choose a shape to start creating an operational zone."}
-                  </p>
-                </div>
-                {drawingMode && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDrawingMode(null)}>
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
+          {/* Compact floating toolbar — top center on mobile, top-left on desktop */}
+          <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-3 sm:justify-start sm:px-4">
+            <div className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-border bg-card/95 p-1.5 shadow-floating backdrop-blur">
+              <Button
+                variant={drawingMode === 'circle' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDrawingMode(drawingMode === 'circle' ? null : 'circle')}
+                className="h-9 gap-1.5 rounded-full px-3"
+              >
+                <Circle className="w-4 h-4" />
+                <span className="hidden xs:inline sm:inline">{t('geofencing.circle')}</span>
+              </Button>
+              <Button
+                variant={drawingMode === 'polygon' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDrawingMode(drawingMode === 'polygon' ? null : 'polygon')}
+                className="h-9 gap-1.5 rounded-full px-3"
+              >
+                <Square className="w-4 h-4" />
+                <span className="hidden xs:inline sm:inline">{t('geofencing.polygon')}</span>
+              </Button>
+              {drawingMode && (
                 <Button
-                  variant={drawingMode === 'circle' ? 'default' : 'outline'}
-                  onClick={() => setDrawingMode(drawingMode === 'circle' ? null : 'circle')}
-                  className="h-10 justify-start gap-2"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-full text-muted-foreground"
+                  onClick={() => setDrawingMode(null)}
+                  title="Cancel drawing"
                 >
-                  <Circle className="w-4 h-4" />
-                  {t('geofencing.circle')}
+                  <X className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant={drawingMode === 'polygon' ? 'default' : 'outline'}
-                  onClick={() => setDrawingMode(drawingMode === 'polygon' ? null : 'polygon')}
-                  className="h-10 justify-start gap-2"
-                >
-                  <Square className="w-4 h-4" />
-                  {t('geofencing.polygon')}
-                </Button>
-              </div>
-              {drawingMode === "polygon" && draftPolygonPoints.length > 0 && (
-                <div className="mt-3 flex items-center justify-between rounded-md border border-border bg-muted px-3 py-2 text-xs">
-                  <span className="text-muted-foreground">Points selected</span>
-                  <Badge variant="secondary">{draftPolygonPoints.length}</Badge>
-                </div>
               )}
-            </div>
-            <div className="grid grid-cols-3 gap-2 p-3 text-xs">
-              <div className="rounded-md border border-border bg-muted p-2">
-                <div className="text-lg font-bold text-foreground">{geofenceStats.activeGeofences}</div>
-                <div className="text-muted-foreground">Active zones</div>
-              </div>
-              <div className="rounded-md border border-success/30 bg-success/10 p-2">
-                <div className="text-lg font-bold text-success">{preferCount}</div>
-                <div className="text-muted-foreground">Preferred</div>
-              </div>
-              <div className="rounded-md border border-warning/30 bg-warning/10 p-2">
-                <div className="text-lg font-bold text-warning">{avoidCount}</div>
-                <div className="text-muted-foreground">Avoided</div>
-              </div>
+              {/* Mobile: open sidebar sheet */}
+              <div className="mx-1 h-6 w-px bg-border lg:hidden" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full lg:hidden"
+                onClick={() => setMobileSheetOpen(true)}
+                title="Open zones list"
+              >
+                <PanelRightOpen className="h-4 w-4" />
+              </Button>
+              {/* Desktop: collapse/expand sidebar */}
+              <div className="mx-1 hidden h-6 w-px bg-border lg:block" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden h-9 w-9 rounded-full lg:inline-flex"
+                onClick={() => setSidebarOpen((v) => !v)}
+                title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+              >
+                {sidebarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+              </Button>
             </div>
           </div>
 
-          <div className="absolute bottom-4 left-4 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/95 px-3 py-2 text-xs shadow-elevated backdrop-blur">
-            <span className="font-medium text-foreground">Map zones</span>
-            <Badge variant="outline" className="gap-1"><ShieldCheck className="h-3 w-3" /> prefer</Badge>
-            <Badge variant="outline" className="gap-1"><Ban className="h-3 w-3" /> avoid</Badge>
-            <Badge variant="outline" className="gap-1"><Navigation className="h-3 w-3" /> click row to focus</Badge>
+          {/* Drawing helper hint */}
+          {drawingMode && (
+            <div className="pointer-events-none absolute left-1/2 top-20 z-10 -translate-x-1/2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary shadow-floating backdrop-blur">
+              {drawingMode === "circle"
+                ? "Click on the map to place center point"
+                : `Click to add points • Double-click to finish${draftPolygonPoints.length ? ` (${draftPolygonPoints.length} added)` : ""}`}
+            </div>
+          )}
+
+          {/* Legend — bottom left */}
+          <div className="absolute bottom-4 left-3 sm:left-4 z-10 flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-card/95 px-2.5 py-1.5 text-[11px] shadow-elevated backdrop-blur max-w-[calc(100vw-1.5rem)]">
+            <span className="font-medium text-foreground hidden sm:inline">Zones:</span>
+            <Badge variant="outline" className="gap-1 text-[10px]"><ShieldCheck className="h-3 w-3 text-success" /> prefer</Badge>
+            <Badge variant="outline" className="gap-1 text-[10px]"><Ban className="h-3 w-3 text-warning" /> avoid</Badge>
+            <Badge variant="outline" className="gap-1 text-[10px] hidden sm:inline-flex"><Navigation className="h-3 w-3" /> tap to focus</Badge>
           </div>
         </div>
 
-        <aside className="flex w-[460px] shrink-0 flex-col border-l border-border bg-card">
-          <div className="border-b border-border p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h1 className="text-2xl font-bold tracking-normal">{t('geofencing.title')}</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Operational zones for alerts and dispatch routing.</p>
-              </div>
-              <Badge variant="secondary" className="mt-1">{geofenceStats.totalGeofences}</Badge>
-            </div>
+        {/* Desktop sidebar — collapsible */}
+        {sidebarOpen && (
+          <aside className="hidden lg:flex w-[400px] xl:w-[440px] shrink-0 flex-col border-l border-border bg-card">
+            {sidebarContent}
+          </aside>
+        )}
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-lg border border-border bg-muted p-3">
-                <div className="text-xl font-bold text-primary">{geofenceStats.activeGeofences}</div>
-                <div className="text-xs text-muted-foreground">{t('common.active')}</div>
-              </div>
-              <div className="rounded-lg border border-border bg-muted p-3">
-                <div className="text-xl font-bold text-success">{geofenceStats.entryEvents}</div>
-                <div className="text-xs text-muted-foreground">Entries</div>
-              </div>
-              <div className="rounded-lg border border-border bg-muted p-3">
-                <div className="text-xl font-bold text-warning">{geofenceStats.exitEvents}</div>
-                <div className="text-xs text-muted-foreground">Exits</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-auto p-5">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="geofences">{t('geofencing.title')}</TabsTrigger>
-                <TabsTrigger value="events">{t('geofencing.events', 'Events')}</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="geofences" className="mt-4 space-y-3">
-                {isLoading ? (
-                  <div className="space-y-2">
-                    {[1,2,3].map(i => (
-                      <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
-                    ))}
-                  </div>
-                ) : geofences?.length === 0 ? (
-                  <Card className="p-8 text-center">
-                    <MapPin className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
-                    <p className="text-muted-foreground">{t('geofencing.noGeofences', 'No geofences yet')}</p>
-                    <p className="text-sm text-muted-foreground/70">
-                      {t('geofencing.useDrawingTools', 'Use the drawing tools to create one')}
-                    </p>
-                  </Card>
-                ) : (
-                  visibleGeofences.map((fence) => {
-                    const policy = ((fence.dispatch_policy as DispatchPolicy) || "neutral") as DispatchPolicy;
-                    const PolicyIcon = policyMeta[policy].icon;
-                    return (
-                    <Card key={fence.id} className="overflow-hidden transition-colors hover:bg-muted/40">
-                      <button type="button" className="flex w-full items-start gap-3 p-4 text-left" onClick={() => focusFenceOnMap(fence)}>
-                        <span className="mt-1 h-4 w-4 shrink-0 rounded-full border border-border" style={{ backgroundColor: fence.color || '#3B82F6' }} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-semibold text-foreground">{fence.name}</span>
-                          <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                            <Badge variant="outline" className="gap-1 px-1.5 py-0 text-[10px]"><Building2 className="h-3 w-3" />{categoryLabels[fence.category || ""] || fence.category}</Badge>
-                            <span>{fence.geometry_type === 'circle' ? `${Number(fence.radius_meters || 0).toLocaleString()} m` : 'Polygon'}</span>
-                            {fence.is_active === false && <Badge variant="secondary">Disabled</Badge>}
-                          </span>
-                        </span>
-                        <Badge variant="outline" className={`gap-1 ${policyMeta[policy].className}`}>
-                          <PolicyIcon className="h-3 w-3" />
-                          {policyMeta[policy].label}
-                        </Badge>
-                      </button>
-                      <div className="flex items-center gap-2 border-t border-border px-4 py-3">
-                        <Select
-                          value={policy}
-                          onValueChange={(v) =>
-                            updateDispatchPolicy.mutate({ id: fence.id, policy: v as DispatchPolicy })
-                          }
-                        >
-                          <SelectTrigger className="h-9 flex-1 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="prefer">Prefer for dispatch</SelectItem>
-                            <SelectItem value="avoid">Avoid for dispatch</SelectItem>
-                            <SelectItem value="neutral">Neutral</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <TooltipProvider>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => toggleGeofenceActive.mutate({ 
-                                    id: fence.id, 
-                                    isActive: !(fence.is_active ?? true) 
-                                  })}
-                                >
-                                  {fence.is_active !== false ? (
-                                    <Eye className="h-4 w-4 text-success" />
-                                  ) : (
-                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{fence.is_active !== false ? "Disable geofence" : "Enable geofence"}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleEditGeofence(fence)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{t('geofencing.editGeofence', 'Edit geofence')}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive hover:text-destructive"
-                                  onClick={() => deleteGeofenceMutation.mutate(fence.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{t('geofencing.deleteGeofence', 'Delete geofence')}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </TooltipProvider>
-                      </div>
-                    </Card>
-                  )})
-                )}
-              </TabsContent>
-
-              <TabsContent value="events" className="mt-4">
-                <GeofenceEventsTab />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </aside>
+        {/* Mobile / tablet sidebar — sheet */}
+        <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
+            <SheetHeader className="sr-only">
+              <SheetTitle>{t('geofencing.title')}</SheetTitle>
+            </SheetHeader>
+            {sidebarContent}
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Simplified Create/Edit Dialog */}
