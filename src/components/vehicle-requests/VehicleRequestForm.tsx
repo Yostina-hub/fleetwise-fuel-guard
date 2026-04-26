@@ -674,7 +674,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     if (userTouchedContactPhoneRef.current) return;
     if (!requesterPhone) return;
     setForm((prev) =>
-      prev.contact_phone === requesterPhone ? prev : { ...prev, contact_phone: requesterPhone },
+      prev.contact_phone === requesterPhone
+        ? prev
+        : { ...prev, contact_phone: requesterPhone },
     );
   }, [open, requesterPhone, effectiveRequesterId]);
 
@@ -687,7 +689,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     if (prevPhoneRequesterIdRef.current === effectiveRequesterId) return;
     prevPhoneRequesterIdRef.current = effectiveRequesterId;
     userTouchedContactPhoneRef.current = false;
-    setForm((prev) => ({ ...prev, contact_phone: "" }));
+    setForm((prev) =>
+      !prev.contact_phone ? prev : { ...prev, contact_phone: "" },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveRequesterId]);
 
