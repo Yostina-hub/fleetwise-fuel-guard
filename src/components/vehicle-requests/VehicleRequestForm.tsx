@@ -601,10 +601,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
   // Reset the manual-touch flag whenever the dialog re-opens or the effective
   // requester changes (e.g. user switches "on behalf of"), so a fresh session
-  // always re-evaluates the auto-fill.
+  // always re-evaluates the auto-fill. We also clear the previously auto-filled
+  // pool fields so the new requester's pool can populate (otherwise the
+  // auto-fill effect bails on the stale values left over from the prior user).
   useEffect(() => {
     userTouchedPoolRef.current = false;
-  }, [open, effectiveRequesterId]);
+    setForm((prev) => ({ ...prev, pool_category: "", pool_name: "" }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveRequesterId]);
 
   // ── Contact phone auto-fill ──────────────────────────────────────────────
   // Fetch the effective requester's phone from `profiles` (falling back to
@@ -664,10 +668,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   }, [open, requesterPhone]);
 
   // Reset the contact-phone touch flag on dialog open / requester change so
-  // the auto-fill re-evaluates for the new session.
+  // the auto-fill re-evaluates for the new session. Also clear the previously
+  // auto-filled phone so the new requester's number can populate (otherwise
+  // the auto-fill effect short-circuits on the stale value).
   useEffect(() => {
     userTouchedContactPhoneRef.current = false;
-  }, [open, effectiveRequesterId]);
+    setForm((prev) => ({ ...prev, contact_phone: "" }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveRequesterId]);
 
   // Vehicles that physically live in the chosen Specific Pool. Drives:
   //  • the upper cap on "No. of Vehicles" (can't book more than exist)
