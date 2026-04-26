@@ -90,7 +90,27 @@ serve(async (req) => {
     }
 
     const tileUrl = `${LEMAT_ORIGIN}/${tilePath}`;
-    const tileResp = await fetch(tileUrl);
+    let tileResp = await fetch(tileUrl);
+
+    // Glyph fallback: many style JSONs request font stacks the upstream server
+    // does not have (e.g. "Open Sans Regular,Arial Unicode MS Regular/0-255.pbf").
+    // Retry with a font stack that Lemat is known to ship to avoid 404s breaking
+    // the map render. Pattern: fonts/<stack>/<range>.pbf
+    if (!tileResp.ok && /^fonts\/.+\/\d+-\d+\.pbf$/.test(tilePath)) {
+      const range = tilePath.split("/").pop()!;
+      const fallbackStacks = [
+        "Noto Sans Regular",
+        "Noto Sans Italic",
+      ];
+      for (const stack of fallbackStacks) {
+        const fbUrl = `${LEMAT_ORIGIN}/fonts/${encodeURIComponent(stack)}/${range}`;
+        const fbResp = await fetch(fbUrl);
+        if (fbResp.ok) {
+          tileResp = fbResp;
+          break;
+        }
+      }
+    }
 
     if (!tileResp.ok) {
       return new Response(null, {
