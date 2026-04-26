@@ -41,6 +41,8 @@ interface Candidate {
   distance_km: number;
   duration_min: number;
   sample_coords?: [number, number][];
+  /** Names of org geofences this route's geometry passes through. */
+  geofences?: string[];
 }
 
 const isCandidate = (c: unknown): c is Candidate =>
