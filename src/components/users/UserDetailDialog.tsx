@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Trash2, Plus, Save, Loader2, Mail, Phone, Calendar, Building, IdCard, Briefcase, AlertTriangle } from "lucide-react";
+import { Shield, Trash2, Plus, Save, Loader2, Mail, Phone, Calendar, Building, IdCard, Briefcase, AlertTriangle, Layers, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import type { UserProfile } from "./UserTable";
 import { Link } from "react-router-dom";
@@ -50,6 +50,38 @@ const STATUS_OPTIONS = [
   { value: "inactive", label: "Inactive" },
   { value: "suspended", label: "Suspended" },
 ];
+
+// Pool taxonomy mirrored from the Vehicle Registration form (BasicInfoTabs)
+// so users see the same Corporate / Zone / Region categories and the same
+// child sub-pools (FAN, TPO, HQ, SWAAZ, EAAZ, NR, SR).
+type PoolCategory = "corporate" | "zone" | "region";
+const POOL_HIERARCHY: Record<PoolCategory, { code: string; label: string }[]> = {
+  corporate: [
+    { code: "FAN", label: "FAN" },
+    { code: "TPO", label: "TPO" },
+    { code: "HQ", label: "HQ" },
+  ],
+  zone: [
+    { code: "SWAAZ", label: "SWAAZ (South West Addis)" },
+    { code: "EAAZ", label: "EAAZ (East Addis)" },
+  ],
+  region: [
+    { code: "NR", label: "NR (North Region)" },
+    { code: "SR", label: "SR (South Region)" },
+  ],
+};
+const POOL_CATEGORY_META: Record<PoolCategory, { label: string; icon: typeof Building; tone: string }> = {
+  corporate: { label: "Corporate", icon: Building, tone: "text-blue-400 bg-blue-500/10 border-blue-500/30" },
+  zone:      { label: "Zone",      icon: Layers,   tone: "text-amber-400 bg-amber-500/10 border-amber-500/30" },
+  region:    { label: "Region",    icon: MapPin,   tone: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
+};
+const CODE_TO_CATEGORY: Record<string, PoolCategory> = (() => {
+  const m: Record<string, PoolCategory> = {};
+  (Object.keys(POOL_HIERARCHY) as PoolCategory[]).forEach(cat => {
+    POOL_HIERARCHY[cat].forEach(p => { m[p.code] = cat; });
+  });
+  return m;
+})();
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: "bg-destructive/15 text-destructive border-destructive/30",
@@ -117,6 +149,11 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
   const [linkedDriverId, setLinkedDriverId] = useState<string | null>(null);
   const [linkedEmployeeId, setLinkedEmployeeId] = useState<string | null>(null);
 
+  // Pool assignment (mirrors Vehicle Registration UX: category + specific pool)
+  const [poolCategory, setPoolCategory] = useState<PoolCategory | "">("");
+  const [poolCode, setPoolCode] = useState<string>("");
+  const [savingPool, setSavingPool] = useState(false);
+
   const [loadingExtras, setLoadingExtras] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingHR, setSavingHR] = useState(false);
@@ -158,6 +195,23 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
         setEmergencyRel(data?.emergency_contact_relationship || "");
         setLinkedDriverId(data?.linked_driver_id || null);
         setLinkedEmployeeId(data?.linked_employee_id || null);
+
+        // Load current pool membership (first row, latest)
+        const { data: poolRows } = await supabase
+          .from("pool_memberships")
+          .select("pool_code")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (cancelled) return;
+        const code = poolRows?.[0]?.pool_code as string | undefined;
+        if (code && CODE_TO_CATEGORY[code]) {
+          setPoolCategory(CODE_TO_CATEGORY[code]);
+          setPoolCode(code);
+        } else {
+          setPoolCategory("");
+          setPoolCode("");
+        }
       } catch (err: any) {
         if (!cancelled) toast({ title: "Failed to load HR fields", description: err.message, variant: "destructive" });
       } finally {
@@ -217,6 +271,41 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
       friendlyToastError(err);
     } finally {
       setSavingHR(false);
+    }
+  };
+
+  const handleSavePool = async () => {
+    if (!user) return;
+    if (!poolCategory || !poolCode) {
+      toast({ title: "Pick a pool", description: "Select both Pool Category and Specific Pool.", variant: "destructive" });
+      return;
+    }
+    if (!user.organization_id) {
+      toast({ title: "No organization", description: "Assign this user to an organization before setting a pool.", variant: "destructive" });
+      return;
+    }
+    setSavingPool(true);
+    try {
+      const { error: delErr } = await supabase
+        .from("pool_memberships")
+        .delete()
+        .eq("user_id", user.id);
+      if (delErr) throw delErr;
+      const { error: insErr } = await supabase
+        .from("pool_memberships")
+        .insert({
+          user_id: user.id,
+          organization_id: user.organization_id,
+          pool_code: poolCode,
+          role: "member",
+        });
+      if (insErr) throw insErr;
+      toast({ title: "Pool Updated", description: `Assigned to ${poolCode} (${POOL_CATEGORY_META[poolCategory].label}).` });
+      onUserUpdated();
+    } catch (err: any) {
+      friendlyToastError(err);
+    } finally {
+      setSavingPool(false);
     }
   };
 
@@ -364,6 +453,89 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Save Identity
               </Button>
+
+              <Separator />
+
+              {/* Pool Assignment — mirrors Vehicle Registration (Pool Category + Specific Pool) */}
+              <div className="space-y-3 rounded-lg border border-border/40 bg-muted/20 p-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-primary" /> Pool Assignment
+                  </Label>
+                  {poolCode && poolCategory && (
+                    <Badge variant="outline" className={POOL_CATEGORY_META[poolCategory].tone}>
+                      {POOL_CATEGORY_META[poolCategory].label} · {poolCode}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="pool-category" className="text-xs">Pool Category</Label>
+                    <Select
+                      value={poolCategory}
+                      onValueChange={(v) => {
+                        const cat = v as PoolCategory;
+                        setPoolCategory(cat);
+                        // Reset specific pool if it doesn't belong to the new category
+                        if (!POOL_HIERARCHY[cat].some(p => p.code === poolCode)) {
+                          setPoolCode("");
+                        }
+                      }}
+                      disabled={loadingExtras || savingPool}
+                    >
+                      <SelectTrigger id="pool-category">
+                        <SelectValue placeholder="Select category..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(POOL_HIERARCHY) as PoolCategory[]).map(cat => {
+                          const meta = POOL_CATEGORY_META[cat];
+                          const Icon = meta.icon;
+                          return (
+                            <SelectItem key={cat} value={cat}>
+                              <span className="flex items-center gap-2">
+                                <Icon className="w-3.5 h-3.5" />
+                                {meta.label}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="pool-code" className="text-xs">Specific Pool</Label>
+                    <Select
+                      value={poolCode}
+                      onValueChange={setPoolCode}
+                      disabled={!poolCategory || loadingExtras || savingPool}
+                    >
+                      <SelectTrigger id="pool-code" className={!poolCategory ? "opacity-50" : ""}>
+                        <SelectValue placeholder={poolCategory ? "Select pool..." : "Pick category first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {poolCategory &&
+                          POOL_HIERARCHY[poolCategory].map(p => (
+                            <SelectItem key={p.code} value={p.code}>
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleSavePool}
+                  disabled={savingPool || loadingExtras || !poolCategory || !poolCode}
+                  variant="secondary"
+                  className="w-full gap-2"
+                >
+                  {savingPool ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save Pool
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
