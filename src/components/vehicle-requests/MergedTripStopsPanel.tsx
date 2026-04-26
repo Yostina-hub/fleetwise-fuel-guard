@@ -1002,7 +1002,7 @@ export const MergedTripStopsPanel = ({
         </div>
 
         <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-          {open ? "Hide" : "View stops"}
+          {open ? "Hide" : isSingle ? "View route" : "View stops"}
           {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </span>
       </button>
@@ -1017,7 +1017,9 @@ export const MergedTripStopsPanel = ({
             </div>
           ) : children.length === 0 ? (
             <div className="text-center py-6 text-xs text-muted-foreground">
-              No child requests linked to this consolidated trip.
+              {isSingle
+                ? "This request has no pickup or destination yet."
+                : "No child requests linked to this consolidated trip."}
             </div>
           ) : (
             <>
