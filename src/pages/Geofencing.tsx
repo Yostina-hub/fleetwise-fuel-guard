@@ -916,7 +916,15 @@ const Geofencing = () => {
             </div>
             <p className="mt-1 text-xs text-muted-foreground">Dispatch rules, alerts, and geofence visibility.</p>
           </div>
-          {mode === "overlay" && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setPanelOpen(false)} aria-label="Minimize zone panel">
+                <PanelRightClose className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Minimize panel</TooltipContent>
+          </Tooltip>
+          {mode === "overlay" && false && (
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setPanelOpen(false)}>
               <X className="h-4 w-4" />
             </Button>
