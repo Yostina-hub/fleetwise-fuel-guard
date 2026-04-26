@@ -31,6 +31,12 @@ import {
   downloadImportTemplate,
   type ParseResult,
 } from "./import/importParser";
+import {
+  scanForDuplicates,
+  type ConflictStrategy,
+  type DuplicateScan,
+} from "./import/duplicateDetection";
+import ConflictStrategyPicker from "./import/ConflictStrategyPicker";
 
 interface BulkImportDialogProps {
   open: boolean;
@@ -55,6 +61,9 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
   const [file, setFile] = useState<File | null>(null);
   const [parsing, setParsing] = useState(false);
   const [preview, setPreview] = useState<ParseResult | null>(null);
+  const [dupScan, setDupScan] = useState<DuplicateScan | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [strategy, setStrategy] = useState<ConflictStrategy>("update");
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportOutcome | null>(null);
@@ -63,6 +72,9 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
   const reset = useCallback(() => {
     setFile(null);
     setPreview(null);
+    setDupScan(null);
+    setScanning(false);
+    setStrategy("update");
     setResult(null);
     setProgress(0);
     setParsing(false);
