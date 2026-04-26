@@ -558,9 +558,22 @@ const DriverPortal = () => {
                   reference: string;
                   when: string | null;
                   vehicle: string;
-                  route: string;
+                  departure: string;
+                  destination: string;
+                  purpose: string;
+                  passengerName: string;
+                  passengerPhone: string;
                   priority?: string | null;
                   raw: any;
+                };
+
+                const passengerNameOf = (r: any) => {
+                  const p = r?.requester;
+                  if (p) {
+                    const composed = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+                    return composed || p.full_name || r?.requester_name || "—";
+                  }
+                  return r?.requester_name || "—";
                 };
 
                 const rows: Row[] = [];
@@ -583,9 +596,11 @@ const DriverPortal = () => {
                     vehicle: activeRequest.assigned_vehicle
                       ? `${activeRequest.assigned_vehicle.plate_number || "—"}${activeRequest.assigned_vehicle.make ? ` · ${activeRequest.assigned_vehicle.make}` : ""}${activeRequest.assigned_vehicle.model ? ` ${activeRequest.assigned_vehicle.model}` : ""}`
                       : "—",
-                    route: activeRequest.destination
-                      ? `${activeRequest.purpose || "Trip"} → ${activeRequest.destination}`
-                      : activeRequest.purpose || "—",
+                    departure: activeRequest.departure_place || "—",
+                    destination: activeRequest.destination || "—",
+                    purpose: activeRequest.purpose || "—",
+                    passengerName: passengerNameOf(activeRequest),
+                    passengerPhone: activeRequest.requester?.phone || "—",
                     raw: {
                       request: activeRequest,
                       assignment: {
@@ -613,9 +628,11 @@ const DriverPortal = () => {
                     vehicle: v
                       ? `${v.plate_number || "—"}${v.make ? ` · ${v.make}` : ""}${v.model ? ` ${v.model}` : ""}`
                       : "—",
-                    route: r?.destination
-                      ? `${r?.purpose || "Trip"} → ${r.destination}`
-                      : r?.purpose || "—",
+                    departure: r?.departure_place || "—",
+                    destination: r?.destination || "—",
+                    purpose: r?.purpose || "—",
+                    passengerName: passengerNameOf(r),
+                    passengerPhone: r?.requester?.phone || "—",
                     raw: { request: r, assignment: a, vehicle: v },
                   });
                 }
@@ -630,7 +647,11 @@ const DriverPortal = () => {
                     reference: j.job_number || "—",
                     when: j.scheduled_pickup_at || null,
                     vehicle: "—",
-                    route: `${j.pickup_location_name || "—"} → ${j.dropoff_location_name || "—"}`,
+                    departure: j.pickup_location_name || "—",
+                    destination: j.dropoff_location_name || "—",
+                    purpose: "Dispatch job",
+                    passengerName: "—",
+                    passengerPhone: "—",
                     priority: j.priority,
                     raw: j,
                   });
@@ -646,7 +667,11 @@ const DriverPortal = () => {
                     reference: j.job_number || "—",
                     when: j.scheduled_pickup_at || null,
                     vehicle: "—",
-                    route: `${j.pickup_location_name || "—"} → ${j.dropoff_location_name || "—"}`,
+                    departure: j.pickup_location_name || "—",
+                    destination: j.dropoff_location_name || "—",
+                    purpose: "Dispatch job",
+                    passengerName: "—",
+                    passengerPhone: "—",
                     priority: j.priority,
                     raw: j,
                   });
