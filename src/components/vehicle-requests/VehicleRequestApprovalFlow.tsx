@@ -20,12 +20,12 @@ import { useTranslation } from "react-i18next";
  */
 const fmtOrgTime = (iso?: string | null, opts: Intl.DateTimeFormatOptions = {
   year: "numeric", month: "short", day: "2-digit",
-  hour: "2-digit", minute: "2-digit", hour12: false,
+  hour: "numeric", minute: "2-digit", hour12: true,
 }): string => {
   if (!iso) return "";
   const tz = (typeof window !== "undefined" && window.localStorage?.getItem("org_timezone")) || "Africa/Addis_Ababa";
   try {
-    return new Intl.DateTimeFormat("en-GB", { ...opts, timeZone: tz }).format(new Date(iso));
+    return new Intl.DateTimeFormat("en-US", { ...opts, timeZone: tz }).format(new Date(iso));
   } catch {
     return new Date(iso).toLocaleString();
   }
