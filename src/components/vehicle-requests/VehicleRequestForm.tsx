@@ -599,12 +599,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     }
   }, [open, requesterPoolCodes, pools, form.pool_category, form.pool_name]);
 
-  // Reset the manual-touch flag whenever the dialog re-opens or the effective
-  // requester changes (e.g. user switches "on behalf of"), so a fresh session
-  // always re-evaluates the auto-fill. We also clear the previously auto-filled
-  // pool fields so the new requester's pool can populate (otherwise the
-  // auto-fill effect bails on the stale values left over from the prior user).
+  // Reset the manual-touch flag and clear previously auto-filled pool fields
+  // ONLY when the effective requester actually changes (e.g. user picks/clears
+  // an "on behalf of" target). Critically, we do NOT clear on initial mount —
+  // that would wipe a draft-restored or filer-prefilled value before the
+  // auto-fill query has a chance to repopulate, leaving the form blank.
+  const prevRequesterIdRef = useRef<string | null>(effectiveRequesterId);
   useEffect(() => {
+    if (prevRequesterIdRef.current === effectiveRequesterId) return;
+    prevRequesterIdRef.current = effectiveRequesterId;
     userTouchedPoolRef.current = false;
     setForm((prev) => ({ ...prev, pool_category: "", pool_name: "" }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -671,11 +674,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     );
   }, [open, requesterPhone, effectiveRequesterId]);
 
-  // Reset the contact-phone touch flag on dialog open / requester change so
-  // the auto-fill re-evaluates for the new session. Also clear the previously
-  // auto-filled phone so the new requester's number can populate (otherwise
-  // the auto-fill effect short-circuits on the stale value).
+  // Same guard as the pool-clear effect above: only clear contact_phone when
+  // the requester actually changes, never on initial mount. Otherwise a fresh
+  // form open would wipe the draft-restored phone before the profile fetch
+  // resolves, leaving the field permanently empty until the user types.
+  const prevPhoneRequesterIdRef = useRef<string | null>(effectiveRequesterId);
   useEffect(() => {
+    if (prevPhoneRequesterIdRef.current === effectiveRequesterId) return;
+    prevPhoneRequesterIdRef.current = effectiveRequesterId;
     userTouchedContactPhoneRef.current = false;
     setForm((prev) => ({ ...prev, contact_phone: "" }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
