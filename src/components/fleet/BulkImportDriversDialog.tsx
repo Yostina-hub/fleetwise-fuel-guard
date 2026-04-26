@@ -102,6 +102,7 @@ export default function BulkImportDriversDialog({
       }
       setFile(selected);
       setResult(null);
+      setDupScan(null);
       setParsing(true);
       try {
         const parsed = await parseImportFile(selected, {
@@ -115,6 +116,28 @@ export default function BulkImportDriversDialog({
             description: `Maximum ${MAX_ROWS} drivers per import. Found ${parsed.totalRows}.`,
             variant: "destructive",
           });
+          return;
+        }
+
+        // Duplicate detection — license_number is globally unique
+        const validRows = parsed.rows.filter((r) => r.errors.length === 0);
+        if (validRows.length > 0) {
+          setScanning(true);
+          try {
+            const scan = await scanForDuplicates(validRows, {
+              table: "drivers",
+              keyColumn: "license_number",
+            });
+            setDupScan(scan);
+          } catch (e: any) {
+            toast({
+              title: "Duplicate check failed",
+              description: e.message ?? "Could not scan existing drivers",
+              variant: "destructive",
+            });
+          } finally {
+            setScanning(false);
+          }
         }
       } catch (err: any) {
         toast({
