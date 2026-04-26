@@ -208,7 +208,15 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
 
     setImporting(true);
     setProgress(0);
-    const outcome: ImportOutcome = { inserted: 0, updated: 0, failed: 0, errors: [] };
+    const skippedCount =
+      strategy === "skip" ? validRows.length - rowsToProcess.length : 0;
+    const outcome: ImportOutcome = {
+      inserted: 0,
+      updated: 0,
+      skipped: skippedCount,
+      failed: 0,
+      errors: [],
+    };
 
     for (let i = 0; i < rowsToProcess.length; i++) {
       const row = rowsToProcess[i];
@@ -250,13 +258,11 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
     queryClient.invalidateQueries({ queryKey: ["vehicles"] });
 
     const total = outcome.inserted + outcome.updated;
-    const skippedCount =
-      strategy === "skip" ? validRows.length - rowsToProcess.length : 0;
     if (total > 0) {
       toast({
         title: "Import complete",
         description: `${outcome.inserted} added · ${outcome.updated} updated${
-          skippedCount ? ` · ${skippedCount} skipped` : ""
+          outcome.skipped ? ` · ${outcome.skipped} skipped` : ""
         }${outcome.failed ? ` · ${outcome.failed} failed` : ""}`,
       });
     } else {
