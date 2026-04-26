@@ -972,14 +972,18 @@ export const MergedTripStopsPanel = ({
         aria-expanded={open}
       >
         <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <GitMerge className="w-4 h-4" />
+          {isSingle ? <RouteIcon className="w-4 h-4" /> : <GitMerge className="w-4 h-4" />}
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-sm font-semibold">Consolidated trip</span>
+            <span className="text-sm font-semibold">
+              {isSingle ? "Trip route" : "Consolidated trip"}
+            </span>
             <span className="text-xs text-muted-foreground">
-              {stopCount} stop{stopCount === 1 ? "" : "s"} · {totalPax} pax
+              {isSingle
+                ? `${totalPax} pax`
+                : `${stopCount} stop${stopCount === 1 ? "" : "s"} · ${totalPax} pax`}
             </span>
           </div>
           {earliest && (
