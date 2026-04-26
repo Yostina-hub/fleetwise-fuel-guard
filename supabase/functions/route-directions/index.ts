@@ -320,6 +320,22 @@ serve(async (req) => {
           alternatives = stitched.alternatives;
         }
       }
+      if (
+        wantAlternatives &&
+        Array.isArray(alternatives) &&
+        alternatives.length < 2 &&
+        coords.length === 2
+      ) {
+        const viaAlternatives = await tryOsrmViaAlternatives(coords as Coord[]);
+        if (viaAlternatives?.length) {
+          alternatives = [osrm.alternatives?.[0] ?? {
+            geometry: osrm.geometry,
+            distance_m: osrm.distance_m,
+            duration_s: osrm.duration_s,
+            legs: osrm.legs,
+          }, ...viaAlternatives].slice(0, 3);
+        }
+      }
       return secureJsonResponse(
         {
           ok: true,
