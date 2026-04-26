@@ -23,12 +23,24 @@ export interface RoutePoint {
   label?: string;
 }
 
+export interface GeofenceOverlay {
+  id: string;
+  name: string;
+  geometry_type: "circle" | "polygon" | string;
+  center_lat?: number | null;
+  center_lng?: number | null;
+  radius_meters?: number | null;
+  polygon_points?: Array<{ lat: number; lng: number }> | null;
+}
+
 interface RouteMapPreviewProps {
   departure?: RoutePoint;
   destination?: RoutePoint;
   stops?: RoutePoint[];
   /** Optional explicit height. Defaults to 240px. */
   heightPx?: number;
+  /** Optional active geofences to overlay on the map. */
+  geofences?: GeofenceOverlay[];
 }
 
 type RoutePointKind = "departure" | "stop" | "destination";
