@@ -86,6 +86,29 @@ export const PoolAssignmentPicker = ({
     poolName: request.pool_name,
   });
 
+  // On-the-way matching — surfaces vehicles already on a trip whose route
+  // passes near this pickup so the supervisor can piggy-back instead of
+  // dispatching a new one. Only meaningful when we have pickup coords.
+  const { data: onTheWay = [], isLoading: onTheWayLoading } = useOnTheWayVehicles({
+    organizationId,
+    pickupLat: request.departure_lat,
+    pickupLng: request.departure_lng,
+    destinationLat: request.destination_lat,
+    destinationLng: request.destination_lng,
+    passengers: request.passengers,
+  });
+
+  // Route geofence validation — pickup + destination against active zones.
+  // Pre-assignment guardrail: out-of-zone routes are flagged and the primary
+  // CTA is disabled until the supervisor acknowledges the override.
+  const { data: routeCheck } = useRouteGeofenceCheck({
+    organizationId,
+    pickupLat: request.departure_lat,
+    pickupLng: request.departure_lng,
+    destinationLat: request.destination_lat,
+    destinationLng: request.destination_lng,
+  });
+
   // Auto-pin top *available* suggestion on first load (supervisor can override).
   useEffect(() => {
     if (!vehicleId) {
