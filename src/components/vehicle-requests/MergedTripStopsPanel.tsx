@@ -28,6 +28,7 @@ import {
   ChevronUp,
   ArrowRight,
   Map as MapIcon,
+  MapPin,
   EyeOff,
   Route as RouteIcon,
   Trophy,
@@ -133,6 +134,15 @@ const getMergedTripFenceCenter = (fence: any): [number, number] | null => {
     points.reduce((sum, point) => sum + point.lng, 0) / points.length,
     points.reduce((sum, point) => sum + point.lat, 0) / points.length,
   ];
+};
+
+const getMergedTripFenceBounds = (fence: any): maplibregl.LngLatBounds | null => {
+  const feature = buildMergedTripFenceFeature(fence);
+  const coords = feature?.geometry.coordinates[0];
+  if (!coords?.length) return null;
+  const bounds = new maplibregl.LngLatBounds(coords[0] as [number, number], coords[0] as [number, number]);
+  coords.forEach((coord) => bounds.extend(coord as [number, number]));
+  return bounds;
 };
 
 
