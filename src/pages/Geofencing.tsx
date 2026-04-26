@@ -1094,9 +1094,26 @@ const Geofencing = () => {
               )}
             </main>
 
-            <aside className="hidden w-[380px] xl:w-[420px] shrink-0 flex-col border-l border-border bg-card lg:flex">
-              {renderZonePanel("aside")}
-            </aside>
+            {panelOpen ? (
+              <aside className="hidden w-[380px] xl:w-[420px] shrink-0 flex-col border-l border-border bg-card lg:flex">
+                {renderZonePanel("aside")}
+              </aside>
+            ) : (
+              <aside className="hidden w-12 shrink-0 flex-col items-center gap-2 border-l border-border bg-card py-3 lg:flex">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setPanelOpen(true)} aria-label="Expand zone panel">
+                      <PanelRightOpen className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">Expand zones</TooltipContent>
+                </Tooltip>
+                <div className="mt-1 flex flex-col items-center gap-1 text-[10px] font-medium text-muted-foreground [writing-mode:vertical-rl]">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <span className="rotate-180">Zones · {geofenceStats.total}</span>
+                </div>
+              </aside>
+            )}
           </div>
         </div>
 
