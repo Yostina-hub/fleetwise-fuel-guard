@@ -172,6 +172,7 @@ const Geofencing = () => {
     enable_entry_alarm: true,
     enable_exit_alarm: true,
     color: "#3B82F6",
+    dispatch_policy: "neutral" as DispatchPolicy,
   });
 
   const { data: geofences, isLoading } = useQuery({
@@ -283,6 +284,12 @@ const Geofencing = () => {
     }
   }, [drawingMode, toast]);
 
+  const focusFenceOnMap = useCallback((fence: GeofenceRecord) => {
+    const bounds = getFenceBounds(fence);
+    if (!mapRef.current || !bounds) return;
+    mapRef.current.fitBounds(bounds, { padding: 90, maxZoom: 16, duration: 600 });
+  }, []);
+
   // Render geofences on map
   useEffect(() => {
     if (!mapRef.current || !geofences) return;
@@ -290,61 +297,37 @@ const Geofencing = () => {
 
     const renderGeofences = () => {
       // Clean up existing layers first
-      geofenceLayersRef.current.forEach(layerId => {
-        try {
-          if (map.getLayer(layerId)) map.removeLayer(layerId);
-        } catch (e) { /* ignore */ }
-        try {
-          if (map.getSource(layerId)) map.removeSource(layerId);
-        } catch (e) { /* ignore */ }
-      });
+      geofenceLayersRef.current
+        .filter((id) => id.includes("-fill-") || id.includes("-outline-") || id.includes("-label-"))
+        .forEach((layerId) => {
+          try {
+            if (map.getLayer(layerId)) map.removeLayer(layerId);
+          } catch (e) { /* ignore */ }
+        });
+      geofenceLayersRef.current
+        .filter((id) => id.startsWith("geofence-source-"))
+        .forEach((sourceId) => {
+          try {
+            if (map.getSource(sourceId)) map.removeSource(sourceId);
+          } catch (e) { /* ignore */ }
+        });
       geofenceLayersRef.current = [];
 
-      geofences.forEach((fence: any) => {
-        const sourceId = `geofence-${fence.id}`;
+      const allBounds = new maplibregl.LngLatBounds();
+      let hasBounds = false;
+
+      (geofences as GeofenceRecord[]).forEach((fence) => {
+        const sourceId = `geofence-source-${fence.id}`;
         const fillLayerId = `geofence-fill-${fence.id}`;
         const outlineLayerId = `geofence-outline-${fence.id}`;
+        const labelLayerId = `geofence-label-${fence.id}`;
         const color = fence.color || '#3B82F6';
-
-        // Skip if source already exists
-        if (map.getSource(sourceId)) return;
-
-        let geojsonData: GeoJSON.Feature;
-
-        if (fence.geometry_type === 'circle' && fence.center_lat != null && fence.center_lng != null) {
-          // Postgres numeric columns arrive as strings via PostgREST — coerce to Number
-          // before any arithmetic, otherwise we end up with string concatenation and the
-          // geofence renders off-screen (or not at all).
-          const centerLat = Number(fence.center_lat);
-          const centerLng = Number(fence.center_lng);
-          const radius = Number(fence.radius_meters) || 500;
-          if (!Number.isFinite(centerLat) || !Number.isFinite(centerLng)) return;
-          const points = 64;
-          const coords: number[][] = [];
-          for (let i = 0; i <= points; i++) {
-            const angle = (i / points) * 2 * Math.PI;
-            const dx = radius * Math.cos(angle);
-            const dy = radius * Math.sin(angle);
-            const lat = centerLat + (dy / 111320);
-            const lng = centerLng + (dx / (111320 * Math.cos((centerLat * Math.PI) / 180)));
-            coords.push([lng, lat]);
-          }
-          geojsonData = {
-            type: 'Feature',
-            properties: { name: fence.name },
-            geometry: { type: 'Polygon', coordinates: [coords] }
-          };
-        } else if (fence.geometry_type === 'polygon' && fence.polygon_points?.length >= 3) {
-          const coords = fence.polygon_points.map((p: any) => [Number(p.lng), Number(p.lat)]);
-          coords.push(coords[0]);
-          geojsonData = {
-            type: 'Feature',
-            properties: { name: fence.name },
-            geometry: { type: 'Polygon', coordinates: [coords] }
-          };
-        } else {
-          return;
-        }
+        const geojsonData = buildFenceFeature(fence);
+        if (!geojsonData) return;
+        geojsonData.geometry.coordinates[0].forEach((coord) => {
+          allBounds.extend(coord as [number, number]);
+          hasBounds = true;
+        });
 
         try {
           map.addSource(sourceId, { type: 'geojson', data: geojsonData });
@@ -355,7 +338,7 @@ const Geofencing = () => {
             source: sourceId,
             paint: {
               'fill-color': color,
-              'fill-opacity': 0.2
+              'fill-opacity': fence.is_active === false ? 0.08 : 0.28
             }
           });
 
@@ -365,15 +348,37 @@ const Geofencing = () => {
             source: sourceId,
             paint: {
               'line-color': color,
-              'line-width': 2
+              'line-width': fence.dispatch_policy === 'avoid' ? 4 : 3,
+              'line-opacity': fence.is_active === false ? 0.45 : 1
             }
           });
 
-          geofenceLayersRef.current.push(sourceId, fillLayerId, outlineLayerId);
+          map.addLayer({
+            id: labelLayerId,
+            type: 'symbol',
+            source: sourceId,
+            layout: {
+              'text-field': ['get', 'name'],
+              'text-size': 12,
+              'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+              'text-allow-overlap': false,
+            },
+            paint: {
+              'text-color': color,
+              'text-halo-color': '#ffffff',
+              'text-halo-width': 2,
+            },
+          });
+
+          geofenceLayersRef.current.push(sourceId, fillLayerId, outlineLayerId, labelLayerId);
         } catch (e) {
           console.warn('Failed to add geofence layer:', sourceId, e);
         }
       });
+
+      if (hasBounds && !allBounds.isEmpty()) {
+        map.fitBounds(allBounds, { padding: 80, maxZoom: 13, duration: 0 });
+      }
     };
 
     if (map.isStyleLoaded()) {
