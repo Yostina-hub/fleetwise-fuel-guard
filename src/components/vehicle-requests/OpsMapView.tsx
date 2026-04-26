@@ -819,6 +819,13 @@ export const OpsMapView = ({ organizationId }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <VehicleVideoPlaybackDialog
+        open={!!playbackVehicle}
+        onOpenChange={(o) => !o && setPlaybackVehicle(null)}
+        vehicleId={playbackVehicle?.id ?? null}
+        vehicleLabel={playbackVehicle?.label}
+      />
       </div>
     </div>
   );
