@@ -1525,6 +1525,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                       endRequired={isProject}
                       errorStart={!!getError("start_date")}
                       errorEnd={!!getError("end_date")}
+                      withTimes
+                      startTime={form.start_date_time}
+                      endTime={form.end_date_time}
+                      onStartTimeChange={(v) => update("start_date_time", v)}
+                      onEndTimeChange={(v) => update("end_date_time", v)}
                     />
                     <div className="space-y-0.5 mt-1">
                       <FieldError field="start_date" />

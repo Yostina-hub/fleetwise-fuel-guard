@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { SharedRideMembership } from "@/hooks/useSharedRideMembership";
 import { format, formatDistanceToNow } from "date-fns";
+import { formatRequestNumber } from "@/lib/formatRequestNumber";
 import { motion } from "framer-motion";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -94,8 +95,10 @@ export const VehicleRequestCard = ({
               <GripVertical className="h-3.5 w-3.5" />
             </button>
           )}
-          <span className="font-mono text-xs font-semibold text-primary">
-            {request.request_number ?? request.id?.slice(0, 8)}
+          <span className="font-mono text-xs font-semibold text-primary" title={request.request_number}>
+            {request.request_number
+              ? formatRequestNumber(request.request_number, { requestType: request.request_type, compact: true })
+              : request.id?.slice(0, 8)}
           </span>
           <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 ${pConfig.color}`}>
             {pConfig.label}

@@ -87,6 +87,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { PageDateRangeProvider, usePageDateRange } from "@/contexts/PageDateRangeContext";
 import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
+import { formatRequestNumber } from "@/lib/formatRequestNumber";
 
 type StatusKey = "all" | "pending" | "approved" | "assigned" | "completed" | "rejected" | "cancelled";
 
@@ -1080,9 +1081,10 @@ const VehicleRequests = () => {
                           <td className="py-3 px-4 font-semibold text-foreground">
                             <button
                               onClick={() => setShowDetail(r)}
-                              className="hover:text-blue-500 hover:underline underline-offset-2"
+                              className="hover:text-blue-500 hover:underline underline-offset-2 text-left"
+                              title={r.request_number}
                             >
-                              {r.request_number}
+                              {formatRequestNumber(r.request_number, { requestType: r.request_type, compact: true })}
                             </button>
                           </td>
                           <td className="py-3 px-3">
@@ -1399,7 +1401,7 @@ const VehicleRequests = () => {
               <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/60 shrink-0">
                 <DialogTitle className="flex items-center gap-2 text-lg">
                   <FileText className="w-4 h-4 text-primary" />
-                  Request {showDetail.request_number}
+                  Request {formatRequestNumber(showDetail.request_number, { requestType: showDetail.request_type })}
                 </DialogTitle>
                 <DialogDescription className="sr-only">
                   Vehicle request details, workflow progress, and approval actions.
