@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { SharedRideMembership } from "@/hooks/useSharedRideMembership";
 import { format, formatDistanceToNow } from "date-fns";
+import { formatRequestNumber } from "@/lib/formatRequestNumber";
 import { motion } from "framer-motion";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
