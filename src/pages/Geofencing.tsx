@@ -611,6 +611,33 @@ const Geofencing = () => {
                           </div>
                         </div>
 
+                        {/* Dispatch policy — feeds the AI route recommender */}
+                        <div className="hidden sm:flex flex-col items-end gap-0.5">
+                          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Dispatch</span>
+                          <Select
+                            value={(fence.dispatch_policy as string) || "neutral"}
+                            onValueChange={(v) =>
+                              updateDispatchPolicy.mutate({
+                                id: fence.id,
+                                policy: v as "prefer" | "avoid" | "neutral",
+                              })
+                            }
+                          >
+                            <SelectTrigger className="h-7 w-[110px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="prefer">
+                                <span className="text-emerald-600 font-medium">Prefer</span>
+                              </SelectItem>
+                              <SelectItem value="avoid">
+                                <span className="text-amber-600 font-medium">Avoid</span>
+                              </SelectItem>
+                              <SelectItem value="neutral">Neutral</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
                         {/* Actions */}
                         <TooltipProvider>
                           <div className="flex items-center gap-1">
