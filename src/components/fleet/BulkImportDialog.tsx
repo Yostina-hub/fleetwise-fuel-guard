@@ -483,21 +483,38 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
               Choose another file
             </Button>
           )}
-          {!result && (
-            <Button
-              onClick={handleImport}
-              disabled={
-                !preview ||
-                importing ||
-                parsing ||
-                preview.validRows === 0 ||
-                preview.totalRows > MAX_ROWS
-              }
-            >
-              {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {preview ? `Import ${preview.validRows} valid row(s)` : "Import"}
-            </Button>
-          )}
+          {!result && (() => {
+            const dupCount = dupScan?.duplicates.length ?? 0;
+            const newCount = dupScan?.newRows.length ?? preview?.validRows ?? 0;
+            const willProcess =
+              strategy === "skip" ? newCount :
+              strategy === "reject" && dupCount > 0 ? 0 :
+              preview?.validRows ?? 0;
+            const buttonLabel = preview
+              ? strategy === "reject" && dupCount > 0
+                ? `Cannot import — ${dupCount} duplicate(s)`
+                : strategy === "skip"
+                  ? `Import ${newCount} new ${newCount === 1 ? "row" : "rows"}`
+                  : `Import ${preview.validRows} ${preview.validRows === 1 ? "row" : "rows"}`
+              : "Import";
+            return (
+              <Button
+                onClick={handleImport}
+                disabled={
+                  !preview ||
+                  importing ||
+                  parsing ||
+                  scanning ||
+                  preview.validRows === 0 ||
+                  preview.totalRows > MAX_ROWS ||
+                  willProcess === 0
+                }
+              >
+                {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {buttonLabel}
+              </Button>
+            );
+          })()}
         </DialogFooter>
       </DialogContent>
     </Dialog>
