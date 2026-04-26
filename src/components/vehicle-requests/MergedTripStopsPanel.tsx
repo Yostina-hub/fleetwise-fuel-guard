@@ -73,6 +73,68 @@ type RoutePoint = {
   label: string;
 };
 
+const toFiniteNumber = (value: unknown): number | null => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+const normalizeFencePoints = (points: unknown): Array<{ lat: number; lng: number }> => {
+  const raw = typeof points === "string" ? (() => {
+    try {
+      return JSON.parse(points);
+    } catch {
+      return null;
+    }
+  })() : points;
+
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((point: any) => ({ lat: toFiniteNumber(point?.lat), lng: toFiniteNumber(point?.lng) }))
+    .filter((point): point is { lat: number; lng: number } => point.lat != null && point.lng != null);
+};
+
+const buildMergedTripFenceFeature = (fence: any): GeoJSON.Feature<GeoJSON.Polygon> | null => {
+  if (fence.geometry_type === "circle") {
+    const lat = toFiniteNumber(fence.center_lat);
+    const lng = toFiniteNumber(fence.center_lng);
+    const radius = toFiniteNumber(fence.radius_meters) || 500;
+    if (lat == null || lng == null || radius <= 0) return null;
+    const points = 112;
+    const coords: number[][] = [];
+    for (let i = 0; i <= points; i++) {
+      const angle = (i / points) * 2 * Math.PI;
+      const dx = radius * Math.cos(angle);
+      const dy = radius * Math.sin(angle);
+      coords.push([
+        lng + dx / (111320 * Math.cos((lat * Math.PI) / 180)),
+        lat + dy / 111320,
+      ]);
+    }
+    return { type: "Feature", properties: { name: fence.name }, geometry: { type: "Polygon", coordinates: [coords] } };
+  }
+
+  const polygonPoints = normalizeFencePoints(fence.polygon_points);
+  if (fence.geometry_type === "polygon" && polygonPoints.length >= 3) {
+    const coords = polygonPoints.map((point) => [point.lng, point.lat]);
+    coords.push(coords[0]);
+    return { type: "Feature", properties: { name: fence.name }, geometry: { type: "Polygon", coordinates: [coords] } };
+  }
+
+  return null;
+};
+
+const getMergedTripFenceCenter = (fence: any): [number, number] | null => {
+  const centerLat = toFiniteNumber(fence.center_lat);
+  const centerLng = toFiniteNumber(fence.center_lng);
+  if (centerLat != null && centerLng != null) return [centerLng, centerLat];
+  const points = normalizeFencePoints(fence.polygon_points);
+  if (!points.length) return null;
+  return [
+    points.reduce((sum, point) => sum + point.lng, 0) / points.length,
+    points.reduce((sum, point) => sum + point.lat, 0) / points.length,
+  ];
+};
+
 
 
 export const MergedTripStopsPanel = ({
@@ -222,6 +284,8 @@ export const MergedTripStopsPanel = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const geofenceFitAppliedRef = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
 
   const [routesInfo, setRoutesInfo] = useState<
     Array<{
@@ -249,7 +313,7 @@ export const MergedTripStopsPanel = ({
   >(null);
 
   useEffect(() => {
-    if (!showMap || !open) return;
+    if (!showMap || !open || !mapReady) return;
     if (!containerRef.current || mapRef.current) return;
     if (stopsWithCoords.length === 0) return;
 
@@ -264,6 +328,7 @@ export const MergedTripStopsPanel = ({
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
     map.on("load", async () => {
+      setMapReady(true);
       const bounds = new maplibregl.LngLatBounds();
 
       // ── Markers (numbered pickups + drops) ─────────────────────────
@@ -549,6 +614,8 @@ export const MergedTripStopsPanel = ({
       markersRef.current = [];
       mapRef.current?.remove();
       mapRef.current = null;
+      setMapReady(false);
+      geofenceFitAppliedRef.current = false;
       setRoutesInfo([]);
       setRoutesError(null);
       setRoutesLoading(false);
@@ -567,93 +634,48 @@ export const MergedTripStopsPanel = ({
     const map = mapRef.current;
     if (!map || geofences.length === 0) return;
 
-    const addedIds: string[] = [];
+    const addedLayers: string[] = [];
+    const addedSources: string[] = [];
+    const addedMarkers: maplibregl.Marker[] = [];
 
     const renderGeofences = () => {
+      const allBounds = new maplibregl.LngLatBounds();
+      let hasFenceBounds = false;
       geofences.forEach((fence: any) => {
         const sourceId = `mtsp-geofence-${fence.id}`;
         const fillId = `${sourceId}-fill`;
         const lineId = `${sourceId}-line`;
+        const labelId = `${sourceId}-label`;
         if (map.getSource(sourceId)) return;
         const color = fence.color || "hsl(160 84% 39%)";
-
-        let feature: GeoJSON.Feature | null = null;
-        if (
-          fence.geometry_type === "circle" &&
-          fence.center_lat != null &&
-          fence.center_lng != null
-        ) {
-          const lat = Number(fence.center_lat);
-          const lng = Number(fence.center_lng);
-          const radius = Number(fence.radius_meters) || 500;
-          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-          const points = 64;
-          const coords: number[][] = [];
-          for (let i = 0; i <= points; i++) {
-            const angle = (i / points) * 2 * Math.PI;
-            const dx = radius * Math.cos(angle);
-            const dy = radius * Math.sin(angle);
-            const py = lat + dy / 111320;
-            const px = lng + dx / (111320 * Math.cos((lat * Math.PI) / 180));
-            coords.push([px, py]);
-          }
-          feature = {
-            type: "Feature",
-            properties: { name: fence.name },
-            geometry: { type: "Polygon", coordinates: [coords] },
-          };
-        } else if (
-          fence.geometry_type === "polygon" &&
-          Array.isArray(fence.polygon_points) &&
-          fence.polygon_points.length >= 3
-        ) {
-          const coords = fence.polygon_points.map((p: any) => [
-            Number(p.lng),
-            Number(p.lat),
-          ]);
-          coords.push(coords[0]);
-          feature = {
-            type: "Feature",
-            properties: { name: fence.name },
-            geometry: { type: "Polygon", coordinates: [coords] },
-          };
-        }
+        const feature = buildMergedTripFenceFeature(fence);
         if (!feature) return;
+        feature.geometry.coordinates[0].forEach((coord) => {
+          allBounds.extend(coord as [number, number]);
+          hasFenceBounds = true;
+        });
 
         try {
           map.addSource(sourceId, { type: "geojson", data: feature });
-          // Keep geofences UNDER the route lines so the chosen path stays
-          // the visual hero, but make them legible at any zoom: a clearly
-          // tinted fill, a solid 2px outline, and a label so dispatchers
-          // recognise the zone instantly.
-          const beforeId = map.getLayer("route-alt-casing-0")
-            ? "route-alt-casing-0"
-            : undefined;
-          map.addLayer(
-            {
-              id: fillId,
-              type: "fill",
-              source: sourceId,
-              paint: { "fill-color": color, "fill-opacity": 0.35 },
+          addedSources.push(sourceId);
+          map.addLayer({
+            id: fillId,
+            type: "fill",
+            source: sourceId,
+            paint: { "fill-color": color, "fill-opacity": 0.48 },
+          });
+          map.addLayer({
+            id: lineId,
+            type: "line",
+            source: sourceId,
+            paint: {
+              "line-color": color,
+              "line-width": 4,
+              "line-opacity": 1,
             },
-            beforeId,
-          );
-          map.addLayer(
-            {
-              id: lineId,
-              type: "line",
-              source: sourceId,
-              paint: {
-                "line-color": color,
-                "line-width": 2.5,
-                "line-opacity": 1,
-              },
-            },
-            beforeId,
-          );
+          });
           // Short label centred on the geometry. Allow overlap so every
           // zone gets a legend even when several fences cluster together.
-          const labelId = `${sourceId}-label`;
           const shortName = String(fence.name || "Zone").split(",")[0].slice(0, 28);
           map.addLayer({
             id: labelId,
@@ -670,14 +692,47 @@ export const MergedTripStopsPanel = ({
             paint: {
               "text-color": color,
               "text-halo-color": "rgba(255,255,255,0.95)",
-              "text-halo-width": 1.6,
+              "text-halo-width": 2.2,
             },
           });
-          addedIds.push(fillId, lineId, labelId, sourceId);
+          addedLayers.push(fillId, lineId, labelId);
+
+          const center = getMergedTripFenceCenter(fence);
+          if (center) {
+            const markerEl = document.createElement("div");
+            markerEl.style.cssText = `
+              max-width:150px;padding:3px 7px;border-radius:6px;
+              background:rgba(255,255,255,.95);color:${color};
+              font:700 11px system-ui;line-height:1.15;border:2px solid ${color};
+              box-shadow:0 2px 8px rgba(0,0,0,.28);pointer-events:none;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+            `;
+            markerEl.textContent = shortName;
+            const marker = new maplibregl.Marker({ element: markerEl, anchor: "center" })
+              .setLngLat(center)
+              .addTo(map);
+            addedMarkers.push(marker);
+          }
         } catch {
           /* style not ready — load handler below will retry */
         }
       });
+
+      if (hasFenceBounds && !geofenceFitAppliedRef.current) {
+        try {
+          const combined = new maplibregl.LngLatBounds();
+          const fenceCorners = allBounds.toArray() as [[number, number], [number, number]];
+          fenceCorners.forEach((coord) => combined.extend(coord));
+          stopsWithCoords.forEach((s) => {
+            combined.extend([s.departure_lng!, s.departure_lat!]);
+            combined.extend([s.destination_lng!, s.destination_lat!]);
+          });
+          map.fitBounds(combined, { padding: 72, maxZoom: 13, duration: 350 });
+          geofenceFitAppliedRef.current = true;
+        } catch {
+          /* noop */
+        }
+      }
     };
 
     if (map.isStyleLoaded()) {
@@ -689,12 +744,15 @@ export const MergedTripStopsPanel = ({
     return () => {
       const m = mapRef.current;
       if (!m) return;
-      addedIds.forEach((id) => {
+      addedMarkers.forEach((marker) => marker.remove());
+      addedLayers.forEach((id) => {
         try {
           if (m.getLayer(id)) m.removeLayer(id);
         } catch {
           /* noop */
         }
+      });
+      addedSources.forEach((id) => {
         try {
           if (m.getSource(id)) m.removeSource(id);
         } catch {
@@ -702,7 +760,7 @@ export const MergedTripStopsPanel = ({
         }
       });
     };
-  }, [showMap, open, geofences, routesInfo.length]);
+  }, [showMap, open, mapReady, geofences, routesInfo.length, stopsWithCoords]);
 
   // Ask Lovable AI to recommend the best candidate route. The AI never
   // invents measurements — it weighs the OSRM-supplied numbers against the
@@ -1090,8 +1148,12 @@ export const MergedTripStopsPanel = ({
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent
+                              side="right"
                               align="end"
-                              className="w-72 p-3 max-h-[70vh] flex flex-col gap-3 overflow-hidden"
+                              sideOffset={8}
+                              avoidCollisions
+                              collisionPadding={12}
+                              className="w-80 max-w-[calc(100vw-2rem)] p-3 max-h-[min(520px,calc(100vh-2rem))] flex flex-col gap-3 overflow-hidden"
                             >
                               <div className="flex items-center justify-between gap-3 shrink-0">
                                 <div className="space-y-0.5">
@@ -1117,11 +1179,8 @@ export const MergedTripStopsPanel = ({
                                       {(geofences as any[]).length === 1 ? "" : "s"}
                                     </span>
                                   </div>
-                                  <ScrollArea
-                                    className="flex-1 min-h-0 max-h-[44vh] pr-2 rounded-md border bg-muted/20"
-                                    type="always"
-                                  >
-                                    <div className="space-y-1.5 p-2">
+                                  <div className="min-h-[160px] max-h-[min(340px,calc(100vh-14rem))] overflow-y-auto overscroll-contain pr-2 rounded-md border bg-muted/20">
+                                    <div className="space-y-1.5 p-2 pr-3">
                                       {(geofences as any[]).length === 0 && (
                                         <div className="text-[10px] text-muted-foreground italic">
                                           No active geofences in this organisation.
@@ -1159,7 +1218,7 @@ export const MergedTripStopsPanel = ({
                                         );
                                       })}
                                     </div>
-                                  </ScrollArea>
+                                  </div>
                                 </div>
                               )}
                             </PopoverContent>
