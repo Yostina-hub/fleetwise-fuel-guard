@@ -62,6 +62,7 @@ describe("VR form validation — Daily Operation", () => {
     pool_name: "Head Office Pool",
     priority: "normal",
     trip_type: "round_trip",
+    contact_phone: "0911234567",
   };
 
   it("accepts a valid daily request", () => {
