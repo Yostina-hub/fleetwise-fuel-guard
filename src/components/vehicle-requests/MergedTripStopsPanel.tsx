@@ -67,110 +67,7 @@ type RoutePoint = {
   label: string;
 };
 
-type RouteCandidate = {
-  label: string;
-  strategy: string;
-  points: RoutePoint[];
-};
 
-const pointKey = (points: RoutePoint[]) =>
-  points.map((p) => `${p.coord[0].toFixed(5)},${p.coord[1].toFixed(5)}`).join("|");
-
-const distanceSq = (a: [number, number], b: [number, number]) => {
-  const dx = a[0] - b[0];
-  const dy = a[1] - b[1];
-  return dx * dx + dy * dy;
-};
-
-const buildPairedRoute = (stops: Child[], order: number[], label: string, strategy: string): RouteCandidate => ({
-  label,
-  strategy,
-  points: order.flatMap((idx) => {
-    const c = stops[idx];
-    return [
-      { coord: [c.departure_lng!, c.departure_lat!] as [number, number], label: `P${idx + 1}` },
-      { coord: [c.destination_lng!, c.destination_lat!] as [number, number], label: `D${idx + 1}` },
-    ];
-  }),
-});
-
-const buildNearestPairRoute = (stops: Child[]): RouteCandidate => {
-  const remaining = stops.map((_, idx) => idx);
-  const order: number[] = [];
-  let current: [number, number] = [stops[0].departure_lng!, stops[0].departure_lat!];
-
-  while (remaining.length > 0) {
-    remaining.sort((a, b) =>
-      distanceSq(current, [stops[a].departure_lng!, stops[a].departure_lat!]) -
-      distanceSq(current, [stops[b].departure_lng!, stops[b].departure_lat!]),
-    );
-    const next = remaining.shift()!;
-    order.push(next);
-    current = [stops[next].destination_lng!, stops[next].destination_lat!];
-  }
-
-  return buildPairedRoute(stops, order, "Route B", "Nearest request order");
-};
-
-const buildSharedRideRoute = (stops: Child[]): RouteCandidate => {
-  const pickupOrder: number[] = [];
-  const remainingPickups = stops.map((_, idx) => idx);
-  let current: [number, number] = [stops[0].departure_lng!, stops[0].departure_lat!];
-
-  while (remainingPickups.length > 0) {
-    remainingPickups.sort((a, b) =>
-      distanceSq(current, [stops[a].departure_lng!, stops[a].departure_lat!]) -
-      distanceSq(current, [stops[b].departure_lng!, stops[b].departure_lat!]),
-    );
-    const next = remainingPickups.shift()!;
-    pickupOrder.push(next);
-    current = [stops[next].departure_lng!, stops[next].departure_lat!];
-  }
-
-  const dropOrder: number[] = [];
-  const remainingDrops = [...pickupOrder];
-  while (remainingDrops.length > 0) {
-    remainingDrops.sort((a, b) =>
-      distanceSq(current, [stops[a].destination_lng!, stops[a].destination_lat!]) -
-      distanceSq(current, [stops[b].destination_lng!, stops[b].destination_lat!]),
-    );
-    const next = remainingDrops.shift()!;
-    dropOrder.push(next);
-    current = [stops[next].destination_lng!, stops[next].destination_lat!];
-  }
-
-  return {
-    label: "Route C",
-    strategy: "Pickup-first shared ride",
-    points: [
-      ...pickupOrder.map((idx) => ({
-        coord: [stops[idx].departure_lng!, stops[idx].departure_lat!] as [number, number],
-        label: `P${idx + 1}`,
-      })),
-      ...dropOrder.map((idx) => ({
-        coord: [stops[idx].destination_lng!, stops[idx].destination_lat!] as [number, number],
-        label: `D${idx + 1}`,
-      })),
-    ],
-  };
-};
-
-const buildRouteCandidates = (stops: Child[]): RouteCandidate[] => {
-  const order = stops.map((_, idx) => idx);
-  const candidates = [
-    buildPairedRoute(stops, order, "Route A", "Time order"),
-    buildNearestPairRoute(stops),
-    buildSharedRideRoute(stops),
-    buildPairedRoute(stops, [...order].reverse(), "Route D", "Reverse time order"),
-  ];
-  const seen = new Set<string>();
-  return candidates.filter((candidate) => {
-    const key = pointKey(candidate.points);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return candidate.points.length >= 2;
-  }).slice(0, 3);
-};
 
 export const MergedTripStopsPanel = ({
   parentRequestId,
@@ -333,8 +230,21 @@ export const MergedTripStopsPanel = ({
         /* noop */
       }
 
-      const candidates = buildRouteCandidates(stopsWithCoords);
-      if (candidates.length === 0) return;
+      // Build ONE canonical stop sequence (pickups then drops in time order)
+      // and ask OSRM for *real* driving alternatives — different roads through
+      // the same sequence — instead of synthesising fake "strategies" by
+      // reordering stops, which produced misleading km/min figures.
+      const orderedPoints: RoutePoint[] = [
+        ...stopsWithCoords.map((c, idx) => ({
+          coord: [c.departure_lng!, c.departure_lat!] as [number, number],
+          label: `P${idx + 1}`,
+        })),
+        ...stopsWithCoords.map((c, idx) => ({
+          coord: [c.destination_lng!, c.destination_lat!] as [number, number],
+          label: `D${idx + 1}`,
+        })),
+      ];
+      if (orderedPoints.length < 2) return;
 
       setRoutesLoading(true);
       setRoutesError(null);
@@ -343,32 +253,46 @@ export const MergedTripStopsPanel = ({
       // warm amber and muted violet for alternatives. Each route gets a darker
       // outline ("casing") drawn underneath for that map-app polish.
       const palette = [
-        { name: "Route A", color: "hsl(217 91% 50%)", casing: "hsl(217 91% 30%)" },
-        { name: "Route B", color: "hsl(32 95% 48%)", casing: "hsl(32 95% 28%)" },
-        { name: "Route C", color: "hsl(265 60% 55%)", casing: "hsl(265 60% 35%)" },
+        { name: "Recommended", color: "hsl(217 91% 50%)", casing: "hsl(217 91% 30%)" },
+        { name: "Alternative 1", color: "hsl(32 95% 48%)", casing: "hsl(32 95% 28%)" },
+        { name: "Alternative 2", color: "hsl(265 60% 55%)", casing: "hsl(265 60% 35%)" },
       ];
 
       try {
-        const resolved = await Promise.all(
-          candidates.map(async (candidate) => {
-            const { data, error } = await supabase.functions.invoke("route-directions", {
-              body: { coordinates: candidate.points.map((p) => p.coord) },
-            });
-            if (error || !data?.ok || !Array.isArray(data?.geometry) || data.geometry.length < 2) {
-              throw new Error(data?.error || error?.message || "Route service unavailable");
-            }
-            return {
-              ...candidate,
-              geometry: { type: "LineString" as const, coordinates: data.geometry as [number, number][] },
-              distance: Number(data.distance_m) || 0,
-              duration: Number(data.duration_s) || 0,
-            };
-          }).map((promise) => promise.catch(() => null)),
-        );
-        const results = resolved.filter((route): route is NonNullable<typeof route> => route !== null);
+        const { data, error } = await supabase.functions.invoke("route-directions", {
+          body: {
+            coordinates: orderedPoints.map((p) => p.coord),
+            alternatives: true,
+          },
+        });
+        if (error || !data?.ok) {
+          throw new Error(data?.error || error?.message || "Route service unavailable");
+        }
+
+        // Edge function returns `alternatives: [{geometry, distance_m, duration_s}, …]`
+        // with the recommended route first. Fall back to the single primary
+        // route if OSRM did not return alternatives for this geometry.
+        const rawAlts: Array<{
+          geometry: [number, number][];
+          distance_m: number;
+          duration_s: number;
+        }> = Array.isArray(data.alternatives) && data.alternatives.length > 0
+          ? data.alternatives
+          : [{
+              geometry: data.geometry as [number, number][],
+              distance_m: Number(data.distance_m) || 0,
+              duration_s: Number(data.duration_s) || 0,
+            }];
+
+        const results = rawAlts.slice(0, 3).map((r) => ({
+          geometry: { type: "LineString" as const, coordinates: r.geometry },
+          distance: r.distance_m,
+          duration: r.duration_s,
+        }));
         if (results.length === 0) throw new Error("Route service unavailable");
 
-        // Determine best by shortest duration
+        // OSRM lists the recommended route first, but defend against any
+        // alternative that happens to be marginally faster.
         const bestIdx = results.reduce(
           (best, r, i, arr) => (r.duration < arr[best].duration ? i : best),
           0,
@@ -393,9 +317,6 @@ export const MergedTripStopsPanel = ({
             type: "geojson",
             data: { type: "Feature", properties: { idx: i, isBest }, geometry: r.geometry },
           });
-          // Casing — a darker, slightly thicker line drawn beneath each route
-          // so the coloured stroke reads cleanly over the basemap. Standard
-          // technique used by professional mapping apps (Google, Mapbox).
           map.addLayer({
             id: casingId,
             type: "line",
@@ -420,7 +341,6 @@ export const MergedTripStopsPanel = ({
             },
           });
 
-          // Click on route line → focus that alternative in the legend.
           map.on("click", layerId, () => setFocusedRouteIdx(i));
           map.on("mouseenter", layerId, () => {
             map.getCanvas().style.cursor = "pointer";
@@ -447,7 +367,8 @@ export const MergedTripStopsPanel = ({
         setRoutesInfo(
           results.map((r, i) => ({
             label: palette[i]?.name ?? `Route ${i + 1}`,
-            strategy: r.strategy,
+            // Honest, source-accurate descriptor — no synthesised "strategy".
+            strategy: i === bestIdx ? "Fastest by OSRM road network" : "OSRM alternative road path",
             distanceKm: r.distance / 1000,
             durationMin: r.duration / 60,
             isBest: i === bestIdx,

@@ -39,11 +39,15 @@ const isValidCoord = (c: unknown): c is Coord =>
   c[0] >= -180 && c[0] <= 180 &&
   c[1] >= -90 && c[1] <= 90;
 
-const tryOsrm = async (coords: Coord[]) => {
+const tryOsrm = async (coords: Coord[], wantAlternatives: boolean) => {
   const path = coords.map((c) => `${c[0]},${c[1]}`).join(";");
   // Public OSRM demo. Reasonable for low traffic; if it ever rate-limits us
   // we can swap in a self-hosted instance without changing the client.
-  const url = `https://router.project-osrm.org/route/v1/driving/${path}?overview=full&geometries=geojson`;
+  // `alternatives=2` asks OSRM for up to 2 *real* driving alternatives in
+  // addition to the recommended route — these are genuinely different paths
+  // through the road network, not synthetic stop reorderings.
+  const altParam = wantAlternatives ? "&alternatives=2" : "";
+  const url = `https://router.project-osrm.org/route/v1/driving/${path}?overview=full&geometries=geojson${altParam}`;
   const res = await fetch(url, {
     headers: { "User-Agent": "fleetwise-route-preview/1.0" },
     signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
@@ -52,25 +56,39 @@ const tryOsrm = async (coords: Coord[]) => {
     return { ok: false as const, status: res.status, error: `osrm_http_${res.status}` };
   }
   const json = await res.json();
-  const route = json?.routes?.[0];
-  const geometry = route?.geometry?.coordinates as [number, number][] | undefined;
-  if (!geometry || geometry.length < 2) {
+  const routes = Array.isArray(json?.routes) ? json.routes : [];
+  if (routes.length === 0) {
     return { ok: false as const, error: "osrm_no_geometry" };
   }
-  // Per-leg distance/duration so the client can label each segment
-  // (Departure → Stop 1, Stop 1 → Stop 2, …, Stop N → Destination).
-  const legs = Array.isArray(route?.legs)
-    ? route.legs.map((leg: any) => ({
-        distance_m: Number(leg?.distance) || 0,
-        duration_s: Number(leg?.duration) || 0,
-      }))
-    : [];
+  const mapped = routes
+    .map((route: any) => {
+      const geometry = route?.geometry?.coordinates as [number, number][] | undefined;
+      if (!geometry || geometry.length < 2) return null;
+      const legs = Array.isArray(route?.legs)
+        ? route.legs.map((leg: any) => ({
+            distance_m: Number(leg?.distance) || 0,
+            duration_s: Number(leg?.duration) || 0,
+          }))
+        : [];
+      return {
+        geometry,
+        distance_m: Number(route.distance) || 0,
+        duration_s: Number(route.duration) || 0,
+        legs,
+      };
+    })
+    .filter((r: any) => r !== null);
+  if (mapped.length === 0) {
+    return { ok: false as const, error: "osrm_no_geometry" };
+  }
+  const primary = mapped[0];
   return {
     ok: true as const,
-    geometry,
-    distance_m: Number(route.distance) || 0,
-    duration_s: Number(route.duration) || 0,
-    legs,
+    geometry: primary.geometry,
+    distance_m: primary.distance_m,
+    duration_s: primary.duration_s,
+    legs: primary.legs,
+    alternatives: mapped,
   };
 };
 
@@ -102,8 +120,9 @@ serve(async (req) => {
   }
 
   // Try OSRM (no key required, drives the actual road network)
+  const wantAlternatives = body?.alternatives === true;
   try {
-    const osrm = await tryOsrm(coords as Coord[]);
+    const osrm = await tryOsrm(coords as Coord[], wantAlternatives);
     if (osrm.ok) {
       return secureJsonResponse(
         {
@@ -113,6 +132,8 @@ serve(async (req) => {
           distance_m: osrm.distance_m,
           duration_s: osrm.duration_s,
           legs: osrm.legs,
+          // Real OSRM-computed driving alternatives (different roads, same stops).
+          alternatives: osrm.alternatives,
         },
         req,
       );
