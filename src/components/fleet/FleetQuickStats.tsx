@@ -95,7 +95,7 @@ const FleetQuickStats = ({
       filter: "idle_engine_on",
     },
     {
-      label: "Idle • Parked",
+      label: "Parked",
       value: engineOffIdle.toString(),
       icon: ParkingSquare,
       color: "text-sky-500",
@@ -130,7 +130,7 @@ const FleetQuickStats = ({
   const rentalPct = ownedTotal > 0 ? 100 - ownedPct : 0;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 auto-rows-fr">
+    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-7 gap-2 auto-rows-fr">
       {stats.map((stat) => {
         const isClickable = !!stat.filter && !!onFilterChange;
         const isActive =
@@ -179,7 +179,7 @@ const FleetQuickStats = ({
                   </p>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80 leading-tight truncate">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80 leading-tight line-clamp-2">
                     {stat.label}
                   </p>
                   {stat.subtext && (
