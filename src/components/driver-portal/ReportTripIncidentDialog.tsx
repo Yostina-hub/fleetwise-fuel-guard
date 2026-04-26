@@ -23,7 +23,7 @@ import {
   Wrench,
   Car,
   HeartPulse,
-  Users,
+  // Users icon removed — no longer used after trimming reason list
   HelpCircle,
   Paperclip,
   Camera,
