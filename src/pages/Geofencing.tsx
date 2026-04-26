@@ -965,7 +965,11 @@ const Geofencing = () => {
             <div className="rounded-md border border-dashed border-border p-8 text-center">
               <MapPin className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" />
               <div className="font-semibold text-foreground">No zones found</div>
-              <p className="mt-1 text-sm text-muted-foreground">Create a circle or polygon from the map toolbar.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Create a circle or polygon from the map toolbar, or add one manually.</p>
+              <Button size="sm" className="mt-4 gap-2" onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
+                <Plus className="h-4 w-4" />
+                New zone
+              </Button>
             </div>
           ) : (
             <div className="space-y-3 pb-2">{filteredGeofences.map(renderZoneCard)}</div>
