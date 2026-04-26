@@ -670,6 +670,7 @@ export const MergedTripStopsPanel = ({
               ...(isBest ? {} : { "line-dasharray": [2, 1.2] }),
             },
           });
+          liftMergedTripGeofenceSpots(map);
 
           map.on("click", layerId, () => setFocusedRouteIdx(i));
           map.on("mouseenter", layerId, () => {
