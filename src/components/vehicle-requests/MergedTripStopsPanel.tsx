@@ -521,6 +521,26 @@ export const MergedTripStopsPanel = ({
       setRoutesLoading(true);
       setRoutesError(null);
 
+      const uniqueOrderedPoints = orderedPoints.filter(
+        (point, idx, arr) => idx === 0 || !sameCoordinate(point.coord, arr[idx - 1].coord),
+      );
+
+      if (uniqueOrderedPoints.length < 2) {
+        setRoutesInfo([
+          {
+            label: "Single location",
+            strategy: "Pickup and drop-off use the same coordinate",
+            distanceKm: 0,
+            durationMin: 0,
+            isBest: true,
+            color: "hsl(217 91% 50%)",
+            sampleCoords: orderedPoints.map((p) => p.coord),
+          },
+        ]);
+        setRoutesLoading(false);
+        return;
+      }
+
       // Professional palette — strong primary blue for the recommended route,
       // warm amber and muted violet for alternatives. Each route gets a darker
       // outline ("casing") drawn underneath for that map-app polish.
@@ -537,7 +557,7 @@ export const MergedTripStopsPanel = ({
         const callRouting = async () =>
           supabase.functions.invoke("route-directions", {
             body: {
-              coordinates: orderedPoints.map((p) => p.coord),
+              coordinates: uniqueOrderedPoints.map((p) => p.coord),
               alternatives: true,
             },
           });
