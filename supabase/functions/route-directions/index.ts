@@ -24,10 +24,7 @@ import {
 
 const UPSTREAM_TIMEOUT_MS = 9000;
 
-interface Coord {
-  0: number; // lng
-  1: number; // lat
-}
+type Coord = [number, number]; // [lng, lat]
 
 const isValidCoord = (c: unknown): c is Coord =>
   Array.isArray(c) &&
@@ -224,12 +221,12 @@ const tryOsrmViaAlternatives = async (coords: Coord[]) => {
   const dy = end[1] - start[1];
   const len = Math.sqrt(dx * dx + dy * dy) || 0.01;
   const scale = Math.max(0.006, Math.min(0.025, len * 0.45));
-  const candidates: Coord[] = [
+  const candidates = [
     [midLng - (dy / len) * scale, midLat + (dx / len) * scale],
     [midLng + (dy / len) * scale, midLat - (dx / len) * scale],
     [midLng, midLat + scale],
     [midLng + scale, midLat],
-  ].filter(isValidCoord) as Coord[];
+  ].filter(isValidCoord);
 
   const variants = await Promise.all(
     candidates.map(async (via) => {
