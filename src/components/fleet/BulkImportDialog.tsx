@@ -450,7 +450,7 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
           {/* Final result */}
           {result && (
             <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-2xl font-semibold text-success">{result.inserted}</p>
                   <p className="text-xs text-muted-foreground">Added</p>
@@ -458,6 +458,10 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-2xl font-semibold text-primary">{result.updated}</p>
                   <p className="text-xs text-muted-foreground">Updated</p>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-2xl font-semibold text-warning">{result.skipped}</p>
+                  <p className="text-xs text-muted-foreground">Skipped</p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-2xl font-semibold text-destructive">{result.failed}</p>
