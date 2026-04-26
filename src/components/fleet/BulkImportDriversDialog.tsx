@@ -36,6 +36,12 @@ import {
   DRIVER_SAMPLE_VALUES,
   resolveDriverField,
 } from "./import/driverImportSchema";
+import {
+  scanForDuplicates,
+  type ConflictStrategy,
+  type DuplicateScan,
+} from "./import/duplicateDetection";
+import ConflictStrategyPicker from "./import/ConflictStrategyPicker";
 
 interface BulkImportDriversDialogProps {
   open: boolean;
@@ -45,6 +51,7 @@ interface BulkImportDriversDialogProps {
 interface ImportOutcome {
   inserted: number;
   updated: number;
+  skipped: number;
   failed: number;
   errors: { row: number; message: string }[];
 }
