@@ -799,16 +799,9 @@ export const MergedTripStopsPanel = ({
         }
       });
 
-      if (!allBounds.isEmpty() && !geofenceFitAppliedRef.current) {
+      if (!allBounds.isEmpty() && !geofenceFitAppliedRef.current && !stopBounds) {
         try {
-          const combined = new maplibregl.LngLatBounds();
-          const fenceCorners = allBounds.toArray() as [[number, number], [number, number]];
-          fenceCorners.forEach((coord) => combined.extend(coord));
-          stopsWithCoords.forEach((s) => {
-            combined.extend([s.departure_lng!, s.departure_lat!]);
-            combined.extend([s.destination_lng!, s.destination_lat!]);
-          });
-          map.fitBounds(combined, { padding: 72, maxZoom: 13, duration: 350 });
+          map.fitBounds(allBounds, { padding: 72, maxZoom: 13, duration: 350 });
           geofenceFitAppliedRef.current = true;
         } catch {
           /* noop */
@@ -841,7 +834,7 @@ export const MergedTripStopsPanel = ({
         }
       });
     };
-  }, [showMap, open, mapReady, renderableGeofences, routesInfo.length, stopsWithCoords]);
+  }, [showMap, open, mapReady, renderableGeofences, routesInfo.length, stopBounds]);
 
   // Ask Lovable AI to recommend the best candidate route. The AI never
   // invents measurements — it weighs the OSRM-supplied numbers against the
