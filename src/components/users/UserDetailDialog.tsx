@@ -149,6 +149,11 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
   const [linkedDriverId, setLinkedDriverId] = useState<string | null>(null);
   const [linkedEmployeeId, setLinkedEmployeeId] = useState<string | null>(null);
 
+  // Pool assignment (mirrors Vehicle Registration UX: category + specific pool)
+  const [poolCategory, setPoolCategory] = useState<PoolCategory | "">("");
+  const [poolCode, setPoolCode] = useState<string>("");
+  const [savingPool, setSavingPool] = useState(false);
+
   const [loadingExtras, setLoadingExtras] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingHR, setSavingHR] = useState(false);
