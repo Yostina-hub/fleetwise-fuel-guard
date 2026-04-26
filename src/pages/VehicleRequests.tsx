@@ -703,119 +703,131 @@ const VehicleRequests = () => {
           </Card>
         ) : (
           <>
-        {/* ============== CLEAN PAGE HEADER ============== */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-1">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-              <ClipboardList className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                {t("pages.vehicle_requests.title", "Vehicle Requests")}
-              </h1>
-              <p className="text-muted-foreground text-xs md:text-sm">
-                {t(
-                  "pages.vehicle_requests.description",
-                  "Request, approve & assign vehicles across pools",
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {canExportImport && (
-              <>
-                <Can resource="vehicle_requests" action="export">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-1.5 h-9">
-                        <Download className="w-3.5 h-3.5" /> Export
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Export {filtered.length} requests</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={exportCsv}>
-                        <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={exportXlsx}>
-                        <FileText className="w-4 h-4 mr-2" /> Excel (.xlsx)
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={exportPrint}>
-                        <Printer className="w-4 h-4 mr-2" /> Print / PDF
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </Can>
-                <Can resource="vehicle_requests" action="create">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 h-9"
-                    onClick={() => setShowImport(true)}
-                  >
-                    <Upload className="w-3.5 h-3.5" /> Import
-                  </Button>
-                </Can>
-              </>
-            )}
-            {canManageAll && (
-              <>
-                <Button
-                  variant={viewMode === "assignments" ? "default" : "outline"}
-                  size="sm"
-                  className="gap-1.5 h-9"
-                  onClick={() =>
-                    setViewMode((m) => (m === "assignments" ? "requests" : "assignments"))
-                  }
-                  title="Pool supervisor workspace — review approved requests and allocate vehicles + drivers"
-                >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  Assignments
-                  {awaitingAssignmentCount > 0 && (
-                    <Badge
-                      variant={viewMode === "assignments" ? "secondary" : "destructive"}
-                      className="ml-1 h-4 min-w-[1rem] px-1 text-[10px]"
-                    >
-                      {awaitingAssignmentCount}
-                    </Badge>
+        {/* ============== PAGE HEADER ============== */}
+        <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-4 md:p-5 shadow-sm">
+          {/* Decorative accent */}
+          <div className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
+          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="h-12 w-12 shrink-0 rounded-xl bg-primary/15 ring-1 ring-primary/30 flex items-center justify-center shadow-sm">
+                <ClipboardList className="h-6 w-6 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground truncate">
+                  {t("pages.vehicle_requests.title", "Vehicle Requests")}
+                </h1>
+                <p className="text-muted-foreground text-xs md:text-sm mt-0.5">
+                  {t(
+                    "pages.vehicle_requests.description",
+                    "Request, approve & assign vehicles across pools",
                   )}
-                </Button>
+                </p>
+              </div>
+            </div>
+
+            {/* Action toolbar — grouped: data ops · workspace toggles · primary */}
+            <div className="flex flex-wrap items-center gap-2">
+              {canExportImport && (
+                <div className="flex items-center gap-1.5">
+                  <Can resource="vehicle_requests" action="export">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5 h-9">
+                          <Download className="w-3.5 h-3.5" /> Export
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Export {filtered.length} requests</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={exportCsv}>
+                          <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={exportXlsx}>
+                          <FileText className="w-4 h-4 mr-2" /> Excel (.xlsx)
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={exportPrint}>
+                          <Printer className="w-4 h-4 mr-2" /> Print / PDF
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </Can>
+                  <Can resource="vehicle_requests" action="create">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 h-9"
+                      onClick={() => setShowImport(true)}
+                    >
+                      <Upload className="w-3.5 h-3.5" /> Import
+                    </Button>
+                  </Can>
+                </div>
+              )}
+
+              {canManageAll && (
+                <>
+                  <div className="hidden md:block h-6 w-px bg-border/70" aria-hidden="true" />
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant={viewMode === "assignments" ? "default" : "outline"}
+                      size="sm"
+                      className="gap-1.5 h-9"
+                      onClick={() =>
+                        setViewMode((m) => (m === "assignments" ? "requests" : "assignments"))
+                      }
+                      title="Pool supervisor workspace — review approved requests and allocate vehicles + drivers"
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      Assignments
+                      {awaitingAssignmentCount > 0 && (
+                        <Badge
+                          variant={viewMode === "assignments" ? "secondary" : "destructive"}
+                          className="ml-1 h-4 min-w-[1rem] px-1 text-[10px]"
+                        >
+                          {awaitingAssignmentCount}
+                        </Badge>
+                      )}
+                    </Button>
+                    <Button
+                      variant={viewMode === "ops_map" ? "default" : "outline"}
+                      size="sm"
+                      className="gap-1.5 h-9"
+                      onClick={() =>
+                        setViewMode((m) => (m === "ops_map" ? "requests" : "ops_map"))
+                      }
+                      title="Operations control map — pool demand, idle vehicles, merge suggestions, cross-pool borrow"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Ops Map
+                    </Button>
+                    <Button
+                      variant={viewMode === "consolidation" ? "default" : "outline"}
+                      size="sm"
+                      className="gap-1.5 h-9"
+                      onClick={() =>
+                        setViewMode((m) => (m === "consolidation" ? "requests" : "consolidation"))
+                      }
+                      title="Trip Consolidation — merge requests by pool, route, and time"
+                    >
+                      <GitMerge className="w-3.5 h-3.5" />
+                      Consolidate
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              <div className="hidden md:block h-6 w-px bg-border/70" aria-hidden="true" />
+              <Can resource="vehicle_requests" action="create">
                 <Button
-                  variant={viewMode === "ops_map" ? "default" : "outline"}
                   size="sm"
-                  className="gap-1.5 h-9"
-                  onClick={() =>
-                    setViewMode((m) => (m === "ops_map" ? "requests" : "ops_map"))
-                  }
-                  title="Operations control map — pool demand, idle vehicles, merge suggestions, cross-pool borrow"
+                  className="gap-1.5 h-9 shadow-sm"
+                  onClick={() => setShowCreate(true)}
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Ops Map
+                  <Plus className="w-3.5 h-3.5" /> New Request
                 </Button>
-                <Button
-                  variant={viewMode === "consolidation" ? "default" : "outline"}
-                  size="sm"
-                  className="gap-1.5 h-9"
-                  onClick={() =>
-                    setViewMode((m) => (m === "consolidation" ? "requests" : "consolidation"))
-                  }
-                  title="Trip Consolidation — merge requests by pool, route, and time"
-                >
-                  <GitMerge className="w-3.5 h-3.5" />
-                  Consolidate
-                </Button>
-              </>
-            )}
-            <Can resource="vehicle_requests" action="create">
-              <Button
-                size="sm"
-                className="gap-1.5 h-9"
-                onClick={() => setShowCreate(true)}
-              >
-                <Plus className="w-3.5 h-3.5" /> New Request
-              </Button>
-            </Can>
+              </Can>
+            </div>
           </div>
         </div>
 

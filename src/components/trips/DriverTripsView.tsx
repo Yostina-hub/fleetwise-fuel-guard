@@ -306,7 +306,7 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
                   <Package className="w-10 h-10 mx-auto mb-2 opacity-40" />
                   No vehicle requests yet
                   <p className="text-xs mt-2 max-w-sm mx-auto">
-                    Fleet requests are submitted by end-users, supervisors, or managers.
+                    Vehicle requests are submitted by end-users, supervisors, or managers.
                     Ask your dispatcher or supervisor to file a request on your behalf.
                   </p>
                 </div>
