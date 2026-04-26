@@ -635,7 +635,7 @@ export const MergedTripStopsPanel = ({
   useEffect(() => {
     if (!showMap || !open) return;
     const map = mapRef.current;
-    if (!map || geofences.length === 0) return;
+    if (!map || !mapReady || renderableGeofences.length === 0) return;
 
     const addedLayers: string[] = [];
     const addedSources: string[] = [];
@@ -643,62 +643,44 @@ export const MergedTripStopsPanel = ({
 
     const renderGeofences = () => {
       const allBounds = new maplibregl.LngLatBounds();
-      let hasFenceBounds = false;
-      geofences.forEach((fence: any) => {
+      renderableGeofences.forEach((fence: any) => {
         const sourceId = `mtsp-geofence-${fence.id}`;
         const fillId = `${sourceId}-fill`;
         const lineId = `${sourceId}-line`;
-        const labelId = `${sourceId}-label`;
         if (map.getSource(sourceId)) return;
         const color = fence.color || "hsl(160 84% 39%)";
         const feature = buildMergedTripFenceFeature(fence);
         if (!feature) return;
-        feature.geometry.coordinates[0].forEach((coord) => {
-          allBounds.extend(coord as [number, number]);
-          hasFenceBounds = true;
-        });
+        feature.geometry.coordinates[0].forEach((coord) => allBounds.extend(coord as [number, number]));
 
         try {
           map.addSource(sourceId, { type: "geojson", data: feature });
           addedSources.push(sourceId);
+          const beforeRouteLayer = map.getLayer("route-alt-casing-0")
+            ? "route-alt-casing-0"
+            : map.getLayer("legs-fallback-line")
+              ? "legs-fallback-line"
+              : undefined;
           map.addLayer({
             id: fillId,
             type: "fill",
             source: sourceId,
-            paint: { "fill-color": color, "fill-opacity": 0.48 },
-          });
+            paint: { "fill-color": color, "fill-opacity": 0.32 },
+          }, beforeRouteLayer);
           map.addLayer({
             id: lineId,
             type: "line",
             source: sourceId,
             paint: {
               "line-color": color,
-              "line-width": 4,
+              "line-width": 6,
               "line-opacity": 1,
             },
           });
-          // Short label centred on the geometry. Allow overlap so every
-          // zone gets a legend even when several fences cluster together.
+          // HTML labels are used instead of symbol layers so labels remain
+          // visible even when the base style has limited glyph/font support.
           const shortName = String(fence.name || "Zone").split(",")[0].slice(0, 28);
-          map.addLayer({
-            id: labelId,
-            type: "symbol",
-            source: sourceId,
-            layout: {
-              "symbol-placement": "point",
-              "text-field": shortName,
-              "text-size": 11,
-              "text-allow-overlap": true,
-              "text-ignore-placement": true,
-              "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-            },
-            paint: {
-              "text-color": color,
-              "text-halo-color": "rgba(255,255,255,0.95)",
-              "text-halo-width": 2.2,
-            },
-          });
-          addedLayers.push(fillId, lineId, labelId);
+          addedLayers.push(fillId, lineId);
 
           const center = getMergedTripFenceCenter(fence);
           if (center) {
@@ -721,7 +703,7 @@ export const MergedTripStopsPanel = ({
         }
       });
 
-      if (hasFenceBounds && !geofenceFitAppliedRef.current) {
+      if (!allBounds.isEmpty() && !geofenceFitAppliedRef.current) {
         try {
           const combined = new maplibregl.LngLatBounds();
           const fenceCorners = allBounds.toArray() as [[number, number], [number, number]];
@@ -741,7 +723,7 @@ export const MergedTripStopsPanel = ({
     if (map.isStyleLoaded()) {
       renderGeofences();
     } else {
-      map.once("load", renderGeofences);
+      map.once("style.load", renderGeofences);
     }
 
     return () => {
@@ -763,7 +745,7 @@ export const MergedTripStopsPanel = ({
         }
       });
     };
-  }, [showMap, open, mapReady, geofences, routesInfo.length, stopsWithCoords]);
+  }, [showMap, open, mapReady, renderableGeofences, routesInfo.length, stopsWithCoords]);
 
   // Ask Lovable AI to recommend the best candidate route. The AI never
   // invents measurements — it weighs the OSRM-supplied numbers against the
