@@ -5,10 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, ArrowLeft, ArrowRight, Truck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, ShieldCheck, Truck } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import ConfirmActionDialog from "@/components/users/ConfirmActionDialog";
 
@@ -19,8 +21,26 @@ interface Props {
   onBack?: () => void;
 }
 
+/**
+ * Roles allowed to APPROVE a cross-pool borrow without a separate approval step.
+ * Anyone outside this list creates a pending borrow request that must be
+ * approved by an authorised role before the vehicle is actually reassigned.
+ */
+const CROSS_POOL_APPROVER_ROLES = [
+  "super_admin",
+  "org_admin",
+  "fleet_owner",
+  "fleet_manager",
+  "fleet_admin",
+  "operations_manager",
+];
+
 export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Props) => {
   const { organizationId } = useOrganization();
+  const { hasRole, isSuperAdmin } = usePermissions();
+  const { user, profile } = useAuthContext();
+  const canApproveCrossPool =
+    isSuperAdmin || CROSS_POOL_APPROVER_ROLES.some((r) => hasRole(r));
   
   const queryClient = useQueryClient();
   const [selectedVehicle, setSelectedVehicle] = useState("");
@@ -62,7 +82,8 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
     );
   }, [pools, targetCategory, request.pool_category, request.pool_name]);
 
-  // Vehicles in target pool with live status
+  // Vehicles in target pool with live status. We de-dup by id and by
+  // plate_number so duplicate registrations don't appear twice in the picker.
   const { data: poolVehicles = [] } = useQuery({
     queryKey: ["cross-pool-vehicles", organizationId, targetPool],
     enabled: !!organizationId && open && !!targetPool,
@@ -74,7 +95,18 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
         .eq("specific_pool", targetPool)
         .order("plate_number");
       if (error) throw error;
-      return data || [];
+      const seenId = new Set<string>();
+      const seenPlate = new Set<string>();
+      return (data || []).filter((v: any) => {
+        if (seenId.has(v.id)) return false;
+        seenId.add(v.id);
+        const p = (v.plate_number || "").trim().toUpperCase();
+        if (p) {
+          if (seenPlate.has(p)) return false;
+          seenPlate.add(p);
+        }
+        return true;
+      });
     },
   });
 
@@ -94,6 +126,17 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
     },
   });
 
+  /**
+   * Cross-pool assignment with approval audit trail.
+   *
+   * Behaviour:
+   *   - When the actor has cross-pool approval rights, the vehicle is
+   *     reassigned immediately AND an approved row is logged into
+   *     cross_pool_borrow_requests so fleet ops can see who approved it.
+   *   - When the actor lacks rights, we instead create a *pending* borrow
+   *     request and leave the vehicle untouched until an authorised role
+   *     resolves it. The dialog reflects this with a different CTA label.
+   */
   const assignMutation = useMutation({
     mutationFn: async () => {
       if (!targetCategory) throw new Error("Select a target pool category");
@@ -111,6 +154,29 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
         throw new Error("Selected driver is not from the target pool");
       }
 
+      const approverName = profile?.full_name || user?.email || "Unknown approver";
+      const sourcePool = request.pool_name || "unassigned";
+
+      if (!canApproveCrossPool) {
+        // No approval rights → create a pending borrow request only.
+        const { error: borrowErr } = await (supabase as any)
+          .from("cross_pool_borrow_requests")
+          .insert({
+            organization_id: organizationId,
+            vehicle_request_id: request.id,
+            source_pool: sourcePool,
+            target_pool: targetPool,
+            requested_vehicle_id: selectedVehicle,
+            requested_driver_id: selectedDriver,
+            requested_by: user?.id || null,
+            reason,
+            status: "pending",
+          });
+        if (borrowErr) throw borrowErr;
+        return { mode: "pending" as const };
+      }
+
+      // Approver path → reassign immediately + log approved audit row.
       const mins = Math.round((Date.now() - new Date(request.created_at).getTime()) / 60000);
       const { error } = await (supabase as any)
         .from("vehicle_requests")
@@ -118,21 +184,45 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
           status: "assigned",
           assigned_vehicle_id: selectedVehicle,
           assigned_driver_id: selectedDriver,
+          assigned_by: user?.id || null,
           assigned_at: new Date().toISOString(),
           actual_assignment_minutes: mins,
           cross_pool_assignment: true,
           original_pool_name: request.pool_name || null,
           pool_category: targetCategory,
           pool_name: targetPool || request.pool_name,
-          purpose: (request.purpose || "") + `\n[Cross-pool: ${reason}]`,
+          purpose: (request.purpose || "") + `\n[Cross-pool approved by ${approverName}: ${reason}]`,
         })
         .eq("id", request.id);
       if (error) throw error;
+
+      // Log the approval into cross_pool_borrow_requests so it appears in
+      // the cross-pool history with approver + timestamp.
+      await (supabase as any).from("cross_pool_borrow_requests").insert({
+        organization_id: organizationId,
+        vehicle_request_id: request.id,
+        source_pool: sourcePool,
+        target_pool: targetPool,
+        requested_vehicle_id: selectedVehicle,
+        requested_driver_id: selectedDriver,
+        requested_by: user?.id || null,
+        responded_by: user?.id || null,
+        responded_at: new Date().toISOString(),
+        response_notes: `Approved at assignment by ${approverName}`,
+        reason,
+        status: "approved",
+      });
+      return { mode: "approved" as const };
     },
-    onSuccess: () => {
-      toast.success("Cross-pool vehicle assigned successfully");
+    onSuccess: (res) => {
+      if (res?.mode === "pending") {
+        toast.success("Cross-pool borrow request sent for approval");
+      } else {
+        toast.success("Cross-pool vehicle assigned and approval logged");
+      }
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
+      queryClient.invalidateQueries({ queryKey: ["cross-pool-borrow", organizationId] });
       onClose();
     },
     onError: (err: any) => toast.error(err.message),
@@ -178,14 +268,38 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="bg-amber-500/10 rounded-lg p-3 flex items-start gap-2 text-sm">
-            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5" />
-            <div>
-              <p className="font-medium">Temporary Cross-Pool Assignment</p>
-              <p className="text-muted-foreground text-xs mt-0.5">
-                This assigns a vehicle from a different pool. The vehicle will be temporarily reassigned and should be returned to its original pool after the trip.
-              </p>
+          {/* Approval-mode banner — drives whether the action assigns
+              immediately or only files a borrow request for approval. */}
+          {canApproveCrossPool ? (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 flex items-start gap-2 text-sm">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 mt-0.5" />
+              <div>
+                <p className="font-medium">You may approve this cross-pool borrow</p>
+                <p className="text-muted-foreground text-xs mt-0.5">
+                  Acting as <span className="font-medium">{profile?.full_name || user?.email}</span> — your name
+                  and timestamp will be recorded on the cross-pool approval log.
+                </p>
+              </div>
             </div>
+          ) : (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-start gap-2 text-sm">
+              <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5" />
+              <div>
+                <p className="font-medium">Approval required</p>
+                <p className="text-muted-foreground text-xs mt-0.5">
+                  You don't have rights to assign across pools. Submitting will create a
+                  borrow request for a fleet manager to approve before the vehicle is reassigned.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-amber-500/5 rounded-lg p-2.5 flex items-start gap-2 text-xs text-muted-foreground">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5" />
+            <span>
+              Cross-pool assignments are temporary — the vehicle should return to its
+              original pool after the trip.
+            </span>
           </div>
 
           {request.pool_name && (
@@ -333,9 +447,11 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
             <Button
               onClick={() => setConfirmOpen(true)}
               disabled={!selectedVehicle || !selectedDriver || !reason.trim() || assignMutation.isPending}
-              className="bg-amber-600 hover:bg-amber-700"
+              className={canApproveCrossPool ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-600 hover:bg-amber-700"}
             >
-              {assignMutation.isPending ? "Assigning..." : "Assign Cross-Pool"}
+              {assignMutation.isPending
+                ? (canApproveCrossPool ? "Assigning..." : "Submitting...")
+                : (canApproveCrossPool ? "Approve & Assign" : "Submit for Approval")}
             </Button>
           </div>
         </DialogFooter>
@@ -343,11 +459,15 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
         <ConfirmActionDialog
           open={confirmOpen}
           onOpenChange={setConfirmOpen}
-          title="Confirm cross-pool assignment"
-          description={`Borrow a vehicle from ${targetCategory ? `${targetCategory} / ` : ""}${targetPool || "another pool"} for request ${request.request_number ?? ""}? This action will reassign the request and notify the requester.`}
-          confirmLabel="Assign Cross-Pool"
+          title={canApproveCrossPool ? "Approve cross-pool assignment" : "Submit cross-pool request"}
+          description={
+            canApproveCrossPool
+              ? `Reassign request ${request.request_number ?? ""} to a vehicle from ${targetCategory ? `${targetCategory} / ` : ""}${targetPool}? Your name will be recorded as the cross-pool approver.`
+              : `Send a borrow request to ${targetCategory ? `${targetCategory} / ` : ""}${targetPool} for request ${request.request_number ?? ""}? A fleet manager must approve before the vehicle is reassigned.`
+          }
+          confirmLabel={canApproveCrossPool ? "Approve & Assign" : "Submit"}
           loading={assignMutation.isPending}
-          variant="destructive"
+          variant={canApproveCrossPool ? "default" : "destructive"}
           onConfirm={() => {
             setConfirmOpen(false);
             assignMutation.mutate();

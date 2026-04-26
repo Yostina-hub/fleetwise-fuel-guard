@@ -524,7 +524,16 @@ export const VehicleRequestsPanel = () => {
         <DriverCheckInDialog request={showCheckIn} open={!!showCheckIn} onClose={() => setShowCheckIn(null)} />
       )}
       {showCrossPool && (
-        <CrossPoolAssignmentDialog request={showCrossPool} open={!!showCrossPool} onClose={() => setShowCrossPool(null)} />
+        <CrossPoolAssignmentDialog
+          request={showCrossPool}
+          open={!!showCrossPool}
+          onClose={() => setShowCrossPool(null)}
+          onBack={() => {
+            const req = showCrossPool;
+            setShowCrossPool(null);
+            setShowDetail(req);
+          }}
+        />
       )}
 
       {/* Cancel confirmation — soft action, status flipped to 'cancelled'. */}
