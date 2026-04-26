@@ -1848,6 +1848,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                       <VRField
                         id="vr-project-number"
                         label="Project Number"
+                        icon={FileText}
                         required
                         error={getError("project_number")}
                       >
