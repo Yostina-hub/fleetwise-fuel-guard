@@ -1,12 +1,13 @@
 import { useState, useRef, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Truck, Package, Navigation, Clock, Loader2 } from "lucide-react";
+import { Truck, Package, Navigation, Clock, Loader2, Inbox } from "lucide-react";
 import DispatchJobsTab from "@/components/dispatch/DispatchJobsTab";
 import DispatchQuickStats from "@/components/dispatch/DispatchQuickStats";
 import DispatchQuickActions from "@/components/dispatch/DispatchQuickActions";
 import DispatchInsightsCard from "@/components/dispatch/DispatchInsightsCard";
 import { DispatchRerouteSuggestions } from "@/components/dispatch/DispatchRerouteSuggestions";
+import OperatorInboxTab from "@/components/dispatch/OperatorInboxTab";
 import { useDispatchJobs } from "@/hooks/useDispatchJobs";
 import { useNavigate } from "react-router-dom";
 import { startOfDay, isAfter, parseISO } from "date-fns";
@@ -122,10 +123,14 @@ const Dispatch = () => {
         {/* Tabbed Content */}
         <div ref={tabsRef}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
               <TabsTrigger value="jobs" className="gap-2">
                 <Package className="w-4 h-4" aria-hidden="true" />
                 Dispatch Jobs
+              </TabsTrigger>
+              <TabsTrigger value="inbox" className="gap-2">
+                <Inbox className="w-4 h-4" aria-hidden="true" />
+                Operator Inbox
               </TabsTrigger>
               <TabsTrigger value="tracking" className="gap-2">
                 <Navigation className="w-4 h-4" aria-hidden="true" />
@@ -139,6 +144,9 @@ const Dispatch = () => {
 
             <TabsContent value="jobs">
               <DispatchJobsTab />
+            </TabsContent>
+            <TabsContent value="inbox">
+              <OperatorInboxTab />
             </TabsContent>
             <TabsContent value="tracking">
               <div className="text-center py-12 text-muted-foreground" role="status" aria-label="Live tracking section">

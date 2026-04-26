@@ -11811,6 +11811,7 @@ export type Database = {
           assigned_to: string | null
           assigned_to_name: string | null
           attachments: string[] | null
+          auto_work_order_id: string | null
           created_at: string
           description: string
           driver_id: string | null
@@ -11842,6 +11843,7 @@ export type Database = {
           assigned_to?: string | null
           assigned_to_name?: string | null
           attachments?: string[] | null
+          auto_work_order_id?: string | null
           created_at?: string
           description: string
           driver_id?: string | null
@@ -11873,6 +11875,7 @@ export type Database = {
           assigned_to?: string | null
           assigned_to_name?: string | null
           attachments?: string[] | null
+          auto_work_order_id?: string | null
           created_at?: string
           description?: string
           driver_id?: string | null
@@ -11900,6 +11903,13 @@ export type Database = {
           vehicle_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "incidents_auto_work_order_id_fkey"
+            columns: ["auto_work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "incidents_driver_id_fkey"
             columns: ["driver_id"]
