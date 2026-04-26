@@ -222,6 +222,23 @@ serve(async (req) => {
 
   // Try OSRM (no key required, drives the actual road network)
   const wantAlternatives = body?.alternatives === true;
+
+  // Helper that wraps tryOsrmStitched and shapes the response so the caller
+  // gets the same fields as the full-path tryOsrm response.
+  const respondWithStitched = async () => {
+    const stitched = await tryOsrmStitched(coords as Coord[]);
+    if (!stitched.ok) return null;
+    return {
+      ok: true as const,
+      provider: "osrm-stitched",
+      geometry: stitched.geometry,
+      distance_m: stitched.distance_m,
+      duration_s: stitched.duration_s,
+      legs: stitched.legs,
+      alternatives: stitched.alternatives,
+    };
+  };
+
   try {
     const osrm = await tryOsrm(coords as Coord[], wantAlternatives);
     if (osrm.ok) {
@@ -255,7 +272,17 @@ serve(async (req) => {
         req,
       );
     }
-    console.warn("OSRM routing failed:", osrm);
+
+    // Full-path OSRM failed. Recovery path: try per-leg stitching, which
+    // splits the tour into individual hops. Each hop is a much smaller request
+    // and far less likely to all fail together (most "non-2xx" errors users
+    // saw came from the public OSRM demo throttling on the full multi-stop
+    // request, while individual legs went through fine).
+    console.warn("OSRM full-path failed, attempting stitched recovery:", osrm);
+    const recovered = await respondWithStitched();
+    if (recovered) {
+      return secureJsonResponse(recovered, req);
+    }
     return secureJsonResponse(
       { ok: false, provider: "osrm", error: osrm.error, status: osrm.status },
       req,
@@ -263,6 +290,16 @@ serve(async (req) => {
     );
   } catch (err) {
     console.error("route-directions upstream error:", err);
+    // Network exception (timeout, DNS, etc.). Try stitched as a last resort
+    // because per-leg requests are independent and have separate timeouts.
+    try {
+      const recovered = await respondWithStitched();
+      if (recovered) {
+        return secureJsonResponse(recovered, req);
+      }
+    } catch (innerErr) {
+      console.error("stitched recovery also failed:", innerErr);
+    }
     return secureJsonResponse(
       { ok: false, provider: "osrm", error: "upstream_unavailable" },
       req,
