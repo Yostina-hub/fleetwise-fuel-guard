@@ -68,13 +68,26 @@ interface ActiveRequestLike {
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  /** Active vehicle_request the driver is currently on. */
+  /** Active vehicle_request the driver is currently on (optional). */
   request: ActiveRequestLike | null;
   driverId?: string | null;
   driverName?: string | null;
   driverPhone?: string | null;
   /** Last known odometer (used as default current odometer). */
   lastOdometerKm?: number | null;
+  /**
+   * Fallback vehicle when there is no active trip (e.g. when the dialog is
+   * opened from the driver portal "Additional Fuel Request" quick action).
+   * Lets the driver still file a refuel request against their permanently
+   * assigned vehicle without an active vehicle_request row.
+   */
+  fallbackVehicle?: {
+    id: string;
+    plate_number?: string | null;
+    make?: string | null;
+    model?: string | null;
+    fuel_type?: string | null;
+  } | null;
 }
 
 const URGENCY_OPTIONS = [
