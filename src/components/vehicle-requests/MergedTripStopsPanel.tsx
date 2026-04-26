@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   GitMerge,
@@ -1148,31 +1147,48 @@ export const MergedTripStopsPanel = ({
                               const checked = avoidOverrides.includes(g.id);
                               const orgPolicy = (g.dispatch_policy as string) || "neutral";
                               return (
-                                <label key={g.id} className="flex items-start gap-2 text-[11px] cursor-pointer">
-                                  <Checkbox
-                                    checked={checked}
-                                    disabled={!geofenceAware}
-                                    onCheckedChange={(c) => {
-                                      const next = c === true
-                                        ? Array.from(new Set([...avoidOverrides, g.id]))
-                                        : avoidOverrides.filter((id) => id !== g.id);
-                                      updateRequestSettings.mutate({ geofence_avoid_overrides: next });
+                                <div key={g.id} className="flex items-start gap-2 text-[11px]">
+                                  <label className="flex items-start gap-2 min-w-0 flex-1 cursor-pointer">
+                                    <Checkbox
+                                      checked={checked}
+                                      disabled={!geofenceAware}
+                                      onCheckedChange={(c) => {
+                                        const next = c === true
+                                          ? Array.from(new Set([...avoidOverrides, g.id]))
+                                          : avoidOverrides.filter((id) => id !== g.id);
+                                        updateRequestSettings.mutate({ geofence_avoid_overrides: next });
+                                      }}
+                                      className="mt-0.5"
+                                    />
+                                    <span
+                                      className="mt-1 h-2 w-2 rounded-full shrink-0 border border-border"
+                                      style={{ background: g.color || "hsl(160 84% 39%)" }}
+                                    />
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block truncate font-medium">
+                                        {String(g.name || "Zone").split(",")[0]}
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        Org: {orgPolicy}
+                                      </span>
+                                    </span>
+                                  </label>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 shrink-0"
+                                    title="Show this geofence on the map"
+                                    onClick={() => {
+                                      const bounds = getMergedTripFenceBounds(g);
+                                      if (bounds && mapRef.current) {
+                                        mapRef.current.fitBounds(bounds, { padding: 88, maxZoom: 16, duration: 350 });
+                                      }
                                     }}
-                                    className="mt-0.5"
-                                  />
-                                  <span
-                                    className="mt-1 h-2 w-2 rounded-full shrink-0 border border-border"
-                                    style={{ background: g.color || "hsl(160 84% 39%)" }}
-                                  />
-                                  <span className="min-w-0 flex-1">
-                                    <span className="block truncate font-medium">
-                                      {String(g.name || "Zone").split(",")[0]}
-                                    </span>
-                                    <span className="text-[10px] text-muted-foreground">
-                                      Org: {orgPolicy}
-                                    </span>
-                                  </span>
-                                </label>
+                                  >
+                                    <MapPin className="w-3 h-3" />
+                                  </Button>
+                                </div>
                               );
                             })}
                           </div>
