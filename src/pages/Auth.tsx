@@ -585,6 +585,16 @@ const Auth = () => {
                                 });
                                 return;
                               }
+                              // Block password reset for SSO/AD-managed accounts
+                              const { data: ssoManaged } = await supabase.rpc("is_sso_managed_email", { _email: email });
+                              if (ssoManaged === true) {
+                                toast({
+                                  title: "Managed by your organization",
+                                  description: "This account signs in via your organization's identity provider (SSO/AD). Please reset your password through your IT portal.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
                               const { data: rlData } = await supabase.rpc("check_rate_limit", {
                                 p_client_id: email,
                                 p_function_name: "password_reset",
