@@ -41,6 +41,8 @@ interface Candidate {
   distance_km: number;
   duration_min: number;
   sample_coords?: [number, number][];
+  /** Names of org geofences this route's geometry passes through. */
+  geofences?: string[];
 }
 
 const isCandidate = (c: unknown): c is Candidate =>
@@ -102,9 +104,14 @@ serve(async (req) => {
           c.sample_coords[Math.floor(c.sample_coords.length / 2)].map((n) => n.toFixed(4)).join(",")
         }]`
         : "";
-      return `${i}: ${c.label ?? `Route ${i + 1}`} — ${c.duration_min.toFixed(1)} min, ${c.distance_km.toFixed(1)} km${sample}`;
+      const fences = Array.isArray(c.geofences) && c.geofences.length > 0
+        ? ` geofences=[${c.geofences.map((g) => `"${g}"`).join(", ")}]`
+        : " geofences=[none]";
+      return `${i}: ${c.label ?? `Route ${i + 1}`} — ${c.duration_min.toFixed(1)} min, ${c.distance_km.toFixed(1)} km${sample}${fences}`;
     })
     .join("\n");
+
+  const knownFences = Array.isArray(ctx.known_geofences) ? ctx.known_geofences : [];
 
   const ctxLines = [
     ctx.pool_name && `Pool: ${ctx.pool_name}`,
@@ -113,16 +120,20 @@ serve(async (req) => {
     ctx.needed_from && `Departure: ${ctx.needed_from}`,
     ctx.needed_until && `Latest arrival: ${ctx.needed_until}`,
     ctx.city && `City: ${ctx.city}`,
+    knownFences.length > 0 &&
+      `Known organisation geofences (zones to be aware of): ${knownFences.join(", ")}`,
   ].filter(Boolean).join("\n");
 
   const systemPrompt = `You are a fleet dispatch assistant choosing between road routes for a shared vehicle trip.
 You receive 2-5 candidate routes that all visit the same stops in the same order — only the road path differs.
-Pick the BEST route considering:
-  - duration (lower is usually better)
-  - distance (lower is better when duration is similar)
-  - reliability for shared rides (avoid much-longer detours unless the time saving is significant)
-  - the trip context (passenger count, time window, pool type)
-Return your choice via the 'choose_route' tool. Keep reasoning to 1-2 short sentences and reference the actual numbers.`;
+Pick the BEST route considering, in priority order:
+  1. Geofence policy: STRONGLY prefer routes that pass through authorised operational zones (depots, service areas) AND avoid routes that cross restricted/penalty zones. Use the geofence names as hints — words like "restricted", "no-go", "penalty", "ቅጣት" suggest avoid; "depot", "HQ", "service", "pool" suggest authorised.
+  2. Duration (lower is usually better)
+  3. Distance (lower is better when duration is similar)
+  4. Reliability for shared rides (avoid much-longer detours unless time saving is significant)
+  5. Trip context (passenger count, time window, pool type)
+A route can win on geofence compliance even if it is slightly slower; explain that trade-off when it happens.
+Return your choice via the 'choose_route' tool. Keep reasoning to 1-2 short sentences and reference both the actual numbers AND any decisive geofence(s).`;
 
   const userPrompt = `Candidates:\n${candidateLines}\n\nTrip context:\n${ctxLines || "(none provided)"}`;
 
