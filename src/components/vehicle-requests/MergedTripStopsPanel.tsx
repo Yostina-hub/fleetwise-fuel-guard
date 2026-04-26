@@ -333,8 +333,21 @@ export const MergedTripStopsPanel = ({
         /* noop */
       }
 
-      const candidates = buildRouteCandidates(stopsWithCoords);
-      if (candidates.length === 0) return;
+      // Build ONE canonical stop sequence (pickups then drops in time order)
+      // and ask OSRM for *real* driving alternatives — different roads through
+      // the same sequence — instead of synthesising fake "strategies" by
+      // reordering stops, which produced misleading km/min figures.
+      const orderedPoints: RoutePoint[] = [
+        ...stopsWithCoords.map((c, idx) => ({
+          coord: [c.departure_lng!, c.departure_lat!] as [number, number],
+          label: `P${idx + 1}`,
+        })),
+        ...stopsWithCoords.map((c, idx) => ({
+          coord: [c.destination_lng!, c.destination_lat!] as [number, number],
+          label: `D${idx + 1}`,
+        })),
+      ];
+      if (orderedPoints.length < 2) return;
 
       setRoutesLoading(true);
       setRoutesError(null);
@@ -343,32 +356,46 @@ export const MergedTripStopsPanel = ({
       // warm amber and muted violet for alternatives. Each route gets a darker
       // outline ("casing") drawn underneath for that map-app polish.
       const palette = [
-        { name: "Route A", color: "hsl(217 91% 50%)", casing: "hsl(217 91% 30%)" },
-        { name: "Route B", color: "hsl(32 95% 48%)", casing: "hsl(32 95% 28%)" },
-        { name: "Route C", color: "hsl(265 60% 55%)", casing: "hsl(265 60% 35%)" },
+        { name: "Recommended", color: "hsl(217 91% 50%)", casing: "hsl(217 91% 30%)" },
+        { name: "Alternative 1", color: "hsl(32 95% 48%)", casing: "hsl(32 95% 28%)" },
+        { name: "Alternative 2", color: "hsl(265 60% 55%)", casing: "hsl(265 60% 35%)" },
       ];
 
       try {
-        const resolved = await Promise.all(
-          candidates.map(async (candidate) => {
-            const { data, error } = await supabase.functions.invoke("route-directions", {
-              body: { coordinates: candidate.points.map((p) => p.coord) },
-            });
-            if (error || !data?.ok || !Array.isArray(data?.geometry) || data.geometry.length < 2) {
-              throw new Error(data?.error || error?.message || "Route service unavailable");
-            }
-            return {
-              ...candidate,
-              geometry: { type: "LineString" as const, coordinates: data.geometry as [number, number][] },
-              distance: Number(data.distance_m) || 0,
-              duration: Number(data.duration_s) || 0,
-            };
-          }).map((promise) => promise.catch(() => null)),
-        );
-        const results = resolved.filter((route): route is NonNullable<typeof route> => route !== null);
+        const { data, error } = await supabase.functions.invoke("route-directions", {
+          body: {
+            coordinates: orderedPoints.map((p) => p.coord),
+            alternatives: true,
+          },
+        });
+        if (error || !data?.ok) {
+          throw new Error(data?.error || error?.message || "Route service unavailable");
+        }
+
+        // Edge function returns `alternatives: [{geometry, distance_m, duration_s}, …]`
+        // with the recommended route first. Fall back to the single primary
+        // route if OSRM did not return alternatives for this geometry.
+        const rawAlts: Array<{
+          geometry: [number, number][];
+          distance_m: number;
+          duration_s: number;
+        }> = Array.isArray(data.alternatives) && data.alternatives.length > 0
+          ? data.alternatives
+          : [{
+              geometry: data.geometry as [number, number][],
+              distance_m: Number(data.distance_m) || 0,
+              duration_s: Number(data.duration_s) || 0,
+            }];
+
+        const results = rawAlts.slice(0, 3).map((r) => ({
+          geometry: { type: "LineString" as const, coordinates: r.geometry },
+          distance: r.distance_m,
+          duration: r.duration_s,
+        }));
         if (results.length === 0) throw new Error("Route service unavailable");
 
-        // Determine best by shortest duration
+        // OSRM lists the recommended route first, but defend against any
+        // alternative that happens to be marginally faster.
         const bestIdx = results.reduce(
           (best, r, i, arr) => (r.duration < arr[best].duration ? i : best),
           0,
@@ -393,9 +420,6 @@ export const MergedTripStopsPanel = ({
             type: "geojson",
             data: { type: "Feature", properties: { idx: i, isBest }, geometry: r.geometry },
           });
-          // Casing — a darker, slightly thicker line drawn beneath each route
-          // so the coloured stroke reads cleanly over the basemap. Standard
-          // technique used by professional mapping apps (Google, Mapbox).
           map.addLayer({
             id: casingId,
             type: "line",
@@ -420,7 +444,6 @@ export const MergedTripStopsPanel = ({
             },
           });
 
-          // Click on route line → focus that alternative in the legend.
           map.on("click", layerId, () => setFocusedRouteIdx(i));
           map.on("mouseenter", layerId, () => {
             map.getCanvas().style.cursor = "pointer";
@@ -447,7 +470,8 @@ export const MergedTripStopsPanel = ({
         setRoutesInfo(
           results.map((r, i) => ({
             label: palette[i]?.name ?? `Route ${i + 1}`,
-            strategy: r.strategy,
+            // Honest, source-accurate descriptor — no synthesised "strategy".
+            strategy: i === bestIdx ? "Fastest by OSRM road network" : "OSRM alternative road path",
             distanceKm: r.distance / 1000,
             durationMin: r.duration / 60,
             isBest: i === bestIdx,
