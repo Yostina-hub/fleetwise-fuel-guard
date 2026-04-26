@@ -859,3 +859,37 @@ const VehicleHints = ({
     </div>
   );
 };
+
+const RouteFenceLine = ({
+  label,
+  status,
+  fenceName,
+  dotClass,
+}: {
+  label: string;
+  status: "in_zone" | "out_of_zone" | "no_coords";
+  fenceName: string | null;
+  dotClass: string;
+}) => {
+  return (
+    <div className="flex items-start gap-1.5 text-[11px]">
+      <span className={cn("mt-1 w-1.5 h-1.5 rounded-full shrink-0", dotClass)} />
+      <div className="min-w-0">
+        <div className="text-muted-foreground uppercase tracking-wide text-[9px] font-medium">
+          {label}
+        </div>
+        {status === "in_zone" ? (
+          <div className="text-emerald-700 dark:text-emerald-400 truncate">
+            ✓ Inside <span className="font-medium">{fenceName}</span>
+          </div>
+        ) : status === "out_of_zone" ? (
+          <div className="text-amber-700 dark:text-amber-400 truncate">
+            ⚠ Outside all zones
+          </div>
+        ) : (
+          <div className="text-muted-foreground truncate">No coordinates</div>
+        )}
+      </div>
+    </div>
+  );
+};
