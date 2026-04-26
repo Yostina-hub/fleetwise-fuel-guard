@@ -1930,8 +1930,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   No. of Vehicles below are filtered by the chosen pool's
                   actual inventory, so the user MUST pick a pool first. */}
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Pool Category <span className="text-destructive">*</span>
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                  <Layers className="w-4 h-4 shrink-0" />
+                  <span>Pool Category</span>
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.pool_category}
