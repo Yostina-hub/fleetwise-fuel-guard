@@ -89,6 +89,21 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     vrScope.tier === "driver" && request.assigned_driver_id === vrScope.driverId;
   const canCheckInOut = canManageAll || isAssignedDriver;
 
+  // Requester self-service gating — the row owner can edit/delete or
+  // fix-and-resubmit while the request is still in pending or rejected state
+  // and the driver hasn't checked in yet. Admins/operators get the same
+  // controls anytime before check-in (mirrors the table-row policy).
+  const isOwnRow = !!vrScope.userId && request.requester_id === vrScope.userId;
+  const canEditRow =
+    !request.driver_checked_in_at &&
+    (canManageAll ||
+      (isOwnRow && ["pending", "rejected"].includes(request.status)));
+  const canDeleteRow =
+    !request.driver_checked_in_at &&
+    request.status !== "completed" &&
+    (canManageAll ||
+      (isOwnRow && ["pending", "rejected", "cancelled"].includes(request.status)));
+
   // Suggested vehicles — STRICT capacity filter so undersized vehicles don't
   // pollute the picker. Surfaces seating + category for license matching.
   const { data: suggested = [] } = useSuggestedVehicles({
