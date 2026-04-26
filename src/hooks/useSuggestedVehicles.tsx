@@ -99,7 +99,22 @@ export const useSuggestedVehicles = ({
         .limit(500);
       if (error) throw error;
 
-      const list = vehicles || [];
+      // Defensive de-duplication: drop any duplicate rows by id (defensive
+      // against accidental joins or duplicate vehicle records appearing in
+      // the supervisor's pool list). We also collapse duplicates by
+      // plate_number — same plate registered twice is treated as one row.
+      const seenIds = new Set<string>();
+      const seenPlates = new Set<string>();
+      const list = (vehicles || []).filter((v: any) => {
+        if (seenIds.has(v.id)) return false;
+        seenIds.add(v.id);
+        const plate = (v.plate_number || "").trim().toUpperCase();
+        if (plate) {
+          if (seenPlates.has(plate)) return false;
+          seenPlates.add(plate);
+        }
+        return true;
+      });
       if (list.length === 0) return [];
 
       // 2. Latest telemetry
