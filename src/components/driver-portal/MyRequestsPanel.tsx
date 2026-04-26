@@ -97,7 +97,13 @@ export default function MyRequestsPanel({
 
   const handleRowClick = (row: any) => {
     const trackKind = TRACKABLE_KIND[row.workflow_type];
-    const entityId = row.entity_id || (row.data && (row.data.entity_id || row.data.record_id));
+    const dataKeyByType: Record<string, string> = {
+      fuel_request: "fuel_request_id",
+      maintenance_request: "maintenance_request_id",
+      incident_report: "incident_id",
+    };
+    const key = dataKeyByType[row.workflow_type];
+    const entityId = (key && row.data && row.data[key]) || (row.data && (row.data.entity_id || row.data.record_id));
     if (trackKind && entityId) {
       setTracking({ kind: trackKind, id: entityId });
       return;
