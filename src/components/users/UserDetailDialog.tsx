@@ -195,6 +195,23 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
         setEmergencyRel(data?.emergency_contact_relationship || "");
         setLinkedDriverId(data?.linked_driver_id || null);
         setLinkedEmployeeId(data?.linked_employee_id || null);
+
+        // Load current pool membership (first row, latest)
+        const { data: poolRows } = await supabase
+          .from("pool_memberships")
+          .select("pool_code")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (cancelled) return;
+        const code = poolRows?.[0]?.pool_code as string | undefined;
+        if (code && CODE_TO_CATEGORY[code]) {
+          setPoolCategory(CODE_TO_CATEGORY[code]);
+          setPoolCode(code);
+        } else {
+          setPoolCategory("");
+          setPoolCode("");
+        }
       } catch (err: any) {
         if (!cancelled) toast({ title: "Failed to load HR fields", description: err.message, variant: "destructive" });
       } finally {
