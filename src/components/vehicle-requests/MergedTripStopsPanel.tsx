@@ -839,6 +839,54 @@ export const MergedTripStopsPanel = ({
         }
       });
 
+      const centerFeatures = renderableGeofences
+        .map((fence: any) => {
+          const center = getMergedTripFenceCenter(fence);
+          if (!center) return null;
+          return {
+            type: "Feature" as const,
+            properties: { name: fence.name || "Zone", color: geofenceVisualColor(fence) },
+            geometry: { type: "Point" as const, coordinates: center },
+          };
+        })
+        .filter((feature): feature is NonNullable<typeof feature> => feature !== null);
+
+      if (centerFeatures.length > 0 && !map.getSource("mtsp-geofence-centers")) {
+        try {
+          map.addSource("mtsp-geofence-centers", {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: centerFeatures },
+          });
+          addedSources.push("mtsp-geofence-centers");
+          map.addLayer({
+            id: "mtsp-geofence-center-halo",
+            type: "circle",
+            source: "mtsp-geofence-centers",
+            paint: {
+              "circle-radius": 12,
+              "circle-color": "hsl(var(--card))",
+              "circle-opacity": 0.92,
+              "circle-stroke-width": 3,
+              "circle-stroke-color": ["get", "color"],
+              "circle-stroke-opacity": 1,
+            },
+          });
+          map.addLayer({
+            id: "mtsp-geofence-center-dot",
+            type: "circle",
+            source: "mtsp-geofence-centers",
+            paint: {
+              "circle-radius": 5,
+              "circle-color": ["get", "color"],
+              "circle-opacity": 1,
+            },
+          });
+          addedLayers.push("mtsp-geofence-center-halo", "mtsp-geofence-center-dot");
+        } catch {
+          /* noop */
+        }
+      }
+
       if (!allBounds.isEmpty() && !geofenceFitAppliedRef.current && !stopBounds) {
         try {
           map.fitBounds(allBounds, { padding: 72, maxZoom: 13, duration: 350 });
