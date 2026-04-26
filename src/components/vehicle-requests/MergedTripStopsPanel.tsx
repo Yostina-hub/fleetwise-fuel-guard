@@ -744,13 +744,21 @@ export const MergedTripStopsPanel = ({
           if (center) {
             const markerEl = document.createElement("div");
             markerEl.style.cssText = `
-              max-width:150px;padding:3px 7px;border-radius:6px;
-              background:rgba(255,255,255,.95);color:${color};
+              display:flex;align-items:center;gap:5px;max-width:160px;
+              padding:3px 7px;border-radius:9999px;background:hsl(var(--card));color:${color};
               font:700 11px system-ui;line-height:1.15;border:2px solid ${color};
-              box-shadow:0 2px 8px rgba(0,0,0,.28);pointer-events:none;
+              box-shadow:0 2px 10px hsl(var(--foreground) / .28);pointer-events:none;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
             `;
-            markerEl.textContent = shortName;
+            const dotEl = document.createElement("span");
+            dotEl.style.cssText = `
+              width:9px;height:9px;border-radius:9999px;background:${color};
+              box-shadow:0 0 0 3px ${color}33;flex:0 0 auto;
+            `;
+            const labelEl = document.createElement("span");
+            labelEl.style.cssText = "overflow:hidden;text-overflow:ellipsis;min-width:0;";
+            labelEl.textContent = shortName;
+            markerEl.append(dotEl, labelEl);
             const marker = new maplibregl.Marker({ element: markerEl, anchor: "center" })
               .setLngLat(center)
               .addTo(map);
