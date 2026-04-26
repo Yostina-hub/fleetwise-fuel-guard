@@ -232,8 +232,11 @@ export const AssignVehicleDriverDialog = ({
           </div>
         </DialogHeader>
 
-        {/* ===== TRIP ROUTE (every request) ===== */}
-        {request?.is_consolidated_parent && request?.organization_id ? (
+        {/* ===== TRIP ROUTE (every request) =====
+            Both consolidated and single requests now share the same panel so
+            dispatchers see Route Alternatives, AI recommend, and per-trip
+            geofence rules in one consistent control. */}
+        {request?.organization_id && (
           <div className="px-6 pt-3 pb-1">
             <MergedTripStopsPanel
               parentRequestId={request.id}
@@ -244,11 +247,26 @@ export const AssignVehicleDriverDialog = ({
               mergeStrategy={request.merge_strategy}
               neededFrom={request.needed_from}
               neededUntil={request.needed_until}
+              singleRequest={
+                request.is_consolidated_parent
+                  ? null
+                  : {
+                      id: request.id,
+                      request_number: request.request_number,
+                      requester_name: request.requester_name,
+                      passengers: request.passengers,
+                      needed_from: request.needed_from,
+                      needed_until: request.needed_until,
+                      departure_place: request.departure_place,
+                      destination: request.destination,
+                      pool_name: request.pool_name,
+                      departure_lat: request.departure_lat,
+                      departure_lng: request.departure_lng,
+                      destination_lat: request.destination_lat,
+                      destination_lng: request.destination_lng,
+                    }
+              }
             />
-          </div>
-        ) : (
-          <div className="px-6 pt-3 pb-1">
-            <RequestRouteMapCard request={request} heightPx={180} />
           </div>
         )}
 

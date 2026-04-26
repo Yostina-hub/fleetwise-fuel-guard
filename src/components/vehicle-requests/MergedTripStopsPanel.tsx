@@ -40,6 +40,22 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { getPreviewSafeMapStyle } from "@/lib/lemat";
 import { friendlyToastError } from "@/lib/errorMessages";
 
+interface SingleRequestShim {
+  id: string;
+  request_number?: string | null;
+  requester_name?: string | null;
+  passengers?: number | null;
+  needed_from?: string | null;
+  needed_until?: string | null;
+  departure_place?: string | null;
+  destination?: string | null;
+  pool_name?: string | null;
+  departure_lat?: number | null;
+  departure_lng?: number | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
+}
+
 interface Props {
   parentRequestId: string;
   organizationId: string;
@@ -50,7 +66,15 @@ interface Props {
   neededFrom?: string | null;
   neededUntil?: string | null;
   defaultOpen?: boolean;
+  /**
+   * When provided, the panel renders for a single (non-consolidated) request
+   * instead of querying merged children. This unifies the trip-route view so
+   * dispatchers always see Route Alternatives + Use geofence rules / Mark all,
+   * regardless of whether the request is consolidated.
+   */
+  singleRequest?: SingleRequestShim | null;
 }
+
 
 interface Child {
   id: string;
@@ -155,15 +179,21 @@ export const MergedTripStopsPanel = ({
   neededFrom,
   neededUntil,
   defaultOpen = false,
+  singleRequest = null,
 }: Props) => {
-  const [open, setOpen] = useState(defaultOpen);
+  const isSingle = !!singleRequest;
+  // Single-request mode mirrors the legacy RequestRouteMapCard: always open,
+  // map visible by default, no "View stops" expand affordance needed.
+  const [open, setOpen] = useState(isSingle ? true : defaultOpen);
   // Map auto-shows when the panel is expanded and stops have coordinates.
   // Dispatchers asked to see optimized routes immediately without an extra click.
   const [showMap, setShowMap] = useState(true);
 
-  const { data: children = [], isLoading } = useQuery({
+  const { data: fetchedChildren = [], isLoading: isLoadingChildren } = useQuery({
     queryKey: ["merged-children", parentRequestId],
-    enabled: !!parentRequestId && !!organizationId && open,
+    // Only the consolidated-parent variant queries merged children. Single
+    // requests synthesize a single Child from the request itself.
+    enabled: !isSingle && !!parentRequestId && !!organizationId && open,
     staleTime: 30_000,
     queryFn: async (): Promise<Child[]> => {
       const { data, error } = await (supabase as any)
@@ -178,6 +208,32 @@ export const MergedTripStopsPanel = ({
       return (data || []) as Child[];
     },
   });
+
+  // In single-request mode we synthesize a one-element children array from
+  // the request itself so all downstream logic (markers, routing, AI, fit
+  // bounds) keeps working unchanged.
+  const children = useMemo<Child[]>(() => {
+    if (!isSingle || !singleRequest) return fetchedChildren;
+    return [
+      {
+        id: singleRequest.id,
+        request_number: singleRequest.request_number ?? "",
+        requester_name: singleRequest.requester_name ?? null,
+        passengers: singleRequest.passengers ?? null,
+        needed_from: singleRequest.needed_from ?? new Date().toISOString(),
+        needed_until: singleRequest.needed_until ?? null,
+        departure_place: singleRequest.departure_place ?? null,
+        destination: singleRequest.destination ?? null,
+        pool_name: singleRequest.pool_name ?? poolName ?? null,
+        departure_lat: singleRequest.departure_lat ?? null,
+        departure_lng: singleRequest.departure_lng ?? null,
+        destination_lat: singleRequest.destination_lat ?? null,
+        destination_lng: singleRequest.destination_lng ?? null,
+      },
+    ];
+  }, [isSingle, singleRequest, fetchedChildren, poolName]);
+
+  const isLoading = isSingle ? false : isLoadingChildren;
 
   // ── Derived totals (fall back to props when query is still loading) ─────
   const totalPax = useMemo(
@@ -916,14 +972,18 @@ export const MergedTripStopsPanel = ({
         aria-expanded={open}
       >
         <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <GitMerge className="w-4 h-4" />
+          {isSingle ? <RouteIcon className="w-4 h-4" /> : <GitMerge className="w-4 h-4" />}
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-sm font-semibold">Consolidated trip</span>
+            <span className="text-sm font-semibold">
+              {isSingle ? "Trip route" : "Consolidated trip"}
+            </span>
             <span className="text-xs text-muted-foreground">
-              {stopCount} stop{stopCount === 1 ? "" : "s"} · {totalPax} pax
+              {isSingle
+                ? `${totalPax} pax`
+                : `${stopCount} stop${stopCount === 1 ? "" : "s"} · ${totalPax} pax`}
             </span>
           </div>
           {earliest && (
@@ -942,7 +1002,7 @@ export const MergedTripStopsPanel = ({
         </div>
 
         <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-          {open ? "Hide" : "View stops"}
+          {open ? "Hide" : isSingle ? "View route" : "View stops"}
           {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </span>
       </button>
@@ -957,7 +1017,9 @@ export const MergedTripStopsPanel = ({
             </div>
           ) : children.length === 0 ? (
             <div className="text-center py-6 text-xs text-muted-foreground">
-              No child requests linked to this consolidated trip.
+              {isSingle
+                ? "This request has no pickup or destination yet."
+                : "No child requests linked to this consolidated trip."}
             </div>
           ) : (
             <>
