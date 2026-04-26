@@ -184,6 +184,117 @@ export const DriverHubOverview = ({ onNavigate }: DriverHubOverviewProps) => {
         ))}
       </motion.div>
 
+      {/* ─── Workforce Composition: Assignment + Driver Type ─── */}
+      <motion.div variants={fadeIn} className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Workforce Composition
+          </h3>
+          <button
+            onClick={() => navigate("/drivers")}
+            className="text-[11px] text-muted-foreground hover:text-primary inline-flex items-center gap-1 transition-colors"
+          >
+            View driver list <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
+
+        {/* Assignment status cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow group"
+            onClick={() => navigate("/drivers")}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Users className="h-4.5 w-4.5 text-primary" />
+                </div>
+                <Badge variant="secondary" className="text-[10px]">All</Badge>
+              </div>
+              <p className="text-2xl font-bold tracking-tight">{drivers.length}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Total drivers</p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow group"
+            onClick={() => navigate("/drivers?assignment=assigned")}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <Link2 className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <Badge variant="secondary" className="text-[10px]">{assignedPct}%</Badge>
+              </div>
+              <p className="text-2xl font-bold tracking-tight">{assignedCount}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Assigned to vehicle</p>
+              <Progress value={assignedPct} className="h-1 mt-2" />
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow group"
+            onClick={() => navigate("/drivers?assignment=unassigned")}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className={cn(
+                  "h-9 w-9 rounded-lg flex items-center justify-center",
+                  unassignedCount > 0 ? "bg-orange-500/10" : "bg-muted/50",
+                )}>
+                  <Unlink className={cn(
+                    "h-4.5 w-4.5",
+                    unassignedCount > 0 ? "text-orange-600 dark:text-orange-400" : "text-muted-foreground",
+                  )} />
+                </div>
+                <Badge variant="secondary" className="text-[10px]">
+                  {drivers.length > 0 ? 100 - assignedPct : 0}%
+                </Badge>
+              </div>
+              <p className="text-2xl font-bold tracking-tight">{unassignedCount}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {unassignedCount > 0 ? "Available to assign" : "All drivers placed"}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Driver type breakdown */}
+        {byDriverType.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 mt-1">
+              By Driver Type
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
+              {byDriverType.map(([key, count]) => {
+                const meta = driverTypeMeta[key] || {
+                  ...driverTypeMeta.unspecified,
+                  label: formatLabel(key),
+                };
+                return (
+                  <button
+                    key={key}
+                    onClick={() => navigate(`/drivers?driverType=${encodeURIComponent(key)}`)}
+                    className="text-left rounded-lg border bg-card hover:bg-accent hover:border-primary/30 transition-all p-3 group"
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className={cn("h-7 w-7 rounded-md flex items-center justify-center", meta.bg)}>
+                        <meta.icon className={cn("h-3.5 w-3.5", meta.color)} />
+                      </div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate flex-1">
+                        {meta.label}
+                      </p>
+                    </div>
+                    <p className="text-xl font-bold tabular-nums tracking-tight">{count}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </motion.div>
+
       {/* ─── Quick Actions ─── */}
       <motion.div variants={fadeIn}>
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Quick Actions</h3>
