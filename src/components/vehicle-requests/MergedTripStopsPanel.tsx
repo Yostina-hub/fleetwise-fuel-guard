@@ -174,6 +174,14 @@ const getMergedTripFenceBounds = (fence: any): maplibregl.LngLatBounds | null =>
 const sameCoordinate = (a: [number, number], b: [number, number]) =>
   Math.abs(a[0] - b[0]) < 0.000001 && Math.abs(a[1] - b[1]) < 0.000001;
 
+const geofenceVisualColor = (fence: any) => {
+  const raw = String(fence?.color || "").trim();
+  // Most seeded zones use the same primary blue as the trip route, which made
+  // the zone spots blend into the route line. Keep custom colors, but use a
+  // contrasting map color for the default-blue geofence set.
+  return !raw || raw.toLowerCase() === "#3b82f6" ? "hsl(160 84% 39%)" : raw;
+};
+
 
 
 export const MergedTripStopsPanel = ({
