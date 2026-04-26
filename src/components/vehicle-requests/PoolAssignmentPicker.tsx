@@ -65,6 +65,14 @@ export const PoolAssignmentPicker = ({
   const [driverOpen, setDriverOpen] = useState(false);
   const [confirmAssign, setConfirmAssign] = useState(false);
   const [confirmUnavailable, setConfirmUnavailable] = useState(false);
+  /**
+   * When the route fails the geofence check (pickup or destination outside
+   * any active operational zone), we block the primary CTA until the
+   * supervisor explicitly acknowledges the override. This keeps the UX
+   * non-blocking — they can still proceed when the request is genuinely
+   * outside fences (e.g. ad-hoc trip), but they have to opt in.
+   */
+  const [overrideZone, setOverrideZone] = useState(false);
 
   const { data: vehicles = [], isLoading: vehiclesLoading } = useSuggestedVehicles({
     organizationId,
