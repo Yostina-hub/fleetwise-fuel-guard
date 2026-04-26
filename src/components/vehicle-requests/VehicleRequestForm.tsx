@@ -1525,6 +1525,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Select
                   value={form.request_type}
                   onValueChange={(v) => {
+                    userPickedRequestTypeRef.current = true;
                     // When the user *manually* picks Night Request, snap the
                     // start/end times to the night window's lower bound (20:00 → 06:00)
                     // so the auto-classifier (08:30–17:30 = Day) doesn't immediately
