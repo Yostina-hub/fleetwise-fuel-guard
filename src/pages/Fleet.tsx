@@ -158,6 +158,33 @@ const Fleet = () => {
   // Driver assignments map
   const [driverAssignments, setDriverAssignments] = useState<Record<string, string>>({});
 
+  // Owned vs rental fleet mix (org-wide, independent of current page/filters)
+  const [ownershipMix, setOwnershipMix] = useState<{ owned: number; rental: number }>({
+    owned: 0,
+    rental: 0,
+  });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("ownership_type")
+        .limit(2000);
+      if (cancelled || error || !data) return;
+      let owned = 0;
+      let rental = 0;
+      for (const row of data) {
+        const t = (row.ownership_type || "").toLowerCase();
+        if (!t || t === "owned") owned += 1;
+        else rental += 1;
+      }
+      setOwnershipMix({ owned, rental });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Debounce search to avoid too many queries
   const debouncedSearch = useDebounce(searchInput, 300);
 
