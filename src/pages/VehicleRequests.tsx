@@ -1433,6 +1433,16 @@ const VehicleRequests = () => {
                     setShowDetail(null);
                     setShowCrossPool(showDetail);
                   }}
+                  onEdit={() => {
+                    const req = showDetail;
+                    setShowDetail(null);
+                    setShowEdit(req);
+                  }}
+                  onDelete={() => {
+                    const req = showDetail;
+                    setShowDetail(null);
+                    setShowDelete(req);
+                  }}
                 />
               </div>
             </DialogContent>

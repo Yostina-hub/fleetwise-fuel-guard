@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck, LogIn, Send, Shuffle, UserCheck, Sparkles, MapPin } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck, LogIn, Send, Shuffle, UserCheck, Sparkles, MapPin, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -55,9 +55,13 @@ interface Props {
   onClose: () => void;
   onCheckIn?: () => void;
   onCrossPool?: () => void;
+  /** Open the Edit / Fix-and-Resubmit dialog for this request. */
+  onEdit?: () => void;
+  /** Open the Delete confirmation dialog for this request. */
+  onDelete?: () => void;
 }
 
-export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onCheckIn, onCrossPool }: Props) => {
+export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onCheckIn, onCrossPool, onEdit, onDelete }: Props) => {
   const { t } = useTranslation();
   const { available } = useAvailableVehicles();
   // Pool scoping: a manager working a request only sees vehicles & drivers
@@ -84,6 +88,21 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
   const isAssignedDriver =
     vrScope.tier === "driver" && request.assigned_driver_id === vrScope.driverId;
   const canCheckInOut = canManageAll || isAssignedDriver;
+
+  // Requester self-service gating — the row owner can edit/delete or
+  // fix-and-resubmit while the request is still in pending or rejected state
+  // and the driver hasn't checked in yet. Admins/operators get the same
+  // controls anytime before check-in (mirrors the table-row policy).
+  const isOwnRow = !!vrScope.userId && request.requester_id === vrScope.userId;
+  const canEditRow =
+    !request.driver_checked_in_at &&
+    (canManageAll ||
+      (isOwnRow && ["pending", "rejected"].includes(request.status)));
+  const canDeleteRow =
+    !request.driver_checked_in_at &&
+    request.status !== "completed" &&
+    (canManageAll ||
+      (isOwnRow && ["pending", "rejected", "cancelled"].includes(request.status)));
 
   // Suggested vehicles — STRICT capacity filter so undersized vehicles don't
   // pollute the picker. Surfaces seating + category for license matching.
@@ -764,8 +783,34 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         </div>
       )}
 
-      {/* Rejection reason */}
-      {request.rejection_reason && (
+      {/* Rejection reason — surfaces a Fix & Resubmit CTA when the viewer
+          owns the row, so requesters never have to hunt the table for the
+          tiny pencil icon. */}
+      {request.status === "rejected" && (request.rejection_reason || isOwnRow) && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+            <div className="text-sm flex-1 min-w-0">
+              <div className="font-medium text-destructive">Request Rejected</div>
+              {request.rejection_reason && (
+                <p className="text-foreground/80 mt-0.5 break-words">
+                  {request.rejection_reason}
+                </p>
+              )}
+            </div>
+          </div>
+          {isOwnRow && onEdit && (
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" onClick={onEdit} className="gap-1.5">
+                <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
+                Fix & Resubmit
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      {/* Generic rejection_reason fallback for non-owners on non-rejected status */}
+      {request.status !== "rejected" && request.rejection_reason && (
         <div className="flex items-start gap-2 text-sm bg-destructive/10 rounded-lg p-2">
           <AlertTriangle className="w-4 h-4 text-destructive mt-0.5" />
           <div><span className="font-medium">Rejection Reason:</span> {request.rejection_reason}</div>
@@ -897,6 +942,46 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         )}
         {["pending", "approved"].includes(request.status) && !showRejectForm && (
           <Button size="sm" variant="outline" onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+        )}
+
+        {/* Edit / Resubmit / Delete — pushed to the right edge so requester
+            self-service controls are predictable across all statuses. */}
+        {(canEditRow || canDeleteRow) && !showRejectForm && (
+          <div className="flex items-center gap-2 ml-auto">
+            {canEditRow && onEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onEdit}
+                className="gap-1.5"
+                title={request.status === "rejected" ? "Fix and resubmit" : "Edit request"}
+              >
+                {request.status === "rejected" ? (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
+                    Fix & Resubmit
+                  </>
+                ) : (
+                  <>
+                    <Pencil className="w-3.5 h-3.5 text-primary" />
+                    Edit
+                  </>
+                )}
+              </Button>
+            )}
+            {canDeleteRow && onDelete && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onDelete}
+                className="gap-1.5 text-destructive hover:text-destructive"
+                title="Remove request"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </Button>
+            )}
+          </div>
         )}
       </div>
 
