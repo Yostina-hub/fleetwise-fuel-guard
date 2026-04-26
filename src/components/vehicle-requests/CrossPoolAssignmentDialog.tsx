@@ -38,7 +38,7 @@ const CROSS_POOL_APPROVER_ROLES = [
 export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Props) => {
   const { organizationId } = useOrganization();
   const { hasRole, isSuperAdmin } = usePermissions();
-  const { user, profile } = useAuth();
+  const { user, profile } = useAuthContext();
   const canApproveCrossPool =
     isSuperAdmin || CROSS_POOL_APPROVER_ROLES.some((r) => hasRole(r));
   
