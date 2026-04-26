@@ -620,46 +620,97 @@ export const MergedTripStopsPanel = ({
                     className="w-full h-[360px] bg-muted"
                     aria-label="Consolidated trip map"
                   />
-                  {/* Floating legend overlay */}
-                  <div className="absolute top-2 left-2 bg-background/95 backdrop-blur rounded-md border shadow-sm px-2.5 py-2 max-w-[220px] space-y-1.5">
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold">
-                      <RouteIcon className="w-3 h-3 text-primary" />
-                      Route alternatives
+                  {/* Floating legend overlay — Google-Maps-style route picker */}
+                  <div className="absolute top-3 left-3 bg-card/95 backdrop-blur-md rounded-lg border border-border/60 shadow-lg overflow-hidden w-[260px] max-w-[calc(100%-1.5rem)]">
+                    <div className="px-3 py-2 border-b border-border/60 bg-muted/40 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+                        <RouteIcon className="w-3.5 h-3.5 text-primary" />
+                        Route alternatives
+                      </div>
+                      {!routesLoading && routesInfo.length > 0 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {routesInfo.length} option{routesInfo.length === 1 ? "" : "s"}
+                        </span>
+                      )}
                     </div>
+
                     {routesLoading && (
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        Computing routes…
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-3">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Computing best route…
                       </div>
                     )}
                     {!routesLoading && routesError && (
-                      <div className="text-[10px] text-destructive">
+                      <div className="text-[11px] text-destructive px-3 py-2.5 leading-snug">
                         {routesError}. Showing straight-line fallback.
                       </div>
                     )}
-                    {!routesLoading && routesInfo.length > 0 && (
-                      <ul className="space-y-1">
-                        {routesInfo.map((r, i) => (
-                          <li
-                            key={i}
-                            className={`flex items-center gap-1.5 text-[10px] ${
-                              r.isBest ? "font-semibold" : "text-muted-foreground"
-                            }`}
-                          >
-                            <span
-                              className="inline-block w-3 h-1.5 rounded-sm shrink-0"
-                              style={{ background: r.color, opacity: r.isBest ? 1 : 0.7 }}
-                            />
-                            <span className="truncate">{r.label}</span>
-                            <span className="ml-auto font-mono">
-                              {r.distanceKm.toFixed(1)}km · {Math.round(r.durationMin)}m
-                            </span>
-                            {r.isBest && (
-                              <Trophy className="w-3 h-3 text-primary shrink-0" />
-                            )}
-                          </li>
-                        ))}
-                      </ul>
+
+                    {!routesLoading && routesInfo.length > 0 && (() => {
+                      const bestDuration = routesInfo.find((r) => r.isBest)?.durationMin ?? 0;
+                      return (
+                        <ul className="divide-y divide-border/50 max-h-[260px] overflow-y-auto">
+                          {routesInfo.map((r, i) => {
+                            const isFocused = focusedRouteIdx === i;
+                            const deltaMin = Math.round(r.durationMin - bestDuration);
+                            return (
+                              <li key={i}>
+                                <button
+                                  type="button"
+                                  onClick={() => setFocusedRouteIdx(isFocused ? null : i)}
+                                  className={`w-full text-left px-3 py-2 flex items-start gap-2 transition-colors hover:bg-muted/60 ${
+                                    isFocused ? "bg-muted/70" : ""
+                                  }`}
+                                  aria-pressed={isFocused}
+                                >
+                                  {/* Stroke swatch — mirrors line on the map */}
+                                  <span
+                                    className="mt-1 inline-block h-2.5 rounded-full shrink-0"
+                                    style={{
+                                      width: 22,
+                                      background: r.color,
+                                      boxShadow: r.isBest ? `0 0 0 2px ${r.color}33` : undefined,
+                                    }}
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-xs font-semibold truncate">
+                                        {Math.round(r.durationMin)} min
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground font-mono">
+                                        · {r.distanceKm.toFixed(1)} km
+                                      </span>
+                                      {r.isBest && (
+                                        <Badge
+                                          variant="default"
+                                          className="ml-auto h-4 px-1.5 text-[9px] uppercase tracking-wide gap-0.5"
+                                        >
+                                          <Trophy className="w-2.5 h-2.5" />
+                                          Best
+                                        </Badge>
+                                      )}
+                                      {!r.isBest && deltaMin > 0 && (
+                                        <span className="ml-auto text-[10px] text-muted-foreground">
+                                          +{deltaMin} min
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                      {r.strategy}
+                                    </div>
+                                  </div>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      );
+                    })()}
+
+                    {!routesLoading && routesInfo.length > 1 && (
+                      <div className="px-3 py-1.5 border-t border-border/60 bg-muted/30 text-[10px] text-muted-foreground">
+                        Tap a route to highlight it on the map
+                      </div>
                     )}
                   </div>
                 </div>
