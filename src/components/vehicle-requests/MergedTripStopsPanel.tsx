@@ -1053,25 +1053,106 @@ export const MergedTripStopsPanel = ({
                     {/* AI recommend action + reasoning */}
                     {!routesLoading && routesInfo.length > 1 && (
                       <div className="px-3 py-2 border-t border-border/60 bg-muted/30 space-y-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={aiPick ? "secondary" : "default"}
-                          className="w-full h-7 text-[11px] gap-1.5"
-                          onClick={requestAiRecommendation}
-                          disabled={aiLoading}
-                        >
-                          {aiLoading ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Sparkles className="w-3 h-3" />
-                          )}
-                          {aiLoading
-                            ? "Asking AI…"
-                            : aiPick
-                              ? "Re-run AI recommendation"
-                              : "Recommend best with AI"}
-                        </Button>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={aiPick ? "secondary" : "default"}
+                            className="flex-1 h-7 text-[11px] gap-1.5"
+                            onClick={requestAiRecommendation}
+                            disabled={aiLoading}
+                          >
+                            {aiLoading ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-3 h-3" />
+                            )}
+                            {aiLoading
+                              ? "Asking AI…"
+                              : aiPick
+                                ? "Re-run AI recommendation"
+                                : "Recommend best with AI"}
+                          </Button>
+                          {/* Per-trip geofence rule editor */}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-[11px] gap-1"
+                                title="Edit geofence rule for this trip"
+                              >
+                                <Settings2 className="w-3 h-3" />
+                                {geofenceAware ? "Geofence rule on" : "Geofence rule off"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-72 p-3 space-y-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="space-y-0.5">
+                                  <div className="text-xs font-semibold">Use geofence rules</div>
+                                  <div className="text-[10px] text-muted-foreground leading-snug">
+                                    When on, the AI weighs each zone's prefer/avoid policy
+                                    when picking the best route.
+                                  </div>
+                                </div>
+                                <Switch
+                                  checked={geofenceAware}
+                                  onCheckedChange={(v) =>
+                                    updateRequestSettings.mutate({ geofence_aware_dispatch: v })
+                                  }
+                                />
+                              </div>
+                              {geofenceAware && (
+                                <div className="space-y-1.5">
+                                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                    Avoid for this trip only
+                                  </div>
+                                  <ScrollArea className="max-h-40 pr-2">
+                                    <div className="space-y-1.5">
+                                      {(geofences as any[]).length === 0 && (
+                                        <div className="text-[10px] text-muted-foreground italic">
+                                          No active geofences in this organisation.
+                                        </div>
+                                      )}
+                                      {(geofences as any[]).map((g) => {
+                                        const checked = avoidOverrides.includes(g.id);
+                                        const orgPolicy = (g.dispatch_policy as string) || "neutral";
+                                        return (
+                                          <label
+                                            key={g.id}
+                                            className="flex items-start gap-2 text-[11px] cursor-pointer"
+                                          >
+                                            <Checkbox
+                                              checked={checked}
+                                              onCheckedChange={(c) => {
+                                                const next = c === true
+                                                  ? Array.from(new Set([...avoidOverrides, g.id]))
+                                                  : avoidOverrides.filter((id) => id !== g.id);
+                                                updateRequestSettings.mutate({
+                                                  geofence_avoid_overrides: next,
+                                                });
+                                              }}
+                                              className="mt-0.5"
+                                            />
+                                            <span className="min-w-0 flex-1">
+                                              <span className="block truncate font-medium">
+                                                {String(g.name || "Zone").split(",")[0]}
+                                              </span>
+                                              <span className="text-[10px] text-muted-foreground">
+                                                Org: {orgPolicy}
+                                              </span>
+                                            </span>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </ScrollArea>
+                                </div>
+                              )}
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                         {aiError && (
                           <div className="text-[10px] text-destructive leading-snug">
                             {aiError}
