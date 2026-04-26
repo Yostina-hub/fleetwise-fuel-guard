@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Layout from "@/components/Layout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,6 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  AlertTriangle,
   Route,
   Crosshair,
   Ban,
@@ -607,8 +606,6 @@ const Geofencing = () => {
   const visibleGeofences = (geofences || []) as unknown as GeofenceRecord[];
   const preferCount = visibleGeofences.filter((f) => f.dispatch_policy === "prefer").length;
   const avoidCount = visibleGeofences.filter((f) => f.dispatch_policy === "avoid").length;
-  const hasGeofences = visibleGeofences.length > 0;
-
   return (
     <Layout>
       <div className="flex h-full min-h-0 bg-background">
@@ -896,7 +893,11 @@ const Geofencing = () => {
               <Label>{t('common.category', 'Category')}</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                onValueChange={(value) => setFormData({
+                  ...formData,
+                  category: value,
+                  dispatch_policy: getCategoryDefaultPolicy(value),
+                })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -908,6 +909,23 @@ const Geofencing = () => {
                   <SelectItem value="speed_zone">Speed Zone</SelectItem>
                   <SelectItem value="parking">Parking Area</SelectItem>
                   <SelectItem value="service_area">Service Area</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Dispatch rule</Label>
+              <Select
+                value={formData.dispatch_policy}
+                onValueChange={(value) => setFormData({ ...formData, dispatch_policy: value as DispatchPolicy })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="prefer">Prefer routes through this zone</SelectItem>
+                  <SelectItem value="avoid">Avoid routes through this zone</SelectItem>
+                  <SelectItem value="neutral">No dispatch preference</SelectItem>
                 </SelectContent>
               </Select>
             </div>
