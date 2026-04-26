@@ -62,7 +62,8 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
     );
   }, [pools, targetCategory, request.pool_category, request.pool_name]);
 
-  // Vehicles in target pool with live status
+  // Vehicles in target pool with live status. We de-dup by id and by
+  // plate_number so duplicate registrations don't appear twice in the picker.
   const { data: poolVehicles = [] } = useQuery({
     queryKey: ["cross-pool-vehicles", organizationId, targetPool],
     enabled: !!organizationId && open && !!targetPool,
@@ -74,7 +75,18 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
         .eq("specific_pool", targetPool)
         .order("plate_number");
       if (error) throw error;
-      return data || [];
+      const seenId = new Set<string>();
+      const seenPlate = new Set<string>();
+      return (data || []).filter((v: any) => {
+        if (seenId.has(v.id)) return false;
+        seenId.add(v.id);
+        const p = (v.plate_number || "").trim().toUpperCase();
+        if (p) {
+          if (seenPlate.has(p)) return false;
+          seenPlate.add(p);
+        }
+        return true;
+      });
     },
   });
 
