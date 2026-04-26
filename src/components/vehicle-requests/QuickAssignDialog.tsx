@@ -247,22 +247,37 @@ export const QuickAssignDialog = ({ request, organizationId, open, onClose }: Pr
           )}
         </div>
 
-        {/* Trip route: full merged-trip visualisation for consolidated parents,
-            simple from→to mini-map for everyone else. */}
-        {isMerged ? (
-          <MergedTripStopsPanel
-            parentRequestId={request.id}
-            organizationId={organizationId}
-            poolName={request.pool_name}
-            totalPassengers={request.passengers}
-            childCount={request.consolidated_request_count}
-            mergeStrategy={request.merge_strategy}
-            neededFrom={request.needed_from}
-            neededUntil={request.needed_until}
-          />
-        ) : (
-          <RequestRouteMapCard request={request} heightPx={200} />
-        )}
+        {/* Unified trip route: same panel (Route Alternatives + AI + Use
+            geofence rules) for both consolidated parents and single trips. */}
+        <MergedTripStopsPanel
+          parentRequestId={request.id}
+          organizationId={organizationId}
+          poolName={request.pool_name}
+          totalPassengers={request.passengers}
+          childCount={request.consolidated_request_count}
+          mergeStrategy={request.merge_strategy}
+          neededFrom={request.needed_from}
+          neededUntil={request.needed_until}
+          singleRequest={
+            isMerged
+              ? null
+              : {
+                  id: request.id,
+                  request_number: request.request_number,
+                  requester_name: request.requester_name,
+                  passengers: request.passengers,
+                  needed_from: request.needed_from,
+                  needed_until: request.needed_until,
+                  departure_place: request.departure_place,
+                  destination: request.destination,
+                  pool_name: request.pool_name,
+                  departure_lat: request.departure_lat,
+                  departure_lng: request.departure_lng,
+                  destination_lat: request.destination_lat,
+                  destination_lng: request.destination_lng,
+                }
+          }
+        />
 
         <PoolAssignmentPicker
           request={request}
