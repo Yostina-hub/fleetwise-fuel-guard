@@ -2449,10 +2449,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   <Input
                     type="tel"
                     inputMode="tel"
+                    maxLength={13}
                     value={form.contact_phone}
-                    onChange={e => { userTouchedContactPhoneRef.current = true; update("contact_phone", e.target.value); }}
+                    onChange={e => {
+                      userTouchedContactPhoneRef.current = true;
+                      // Live-strip everything except digits and a single leading +.
+                      // Letters, spaces, dashes, parens never reach state.
+                      const raw = e.target.value;
+                      const hasPlus = raw.trimStart().startsWith("+");
+                      const digits = raw.replace(/\D/g, "").slice(0, 12);
+                      update("contact_phone", hasPlus ? `+${digits}` : digits);
+                    }}
                     onBlur={e => handleBlur("contact_phone", e.target.value, form as any)}
-                    placeholder="e.g. 0911 234 567 or +251 911 234 567"
+                    placeholder="0911234567 or +251911234567"
                     aria-invalid={!!getError("contact_phone")}
                     className={`h-9 text-sm ${getError("contact_phone") ? "border-destructive ring-1 ring-destructive/30 focus-visible:ring-destructive/40" : ""}`}
                   />
