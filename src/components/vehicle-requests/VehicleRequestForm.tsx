@@ -1967,8 +1967,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
 
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Specific Pool <span className="text-destructive">*</span>
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                  <Building2 className="w-4 h-4 shrink-0" />
+                  <span>Specific Pool</span>
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.pool_name}
