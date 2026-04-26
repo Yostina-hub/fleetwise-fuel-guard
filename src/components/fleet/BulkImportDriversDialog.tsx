@@ -491,7 +491,7 @@ export default function BulkImportDriversDialog({
           {/* Final result */}
           {result && (
             <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-2xl font-semibold text-success">
                     {result.inserted}
@@ -503,6 +503,12 @@ export default function BulkImportDriversDialog({
                     {result.updated}
                   </p>
                   <p className="text-xs text-muted-foreground">Updated</p>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-2xl font-semibold text-warning">
+                    {result.skipped}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Skipped</p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-2xl font-semibold text-destructive">
@@ -546,26 +552,41 @@ export default function BulkImportDriversDialog({
               Choose another file
             </Button>
           )}
-          {!result && (
-            <Button
-              onClick={() => {
-                setProgress(0);
-                importMutation.mutate();
-              }}
-              disabled={
-                !preview ||
-                importing ||
-                parsing ||
-                preview.validRows === 0 ||
-                preview.totalRows > MAX_ROWS
-              }
-            >
-              {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {preview
-                ? `Import ${preview.validRows} valid row(s)`
-                : "Import"}
-            </Button>
-          )}
+          {!result && (() => {
+            const dupCount = dupScan?.duplicates.length ?? 0;
+            const newCount = dupScan?.newRows.length ?? preview?.validRows ?? 0;
+            const willProcess =
+              strategy === "skip" ? newCount :
+              strategy === "reject" && dupCount > 0 ? 0 :
+              preview?.validRows ?? 0;
+            const buttonLabel = preview
+              ? strategy === "reject" && dupCount > 0
+                ? `Cannot import — ${dupCount} duplicate(s)`
+                : strategy === "skip"
+                  ? `Import ${newCount} new ${newCount === 1 ? "row" : "rows"}`
+                  : `Import ${preview.validRows} ${preview.validRows === 1 ? "row" : "rows"}`
+              : "Import";
+            return (
+              <Button
+                onClick={() => {
+                  setProgress(0);
+                  importMutation.mutate();
+                }}
+                disabled={
+                  !preview ||
+                  importing ||
+                  parsing ||
+                  scanning ||
+                  preview.validRows === 0 ||
+                  preview.totalRows > MAX_ROWS ||
+                  willProcess === 0
+                }
+              >
+                {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {buttonLabel}
+              </Button>
+            );
+          })()}
         </DialogFooter>
       </DialogContent>
     </Dialog>
