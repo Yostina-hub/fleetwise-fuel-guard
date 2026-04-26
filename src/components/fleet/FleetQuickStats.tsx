@@ -130,7 +130,7 @@ const FleetQuickStats = ({
   const rentalPct = ownedTotal > 0 ? 100 - ownedPct : 0;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 auto-rows-fr">
       {stats.map((stat) => {
         const isClickable = !!stat.filter && !!onFilterChange;
         const isActive =
@@ -145,26 +145,26 @@ const FleetQuickStats = ({
             aria-pressed={isClickable ? isActive : undefined}
             title={isClickable ? `Filter: ${stat.label}` : stat.label}
             className={cn(
-              "text-left w-full",
+              "text-left w-full h-full",
               isClickable &&
                 "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-lg",
             )}
           >
             <Card
               className={cn(
-                "glass-strong transition-all duration-300 h-full",
-                isClickable && "hover:scale-[1.02] hover:shadow-lg",
+                "glass-strong transition-all duration-300 h-full border-border/60",
+                isClickable && "hover:scale-[1.02] hover:shadow-lg hover:border-primary/40",
                 isActive && `ring-2 ${stat.ringColor} shadow-md`,
               )}
             >
-              <CardContent className="p-3">
-                <div className="flex items-start gap-2.5">
-                  <div className={`relative p-2 rounded-lg shrink-0 ${stat.bgColor}`}>
-                    <stat.icon className={`w-4 h-4 ${stat.color}`} aria-hidden="true" />
+              <CardContent className="p-3 h-full flex flex-col justify-between gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className={`relative p-1.5 rounded-md shrink-0 ${stat.bgColor}`}>
+                    <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} aria-hidden="true" />
                     {stat.pulse && (
                       <motion.span
                         aria-hidden="true"
-                        className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-warning"
+                        className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-warning"
                         animate={{ scale: [1, 1.6, 1], opacity: [1, 0.4, 1] }}
                         transition={{
                           duration: 1.4,
@@ -174,19 +174,21 @@ const FleetQuickStats = ({
                       />
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xl font-bold leading-none">{stat.value}</p>
-                    <p className="text-[11px] font-medium text-foreground/80 mt-1 leading-tight break-words">
-                      {stat.label}
+                  <p className="text-2xl font-bold leading-none tabular-nums tracking-tight">
+                    {stat.value}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80 leading-tight truncate">
+                    {stat.label}
+                  </p>
+                  {stat.subtext && (
+                    <p
+                      className={`text-[10px] mt-0.5 ${stat.color} opacity-80 leading-tight truncate`}
+                    >
+                      {stat.subtext}
                     </p>
-                    {stat.subtext && (
-                      <p
-                        className={`text-[10px] mt-0.5 ${stat.color} opacity-80 leading-tight break-words`}
-                      >
-                        {stat.subtext}
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -195,35 +197,35 @@ const FleetQuickStats = ({
       })}
 
       {/* Owned vs Rental — split action card */}
-      <Card className="glass-strong h-full overflow-hidden">
+      <Card className="glass-strong h-full overflow-hidden border-border/60 col-span-2 sm:col-span-1">
         <CardContent className="p-0 h-full">
-          <div className="flex h-full divide-x divide-border/60">
+          <div className="grid grid-cols-2 h-full divide-x divide-border/60">
             <button
               type="button"
               onClick={() => onOwnershipChange?.("owned")}
               aria-pressed={activeOwnership === "owned"}
               title={`Show ${ownedVehicles} owned vehicle${ownedVehicles === 1 ? "" : "s"}`}
               className={cn(
-                "flex-1 p-3 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60",
+                "p-2.5 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 flex flex-col justify-between gap-1.5 min-w-0",
                 onOwnershipChange && "cursor-pointer hover:bg-indigo-500/10",
                 activeOwnership === "owned" && "bg-indigo-500/15",
               )}
             >
-              <div className="flex items-start gap-2">
-                <div className="p-2 rounded-lg shrink-0 bg-indigo-500/10">
-                  <Truck className="w-4 h-4 text-indigo-500" aria-hidden="true" />
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="p-1.5 rounded-md shrink-0 bg-indigo-500/10">
+                  <Truck className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xl font-bold leading-none text-indigo-500">
-                    {ownedVehicles}
-                  </p>
-                  <p className="text-[11px] font-medium text-foreground/80 mt-1 leading-tight">
-                    Owned
-                  </p>
-                  <p className="text-[10px] mt-0.5 text-indigo-500/80 leading-tight">
-                    {ownedPct}% of fleet
-                  </p>
-                </div>
+                <p className="text-2xl font-bold leading-none text-indigo-500 tabular-nums tracking-tight">
+                  {ownedVehicles}
+                </p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80 leading-tight truncate">
+                  Owned
+                </p>
+                <p className="text-[10px] mt-0.5 text-indigo-500/80 leading-tight truncate">
+                  {ownedPct}%
+                </p>
               </div>
             </button>
             <button
@@ -232,26 +234,26 @@ const FleetQuickStats = ({
               aria-pressed={activeOwnership === "rental"}
               title={`Show ${rentalVehicles} rental / outsourced vehicle${rentalVehicles === 1 ? "" : "s"}`}
               className={cn(
-                "flex-1 p-3 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60",
+                "p-2.5 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 flex flex-col justify-between gap-1.5 min-w-0",
                 onOwnershipChange && "cursor-pointer hover:bg-amber-500/10",
                 activeOwnership === "rental" && "bg-amber-500/15",
               )}
             >
-              <div className="flex items-start gap-2">
-                <div className="p-2 rounded-lg shrink-0 bg-amber-500/10">
-                  <Building2 className="w-4 h-4 text-amber-500" aria-hidden="true" />
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="p-1.5 rounded-md shrink-0 bg-amber-500/10">
+                  <Building2 className="w-3.5 h-3.5 text-amber-500" aria-hidden="true" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xl font-bold leading-none text-amber-500">
-                    {rentalVehicles}
-                  </p>
-                  <p className="text-[11px] font-medium text-foreground/80 mt-1 leading-tight">
-                    Rental
-                  </p>
-                  <p className="text-[10px] mt-0.5 text-amber-500/80 leading-tight">
-                    {rentalPct}% outsourced
-                  </p>
-                </div>
+                <p className="text-2xl font-bold leading-none text-amber-500 tabular-nums tracking-tight">
+                  {rentalVehicles}
+                </p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80 leading-tight truncate">
+                  Rental
+                </p>
+                <p className="text-[10px] mt-0.5 text-amber-500/80 leading-tight truncate">
+                  {rentalPct}%
+                </p>
               </div>
             </button>
           </div>
