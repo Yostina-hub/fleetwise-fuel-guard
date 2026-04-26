@@ -174,12 +174,25 @@ const getMergedTripFenceBounds = (fence: any): maplibregl.LngLatBounds | null =>
 const sameCoordinate = (a: [number, number], b: [number, number]) =>
   Math.abs(a[0] - b[0]) < 0.000001 && Math.abs(a[1] - b[1]) < 0.000001;
 
+const GEOFENCE_CENTER_LAYER_IDS = ["mtsp-geofence-center-halo", "mtsp-geofence-center-dot"];
+
+const liftMergedTripGeofenceSpots = (map: maplibregl.Map) => {
+  GEOFENCE_CENTER_LAYER_IDS.forEach((id) => {
+    try {
+      if (map.getLayer(id)) map.moveLayer(id);
+    } catch {
+      /* layer may be mid-refresh */
+    }
+  });
+};
+
 const geofenceVisualColor = (fence: any) => {
   const raw = String(fence?.color || "").trim();
+  const isMapColor = /^(#[0-9a-f]{3,8}|rgba?\(|hsla?\()/i.test(raw) && !raw.includes("var(");
   // Most seeded zones use the same primary blue as the trip route, which made
   // the zone spots blend into the route line. Keep custom colors, but use a
   // contrasting map color for the default-blue geofence set.
-  return !raw || raw.toLowerCase() === "#3b82f6" ? "hsl(160 84% 39%)" : raw;
+  return !isMapColor || raw.toLowerCase() === "#3b82f6" ? "hsl(160, 84%, 39%)" : raw;
 };
 
 
@@ -657,6 +670,7 @@ export const MergedTripStopsPanel = ({
               ...(isBest ? {} : { "line-dasharray": [2, 1.2] }),
             },
           });
+          liftMergedTripGeofenceSpots(map);
 
           map.on("click", layerId, () => setFocusedRouteIdx(i));
           map.on("mouseenter", layerId, () => {
@@ -851,7 +865,10 @@ export const MergedTripStopsPanel = ({
         })
         .filter((feature): feature is NonNullable<typeof feature> => feature !== null);
 
-      if (centerFeatures.length > 0 && !map.getSource("mtsp-geofence-centers")) {
+      const centerSource = map.getSource("mtsp-geofence-centers") as maplibregl.GeoJSONSource | undefined;
+      if (centerSource) {
+        centerSource.setData({ type: "FeatureCollection", features: centerFeatures });
+      } else if (centerFeatures.length > 0) {
         try {
           map.addSource("mtsp-geofence-centers", {
             type: "geojson",
@@ -864,7 +881,7 @@ export const MergedTripStopsPanel = ({
             source: "mtsp-geofence-centers",
             paint: {
               "circle-radius": 12,
-              "circle-color": "hsl(0 0% 100%)",
+              "circle-color": "hsl(0, 0%, 100%)",
               "circle-opacity": 0.92,
               "circle-stroke-width": 3,
               "circle-stroke-color": ["get", "color"],
@@ -882,6 +899,7 @@ export const MergedTripStopsPanel = ({
             },
           });
           addedLayers.push("mtsp-geofence-center-halo", "mtsp-geofence-center-dot");
+          liftMergedTripGeofenceSpots(map);
         } catch {
           /* noop */
         }
