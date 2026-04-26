@@ -115,6 +115,10 @@ export const OpsMapView = ({ organizationId }: Props) => {
   }>(null);
   const [borrowReason, setBorrowReason] = useState("");
   const [selectedPool, setSelectedPool] = useState<string | null>(null);
+  const [playbackVehicle, setPlaybackVehicle] = useState<null | {
+    id: string;
+    label: string;
+  }>(null);
 
   const { available, allVehicles } = useAvailableVehicles();
   const { data: borrowRows = [], refetch: refetchBorrow } = useCrossPoolBorrowRequests(organizationId);
