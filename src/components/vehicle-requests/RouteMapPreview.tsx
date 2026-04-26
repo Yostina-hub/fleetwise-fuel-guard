@@ -195,6 +195,7 @@ export function RouteMapPreview({
   destination,
   stops = [],
   heightPx = 240,
+  geofences = [],
 }: RouteMapPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
