@@ -447,9 +447,11 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
             <Button
               onClick={() => setConfirmOpen(true)}
               disabled={!selectedVehicle || !selectedDriver || !reason.trim() || assignMutation.isPending}
-              className="bg-amber-600 hover:bg-amber-700"
+              className={canApproveCrossPool ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-600 hover:bg-amber-700"}
             >
-              {assignMutation.isPending ? "Assigning..." : "Assign Cross-Pool"}
+              {assignMutation.isPending
+                ? (canApproveCrossPool ? "Assigning..." : "Submitting...")
+                : (canApproveCrossPool ? "Approve & Assign" : "Submit for Approval")}
             </Button>
           </div>
         </DialogFooter>
@@ -457,11 +459,15 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
         <ConfirmActionDialog
           open={confirmOpen}
           onOpenChange={setConfirmOpen}
-          title="Confirm cross-pool assignment"
-          description={`Borrow a vehicle from ${targetCategory ? `${targetCategory} / ` : ""}${targetPool || "another pool"} for request ${request.request_number ?? ""}? This action will reassign the request and notify the requester.`}
-          confirmLabel="Assign Cross-Pool"
+          title={canApproveCrossPool ? "Approve cross-pool assignment" : "Submit cross-pool request"}
+          description={
+            canApproveCrossPool
+              ? `Reassign request ${request.request_number ?? ""} to a vehicle from ${targetCategory ? `${targetCategory} / ` : ""}${targetPool}? Your name will be recorded as the cross-pool approver.`
+              : `Send a borrow request to ${targetCategory ? `${targetCategory} / ` : ""}${targetPool} for request ${request.request_number ?? ""}? A fleet manager must approve before the vehicle is reassigned.`
+          }
+          confirmLabel={canApproveCrossPool ? "Approve & Assign" : "Submit"}
           loading={assignMutation.isPending}
-          variant="destructive"
+          variant={canApproveCrossPool ? "default" : "destructive"}
           onConfirm={() => {
             setConfirmOpen(false);
             assignMutation.mutate();
