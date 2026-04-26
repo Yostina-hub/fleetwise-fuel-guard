@@ -2203,8 +2203,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     </div>
 
                     <div>
-                      <Label className="text-primary font-medium text-sm mb-1 block">
-                        Total Cargo Weight (kg) <span className="text-destructive">*</span>
+                      <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                        <Package className="w-4 h-4 shrink-0" />
+                        <span>Total Cargo Weight (kg)</span>
+                        <span className="text-destructive">*</span>
                       </Label>
                       <div className="relative">
                         <Input
