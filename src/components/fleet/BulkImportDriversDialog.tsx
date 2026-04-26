@@ -36,6 +36,12 @@ import {
   DRIVER_SAMPLE_VALUES,
   resolveDriverField,
 } from "./import/driverImportSchema";
+import {
+  scanForDuplicates,
+  type ConflictStrategy,
+  type DuplicateScan,
+} from "./import/duplicateDetection";
+import ConflictStrategyPicker from "./import/ConflictStrategyPicker";
 
 interface BulkImportDriversDialogProps {
   open: boolean;
@@ -45,6 +51,7 @@ interface BulkImportDriversDialogProps {
 interface ImportOutcome {
   inserted: number;
   updated: number;
+  skipped: number;
   failed: number;
   errors: { row: number; message: string }[];
 }
@@ -63,6 +70,9 @@ export default function BulkImportDriversDialog({
   const [file, setFile] = useState<File | null>(null);
   const [parsing, setParsing] = useState(false);
   const [preview, setPreview] = useState<ParseResult | null>(null);
+  const [dupScan, setDupScan] = useState<DuplicateScan | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [strategy, setStrategy] = useState<ConflictStrategy>("update");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportOutcome | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -70,6 +80,9 @@ export default function BulkImportDriversDialog({
   const reset = useCallback(() => {
     setFile(null);
     setPreview(null);
+    setDupScan(null);
+    setScanning(false);
+    setStrategy("update");
     setResult(null);
     setProgress(0);
     setParsing(false);
@@ -89,6 +102,7 @@ export default function BulkImportDriversDialog({
       }
       setFile(selected);
       setResult(null);
+      setDupScan(null);
       setParsing(true);
       try {
         const parsed = await parseImportFile(selected, {
@@ -102,6 +116,28 @@ export default function BulkImportDriversDialog({
             description: `Maximum ${MAX_ROWS} drivers per import. Found ${parsed.totalRows}.`,
             variant: "destructive",
           });
+          return;
+        }
+
+        // Duplicate detection — license_number is globally unique
+        const validRows = parsed.rows.filter((r) => r.errors.length === 0);
+        if (validRows.length > 0) {
+          setScanning(true);
+          try {
+            const scan = await scanForDuplicates(validRows, {
+              table: "drivers",
+              keyColumn: "license_number",
+            });
+            setDupScan(scan);
+          } catch (e: any) {
+            toast({
+              title: "Duplicate check failed",
+              description: e.message ?? "Could not scan existing drivers",
+              variant: "destructive",
+            });
+          } finally {
+            setScanning(false);
+          }
         }
       } catch (err: any) {
         toast({
@@ -142,16 +178,50 @@ export default function BulkImportDriversDialog({
         throw new Error("Fix the validation errors and try again");
       }
 
+      const dupCount = dupScan?.duplicates.length ?? 0;
+      if (dupCount > 0 && strategy === "reject") {
+        throw new Error(
+          `Import rejected — ${dupCount} duplicate ${
+            dupCount === 1 ? "row matches" : "rows match"
+          } existing drivers.`,
+        );
+      }
+
+      const dupKeys = new Set(
+        (dupScan?.duplicates ?? []).map((d) => d.keyValue.trim().toLowerCase()),
+      );
+      const existingByKey = dupScan?.existingByKey ?? new Map<string, string>();
+
+      const rowsToProcess =
+        strategy === "skip"
+          ? validRows.filter(
+              (r) =>
+                !dupKeys.has(
+                  String(r.data.license_number ?? "").trim().toLowerCase(),
+                ),
+            )
+          : validRows;
+
+      if (rowsToProcess.length === 0) {
+        throw new Error(
+          "All rows in the file are duplicates and your strategy is set to skip them.",
+        );
+      }
+
+      const skippedCount =
+        strategy === "skip" ? validRows.length - rowsToProcess.length : 0;
       const outcome: ImportOutcome = {
         inserted: 0,
         updated: 0,
+        skipped: skippedCount,
         failed: 0,
         errors: [],
       };
 
-      for (let i = 0; i < validRows.length; i++) {
-        const row = validRows[i];
+      for (let i = 0; i < rowsToProcess.length; i++) {
+        const row = rowsToProcess[i];
         const license = String(row.data.license_number ?? "").trim();
+        const licenseKey = license.toLowerCase();
         const payload: Record<string, any> = {
           ...row.data,
           organization_id: organizationId,
@@ -159,18 +229,13 @@ export default function BulkImportDriversDialog({
         };
 
         try {
-          // Upsert by license_number (globally unique)
-          const { data: existing } = await supabase
-            .from("drivers")
-            .select("id")
-            .eq("license_number", license)
-            .maybeSingle();
-
-          if (existing?.id) {
+          const existingId = existingByKey.get(licenseKey);
+          if (existingId) {
+            // Only reachable when strategy === "update"
             const { error } = await supabase
               .from("drivers")
               .update(payload)
-              .eq("id", existing.id);
+              .eq("id", existingId);
             if (error) throw error;
             outcome.updated++;
           } else {
@@ -187,7 +252,7 @@ export default function BulkImportDriversDialog({
             message: err.message ?? "Insert failed",
           });
         }
-        setProgress(Math.round(((i + 1) / validRows.length) * 100));
+        setProgress(Math.round(((i + 1) / rowsToProcess.length) * 100));
       }
 
       return outcome;
@@ -202,8 +267,8 @@ export default function BulkImportDriversDialog({
         toast({
           title: "Import complete",
           description: `${outcome.inserted} added · ${outcome.updated} updated${
-            outcome.failed ? ` · ${outcome.failed} failed` : ""
-          }`,
+            outcome.skipped ? ` · ${outcome.skipped} skipped` : ""
+          }${outcome.failed ? ` · ${outcome.failed} failed` : ""}`,
         });
       } else {
         toast({
@@ -333,9 +398,10 @@ export default function BulkImportDriversDialog({
           )}
 
           {/* Parsing indicator */}
-          {parsing && (
+          {(parsing || scanning) && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" /> Parsing file...
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {parsing ? "Parsing file..." : "Checking for duplicates..."}
             </div>
           )}
 
@@ -354,6 +420,12 @@ export default function BulkImportDriversDialog({
                     {preview.invalidRows}
                   </Badge>
                 )}
+                {dupScan && dupScan.duplicates.length > 0 && (
+                  <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/15">
+                    <AlertCircle className="w-3 h-3 mr-1" /> Duplicates:{" "}
+                    {dupScan.duplicates.length}
+                  </Badge>
+                )}
                 {preview.unmappedHeaders.length > 0 && (
                   <Badge variant="secondary">
                     <AlertCircle className="w-3 h-3 mr-1" />
@@ -367,6 +439,19 @@ export default function BulkImportDriversDialog({
                   Ignored columns (not in schema):{" "}
                   {preview.unmappedHeaders.join(", ")}
                 </div>
+              )}
+
+              {/* Duplicate handling picker */}
+              {dupScan && !scanning && preview.validRows > 0 && (
+                <ConflictStrategyPicker
+                  entityLabel="driver"
+                  keyLabel="license number"
+                  duplicates={dupScan.duplicates}
+                  newCount={dupScan.newRows.length}
+                  strategy={strategy}
+                  onStrategyChange={setStrategy}
+                  disabled={importing}
+                />
               )}
 
               {allRowErrors.length > 0 && (
@@ -406,7 +491,7 @@ export default function BulkImportDriversDialog({
           {/* Final result */}
           {result && (
             <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-2xl font-semibold text-success">
                     {result.inserted}
@@ -418,6 +503,12 @@ export default function BulkImportDriversDialog({
                     {result.updated}
                   </p>
                   <p className="text-xs text-muted-foreground">Updated</p>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-2xl font-semibold text-warning">
+                    {result.skipped}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Skipped</p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-2xl font-semibold text-destructive">
@@ -461,26 +552,41 @@ export default function BulkImportDriversDialog({
               Choose another file
             </Button>
           )}
-          {!result && (
-            <Button
-              onClick={() => {
-                setProgress(0);
-                importMutation.mutate();
-              }}
-              disabled={
-                !preview ||
-                importing ||
-                parsing ||
-                preview.validRows === 0 ||
-                preview.totalRows > MAX_ROWS
-              }
-            >
-              {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {preview
-                ? `Import ${preview.validRows} valid row(s)`
-                : "Import"}
-            </Button>
-          )}
+          {!result && (() => {
+            const dupCount = dupScan?.duplicates.length ?? 0;
+            const newCount = dupScan?.newRows.length ?? preview?.validRows ?? 0;
+            const willProcess =
+              strategy === "skip" ? newCount :
+              strategy === "reject" && dupCount > 0 ? 0 :
+              preview?.validRows ?? 0;
+            const buttonLabel = preview
+              ? strategy === "reject" && dupCount > 0
+                ? `Cannot import — ${dupCount} duplicate(s)`
+                : strategy === "skip"
+                  ? `Import ${newCount} new ${newCount === 1 ? "row" : "rows"}`
+                  : `Import ${preview.validRows} ${preview.validRows === 1 ? "row" : "rows"}`
+              : "Import";
+            return (
+              <Button
+                onClick={() => {
+                  setProgress(0);
+                  importMutation.mutate();
+                }}
+                disabled={
+                  !preview ||
+                  importing ||
+                  parsing ||
+                  scanning ||
+                  preview.validRows === 0 ||
+                  preview.totalRows > MAX_ROWS ||
+                  willProcess === 0
+                }
+              >
+                {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {buttonLabel}
+              </Button>
+            );
+          })()}
         </DialogFooter>
       </DialogContent>
     </Dialog>
