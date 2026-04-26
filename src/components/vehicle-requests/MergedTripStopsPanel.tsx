@@ -411,6 +411,16 @@ export const MergedTripStopsPanel = ({
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
+    const resizeMap = () => {
+      requestAnimationFrame(() => mapRef.current?.resize());
+    };
+    const resizeObserver = typeof ResizeObserver !== "undefined" && containerRef.current
+      ? new ResizeObserver(resizeMap)
+      : null;
+    if (containerRef.current) resizeObserver?.observe(containerRef.current);
+    window.addEventListener("resize", resizeMap);
+    map.once("idle", resizeMap);
+
     map.on("load", async () => {
       setMapReady(true);
       const bounds = new maplibregl.LngLatBounds();
@@ -683,6 +693,8 @@ export const MergedTripStopsPanel = ({
     });
 
     return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", resizeMap);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       mapRef.current?.remove();
