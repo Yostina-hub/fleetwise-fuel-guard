@@ -659,8 +659,6 @@ const Geofencing = () => {
   const visibleGeofences = (geofences || []) as unknown as GeofenceRecord[];
   const preferCount = visibleGeofences.filter((f) => f.dispatch_policy === "prefer").length;
   const avoidCount = visibleGeofences.filter((f) => f.dispatch_policy === "avoid").length;
-  return (
-    <Layout>
   const sidebarContent = (
     <>
       <div className="border-b border-border p-4 sm:p-5">
