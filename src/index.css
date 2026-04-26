@@ -1274,3 +1274,35 @@ input[type="week"]::-webkit-calendar-picker-indicator:hover {
 .dark input[type="week"]::-webkit-calendar-picker-indicator {
   filter: invert(85%) sepia(8%) saturate(180%) hue-rotate(180deg) brightness(110%);
 }
+
+.geofence-map-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  padding: 5px 9px 5px 6px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  background: hsl(var(--card) / 0.96);
+  color: hsl(var(--foreground));
+  box-shadow: var(--shadow-elevated);
+  font: 600 12px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.geofence-map-marker-dot {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border: 2px solid hsl(var(--card));
+  border-radius: 999px;
+  background: var(--geofence-color, hsl(var(--primary)));
+  box-shadow: 0 0 0 2px var(--geofence-color, hsl(var(--primary)));
+}
+
+.geofence-map-marker-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
