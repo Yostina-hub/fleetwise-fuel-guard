@@ -1477,6 +1477,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   return;
                 }
                 update("request_type", v);
+                // Clear night subcategory when leaving Night Request.
+                if (v !== "nighttime_operation") {
+                  update("night_request_subcategory", "" as any);
+                }
                 handleBlur("request_type", v, form as any);
               }}
             >
@@ -1497,6 +1501,32 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </SelectContent>
             </Select>
             <FieldError field="request_type" />
+
+            {/* Night Request subcategory — required only when Night Request is selected. */}
+            {isNighttime && (
+              <div className="space-y-2 pt-1">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                  Night Request Category <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.night_request_subcategory || ""}
+                  onValueChange={(v) => update("night_request_subcategory", v as any)}
+                >
+                  <SelectTrigger className="w-full md:max-w-sm h-9 text-sm">
+                    <SelectValue placeholder="Select night request category…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="night_shift">🌙 Night shift request</SelectItem>
+                    <SelectItem value="emergency">🚨 Emergency request</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Choose <span className="font-medium">Night shift</span> for planned overnight work, or{" "}
+                  <span className="font-medium">Emergency</span> for urgent night incidents.
+                </p>
+              </div>
+            )}
           </section>
 
           {/* SCHEDULE + ROUTE — placed side by side on wider screens */}
