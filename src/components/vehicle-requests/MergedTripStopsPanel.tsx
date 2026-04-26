@@ -313,7 +313,7 @@ export const MergedTripStopsPanel = ({
   >(null);
 
   useEffect(() => {
-    if (!showMap || !open) return;
+    if (!showMap || !open || !mapReady) return;
     if (!containerRef.current || mapRef.current) return;
     if (stopsWithCoords.length === 0) return;
 
@@ -760,7 +760,7 @@ export const MergedTripStopsPanel = ({
         }
       });
     };
-  }, [showMap, open, geofences, routesInfo.length]);
+  }, [showMap, open, mapReady, geofences, routesInfo.length, stopsWithCoords]);
 
   // Ask Lovable AI to recommend the best candidate route. The AI never
   // invents measurements — it weighs the OSRM-supplied numbers against the
