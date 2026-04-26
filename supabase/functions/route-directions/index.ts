@@ -133,9 +133,31 @@ const tryOsrmStitched = async (coords: Coord[]) => {
     }),
   );
 
-  // Every leg must have at least one option, otherwise we can't stitch.
-  if (legResults.some((opts) => opts.length === 0)) {
-    return { ok: false as const, error: "osrm_leg_failed" };
+  // If a leg fails, fall back to a straight-line segment for that leg so the
+  // overall response still works. This keeps a single flaky upstream from
+  // wiping out the whole route preview.
+  legResults.forEach((opts, i) => {
+    if (opts.length === 0) {
+      const a = legPairs[i][0];
+      const b = legPairs[i][1];
+      // Rough metric distance via equirectangular projection (good enough for
+      // a fallback segment on a single failed leg).
+      const R = 6371000;
+      const lat1 = (a[1] * Math.PI) / 180;
+      const lat2 = (b[1] * Math.PI) / 180;
+      const x = ((b[0] - a[0]) * Math.PI) / 180 * Math.cos((lat1 + lat2) / 2);
+      const y = ((b[1] - a[1]) * Math.PI) / 180;
+      const d = Math.sqrt(x * x + y * y) * R;
+      legResults[i] = [{
+        geometry: [a, b],
+        distance_m: d,
+        duration_s: d / 11.1, // ~40 km/h average urban
+      }];
+    }
+  });
+
+  if (legResults.every((opts) => opts.length === 0)) {
+    return { ok: false as const, error: "osrm_all_legs_failed" };
   }
 
   const stitch = (selection: number[]): LegOption => {
