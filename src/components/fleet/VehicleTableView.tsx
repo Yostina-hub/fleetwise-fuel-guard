@@ -470,24 +470,26 @@ export const VehicleTableView = ({
 
       case "driver":
         return vehicle.assignedDriver ? (
-          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <User className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-sm">{vehicle.assignedDriver}</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-destructive hover:text-destructive"
-                  onClick={() => handleUnassignDriver(vehicle)}
-                  aria-label={`Unassign driver from ${vehicle.plate}`}
-                >
-                  <UserMinus className="w-3.5 h-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Unassign driver</TooltipContent>
-            </Tooltip>
-          </div>
+          <TooltipProvider>
+            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <User className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-sm">{vehicle.assignedDriver}</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-destructive hover:text-destructive"
+                    onClick={() => handleUnassignDriver(vehicle)}
+                    aria-label={`Unassign driver from ${vehicle.plate}`}
+                  >
+                    <UserMinus className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Unassign driver</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         ) : (
           <span className="text-sm text-muted-foreground">Unassigned</span>
         );
