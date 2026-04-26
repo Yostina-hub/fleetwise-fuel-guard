@@ -141,6 +141,24 @@ export const MergedTripStopsPanel = ({
     [children],
   );
 
+  // ── Geofences for this organization ──────────────────────────────
+  // Dispatchers asked to see operational zones (depots, restricted areas,
+  // service boundaries) overlaid on the trip map so they can judge whether
+  // a route enters or leaves an authorised zone before assigning it.
+  const { data: geofences = [] } = useQuery({
+    queryKey: ["merged-trip-geofences", organizationId],
+    enabled: !!organizationId && open && showMap,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("geofences")
+        .select("id,name,color,geometry_type,center_lat,center_lng,radius_meters,polygon_points,is_active")
+        .eq("organization_id", organizationId)
+        .neq("is_active", false);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // ── Lazy-mounted map + backend-proxied optimized route options ────
   // The browser no longer calls the public routing service directly. Each
   // candidate stop order is sent through the backend route proxy, which avoids
