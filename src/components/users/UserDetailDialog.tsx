@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Trash2, Plus, Save, Loader2, Mail, Phone, Calendar, Building, IdCard, Briefcase, AlertTriangle } from "lucide-react";
+import { Shield, Trash2, Plus, Save, Loader2, Mail, Phone, Calendar, Building, IdCard, Briefcase, AlertTriangle, Layers, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import type { UserProfile } from "./UserTable";
 import { Link } from "react-router-dom";
