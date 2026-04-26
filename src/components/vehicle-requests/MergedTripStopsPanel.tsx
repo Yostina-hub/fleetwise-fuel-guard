@@ -1134,7 +1134,7 @@ export const MergedTripStopsPanel = ({
               {latest && (
                 <>
                   <ArrowRight className="w-3 h-3 mx-0.5" />
-                  {format(latest, "HH:mm")}
+                  {format(latest, "h:mm a")}
                 </>
               )}
               {poolName && <span className="ml-2 truncate">· {poolName}</span>}
