@@ -274,6 +274,41 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
     }
   };
 
+  const handleSavePool = async () => {
+    if (!user) return;
+    if (!poolCategory || !poolCode) {
+      toast({ title: "Pick a pool", description: "Select both Pool Category and Specific Pool.", variant: "destructive" });
+      return;
+    }
+    if (!user.organization_id) {
+      toast({ title: "No organization", description: "Assign this user to an organization before setting a pool.", variant: "destructive" });
+      return;
+    }
+    setSavingPool(true);
+    try {
+      const { error: delErr } = await supabase
+        .from("pool_memberships")
+        .delete()
+        .eq("user_id", user.id);
+      if (delErr) throw delErr;
+      const { error: insErr } = await supabase
+        .from("pool_memberships")
+        .insert({
+          user_id: user.id,
+          organization_id: user.organization_id,
+          pool_code: poolCode,
+          role: "member",
+        });
+      if (insErr) throw insErr;
+      toast({ title: "Pool Updated", description: `Assigned to ${poolCode} (${POOL_CATEGORY_META[poolCategory].label}).` });
+      onUserUpdated();
+    } catch (err: any) {
+      friendlyToastError(err);
+    } finally {
+      setSavingPool(false);
+    }
+  };
+
   const handleAddRole = async () => {
     if (!user || !newRole) return;
     setRoleLoading(true);
