@@ -174,6 +174,7 @@ const buildInitialForm = () => {
     cargo_weight_kg: "" as string,
     cargo_description: "" as string,
     vehicle_type_justification: "" as string,
+    night_request_subcategory: "" as "" | "night_shift" | "emergency",
   };
 };
 
