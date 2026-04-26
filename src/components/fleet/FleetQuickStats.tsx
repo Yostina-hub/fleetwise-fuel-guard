@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Truck,
   Navigation,
@@ -52,6 +51,10 @@ const FleetQuickStats = ({
   const engineOnIdle = idleEngineOnVehicles ?? 0;
   const engineOffIdle = idleEngineOffVehicles ?? Math.max(0, idleVehicles - engineOnIdle);
 
+  const ownedTotal = ownedVehicles + rentalVehicles;
+  const ownedPct = ownedTotal > 0 ? Math.round((ownedVehicles / ownedTotal) * 100) : 0;
+  const rentalPct = ownedTotal > 0 ? 100 - ownedPct : 0;
+
   const stats: Array<{
     label: string;
     value: string;
@@ -64,13 +67,13 @@ const FleetQuickStats = ({
     filter?: LiveStatusFilter;
   }> = [
     {
-      label: "Total Fleet",
+      label: "Total",
       value: totalVehicles.toString(),
       icon: Truck,
       color: "text-primary",
       bgColor: "bg-primary/10",
       ringColor: "ring-primary/40",
-      subtext: "All vehicles",
+      subtext: "Fleet",
       filter: "all",
     },
     {
@@ -84,13 +87,13 @@ const FleetQuickStats = ({
       filter: "moving",
     },
     {
-      label: "Idle • Engine On",
+      label: "Engine On",
       value: engineOnIdle.toString(),
       icon: Flame,
       color: "text-warning",
       bgColor: "bg-warning/10",
       ringColor: "ring-warning/50",
-      subtext: "Burning fuel",
+      subtext: "Idling",
       pulse: engineOnIdle > 0,
       filter: "idle_engine_on",
     },
@@ -121,144 +124,144 @@ const FleetQuickStats = ({
       color: avgFuelLevel > 30 ? "text-emerald-600" : "text-warning",
       bgColor: avgFuelLevel > 30 ? "bg-emerald-500/10" : "bg-warning/10",
       ringColor: "ring-emerald-500/40",
-      subtext: avgFuelLevel > 30 ? "Healthy" : "Top up soon",
+      subtext: avgFuelLevel > 30 ? "Healthy" : "Top up",
     },
   ];
 
-  const ownedTotal = ownedVehicles + rentalVehicles;
-  const ownedPct = ownedTotal > 0 ? Math.round((ownedVehicles / ownedTotal) * 100) : 0;
-  const rentalPct = ownedTotal > 0 ? 100 - ownedPct : 0;
-
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-7 gap-2 auto-rows-fr">
-      {stats.map((stat) => {
-        const isClickable = !!stat.filter && !!onFilterChange;
-        const isActive =
-          isClickable && activeFilter === stat.filter && stat.filter !== "all";
-        const Wrapper: any = isClickable ? "button" : "div";
+    <div className="rounded-xl border border-border/60 glass-strong overflow-hidden">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 divide-x divide-y lg:divide-y-0 divide-border/40">
+        {stats.map((stat) => {
+          const isClickable = !!stat.filter && !!onFilterChange;
+          const isActive =
+            isClickable && activeFilter === stat.filter && stat.filter !== "all";
+          const Wrapper: any = isClickable ? "button" : "div";
 
-        return (
-          <Wrapper
-            key={stat.label}
-            type={isClickable ? "button" : undefined}
-            onClick={isClickable ? () => onFilterChange!(stat.filter!) : undefined}
-            aria-pressed={isClickable ? isActive : undefined}
-            title={isClickable ? `Filter: ${stat.label}` : stat.label}
-            className={cn(
-              "text-left w-full h-full",
-              isClickable &&
-                "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-lg",
-            )}
-          >
-            <Card
+          return (
+            <Wrapper
+              key={stat.label}
+              type={isClickable ? "button" : undefined}
+              onClick={isClickable ? () => onFilterChange!(stat.filter!) : undefined}
+              aria-pressed={isClickable ? isActive : undefined}
+              title={isClickable ? `Filter: ${stat.label}` : stat.label}
               className={cn(
-                "glass-strong transition-all duration-300 h-full border-border/60",
-                isClickable && "hover:scale-[1.02] hover:shadow-lg hover:border-primary/40",
-                isActive && `ring-2 ${stat.ringColor} shadow-md`,
+                "relative text-left w-full px-3 py-3 transition-all min-w-0",
+                "focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60",
+                isClickable && "cursor-pointer hover:bg-foreground/[0.03]",
+                isActive && "bg-foreground/[0.04]",
               )}
             >
-              <CardContent className="p-3 h-full flex flex-col justify-between gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className={`relative p-1.5 rounded-md shrink-0 ${stat.bgColor}`}>
-                    <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} aria-hidden="true" />
-                    {stat.pulse && (
-                      <motion.span
-                        aria-hidden="true"
-                        className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-warning"
-                        animate={{ scale: [1, 1.6, 1], opacity: [1, 0.4, 1] }}
-                        transition={{
-                          duration: 1.4,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    )}
-                  </div>
-                  <p className="text-2xl font-bold leading-none tabular-nums tracking-tight">
-                    {stat.value}
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80 leading-tight line-clamp-2">
-                    {stat.label}
-                  </p>
-                  {stat.subtext && (
-                    <p
-                      className={`text-[10px] mt-0.5 ${stat.color} opacity-80 leading-tight truncate`}
-                    >
-                      {stat.subtext}
-                    </p>
+              {isActive && (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute inset-x-0 top-0 h-0.5",
+                    stat.color.replace("text-", "bg-"),
+                  )}
+                />
+              )}
+              <div className="flex items-center gap-2 mb-1.5 min-w-0">
+                <div className={`relative p-1 rounded shrink-0 ${stat.bgColor}`}>
+                  <stat.icon className={`w-3 h-3 ${stat.color}`} aria-hidden="true" />
+                  {stat.pulse && (
+                    <motion.span
+                      aria-hidden="true"
+                      className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-warning"
+                      animate={{ scale: [1, 1.6, 1], opacity: [1, 0.4, 1] }}
+                      transition={{
+                        duration: 1.4,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          </Wrapper>
-        );
-      })}
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none truncate">
+                  {stat.label}
+                </p>
+              </div>
+              <div className="flex items-baseline gap-1.5 min-w-0">
+                <p className="text-2xl font-bold leading-none tabular-nums tracking-tight">
+                  {stat.value}
+                </p>
+                {stat.subtext && (
+                  <p className="text-[10px] text-muted-foreground leading-none truncate">
+                    {stat.subtext}
+                  </p>
+                )}
+              </div>
+            </Wrapper>
+          );
+        })}
 
-      {/* Owned vs Rental — split action card */}
-      <Card className="glass-strong h-full overflow-hidden border-border/60 col-span-2 sm:col-span-1">
-        <CardContent className="p-0 h-full">
-          <div className="grid grid-cols-2 h-full divide-x divide-border/60">
-            <button
-              type="button"
-              onClick={() => onOwnershipChange?.("owned")}
-              aria-pressed={activeOwnership === "owned"}
-              title={`Show ${ownedVehicles} owned vehicle${ownedVehicles === 1 ? "" : "s"}`}
-              className={cn(
-                "p-2.5 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 flex flex-col justify-between gap-1.5 min-w-0",
-                onOwnershipChange && "cursor-pointer hover:bg-indigo-500/10",
-                activeOwnership === "owned" && "bg-indigo-500/15",
-              )}
-            >
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="p-1.5 rounded-md shrink-0 bg-indigo-500/10">
-                  <Truck className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                </div>
-                <p className="text-2xl font-bold leading-none text-indigo-500 tabular-nums tracking-tight">
-                  {ownedVehicles}
-                </p>
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80 leading-tight truncate">
-                  Owned
-                </p>
-                <p className="text-[10px] mt-0.5 text-indigo-500/80 leading-tight truncate">
-                  {ownedPct}%
-                </p>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => onOwnershipChange?.("rental")}
-              aria-pressed={activeOwnership === "rental"}
-              title={`Show ${rentalVehicles} rental / outsourced vehicle${rentalVehicles === 1 ? "" : "s"}`}
-              className={cn(
-                "p-2.5 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 flex flex-col justify-between gap-1.5 min-w-0",
-                onOwnershipChange && "cursor-pointer hover:bg-amber-500/10",
-                activeOwnership === "rental" && "bg-amber-500/15",
-              )}
-            >
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="p-1.5 rounded-md shrink-0 bg-amber-500/10">
-                  <Building2 className="w-3.5 h-3.5 text-amber-500" aria-hidden="true" />
-                </div>
-                <p className="text-2xl font-bold leading-none text-amber-500 tabular-nums tracking-tight">
-                  {rentalVehicles}
-                </p>
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80 leading-tight truncate">
-                  Rental
-                </p>
-                <p className="text-[10px] mt-0.5 text-amber-500/80 leading-tight truncate">
-                  {rentalPct}%
-                </p>
-              </div>
-            </button>
+        {/* Owned segment */}
+        <button
+          type="button"
+          onClick={() => onOwnershipChange?.("owned")}
+          aria-pressed={activeOwnership === "owned"}
+          title={`${ownedVehicles} owned vehicle${ownedVehicles === 1 ? "" : "s"}`}
+          className={cn(
+            "relative text-left w-full px-3 py-3 transition-all min-w-0",
+            "focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400/60",
+            onOwnershipChange && "cursor-pointer hover:bg-foreground/[0.03]",
+            activeOwnership === "owned" && "bg-foreground/[0.04]",
+          )}
+        >
+          {activeOwnership === "owned" && (
+            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-indigo-500" />
+          )}
+          <div className="flex items-center gap-2 mb-1.5 min-w-0">
+            <div className="p-1 rounded shrink-0 bg-indigo-500/10">
+              <Truck className="w-3 h-3 text-indigo-500" aria-hidden="true" />
+            </div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none truncate">
+              Owned
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <p className="text-2xl font-bold leading-none text-indigo-500 tabular-nums tracking-tight">
+              {ownedVehicles}
+            </p>
+            <p className="text-[10px] text-muted-foreground leading-none truncate">
+              {ownedPct}%
+            </p>
+          </div>
+        </button>
+
+        {/* Rental segment */}
+        <button
+          type="button"
+          onClick={() => onOwnershipChange?.("rental")}
+          aria-pressed={activeOwnership === "rental"}
+          title={`${rentalVehicles} rental vehicle${rentalVehicles === 1 ? "" : "s"}`}
+          className={cn(
+            "relative text-left w-full px-3 py-3 transition-all min-w-0",
+            "focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-400/60",
+            onOwnershipChange && "cursor-pointer hover:bg-foreground/[0.03]",
+            activeOwnership === "rental" && "bg-foreground/[0.04]",
+          )}
+        >
+          {activeOwnership === "rental" && (
+            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-amber-500" />
+          )}
+          <div className="flex items-center gap-2 mb-1.5 min-w-0">
+            <div className="p-1 rounded shrink-0 bg-amber-500/10">
+              <Building2 className="w-3 h-3 text-amber-500" aria-hidden="true" />
+            </div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none truncate">
+              Rental
+            </p>
+          </div>
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <p className="text-2xl font-bold leading-none text-amber-500 tabular-nums tracking-tight">
+              {rentalVehicles}
+            </p>
+            <p className="text-[10px] text-muted-foreground leading-none truncate">
+              {rentalPct}%
+            </p>
+          </div>
+        </button>
+      </div>
     </div>
   );
 };
