@@ -1712,9 +1712,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               {/* Night Request subcategory — sits next to the request type when Night is selected. */}
               {isNighttime && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-1.5">
-                    <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                    Night Request Category <span className="text-destructive">*</span>
+                  <Label className="text-primary font-medium text-sm flex items-center gap-1.5 leading-tight">
+                    <Moon className="w-4 h-4 shrink-0" />
+                    <span>Night Request Category</span>
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={form.night_request_subcategory || ""}
@@ -1847,6 +1848,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                       <VRField
                         id="vr-project-number"
                         label="Project Number"
+                        icon={FileText}
                         required
                         error={getError("project_number")}
                       >
@@ -1929,8 +1931,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   No. of Vehicles below are filtered by the chosen pool's
                   actual inventory, so the user MUST pick a pool first. */}
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Pool Category <span className="text-destructive">*</span>
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                  <Layers className="w-4 h-4 shrink-0" />
+                  <span>Pool Category</span>
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.pool_category}
@@ -1964,8 +1968,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </div>
 
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Specific Pool <span className="text-destructive">*</span>
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                  <Building2 className="w-4 h-4 shrink-0" />
+                  <span>Specific Pool</span>
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.pool_name}
@@ -2170,8 +2176,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 return (
                   <>
                     <div>
-                      <Label className="text-primary font-medium text-sm mb-1 block">
-                        Item description <span className="text-destructive">*</span>
+                      <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                        <Package className="w-4 h-4 shrink-0" />
+                        <span>Item Description</span>
+                        <span className="text-destructive">*</span>
                       </Label>
                       <Input
                         type="text"
@@ -2196,8 +2204,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     </div>
 
                     <div>
-                      <Label className="text-primary font-medium text-sm mb-1 block">
-                        Total Cargo Weight (kg) <span className="text-destructive">*</span>
+                      <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                        <Package className="w-4 h-4 shrink-0" />
+                        <span>Total Cargo Weight (kg)</span>
+                        <span className="text-destructive">*</span>
                       </Label>
                       <div className="relative">
                         <Input
@@ -2256,7 +2266,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               <VRField
                 id="vr-num-vehicles"
-                label="No. Of Vehicles"
+                label="No. of Vehicles"
                 icon={Car}
                 required
                 error={getError("num_vehicles")}
@@ -2280,8 +2290,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </VRField>
 
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Vehicle Type <span className="text-destructive">*</span>
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                  <Car className="w-4 h-4 shrink-0" />
+                  <span>Vehicle Type</span>
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.vehicle_type}
@@ -2320,8 +2332,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               {isUpgrade && (
                 <div className="sm:col-span-2 lg:col-span-3">
-                  <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1 block">
-                    Justification <span className="text-destructive">*</span>
+                  <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>Justification</span>
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
                     value={form.vehicle_type_justification}
@@ -2339,6 +2353,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <VRField
                   id="vr-contact-phone"
                   label="Contact Phone"
+                  icon={UserCog}
                   required
                   error={getError("contact_phone")}
                 >
@@ -2355,8 +2370,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </VRField>
               </div>
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Business Purpose <span className="text-destructive">*</span>
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                  <Sparkles className="w-4 h-4 shrink-0" />
+                  <span>Business Purpose</span>
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.purpose_category}
@@ -2400,6 +2417,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             <VRField
               id="vr-purpose"
               label="Trip Description"
+              icon={FileText}
               required
               error={getError("purpose")}
             >
