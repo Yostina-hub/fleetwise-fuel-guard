@@ -705,12 +705,15 @@ const DriverPortal = () => {
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/40">
-                            <TableHead className="w-[120px]">Status</TableHead>
-                            <TableHead className="w-[160px]">Reference</TableHead>
-                            <TableHead className="w-[160px]">When</TableHead>
-                            <TableHead className="min-w-[220px]">Vehicle</TableHead>
-                            <TableHead className="min-w-[280px]">Route / Purpose</TableHead>
-                            <TableHead className="w-[180px] text-right">Actions</TableHead>
+                            <TableHead className="w-[110px]">Status</TableHead>
+                            <TableHead className="w-[140px]">Reference</TableHead>
+                            <TableHead className="w-[140px]">When</TableHead>
+                            <TableHead className="min-w-[180px]">Vehicle</TableHead>
+                            <TableHead className="min-w-[180px]">Departure</TableHead>
+                            <TableHead className="min-w-[180px]">Destination</TableHead>
+                            <TableHead className="min-w-[160px]">Purpose</TableHead>
+                            <TableHead className="min-w-[200px]">Passenger</TableHead>
+                            <TableHead className="w-[160px] text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -722,6 +725,7 @@ const DriverPortal = () => {
                             const j = !isRequest ? row.raw : null;
                             const checkedIn = isRequest ? !!a?.driver_checked_in_at : false;
                             const inProgress = !isRequest && j?.status === "in_progress";
+                            const hasPhone = row.passengerPhone && row.passengerPhone !== "—";
 
                             return (
                               <TableRow key={row.id} className="align-top">
@@ -745,12 +749,39 @@ const DriverPortal = () => {
                                   {row.when ? format(new Date(row.when), "MMM dd HH:mm") : "—"}
                                 </TableCell>
                                 <TableCell className="text-sm">
-                                  <span className="block min-w-[180px]">{row.vehicle}</span>
+                                  <span className="block">{row.vehicle}</span>
                                 </TableCell>
                                 <TableCell className="text-sm">
                                   <div className="flex items-start gap-1">
                                     <MapPin className="w-3 h-3 mt-1 shrink-0 text-muted-foreground" aria-hidden="true" />
-                                    <span>{row.route}</span>
+                                    <span>{row.departure}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  <div className="flex items-start gap-1">
+                                    <Navigation className="w-3 h-3 mt-1 shrink-0 text-muted-foreground" aria-hidden="true" />
+                                    <span>{row.destination}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                  {row.purpose}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="flex items-center gap-1">
+                                      <UserIcon className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
+                                      {row.passengerName}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <Phone className="w-3 h-3" aria-hidden="true" />
+                                      {hasPhone ? (
+                                        <a href={`tel:${row.passengerPhone}`} className="hover:underline">
+                                          {row.passengerPhone}
+                                        </a>
+                                      ) : (
+                                        "—"
+                                      )}
+                                    </span>
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-right">
@@ -761,10 +792,6 @@ const DriverPortal = () => {
                                         variant={checkedIn ? "outline" : "default"}
                                         className="gap-1 h-8"
                                         onClick={() => {
-                                          // Single action: open the request view, which contains
-                                          // the inline check-in/out flow plus full trip details
-                                          // (route, AI estimate, etc.). For multi-vehicle assignment
-                                          // rows we still use the per-assignment dialog.
                                           if (a?.vehicle_id) {
                                             setActiveAssignment({ request: r, assignment: a });
                                           } else {
@@ -779,20 +806,20 @@ const DriverPortal = () => {
                                         }}
                                       >
                                         {checkedIn ? (
-                                          <><StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> Out</>
+                                          <><StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> End Trip</>
                                         ) : (
-                                          <><PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> Open</>
+                                          <><PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> Start Now</>
                                         )}
                                       </Button>
                                     ) : (
                                       <>
                                         {inProgress ? (
                                           <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id, j.odometer_start)} className="gap-1 h-8">
-                                            <StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> Out
+                                            <StopCircle className="w-3.5 h-3.5" aria-hidden="true" /> End Trip
                                           </Button>
                                         ) : j ? (
                                           <Button size="sm" onClick={() => handleStartJob(j.id)} className="gap-1 h-8">
-                                            <PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> In
+                                            <PlayCircle className="w-3.5 h-3.5" aria-hidden="true" /> Start Now
                                           </Button>
                                         ) : null}
                                       </>
