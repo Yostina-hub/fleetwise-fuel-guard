@@ -891,8 +891,8 @@ const Geofencing = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 text-destructive hover:text-destructive"
-                  onClick={() => deleteGeofenceMutation.mutate(fence.id)}
+                  className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setPendingDeleteId(fence.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
