@@ -158,6 +158,33 @@ const Fleet = () => {
   // Driver assignments map
   const [driverAssignments, setDriverAssignments] = useState<Record<string, string>>({});
 
+  // Owned vs rental fleet mix (org-wide, independent of current page/filters)
+  const [ownershipMix, setOwnershipMix] = useState<{ owned: number; rental: number }>({
+    owned: 0,
+    rental: 0,
+  });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("ownership_type")
+        .limit(2000);
+      if (cancelled || error || !data) return;
+      let owned = 0;
+      let rental = 0;
+      for (const row of data) {
+        const t = (row.ownership_type || "").toLowerCase();
+        if (!t || t === "owned") owned += 1;
+        else rental += 1;
+      }
+      setOwnershipMix({ owned, rental });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Debounce search to avoid too many queries
   const debouncedSearch = useDebounce(searchInput, 300);
 
@@ -555,10 +582,30 @@ const Fleet = () => {
           offlineVehicles={fleetStats.offline}
           inMaintenance={0}
           avgFuelLevel={0}
+          ownedVehicles={ownershipMix.owned}
+          rentalVehicles={ownershipMix.rental}
           activeFilter={liveStatusFilter}
+          activeOwnership={
+            ownershipFilter === "all"
+              ? "all"
+              : ownershipFilter === "owned"
+                ? "owned"
+                : "rental"
+          }
           onFilterChange={(filter) => {
             setLiveStatusFilter((prev) => (prev === filter ? "all" : filter));
             // Smooth scroll to vehicle list
+            setTimeout(() => {
+              document.getElementById("fleet-vehicle-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 50);
+          }}
+          onOwnershipChange={(segment) => {
+            if (segment === "owned") {
+              setOwnershipFilter((prev) => (prev === "owned" ? "all" : "owned"));
+            } else {
+              // Toggle between "all" and the most representative non-owned bucket
+              setOwnershipFilter((prev) => (prev === "3pl" ? "all" : "3pl"));
+            }
             setTimeout(() => {
               document.getElementById("fleet-vehicle-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
             }, 50);
