@@ -348,7 +348,7 @@ const Drivers = () => {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-0.5">
                   <span>Workforce</span>
                   <span>/</span>
-                  <span className="text-foreground font-medium">Directory</span>
+                  <span className="text-foreground font-medium">Driver List</span>
                 </div>
                 <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent leading-tight">
                   {t('drivers.title')}
