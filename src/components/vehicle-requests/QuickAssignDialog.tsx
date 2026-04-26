@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, Clock, Layers, UserCheck, GitMerge } from "lucide-react";
 import { PoolAssignmentPicker } from "./PoolAssignmentPicker";
 import { MergedTripStopsPanel } from "./MergedTripStopsPanel";
+import { RequestRouteMapCard } from "./RequestRouteMapCard";
 
 interface Props {
   request: any;
