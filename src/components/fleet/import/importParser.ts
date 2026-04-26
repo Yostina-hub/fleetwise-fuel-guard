@@ -237,9 +237,74 @@ export async function parseImportFile(
 
 /* ---------- Template generator ---------- */
 
-export function downloadImportTemplate(format: "xlsx" | "csv" = "xlsx") {
-  const headers = IMPORTABLE_FIELDS.map((f) => f.header);
-  const hints = IMPORTABLE_FIELDS.map((f) => {
+const VEHICLE_SAMPLE_VALUES: Record<string, any> = {
+  plate_number: "AA-12345",
+  make: "Toyota",
+  model: "Hilux",
+  year: new Date().getFullYear() - 1,
+  vehicle_type: "pickup",
+  vehicle_group: "Operations",
+  vehicle_category: "Light Duty",
+  color: "White",
+  vin: "JTFDE626X00012345",
+  fuel_type: "diesel",
+  transmission_type: "manual",
+  drive_type: "4wd",
+  engine_cc: 2800,
+  engine_number: "1GD-FTV-9876543",
+  model_code: "GUN125L",
+  tank_capacity_liters: 80,
+  seating_capacity: 5,
+  loading_capacity_quintal: 10,
+  capacity_kg: 1000,
+  status: "active",
+  ownership_type: "owned",
+  assigned_location: "zone_eaaz_aa",
+  specific_pool: "HQ Pool",
+  specific_location: "Bole, Addis Ababa",
+  purpose_for: "Field Operations",
+  odometer_km: 45000,
+  fuel_standard_km_per_liter: 12.5,
+  purchasing_price: 2500000,
+  current_market_price: 2100000,
+  mfg_date: "2023-05-15",
+  year_of_ownership: 2023,
+  registration_cert_no: "REG-2023-00123",
+  registration_expiry: "2026-05-14",
+  insurance_policy_no: "INS-POL-998877",
+  insurance_expiry: "2026-05-14",
+  permit_expiry: "2026-12-31",
+  owner_type: "Company",
+  owner_full_name: "Acme Logistics PLC",
+  owner_phone: "+251911234567",
+  owner_email: "fleet@acme.example",
+};
+
+export interface TemplateOptions {
+  /** Field schema; defaults to vehicle */
+  fields?: ImportField[];
+  /** Sample values keyed by dbKey */
+  sampleValues?: Record<string, any>;
+  /** Filename WITHOUT extension */
+  filenameBase?: string;
+  /** Sheet name in xlsx output */
+  sheetName?: string;
+  /** Whether to include the hint row (row 2) — defaults to true */
+  includeHintRow?: boolean;
+}
+
+export function downloadImportTemplate(
+  format: "xlsx" | "csv" = "xlsx",
+  options: TemplateOptions = {},
+) {
+  const fields = options.fields ?? VEHICLE_FIELDS;
+  const sampleValues = options.sampleValues ?? VEHICLE_SAMPLE_VALUES;
+  const filenameBase = options.filenameBase ?? "vehicle-import-template";
+  const sheetName = options.sheetName ?? "Vehicles";
+  const includeHintRow = options.includeHintRow ?? true;
+
+  const headers = fields.map((f) => f.header);
+  const hints = fields.map((f) => {
     const parts = [f.required ? "REQUIRED" : "optional"];
     if (f.type === "enum") parts.push(`one of: ${f.enumValues?.join(" | ")}`);
     if (f.type === "date") parts.push("YYYY-MM-DD");
@@ -247,74 +312,31 @@ export function downloadImportTemplate(format: "xlsx" | "csv" = "xlsx") {
     if (f.hint) parts.push(f.hint);
     return parts.join(" — ");
   });
-
-  // Fully populated sample row — gives users a concrete example for every column
-  const SAMPLE_VALUES: Record<string, any> = {
-    plate_number: "AA-12345",
-    make: "Toyota",
-    model: "Hilux",
-    year: new Date().getFullYear() - 1,
-    vehicle_type: "pickup",
-    vehicle_group: "Operations",
-    vehicle_category: "Light Duty",
-    color: "White",
-    vin: "JTFDE626X00012345",
-    fuel_type: "diesel",
-    transmission_type: "manual",
-    drive_type: "4wd",
-    engine_cc: 2800,
-    engine_number: "1GD-FTV-9876543",
-    model_code: "GUN125L",
-    tank_capacity_liters: 80,
-    seating_capacity: 5,
-    loading_capacity_quintal: 10,
-    capacity_kg: 1000,
-    status: "active",
-    ownership_type: "owned",
-    assigned_location: "zone_eaaz_aa",
-    specific_pool: "HQ Pool",
-    specific_location: "Bole, Addis Ababa",
-    purpose_for: "Field Operations",
-    odometer_km: 45000,
-    fuel_standard_km_per_liter: 12.5,
-    purchasing_price: 2500000,
-    current_market_price: 2100000,
-    mfg_date: "2023-05-15",
-    year_of_ownership: 2023,
-    registration_cert_no: "REG-2023-00123",
-    registration_expiry: "2026-05-14",
-    insurance_policy_no: "INS-POL-998877",
-    insurance_expiry: "2026-05-14",
-    permit_expiry: "2026-12-31",
-    owner_type: "Company",
-    owner_full_name: "Acme Logistics PLC",
-    owner_phone: "+251911234567",
-    owner_email: "fleet@acme.example",
-  };
-  const sample = IMPORTABLE_FIELDS.map((f) => SAMPLE_VALUES[f.dbKey] ?? "");
+  const sample = fields.map((f) => sampleValues[f.dbKey] ?? "");
 
   if (format === "csv") {
     const csvEscape = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const csv = [
-      headers.map(csvEscape).join(","),
-      hints.map(csvEscape).join(","),
-      sample.map(csvEscape).join(","),
-    ].join("\n");
+    const lines = [headers.map(csvEscape).join(",")];
+    if (includeHintRow) lines.push(hints.map(csvEscape).join(","));
+    lines.push(sample.map(csvEscape).join(","));
+    const csv = lines.join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    triggerDownload(blob, "vehicle-import-template.csv");
+    triggerDownload(blob, `${filenameBase}.csv`);
     return;
   }
 
-  // XLSX with two sheets: "Vehicles" + "Instructions"
+  // XLSX with two sheets: data + Instructions
   const wb = XLSX.utils.book_new();
-  const wsData = [headers, sample];
+  const wsData: any[][] = [headers];
+  if (includeHintRow) wsData.push(hints);
+  wsData.push(sample);
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   ws["!cols"] = headers.map((h) => ({ wch: Math.max(14, h.length + 2) }));
-  XLSX.utils.book_append_sheet(wb, ws, "Vehicles");
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
   const helpData = [
     ["Field", "Required", "Type", "Notes / Allowed values"],
-    ...IMPORTABLE_FIELDS.map((f) => [
+    ...fields.map((f) => [
       f.header,
       f.required ? "Yes" : "No",
       f.type,
@@ -332,7 +354,10 @@ export function downloadImportTemplate(format: "xlsx" | "csv" = "xlsx") {
   XLSX.utils.book_append_sheet(wb, help, "Instructions");
 
   const out = XLSX.write(wb, { type: "array", bookType: "xlsx" });
-  triggerDownload(new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), "vehicle-import-template.xlsx");
+  triggerDownload(
+    new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+    `${filenameBase}.xlsx`,
+  );
 }
 
 function triggerDownload(blob: Blob, filename: string) {
