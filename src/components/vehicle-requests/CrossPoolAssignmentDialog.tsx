@@ -5,10 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, ArrowLeft, ArrowRight, Truck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, ShieldCheck, Truck } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import ConfirmActionDialog from "@/components/users/ConfirmActionDialog";
 
@@ -19,8 +21,26 @@ interface Props {
   onBack?: () => void;
 }
 
+/**
+ * Roles allowed to APPROVE a cross-pool borrow without a separate approval step.
+ * Anyone outside this list creates a pending borrow request that must be
+ * approved by an authorised role before the vehicle is actually reassigned.
+ */
+const CROSS_POOL_APPROVER_ROLES = [
+  "super_admin",
+  "org_admin",
+  "fleet_owner",
+  "fleet_manager",
+  "fleet_admin",
+  "operations_manager",
+];
+
 export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Props) => {
   const { organizationId } = useOrganization();
+  const { hasRole, isSuperAdmin } = usePermissions();
+  const { user, profile } = useAuth();
+  const canApproveCrossPool =
+    isSuperAdmin || CROSS_POOL_APPROVER_ROLES.some((r) => hasRole(r));
   
   const queryClient = useQueryClient();
   const [selectedVehicle, setSelectedVehicle] = useState("");
