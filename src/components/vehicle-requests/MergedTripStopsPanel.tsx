@@ -361,6 +361,15 @@ export const MergedTripStopsPanel = ({
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const geofenceFitAppliedRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
+  const stopBounds = useMemo(() => {
+    if (stopsWithCoords.length === 0) return null;
+    const bounds = new maplibregl.LngLatBounds();
+    stopsWithCoords.forEach((s) => {
+      bounds.extend([s.departure_lng!, s.departure_lat!]);
+      bounds.extend([s.destination_lng!, s.destination_lat!]);
+    });
+    return bounds;
+  }, [stopsWithCoords]);
 
   const [routesInfo, setRoutesInfo] = useState<
     Array<{
