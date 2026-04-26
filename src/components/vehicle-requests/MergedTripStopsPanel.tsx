@@ -171,6 +171,9 @@ const getMergedTripFenceBounds = (fence: any): maplibregl.LngLatBounds | null =>
   return bounds;
 };
 
+const sameCoordinate = (a: [number, number], b: [number, number]) =>
+  Math.abs(a[0] - b[0]) < 0.000001 && Math.abs(a[1] - b[1]) < 0.000001;
+
 
 
 export const MergedTripStopsPanel = ({
@@ -275,6 +278,13 @@ export const MergedTripStopsPanel = ({
       ),
     [children],
   );
+  const stopsKey = useMemo(
+    () =>
+      stopsWithCoords
+        .map((c) => `${c.id}:${c.departure_lng},${c.departure_lat}->${c.destination_lng},${c.destination_lat}`)
+        .join("|"),
+    [stopsWithCoords],
+  );
 
   // ── Geofences for this organization ──────────────────────────────
   // Dispatchers asked to see operational zones (depots, restricted areas,
@@ -358,6 +368,15 @@ export const MergedTripStopsPanel = ({
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const geofenceFitAppliedRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
+  const stopBounds = useMemo(() => {
+    if (stopsWithCoords.length === 0) return null;
+    const bounds = new maplibregl.LngLatBounds();
+    stopsWithCoords.forEach((s) => {
+      bounds.extend([s.departure_lng!, s.departure_lat!]);
+      bounds.extend([s.destination_lng!, s.destination_lat!]);
+    });
+    return bounds;
+  }, [stopsWithCoords]);
 
   const [routesInfo, setRoutesInfo] = useState<
     Array<{
@@ -398,6 +417,16 @@ export const MergedTripStopsPanel = ({
     });
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+
+    const resizeMap = () => {
+      requestAnimationFrame(() => mapRef.current?.resize());
+    };
+    const resizeObserver = typeof ResizeObserver !== "undefined" && containerRef.current
+      ? new ResizeObserver(resizeMap)
+      : null;
+    if (containerRef.current) resizeObserver?.observe(containerRef.current);
+    window.addEventListener("resize", resizeMap);
+    map.once("idle", resizeMap);
 
     map.on("load", async () => {
       setMapReady(true);
@@ -454,7 +483,13 @@ export const MergedTripStopsPanel = ({
       });
 
       try {
-        map.fitBounds(bounds, { padding: 50, maxZoom: 14, duration: 0 });
+        map.resize();
+        const [sw, ne] = bounds.toArray() as [[number, number], [number, number]];
+        if (sameCoordinate(sw, ne)) {
+          map.jumpTo({ center: sw, zoom: 15 });
+        } else {
+          map.fitBounds(bounds, { padding: 50, maxZoom: 14, duration: 0 });
+        }
       } catch {
         /* noop */
       }
@@ -671,6 +706,8 @@ export const MergedTripStopsPanel = ({
     });
 
     return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", resizeMap);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       mapRef.current?.remove();
@@ -684,7 +721,7 @@ export const MergedTripStopsPanel = ({
       setAiError(null);
       setAiLoading(false);
     };
-  }, [showMap, open, stopsWithCoords]);
+  }, [showMap, open, stopsKey]);
 
   // ── Render geofences as filled polygons on the map ────────────────
   // Reacts to (a) the map being mounted via the route effect above and
@@ -769,16 +806,9 @@ export const MergedTripStopsPanel = ({
         }
       });
 
-      if (!allBounds.isEmpty() && !geofenceFitAppliedRef.current) {
+      if (!allBounds.isEmpty() && !geofenceFitAppliedRef.current && !stopBounds) {
         try {
-          const combined = new maplibregl.LngLatBounds();
-          const fenceCorners = allBounds.toArray() as [[number, number], [number, number]];
-          fenceCorners.forEach((coord) => combined.extend(coord));
-          stopsWithCoords.forEach((s) => {
-            combined.extend([s.departure_lng!, s.departure_lat!]);
-            combined.extend([s.destination_lng!, s.destination_lat!]);
-          });
-          map.fitBounds(combined, { padding: 72, maxZoom: 13, duration: 350 });
+          map.fitBounds(allBounds, { padding: 72, maxZoom: 13, duration: 350 });
           geofenceFitAppliedRef.current = true;
         } catch {
           /* noop */
@@ -811,7 +841,7 @@ export const MergedTripStopsPanel = ({
         }
       });
     };
-  }, [showMap, open, mapReady, renderableGeofences, routesInfo.length, stopsWithCoords]);
+  }, [showMap, open, mapReady, renderableGeofences, routesInfo.length, stopBounds]);
 
   // Ask Lovable AI to recommend the best candidate route. The AI never
   // invents measurements — it weighs the OSRM-supplied numbers against the
