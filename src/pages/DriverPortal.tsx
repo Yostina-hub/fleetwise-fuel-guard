@@ -475,11 +475,19 @@ const DriverPortal = () => {
           }}
         />
 
-        {/* Quick Actions — open dialogs (no navigation) */}
+        {/* Quick Actions — open dialogs (no navigation).
+            "Report Issue"  → focused trip-incident dialog (4 reasons + attachments)
+            "Additional Fuel Request" → lightweight refuel dialog that auto-captures e-fuel data */}
         <DriverQuickActions
-          onReportIssue={() => setShowMaintenance(true)}
-          onRequestFuel={() => setShowFuel(true)}
-          
+          onReportIssue={() =>
+            setReportIncidentContext({
+              vehicleId: activeRequest?.assigned_vehicle?.id ?? vehicle?.id ?? null,
+              tripId: activeRequest?.id ?? null,
+              location: activeRequest?.destination ?? null,
+            })
+          }
+          onRequestFuel={() => setShowOnRoadFuel(true)}
+
           onRequestTire={() => setShowTire(true)}
           onPreTripInspection={() => {
             setInspectionPrefillOverride(null);
