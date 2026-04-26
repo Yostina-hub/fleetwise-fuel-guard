@@ -783,8 +783,34 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         </div>
       )}
 
-      {/* Rejection reason */}
-      {request.rejection_reason && (
+      {/* Rejection reason — surfaces a Fix & Resubmit CTA when the viewer
+          owns the row, so requesters never have to hunt the table for the
+          tiny pencil icon. */}
+      {request.status === "rejected" && (request.rejection_reason || isOwnRow) && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+            <div className="text-sm flex-1 min-w-0">
+              <div className="font-medium text-destructive">Request Rejected</div>
+              {request.rejection_reason && (
+                <p className="text-foreground/80 mt-0.5 break-words">
+                  {request.rejection_reason}
+                </p>
+              )}
+            </div>
+          </div>
+          {isOwnRow && onEdit && (
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" onClick={onEdit} className="gap-1.5">
+                <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
+                Fix & Resubmit
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      {/* Generic rejection_reason fallback for non-owners on non-rejected status */}
+      {request.status !== "rejected" && request.rejection_reason && (
         <div className="flex items-start gap-2 text-sm bg-destructive/10 rounded-lg p-2">
           <AlertTriangle className="w-4 h-4 text-destructive mt-0.5" />
           <div><span className="font-medium">Rejection Reason:</span> {request.rejection_reason}</div>
