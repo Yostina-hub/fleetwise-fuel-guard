@@ -1154,17 +1154,76 @@ const Geofencing = () => {
                 </div>
               </div>
 
-              {formData.geometry_type === "circle" && (
-                <div>
-                  <Label>Radius (meters)</Label>
-                  <Input
-                    type="number"
-                    min={25}
-                    value={formData.radius_meters}
-                    onChange={(event) => setFormData({ ...formData, radius_meters: Math.max(25, parseInt(event.target.value, 10) || 500) })}
-                  />
+              <div className="grid gap-3 rounded-md border border-border bg-muted/30 p-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">Geometry</Label>
+                  <div className="mt-1 flex rounded-md border border-border bg-card p-1">
+                    <Button
+                      type="button"
+                      variant={formData.geometry_type === "circle" ? "default" : "ghost"}
+                      size="sm"
+                      className="h-8 flex-1 gap-2"
+                      onClick={() => setFormData({ ...formData, geometry_type: "circle" })}
+                    >
+                      <Circle className="h-3.5 w-3.5" />
+                      Circle
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={formData.geometry_type === "polygon" ? "default" : "ghost"}
+                      size="sm"
+                      className="h-8 flex-1 gap-2"
+                      onClick={() => setFormData({ ...formData, geometry_type: "polygon" })}
+                    >
+                      <Square className="h-3.5 w-3.5" />
+                      Polygon
+                    </Button>
+                  </div>
                 </div>
-              )}
+
+                {formData.geometry_type === "circle" ? (
+                  <>
+                    <div>
+                      <Label htmlFor="lat">Latitude *</Label>
+                      <Input
+                        id="lat"
+                        type="number"
+                        step="0.000001"
+                        placeholder="e.g., 9.0192"
+                        value={formData.center_lat ?? ""}
+                        onChange={(event) => setFormData({ ...formData, center_lat: event.target.value === "" ? null : Number(event.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lng">Longitude *</Label>
+                      <Input
+                        id="lng"
+                        type="number"
+                        step="0.000001"
+                        placeholder="e.g., 38.7525"
+                        value={formData.center_lng ?? ""}
+                        onChange={(event) => setFormData({ ...formData, center_lng: event.target.value === "" ? null : Number(event.target.value) })}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Label>Radius (meters)</Label>
+                      <Input
+                        type="number"
+                        min={25}
+                        value={formData.radius_meters}
+                        onChange={(event) => setFormData({ ...formData, radius_meters: Math.max(25, parseInt(event.target.value, 10) || 500) })}
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">Tip: Use the Circle tool on the map to pick a center visually.</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="sm:col-span-2 rounded-md border border-dashed border-border bg-card/60 p-3 text-xs text-muted-foreground">
+                    {formData.polygon_points.length >= 3
+                      ? <>Polygon has <span className="font-semibold text-foreground">{formData.polygon_points.length}</span> points. Use the Polygon tool on the map to redraw.</>
+                      : "Use the Polygon tool on the map toolbar to draw at least 3 points."}
+                  </div>
+                )}
+              </div>
 
               <div>
                 <Label>{t("common.color", "Color")}</Label>
