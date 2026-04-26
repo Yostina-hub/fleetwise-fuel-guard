@@ -721,7 +721,7 @@ export const MergedTripStopsPanel = ({
       setAiError(null);
       setAiLoading(false);
     };
-  }, [showMap, open, stopsWithCoords]);
+  }, [showMap, open, stopsKey]);
 
   // ── Render geofences as filled polygons on the map ────────────────
   // Reacts to (a) the map being mounted via the route effect above and
