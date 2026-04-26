@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Layout from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,17 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import MapboxDraw from '@mapbox/mapbox-gl-draw';
-import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import maplibregl from 'maplibre-gl';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -29,15 +19,20 @@ import {
 } from "@/components/ui/dialog";
 import { 
   MapPin, 
-  Plus, 
   Trash2, 
   Edit, 
   Circle,
   Square,
-  X,
   Check,
   Eye,
-  EyeOff
+  EyeOff,
+  ShieldCheck,
+  Route,
+  Crosshair,
+  Ban,
+  Building2,
+  Navigation,
+  RotateCcw,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,12 +40,127 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import GeofenceEventsTab from "@/components/geofencing/GeofenceEventsTab";
-import GeofenceQuickStats from "@/components/geofencing/GeofenceQuickStats";
 import { startOfDay } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 import { useTranslation } from "react-i18next";
 import { friendlyToastError } from "@/lib/errorMessages";
+
+type DispatchPolicy = "prefer" | "avoid" | "neutral";
+type GeometryType = "circle" | "polygon";
+
+type GeofenceRecord = {
+  id: string;
+  name: string;
+  category: string | null;
+  geometry_type: GeometryType | string | null;
+  center_lat: number | string | null;
+  center_lng: number | string | null;
+  radius_meters: number | string | null;
+  polygon_points: unknown;
+  enable_entry_alarm?: boolean | null;
+  enable_exit_alarm?: boolean | null;
+  is_active?: boolean | null;
+  color?: string | null;
+  dispatch_policy?: DispatchPolicy | string | null;
+  dispatch_priority?: number | null;
+};
+
+const policyMeta: Record<DispatchPolicy, { label: string; icon: typeof ShieldCheck; className: string }> = {
+  prefer: { label: "Prefer", icon: ShieldCheck, className: "border-success/40 bg-success/10 text-success" },
+  avoid: { label: "Avoid", icon: Ban, className: "border-warning/40 bg-warning/10 text-warning" },
+  neutral: { label: "Neutral", icon: Route, className: "border-border bg-muted text-muted-foreground" },
+};
+
+const categoryDefaultPolicy: Record<string, DispatchPolicy> = {
+  depot: "prefer",
+  parking: "prefer",
+  service_area: "prefer",
+  no_go_zone: "avoid",
+  speed_zone: "avoid",
+  customer_site: "neutral",
+};
+
+const getCategoryDefaultPolicy = (category: string): DispatchPolicy =>
+  categoryDefaultPolicy[category] || "neutral";
+
+const toFiniteNumber = (value: unknown): number | null => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+const buildFenceFeature = (fence: GeofenceRecord): GeoJSON.Feature<GeoJSON.Polygon> | null => {
+  if (fence.geometry_type === "circle") {
+    const centerLat = toFiniteNumber(fence.center_lat);
+    const centerLng = toFiniteNumber(fence.center_lng);
+    const radius = toFiniteNumber(fence.radius_meters) || 500;
+    if (centerLat == null || centerLng == null) return null;
+
+    const points = 96;
+    const coords: number[][] = [];
+    for (let i = 0; i <= points; i++) {
+      const angle = (i / points) * 2 * Math.PI;
+      const dx = radius * Math.cos(angle);
+      const dy = radius * Math.sin(angle);
+      const lat = centerLat + dy / 111320;
+      const lng = centerLng + dx / (111320 * Math.cos((centerLat * Math.PI) / 180));
+      coords.push([lng, lat]);
+    }
+    return {
+      type: "Feature",
+      properties: { name: fence.name, policy: fence.dispatch_policy || "neutral" },
+      geometry: { type: "Polygon", coordinates: [coords] },
+    };
+  }
+
+  if (fence.geometry_type === "polygon" && Array.isArray(fence.polygon_points) && fence.polygon_points.length >= 3) {
+    const coords = (fence.polygon_points as Array<{ lat: number | string; lng: number | string }>)
+      .map((p) => [toFiniteNumber(p.lng), toFiniteNumber(p.lat)] as const)
+      .filter((p): p is readonly [number, number] => p[0] != null && p[1] != null)
+      .map(([lng, lat]) => [lng, lat]);
+    if (coords.length < 3) return null;
+    coords.push(coords[0]);
+    return {
+      type: "Feature",
+      properties: { name: fence.name, policy: fence.dispatch_policy || "neutral" },
+      geometry: { type: "Polygon", coordinates: [coords] },
+    };
+  }
+
+  return null;
+};
+
+const getFenceBounds = (fence: GeofenceRecord): maplibregl.LngLatBounds | null => {
+  const feature = buildFenceFeature(fence);
+  const coords = feature?.geometry.coordinates[0];
+  if (!coords?.length) return null;
+  const bounds = new maplibregl.LngLatBounds(coords[0] as [number, number], coords[0] as [number, number]);
+  coords.forEach((coord) => bounds.extend(coord as [number, number]));
+  return bounds;
+};
+
+const getFenceCenter = (fence: GeofenceRecord): [number, number] | null => {
+  const centerLat = toFiniteNumber(fence.center_lat);
+  const centerLng = toFiniteNumber(fence.center_lng);
+  if (centerLat != null && centerLng != null) return [centerLng, centerLat];
+
+  if (Array.isArray(fence.polygon_points) && fence.polygon_points.length > 0) {
+    const coords = (fence.polygon_points as Array<{ lat: number | string; lng: number | string }>)
+      .map((p) => ({ lat: toFiniteNumber(p.lat), lng: toFiniteNumber(p.lng) }))
+      .filter((p): p is { lat: number; lng: number } => p.lat != null && p.lng != null);
+    if (coords.length === 0) return null;
+    return [
+      coords.reduce((sum, p) => sum + p.lng, 0) / coords.length,
+      coords.reduce((sum, p) => sum + p.lat, 0) / coords.length,
+    ];
+  }
+
+  return null;
+};
+
+const draftSourceId = "geofence-draft-source";
+const draftFillLayerId = "geofence-draft-fill";
+const draftLineLayerId = "geofence-draft-line";
+const draftPointLayerId = "geofence-draft-points";
 
 const Geofencing = () => {
   const { t } = useTranslation();
@@ -64,8 +174,11 @@ const Geofencing = () => {
   const [mapToken, setMapToken] = useState<string>("");
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const drawRef = useRef<MapboxDraw | null>(null);
   const geofenceLayersRef = useRef<string[]>([]);
+  const geofenceMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const draftPolygonRef = useRef<Array<{ lat: number; lng: number }>>([]);
+  const [draftPolygonPoints, setDraftPolygonPoints] = useState<Array<{ lat: number; lng: number }>>([]);
+  const [mapReady, setMapReady] = useState(false);
   const [activeTab, setActiveTab] = useState<"geofences" | "events">("geofences");
   
   useEffect(() => {
@@ -77,14 +190,15 @@ const Geofencing = () => {
   const [formData, setFormData] = useState({
     name: "",
     category: "customer_site",
-    geometry_type: "circle" as "circle" | "polygon",
+      geometry_type: "circle" as "circle" | "polygon",
     center_lat: null as number | null,
     center_lng: null as number | null,
     radius_meters: 500,
     polygon_points: [] as Array<{lat: number, lng: number}>,
     enable_entry_alarm: true,
     enable_exit_alarm: true,
-    color: "#3B82F6",
+      color: "#3B82F6",
+    dispatch_policy: "neutral" as DispatchPolicy,
   });
 
   const { data: geofences, isLoading } = useQuery({
@@ -127,47 +241,54 @@ const Geofencing = () => {
     dwellAlerts: recentEvents?.filter(e => e.event_type === 'dwell_exceeded').length || 0,
   };
 
-  // Initialize Mapbox Draw when map is ready
+  const clearDraftPolygon = useCallback(() => {
+    draftPolygonRef.current = [];
+    setDraftPolygonPoints([]);
+    const map = mapRef.current;
+    if (!map) return;
+    [draftPointLayerId, draftLineLayerId, draftFillLayerId].forEach((id) => {
+      try { if (map.getLayer(id)) map.removeLayer(id); } catch {}
+    });
+    try { if (map.getSource(draftSourceId)) map.removeSource(draftSourceId); } catch {}
+  }, []);
+
+  const updateDraftPolygon = useCallback((points: Array<{ lat: number; lng: number }>) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const lineCoords = points.map((p) => [p.lng, p.lat]);
+    const polygonCoords = points.length >= 3 ? [[...lineCoords, lineCoords[0]]] : [];
+    const data: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: [
+        ...(polygonCoords.length ? [{ type: "Feature" as const, properties: { kind: "fill" }, geometry: { type: "Polygon" as const, coordinates: polygonCoords } }] : []),
+        ...(lineCoords.length >= 2 ? [{ type: "Feature" as const, properties: { kind: "line" }, geometry: { type: "LineString" as const, coordinates: lineCoords } }] : []),
+        ...lineCoords.map((coord, index) => ({ type: "Feature" as const, properties: { kind: "point", index: index + 1 }, geometry: { type: "Point" as const, coordinates: coord } })),
+      ],
+    };
+
+    if (map.getSource(draftSourceId)) {
+      (map.getSource(draftSourceId) as maplibregl.GeoJSONSource).setData(data);
+      return;
+    }
+
+    map.addSource(draftSourceId, { type: "geojson", data });
+    map.addLayer({ id: draftFillLayerId, type: "fill", source: draftSourceId, filter: ["==", ["get", "kind"], "fill"], paint: { "fill-color": "#8DC63F", "fill-opacity": 0.18 } });
+    map.addLayer({ id: draftLineLayerId, type: "line", source: draftSourceId, filter: ["==", ["get", "kind"], "line"], paint: { "line-color": "#8DC63F", "line-width": 3, "line-dasharray": [2, 1] } });
+    map.addLayer({ id: draftPointLayerId, type: "circle", source: draftSourceId, filter: ["==", ["get", "kind"], "point"], paint: { "circle-color": "#8DC63F", "circle-radius": 5, "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });
+  }, []);
+
+  // Initialize map hooks when ready
   const handleMapReady = (map: maplibregl.Map) => {
     mapRef.current = map;
-    
-    const draw = new MapboxDraw({
-      displayControlsDefault: false,
-      controls: {},
-    });
-    
-    drawRef.current = draw;
-    map.addControl(draw);
-
-    map.on('draw.create', (e: any) => {
-      const feature = e.features[0];
-      if (feature.geometry.type === 'Polygon') {
-        const coords = feature.geometry.coordinates[0].map((coord: number[]) => ({
-          lng: coord[0],
-          lat: coord[1]
-        }));
-        coords.pop();
-        setFormData(prev => ({
-          ...prev,
-          polygon_points: coords,
-          geometry_type: 'polygon'
-        }));
-        setIsCreateDialogOpen(true);
-        toast({
-          title: "✓ Area Selected",
-          description: `Polygon with ${coords.length} points captured.`
-        });
-      }
-      try { draw.deleteAll(); } catch {}
-      setDrawingMode(null);
-    });
+    setMapReady(true);
   };
 
   // Handle drawing mode changes
   useEffect(() => {
-    if (!drawRef.current || !mapRef.current) return;
-
-    drawRef.current.deleteAll();
+    const map = mapRef.current;
+    if (!map) return;
+    clearDraftPolygon();
+    map.getCanvas().style.cursor = drawingMode ? "crosshair" : "";
 
     if (drawingMode === 'circle') {
       const handleMapClick = (e: any) => {
@@ -183,81 +304,98 @@ const Geofencing = () => {
           description: `Center point set at ${e.lngLat.lat.toFixed(4)}, ${e.lngLat.lng.toFixed(4)}`,
         });
         setDrawingMode(null);
-        mapRef.current?.off('click', handleMapClick);
+        map.off('click', handleMapClick);
       };
 
-      mapRef.current.on('click', handleMapClick);
+      map.on('click', handleMapClick);
       
       return () => {
-        mapRef.current?.off('click', handleMapClick);
+        map.off('click', handleMapClick);
+        map.getCanvas().style.cursor = "";
       };
     } else if (drawingMode === 'polygon') {
-      drawRef.current.changeMode('draw_polygon');
+      const handleMapClick = (e: any) => {
+        const next = [...draftPolygonRef.current, { lat: e.lngLat.lat, lng: e.lngLat.lng }];
+        draftPolygonRef.current = next;
+        setDraftPolygonPoints(next);
+        updateDraftPolygon(next);
+      };
+      const handleDoubleClick = (e: any) => {
+        e.preventDefault();
+        const points = draftPolygonRef.current;
+        if (points.length < 3) {
+          toast({ title: "Add at least 3 points", variant: "destructive" });
+          return;
+        }
+        setFormData((prev) => ({ ...prev, polygon_points: points, geometry_type: "polygon" }));
+        setIsCreateDialogOpen(true);
+        toast({ title: "✓ Area Selected", description: `Polygon with ${points.length} points captured.` });
+        setDrawingMode(null);
+      };
+      map.doubleClickZoom.disable();
+      map.on('click', handleMapClick);
+      map.on('dblclick', handleDoubleClick);
+      return () => {
+        map.off('click', handleMapClick);
+        map.off('dblclick', handleDoubleClick);
+        map.doubleClickZoom.enable();
+        map.getCanvas().style.cursor = "";
+      };
     }
-  }, [drawingMode, toast]);
+  }, [clearDraftPolygon, drawingMode, toast, updateDraftPolygon]);
+
+  const focusFenceOnMap = useCallback((fence: GeofenceRecord) => {
+    const bounds = getFenceBounds(fence);
+    const center = getFenceCenter(fence);
+    if (!mapRef.current) return;
+    if (bounds) {
+      mapRef.current.fitBounds(bounds, { padding: 130, maxZoom: 18, duration: 600 });
+      return;
+    }
+    if (center) mapRef.current.flyTo({ center, zoom: 17, duration: 600 });
+  }, []);
 
   // Render geofences on map
   useEffect(() => {
-    if (!mapRef.current || !geofences) return;
+    if (!mapReady || !mapRef.current || !geofences) return;
     const map = mapRef.current;
 
     const renderGeofences = () => {
       // Clean up existing layers first
-      geofenceLayersRef.current.forEach(layerId => {
-        try {
-          if (map.getLayer(layerId)) map.removeLayer(layerId);
-        } catch (e) { /* ignore */ }
-        try {
-          if (map.getSource(layerId)) map.removeSource(layerId);
-        } catch (e) { /* ignore */ }
-      });
+      geofenceLayersRef.current
+        .filter((id) => id.includes("-fill-") || id.includes("-outline-") || id.includes("-label-"))
+        .forEach((layerId) => {
+          try {
+            if (map.getLayer(layerId)) map.removeLayer(layerId);
+          } catch (e) { /* ignore */ }
+        });
+      geofenceLayersRef.current
+        .filter((id) => id.startsWith("geofence-source-"))
+        .forEach((sourceId) => {
+          try {
+            if (map.getSource(sourceId)) map.removeSource(sourceId);
+          } catch (e) { /* ignore */ }
+        });
       geofenceLayersRef.current = [];
+      geofenceMarkersRef.current.forEach((marker) => marker.remove());
+      geofenceMarkersRef.current = [];
 
-      geofences.forEach((fence: any) => {
-        const sourceId = `geofence-${fence.id}`;
+      const allBounds = new maplibregl.LngLatBounds();
+      let hasBounds = false;
+
+      (geofences as GeofenceRecord[]).forEach((fence) => {
+        const sourceId = `geofence-source-${fence.id}`;
         const fillLayerId = `geofence-fill-${fence.id}`;
         const outlineLayerId = `geofence-outline-${fence.id}`;
+        const labelLayerId = `geofence-label-${fence.id}`;
         const color = fence.color || '#3B82F6';
-
-        // Skip if source already exists
-        if (map.getSource(sourceId)) return;
-
-        let geojsonData: GeoJSON.Feature;
-
-        if (fence.geometry_type === 'circle' && fence.center_lat != null && fence.center_lng != null) {
-          // Postgres numeric columns arrive as strings via PostgREST — coerce to Number
-          // before any arithmetic, otherwise we end up with string concatenation and the
-          // geofence renders off-screen (or not at all).
-          const centerLat = Number(fence.center_lat);
-          const centerLng = Number(fence.center_lng);
-          const radius = Number(fence.radius_meters) || 500;
-          if (!Number.isFinite(centerLat) || !Number.isFinite(centerLng)) return;
-          const points = 64;
-          const coords: number[][] = [];
-          for (let i = 0; i <= points; i++) {
-            const angle = (i / points) * 2 * Math.PI;
-            const dx = radius * Math.cos(angle);
-            const dy = radius * Math.sin(angle);
-            const lat = centerLat + (dy / 111320);
-            const lng = centerLng + (dx / (111320 * Math.cos((centerLat * Math.PI) / 180)));
-            coords.push([lng, lat]);
-          }
-          geojsonData = {
-            type: 'Feature',
-            properties: { name: fence.name },
-            geometry: { type: 'Polygon', coordinates: [coords] }
-          };
-        } else if (fence.geometry_type === 'polygon' && fence.polygon_points?.length >= 3) {
-          const coords = fence.polygon_points.map((p: any) => [Number(p.lng), Number(p.lat)]);
-          coords.push(coords[0]);
-          geojsonData = {
-            type: 'Feature',
-            properties: { name: fence.name },
-            geometry: { type: 'Polygon', coordinates: [coords] }
-          };
-        } else {
-          return;
-        }
+        const geojsonData = buildFenceFeature(fence);
+        const center = getFenceCenter(fence);
+        if (!geojsonData) return;
+        geojsonData.geometry.coordinates[0].forEach((coord) => {
+          allBounds.extend(coord as [number, number]);
+          hasBounds = true;
+        });
 
         try {
           map.addSource(sourceId, { type: 'geojson', data: geojsonData });
@@ -268,7 +406,7 @@ const Geofencing = () => {
             source: sourceId,
             paint: {
               'fill-color': color,
-              'fill-opacity': 0.2
+              'fill-opacity': fence.is_active === false ? 0.08 : 0.28
             }
           });
 
@@ -278,15 +416,55 @@ const Geofencing = () => {
             source: sourceId,
             paint: {
               'line-color': color,
-              'line-width': 2
+              'line-width': fence.dispatch_policy === 'avoid' ? 4 : 3,
+              'line-opacity': fence.is_active === false ? 0.45 : 1
             }
           });
 
-          geofenceLayersRef.current.push(sourceId, fillLayerId, outlineLayerId);
+          map.addLayer({
+            id: labelLayerId,
+            type: 'symbol',
+            source: sourceId,
+            layout: {
+              'text-field': ['get', 'name'],
+              'text-size': 12,
+              'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+              'text-allow-overlap': false,
+            },
+            paint: {
+              'text-color': color,
+              'text-halo-color': '#ffffff',
+              'text-halo-width': 2,
+            },
+          });
+
+          geofenceLayersRef.current.push(sourceId, fillLayerId, outlineLayerId, labelLayerId);
         } catch (e) {
           console.warn('Failed to add geofence layer:', sourceId, e);
         }
+
+        if (center) {
+          const markerEl = document.createElement("button");
+          markerEl.type = "button";
+          markerEl.className = "geofence-map-marker";
+          markerEl.style.setProperty("--geofence-color", color);
+          const dotEl = document.createElement("span");
+          dotEl.className = "geofence-map-marker-dot";
+          const labelEl = document.createElement("span");
+          labelEl.className = "geofence-map-marker-label";
+          labelEl.textContent = fence.name;
+          markerEl.append(dotEl, labelEl);
+          markerEl.addEventListener("click", (event) => {
+            event.stopPropagation();
+            focusFenceOnMap(fence);
+          });
+          geofenceMarkersRef.current.push(new maplibregl.Marker({ element: markerEl, anchor: "bottom" }).setLngLat(center).addTo(map));
+        }
       });
+
+      if (hasBounds && !allBounds.isEmpty()) {
+        map.fitBounds(allBounds, { padding: 120, maxZoom: 15, duration: 0 });
+      }
     };
 
     if (map.isStyleLoaded()) {
@@ -294,7 +472,7 @@ const Geofencing = () => {
     } else {
       map.once('style.load', renderGeofences);
     }
-  }, [geofences]);
+  }, [focusFenceOnMap, geofences, mapReady]);
 
   const createGeofenceMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -398,6 +576,7 @@ const Geofencing = () => {
       enable_entry_alarm: true,
       enable_exit_alarm: true,
       color: "#3B82F6",
+      dispatch_policy: "neutral",
     });
     setDrawingMode(null);
     setIsEditMode(false);
@@ -416,6 +595,7 @@ const Geofencing = () => {
       enable_entry_alarm: fence.enable_entry_alarm ?? true,
       enable_exit_alarm: fence.enable_exit_alarm ?? true,
       color: fence.color || "#3B82F6",
+      dispatch_policy: (fence.dispatch_policy as DispatchPolicy) || getCategoryDefaultPolicy(fence.category || "customer_site"),
     });
     setEditingGeofenceId(fence.id);
     setIsEditMode(true);
@@ -449,6 +629,7 @@ const Geofencing = () => {
       enable_entry_alarm: formData.enable_entry_alarm,
       enable_exit_alarm: formData.enable_exit_alarm,
       color: formData.color,
+      dispatch_policy: formData.dispatch_policy,
     };
 
     if (isEditMode && editingGeofenceId) {
@@ -468,19 +649,20 @@ const Geofencing = () => {
   };
 
   const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
-
+  const visibleGeofences = (geofences || []) as unknown as GeofenceRecord[];
+  const preferCount = visibleGeofences.filter((f) => f.dispatch_policy === "prefer").length;
+  const avoidCount = visibleGeofences.filter((f) => f.dispatch_policy === "avoid").length;
   return (
     <Layout>
-      <div className="flex h-full">
-        {/* Map View - Takes most of the space */}
-        <div className="flex-1 relative">
+      <div className="flex h-full min-h-0 bg-background">
+        <div className="relative min-w-0 flex-1">
           <LiveTrackingMap 
             vehicles={[]} 
             token={mapToken || envToken}
             onMapReady={handleMapReady}
+            autoLocate={false}
           />
 
-          {/* Token Prompt */}
           {(!envToken && !mapToken) && (
             <div className="absolute top-4 right-4 z-10">
               <Card className="p-4 bg-card/95 backdrop-blur space-y-2 w-80">
@@ -496,86 +678,112 @@ const Geofencing = () => {
               </Card>
             </div>
           )}
-          
-          {/* Simple Drawing Tools - Floating on map */}
-          <Card className="absolute top-4 left-4 bg-card/95 backdrop-blur z-10 shadow-lg">
-            <CardContent className="p-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
-                {t('geofencing.addGeofence')}
-              </p>
-              <div className="flex gap-2">
+
+          <div className="absolute left-4 top-4 z-10 w-[min(420px,calc(100vw-2rem))] rounded-lg border border-border bg-card/95 shadow-floating backdrop-blur">
+            <div className="border-b border-border p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Crosshair className="h-4 w-4 text-primary" />
+                    {t('geofencing.addGeofence')}
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {drawingMode === "circle"
+                      ? "Click the map once, then set radius and dispatch rule."
+                      : drawingMode === "polygon"
+                        ? "Click boundary points, then double-click to save the area."
+                        : "Choose a shape to start creating an operational zone."}
+                  </p>
+                </div>
+                {drawingMode && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDrawingMode(null)}>
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 <Button
                   variant={drawingMode === 'circle' ? 'default' : 'outline'}
-                  size="sm"
                   onClick={() => setDrawingMode(drawingMode === 'circle' ? null : 'circle')}
-                  className="gap-1.5"
+                  className="h-10 justify-start gap-2"
                 >
                   <Circle className="w-4 h-4" />
                   {t('geofencing.circle')}
                 </Button>
                 <Button
                   variant={drawingMode === 'polygon' ? 'default' : 'outline'}
-                  size="sm"
                   onClick={() => setDrawingMode(drawingMode === 'polygon' ? null : 'polygon')}
-                  className="gap-1.5"
+                  className="h-10 justify-start gap-2"
                 >
                   <Square className="w-4 h-4" />
                   {t('geofencing.polygon')}
                 </Button>
               </div>
-              {drawingMode && (
-                <p className="text-xs text-primary mt-2 animate-pulse">
-                  {drawingMode === 'circle' 
-                    ? '👆 Click on map to set center' 
-                    : '👆 Click points, double-click to finish'}
-                </p>
+              {drawingMode === "polygon" && draftPolygonPoints.length > 0 && (
+                <div className="mt-3 flex items-center justify-between rounded-md border border-border bg-muted px-3 py-2 text-xs">
+                  <span className="text-muted-foreground">Points selected</span>
+                  <Badge variant="secondary">{draftPolygonPoints.length}</Badge>
+                </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            <div className="grid grid-cols-3 gap-2 p-3 text-xs">
+              <div className="rounded-md border border-border bg-muted p-2">
+                <div className="text-lg font-bold text-foreground">{geofenceStats.activeGeofences}</div>
+                <div className="text-muted-foreground">Active zones</div>
+              </div>
+              <div className="rounded-md border border-success/30 bg-success/10 p-2">
+                <div className="text-lg font-bold text-success">{preferCount}</div>
+                <div className="text-muted-foreground">Preferred</div>
+              </div>
+              <div className="rounded-md border border-warning/30 bg-warning/10 p-2">
+                <div className="text-lg font-bold text-warning">{avoidCount}</div>
+                <div className="text-muted-foreground">Avoided</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute bottom-4 left-4 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/95 px-3 py-2 text-xs shadow-elevated backdrop-blur">
+            <span className="font-medium text-foreground">Map zones</span>
+            <Badge variant="outline" className="gap-1"><ShieldCheck className="h-3 w-3" /> prefer</Badge>
+            <Badge variant="outline" className="gap-1"><Ban className="h-3 w-3" /> avoid</Badge>
+            <Badge variant="outline" className="gap-1"><Navigation className="h-3 w-3" /> click row to focus</Badge>
+          </div>
         </div>
 
-        {/* Simplified Side Panel */}
-        <div className="w-[400px] border-l border-border bg-card overflow-auto">
-          <div className="p-4 space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">{t('geofencing.title')}</h2>
-              <Badge variant="secondary">{geofenceStats.totalGeofences}</Badge>
+        <aside className="flex w-[460px] shrink-0 flex-col border-l border-border bg-card">
+          <div className="border-b border-border p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="text-2xl font-bold tracking-normal">{t('geofencing.title')}</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Operational zones for alerts and dispatch routing.</p>
+              </div>
+              <Badge variant="secondary" className="mt-1">{geofenceStats.totalGeofences}</Badge>
             </div>
 
-            {/* Quick Stats - Compact */}
-            <div className="grid grid-cols-3 gap-2">
-              <Card className="p-3 text-center">
-                <div className="text-2xl font-bold text-primary">{geofenceStats.activeGeofences}</div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="rounded-lg border border-border bg-muted p-3">
+                <div className="text-xl font-bold text-primary">{geofenceStats.activeGeofences}</div>
                 <div className="text-xs text-muted-foreground">{t('common.active')}</div>
-              </Card>
-              <Card className="p-3 text-center">
-                <div className="text-2xl font-bold text-green-500">{geofenceStats.entryEvents}</div>
-                <div className="text-xs text-muted-foreground">{t('geofencing.entryAlert')}</div>
-              </Card>
-              <Card className="p-3 text-center">
-                <div className="text-2xl font-bold text-orange-500">{geofenceStats.exitEvents}</div>
-                <div className="text-xs text-muted-foreground">{t('geofencing.exitAlert')}</div>
-              </Card>
+              </div>
+              <div className="rounded-lg border border-border bg-muted p-3">
+                <div className="text-xl font-bold text-success">{geofenceStats.entryEvents}</div>
+                <div className="text-xs text-muted-foreground">Entries</div>
+              </div>
+              <div className="rounded-lg border border-border bg-muted p-3">
+                <div className="text-xl font-bold text-warning">{geofenceStats.exitEvents}</div>
+                <div className="text-xs text-muted-foreground">Exits</div>
+              </div>
             </div>
+          </div>
 
-            {/* Geofence Workflow Automations */}
-            <WorkflowAutomationPanel
-              categories={["alerts", "operations"]}
-              title="Geofence Automations"
-              description="Entry/exit notifications, work start/stop detection"
-              compact
-              maxItems={4}
-            />
-
-            {/* Tabs */}
+          <div className="min-h-0 flex-1 overflow-auto p-5">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="geofences">{t('geofencing.title')}</TabsTrigger>
                 <TabsTrigger value="events">{t('geofencing.events', 'Events')}</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="geofences" className="mt-4 space-y-2">
+              <TabsContent value="geofences" className="mt-4 space-y-3">
                 {isLoading ? (
                   <div className="space-y-2">
                     {[1,2,3].map(i => (
@@ -591,56 +799,44 @@ const Geofencing = () => {
                     </p>
                   </Card>
                 ) : (
-                  geofences?.map((fence: any) => (
-                    <Card key={fence.id} className="p-3 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        {/* Color indicator */}
-                        <div 
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: fence.color || '#3B82F6' }}
-                        />
-                        
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{fence.name}</div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              {categoryLabels[fence.category] || fence.category}
-                            </Badge>
-                            <span>{fence.geometry_type === 'circle' ? `${fence.radius_meters}m` : 'Polygon'}</span>
-                          </div>
-                        </div>
-
-                        {/* Dispatch policy — feeds the AI route recommender */}
-                        <div className="hidden sm:flex flex-col items-end gap-0.5">
-                          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Dispatch</span>
-                          <Select
-                            value={(fence.dispatch_policy as string) || "neutral"}
-                            onValueChange={(v) =>
-                              updateDispatchPolicy.mutate({
-                                id: fence.id,
-                                policy: v as "prefer" | "avoid" | "neutral",
-                              })
-                            }
-                          >
-                            <SelectTrigger className="h-7 w-[110px] text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="prefer">
-                                <span className="text-emerald-600 font-medium">Prefer</span>
-                              </SelectItem>
-                              <SelectItem value="avoid">
-                                <span className="text-amber-600 font-medium">Avoid</span>
-                              </SelectItem>
-                              <SelectItem value="neutral">Neutral</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Actions */}
+                  visibleGeofences.map((fence) => {
+                    const policy = ((fence.dispatch_policy as DispatchPolicy) || "neutral") as DispatchPolicy;
+                    const PolicyIcon = policyMeta[policy].icon;
+                    return (
+                    <Card key={fence.id} className="overflow-hidden transition-colors hover:bg-muted/40">
+                      <button type="button" className="flex w-full items-start gap-3 p-4 text-left" onClick={() => focusFenceOnMap(fence)}>
+                        <span className="mt-1 h-4 w-4 shrink-0 rounded-full border border-border" style={{ backgroundColor: fence.color || '#3B82F6' }} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-semibold text-foreground">{fence.name}</span>
+                          <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <Badge variant="outline" className="gap-1 px-1.5 py-0 text-[10px]"><Building2 className="h-3 w-3" />{categoryLabels[fence.category || ""] || fence.category}</Badge>
+                            <span>{fence.geometry_type === 'circle' ? `${Number(fence.radius_meters || 0).toLocaleString()} m` : 'Polygon'}</span>
+                            {fence.is_active === false && <Badge variant="secondary">Disabled</Badge>}
+                          </span>
+                        </span>
+                        <Badge variant="outline" className={`gap-1 ${policyMeta[policy].className}`}>
+                          <PolicyIcon className="h-3 w-3" />
+                          {policyMeta[policy].label}
+                        </Badge>
+                      </button>
+                      <div className="flex items-center gap-2 border-t border-border px-4 py-3">
+                        <Select
+                          value={policy}
+                          onValueChange={(v) =>
+                            updateDispatchPolicy.mutate({ id: fence.id, policy: v as DispatchPolicy })
+                          }
+                        >
+                          <SelectTrigger className="h-9 flex-1 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="prefer">Prefer for dispatch</SelectItem>
+                            <SelectItem value="avoid">Avoid for dispatch</SelectItem>
+                            <SelectItem value="neutral">Neutral</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <TooltipProvider>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -653,7 +849,7 @@ const Geofencing = () => {
                                   })}
                                 >
                                   {fence.is_active !== false ? (
-                                    <Eye className="h-4 w-4 text-green-500" />
+                                    <Eye className="h-4 w-4 text-success" />
                                   ) : (
                                     <EyeOff className="h-4 w-4 text-muted-foreground" />
                                   )}
@@ -697,7 +893,7 @@ const Geofencing = () => {
                         </TooltipProvider>
                       </div>
                     </Card>
-                  ))
+                  )})
                 )}
               </TabsContent>
 
@@ -706,7 +902,7 @@ const Geofencing = () => {
               </TabsContent>
             </Tabs>
           </div>
-        </div>
+        </aside>
       </div>
 
       {/* Simplified Create/Edit Dialog */}
@@ -743,7 +939,11 @@ const Geofencing = () => {
               <Label>{t('common.category', 'Category')}</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                onValueChange={(value) => setFormData({
+                  ...formData,
+                  category: value,
+                  dispatch_policy: getCategoryDefaultPolicy(value),
+                })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -755,6 +955,23 @@ const Geofencing = () => {
                   <SelectItem value="speed_zone">Speed Zone</SelectItem>
                   <SelectItem value="parking">Parking Area</SelectItem>
                   <SelectItem value="service_area">Service Area</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Dispatch rule</Label>
+              <Select
+                value={formData.dispatch_policy}
+                onValueChange={(value) => setFormData({ ...formData, dispatch_policy: value as DispatchPolicy })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="prefer">Prefer routes through this zone</SelectItem>
+                  <SelectItem value="avoid">Avoid routes through this zone</SelectItem>
+                  <SelectItem value="neutral">No dispatch preference</SelectItem>
                 </SelectContent>
               </Select>
             </div>

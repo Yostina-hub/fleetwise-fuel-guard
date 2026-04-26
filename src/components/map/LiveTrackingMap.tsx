@@ -58,6 +58,7 @@ interface LiveTrackingMapProps {
   onTripReplay?: (vehicleId: string, plate: string) => void;
   onManageAsset?: (vehicleId: string, plate: string) => void;
   disablePopups?: boolean;
+  autoLocate?: boolean;
 }
 
 const LiveTrackingMap = ({ 
@@ -73,7 +74,8 @@ const LiveTrackingMap = ({
   onPopupOpened,
   onTripReplay,
   onManageAsset,
-  disablePopups = false
+  disablePopups = false,
+  autoLocate = true
 }: LiveTrackingMapProps) => {
 const { organizationId } = useOrganization();
 const { apiKey: lematApiKey, ready: lematKeyReady } = useLematApiKey();
@@ -181,7 +183,7 @@ useEffect(() => {
         map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
 
         // Center on user's current location if available
-        if (navigator.geolocation) {
+        if (autoLocate && navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (position) => {
               if (map.current) {
@@ -273,7 +275,7 @@ useEffect(() => {
         map.current = null;
       }
     };
-  }, [mapStyle, onMapReady, currentProvider]);
+  }, [mapStyle, onMapReady, currentProvider, autoLocate]);
 
   // Track previous style to only react to actual user-driven changes
   const prevMapStyleRef = useRef(mapStyle);
