@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -11,200 +11,237 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, FileText, Download, AlertTriangle, CheckCircle } from "lucide-react";
+import {
+  Loader2, Upload, FileText, Download, CheckCircle2, XCircle,
+  AlertCircle, FileSpreadsheet, ChevronDown,
+} from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import {
+  parseImportFile,
+  downloadImportTemplate,
+  type ParseResult,
+} from "./import/importParser";
+import {
+  DRIVER_IMPORT_FIELDS,
+  DRIVER_SAMPLE_VALUES,
+  resolveDriverField,
+} from "./import/driverImportSchema";
 
 interface BulkImportDriversDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-interface ParsedDriver {
-  first_name: string;
-  last_name: string;
-  license_number: string;
-  license_class?: string;
-  license_expiry?: string;
-  email?: string;
-  phone?: string;
-  employee_id?: string;
-  hire_date?: string;
-  status?: string;
-  rfid_tag?: string;
-  ibutton_id?: string;
-  bluetooth_id?: string;
-  notes?: string;
-}
-
-interface ImportResult {
-  success: number;
+interface ImportOutcome {
+  inserted: number;
+  updated: number;
   failed: number;
-  errors: string[];
+  errors: { row: number; message: string }[];
 }
 
-export default function BulkImportDriversDialog({ open, onOpenChange }: BulkImportDriversDialogProps) {
+const MAX_ROWS = 500;
+
+export default function BulkImportDriversDialog({
+  open,
+  onOpenChange,
+}: BulkImportDriversDialogProps) {
   const { organizationId } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [file, setFile] = useState<File | null>(null);
-  const [parsedDrivers, setParsedDrivers] = useState<ParsedDriver[]>([]);
-  const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<ImportResult | null>(null);
 
-  const parseCSV = (text: string): ParsedDriver[] => {
-    const lines = text.trim().split("\n");
-    if (lines.length < 2) return [];
-    
-    const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/\s+/g, "_"));
-    const drivers: ParsedDriver[] = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ""));
-      const driver: any = {};
-      
-      headers.forEach((header, index) => {
-        if (values[index]) {
-          driver[header] = values[index];
-        }
-      });
-      
-      if (driver.first_name && driver.last_name && driver.license_number) {
-        // Validate string lengths
-        if (driver.first_name.length > 100 || driver.last_name.length > 100) continue;
-        if (driver.license_number.length > 50) continue;
-        if (driver.email && driver.email.length > 255) continue;
-        if (driver.phone && driver.phone.length > 30) continue;
-        
-        drivers.push({
-          first_name: driver.first_name.trim(),
-          last_name: driver.last_name.trim(),
-          license_number: driver.license_number.trim(),
-          license_class: driver.license_class?.trim() || null,
-          license_expiry: driver.license_expiry?.trim() || null,
-          email: driver.email?.trim() || null,
-          phone: driver.phone?.trim() || null,
-          employee_id: driver.employee_id?.trim() || null,
-          hire_date: driver.hire_date?.trim() || null,
-          status: ["active", "inactive", "suspended"].includes(driver.status?.trim()) ? driver.status.trim() : "active",
-          rfid_tag: driver.rfid_tag?.trim() || null,
-          ibutton_id: driver.ibutton_id?.trim() || null,
-          bluetooth_id: driver.bluetooth_id?.trim() || null,
-          notes: driver.notes?.trim()?.substring(0, 1000) || null,
+  const [file, setFile] = useState<File | null>(null);
+  const [parsing, setParsing] = useState(false);
+  const [preview, setPreview] = useState<ParseResult | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [result, setResult] = useState<ImportOutcome | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const reset = useCallback(() => {
+    setFile(null);
+    setPreview(null);
+    setResult(null);
+    setProgress(0);
+    setParsing(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  const handleSelectFile = useCallback(
+    async (selected: File) => {
+      const ext = selected.name.split(".").pop()?.toLowerCase();
+      if (!["csv", "xlsx", "xls"].includes(ext || "")) {
+        toast({
+          title: "Unsupported file",
+          description: "Please upload a .csv, .xlsx, or .xls file",
+          variant: "destructive",
         });
+        return;
       }
-    }
-    
-    return drivers;
+      setFile(selected);
+      setResult(null);
+      setParsing(true);
+      try {
+        const parsed = await parseImportFile(selected, {
+          fields: DRIVER_IMPORT_FIELDS,
+          resolveField: resolveDriverField,
+        });
+        setPreview(parsed);
+        if (parsed.totalRows > MAX_ROWS) {
+          toast({
+            title: "Batch too large",
+            description: `Maximum ${MAX_ROWS} drivers per import. Found ${parsed.totalRows}.`,
+            variant: "destructive",
+          });
+        }
+      } catch (err: any) {
+        toast({
+          title: "Failed to parse file",
+          description: err.message ?? "Unknown error",
+          variant: "destructive",
+        });
+        setPreview(null);
+      } finally {
+        setParsing(false);
+      }
+    },
+    [toast],
+  );
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) handleSelectFile(f);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-    
-    setFile(selectedFile);
-    setResult(null);
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      const drivers = parseCSV(text);
-      setParsedDrivers(drivers);
-    };
-    reader.readAsText(selectedFile);
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) handleSelectFile(f);
   };
 
   const importMutation = useMutation({
-    mutationFn: async (drivers: ParsedDriver[]) => {
-      // Finding #5: Reject empty payload
-      if (drivers.length === 0) {
-        throw new Error("No valid drivers found in file. Each row must have first_name, last_name, and license_number.");
+    mutationFn: async () => {
+      if (!preview || !organizationId) {
+        throw new Error("No file parsed yet");
       }
-      // Limit bulk import batch size to prevent abuse
-      if (drivers.length > 100) {
-        throw new Error("Maximum 100 drivers per import. Please split your file.");
+      if (preview.totalRows > MAX_ROWS) {
+        throw new Error(`Maximum ${MAX_ROWS} drivers per import`);
+      }
+      const validRows = preview.rows.filter((r) => r.errors.length === 0);
+      if (validRows.length === 0) {
+        throw new Error("Fix the validation errors and try again");
       }
 
-      const results: ImportResult = { success: 0, failed: 0, errors: [] };
-      
-      for (let i = 0; i < drivers.length; i++) {
+      const outcome: ImportOutcome = {
+        inserted: 0,
+        updated: 0,
+        failed: 0,
+        errors: [],
+      };
+
+      for (let i = 0; i < validRows.length; i++) {
+        const row = validRows[i];
+        const license = String(row.data.license_number ?? "").trim();
+        const payload: Record<string, any> = {
+          ...row.data,
+          organization_id: organizationId,
+          status: row.data.status ?? "active",
+        };
+
         try {
-          const { error } = await supabase.from("drivers").insert({
-            ...drivers[i],
-            organization_id: organizationId,
-          });
-          
-          if (error) {
-            results.failed++;
-            results.errors.push(`Row ${i + 2}: ${error.message}`);
+          // Upsert by license_number (globally unique)
+          const { data: existing } = await supabase
+            .from("drivers")
+            .select("id")
+            .eq("license_number", license)
+            .maybeSingle();
+
+          if (existing?.id) {
+            const { error } = await supabase
+              .from("drivers")
+              .update(payload)
+              .eq("id", existing.id);
+            if (error) throw error;
+            outcome.updated++;
           } else {
-            results.success++;
+            const { error } = await supabase
+              .from("drivers")
+              .insert(payload as any);
+            if (error) throw error;
+            outcome.inserted++;
           }
         } catch (err: any) {
-          results.failed++;
-          results.errors.push(`Row ${i + 2}: ${err.message}`);
+          outcome.failed++;
+          outcome.errors.push({
+            row: row.rowNumber,
+            message: err.message ?? "Insert failed",
+          });
         }
-        
-        setProgress(Math.round(((i + 1) / drivers.length) * 100));
+        setProgress(Math.round(((i + 1) / validRows.length) * 100));
       }
-      
-      return results;
+
+      return outcome;
     },
-    onSuccess: (results) => {
-      setResult(results);
+    onSuccess: (outcome) => {
+      setResult(outcome);
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
-      toast({
-        title: "Import Complete",
-        description: `${results.success} drivers imported, ${results.failed} failed`,
-      });
+      queryClient.invalidateQueries({ queryKey: ["drivers-paginated"] });
+
+      const total = outcome.inserted + outcome.updated;
+      if (total > 0) {
+        toast({
+          title: "Import complete",
+          description: `${outcome.inserted} added · ${outcome.updated} updated${
+            outcome.failed ? ` · ${outcome.failed} failed` : ""
+          }`,
+        });
+      } else {
+        toast({
+          title: "Import failed",
+          description: "No drivers were saved. See errors below.",
+          variant: "destructive",
+        });
+      }
     },
-    onError: (error: any) => {
+    onError: (err: any) => {
       toast({
-        title: "Import Failed",
-        description: error.message,
+        title: "Import failed",
+        description: err.message ?? "Unknown error",
         variant: "destructive",
       });
     },
   });
 
-  const handleImport = () => {
-    if (parsedDrivers.length === 0) return;
-    setProgress(0);
-    importMutation.mutate(parsedDrivers);
+  const handleDownloadTemplate = (format: "xlsx" | "csv") => {
+    downloadImportTemplate(format, {
+      fields: DRIVER_IMPORT_FIELDS,
+      sampleValues: DRIVER_SAMPLE_VALUES,
+      filenameBase: "driver-import-template",
+      sheetName: "Drivers",
+    });
   };
 
-  const downloadTemplate = () => {
-    const headers = "first_name,last_name,license_number,license_class,license_expiry,email,phone,employee_id,hire_date,status,rfid_tag,ibutton_id,bluetooth_id,notes";
-    const example = "John,Doe,DL-123456,B,2025-12-31,john@example.com,+251911123456,EMP-001,2023-01-15,active,RFID123,IBTN456,BT789,Experienced driver";
-    const csv = `${headers}\n${example}`;
-    
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "driver_import_template.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const resetDialog = () => {
-    setFile(null);
-    setParsedDrivers([]);
-    setProgress(0);
-    setResult(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
+  const importing = importMutation.isPending;
+  const allRowErrors = preview?.rows.flatMap((r) => r.errors) ?? [];
 
   return (
-    <Dialog open={open} onOpenChange={(open) => {
-      if (!open) resetDialog();
-      onOpenChange(open);
-    }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) reset();
+        onOpenChange(o);
+      }}
+    >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -212,73 +249,197 @@ export default function BulkImportDriversDialog({ open, onOpenChange }: BulkImpo
             Bulk Import Drivers
           </DialogTitle>
           <DialogDescription>
-            Upload a CSV file to import multiple drivers at once
+            Upload an Excel (.xlsx) or CSV file. We'll preview &amp; validate
+            before saving. Existing drivers (matched by license number) will be
+            updated.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Button variant="outline" size="sm" onClick={downloadTemplate}>
-              <Download className="w-4 h-4 mr-2" />
-              Download Template
-            </Button>
+        <div className="space-y-4 py-2">
+          {/* Template download */}
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm">
+                Need a template with all supported fields?
+              </span>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Template
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleDownloadTemplate("xlsx")}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel (.xlsx) —
+                  recommended
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadTemplate("csv")}>
+                  <FileText className="w-4 h-4 mr-2" /> CSV (.csv)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
-          <div 
-            className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            {file ? (
-              <div>
-                <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-muted-foreground">{parsedDrivers.length} drivers ready to import</p>
-              </div>
-            ) : (
-              <div>
-                <p className="font-medium">Click to upload CSV file</p>
-                <p className="text-sm text-muted-foreground">or drag and drop</p>
-              </div>
-            )}
-          </div>
-
-          {importMutation.isPending && (
+          {/* Drag & drop zone */}
+          {!result && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Importing drivers...</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={onFileChange}
+                className="hidden"
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={onDrop}
+                className={cn(
+                  "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+                  dragOver
+                    ? "border-primary bg-primary/5"
+                    : "border-muted-foreground/25 hover:border-primary/50",
+                )}
+              >
+                {file ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <FileSpreadsheet className="w-5 h-5 text-primary" />
+                    <span className="font-medium">{file.name}</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </Badge>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Click to select a file or drag &amp; drop
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Supports .xlsx, .xls, .csv · max {MAX_ROWS} rows
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Parsing indicator */}
+          {parsing && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" /> Parsing file...
+            </div>
+          )}
+
+          {/* Dry-run preview */}
+          {preview && !importing && !result && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline">Total: {preview.totalRows}</Badge>
+                <Badge className="bg-success/15 text-success border-success/30 hover:bg-success/15">
+                  <CheckCircle2 className="w-3 h-3 mr-1" /> Valid:{" "}
+                  {preview.validRows}
+                </Badge>
+                {preview.invalidRows > 0 && (
+                  <Badge variant="destructive">
+                    <XCircle className="w-3 h-3 mr-1" /> Errors:{" "}
+                    {preview.invalidRows}
+                  </Badge>
+                )}
+                {preview.unmappedHeaders.length > 0 && (
+                  <Badge variant="secondary">
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    {preview.unmappedHeaders.length} unmapped column(s)
+                  </Badge>
+                )}
+              </div>
+
+              {preview.unmappedHeaders.length > 0 && (
+                <div className="text-xs text-muted-foreground bg-muted/50 rounded p-2">
+                  Ignored columns (not in schema):{" "}
+                  {preview.unmappedHeaders.join(", ")}
+                </div>
+              )}
+
+              {allRowErrors.length > 0 && (
+                <ScrollArea className="h-40 border rounded-lg p-2">
+                  <div className="space-y-1">
+                    {allRowErrors.slice(0, 50).map((e, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-2 text-xs"
+                      >
+                        <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground">{e}</span>
+                      </div>
+                    ))}
+                    {allRowErrors.length > 50 && (
+                      <p className="text-xs text-muted-foreground italic">
+                        ...and {allRowErrors.length - 50} more
+                      </p>
+                    )}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+          )}
+
+          {/* Progress bar */}
+          {importing && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Saving to database...</span>
                 <span>{progress}%</span>
               </div>
               <Progress value={progress} />
             </div>
           )}
 
+          {/* Final result */}
           {result && (
             <div className="space-y-3">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-success">
-                  <CheckCircle className="w-5 h-5" />
-                  <span>{result.success} imported</span>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-2xl font-semibold text-success">
+                    {result.inserted}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Added</p>
                 </div>
-                {result.failed > 0 && (
-                  <div className="flex items-center gap-2 text-destructive">
-                    <AlertTriangle className="w-5 h-5" />
-                    <span>{result.failed} failed</span>
-                  </div>
-                )}
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-2xl font-semibold text-primary">
+                    {result.updated}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Updated</p>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-2xl font-semibold text-destructive">
+                    {result.failed}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Failed</p>
+                </div>
               </div>
-              
+
               {result.errors.length > 0 && (
-                <ScrollArea className="h-32 border rounded-md p-2">
-                  <div className="space-y-1 text-sm">
-                    {result.errors.map((error, i) => (
-                      <p key={i} className="text-destructive">{error}</p>
+                <ScrollArea className="h-32 border rounded-lg p-2">
+                  <div className="space-y-1">
+                    {result.errors.map((e, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-2 text-xs"
+                      >
+                        <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground">
+                          Row {e.row}: {e.message}
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </ScrollArea>
@@ -287,17 +448,39 @@ export default function BulkImportDriversDialog({ open, onOpenChange }: BulkImpo
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {result ? "Close" : "Cancel"}
           </Button>
-          <Button 
-            onClick={handleImport} 
-            disabled={parsedDrivers.length === 0 || importMutation.isPending}
-          >
-            {importMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Import {parsedDrivers.length} Drivers
-          </Button>
+          {file && !result && (
+            <Button
+              variant="ghost"
+              onClick={reset}
+              disabled={importing || parsing}
+            >
+              Choose another file
+            </Button>
+          )}
+          {!result && (
+            <Button
+              onClick={() => {
+                setProgress(0);
+                importMutation.mutate();
+              }}
+              disabled={
+                !preview ||
+                importing ||
+                parsing ||
+                preview.validRows === 0 ||
+                preview.totalRows > MAX_ROWS
+              }
+            >
+              {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {preview
+                ? `Import ${preview.validRows} valid row(s)`
+                : "Import"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
