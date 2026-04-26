@@ -383,7 +383,7 @@ const Geofencing = () => {
       queryClient.invalidateQueries({ queryKey: ["merged-trip-geofences"] });
       toast({ title: "Dispatch policy updated" });
     },
-    onError: (e: any) => toast(friendlyToastError(e, { title: "Could not update policy" })),
+    onError: (e: any) => friendlyToastError(e, { title: "Could not update policy" }),
   });
 
   const resetForm = () => {
