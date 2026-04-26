@@ -27,18 +27,14 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  Route,
-  Crosshair,
   Ban,
   Building2,
   Navigation,
-  RotateCcw,
   PanelRightClose,
   PanelRightOpen,
-  Plus,
   X,
 } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
