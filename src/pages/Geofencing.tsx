@@ -156,8 +156,9 @@ const Geofencing = () => {
   const [mapToken, setMapToken] = useState<string>("");
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const drawRef = useRef<MapboxDraw | null>(null);
   const geofenceLayersRef = useRef<string[]>([]);
+  const draftPolygonRef = useRef<Array<{ lat: number; lng: number }>>([]);
+  const [draftPolygonPoints, setDraftPolygonPoints] = useState<Array<{ lat: number; lng: number }>>([]);
   const [activeTab, setActiveTab] = useState<"geofences" | "events">("geofences");
   
   useEffect(() => {
@@ -220,40 +221,45 @@ const Geofencing = () => {
     dwellAlerts: recentEvents?.filter(e => e.event_type === 'dwell_exceeded').length || 0,
   };
 
-  // Initialize Mapbox Draw when map is ready
+  const clearDraftPolygon = useCallback(() => {
+    draftPolygonRef.current = [];
+    setDraftPolygonPoints([]);
+    const map = mapRef.current;
+    if (!map) return;
+    [draftPointLayerId, draftLineLayerId, draftFillLayerId].forEach((id) => {
+      try { if (map.getLayer(id)) map.removeLayer(id); } catch {}
+    });
+    try { if (map.getSource(draftSourceId)) map.removeSource(draftSourceId); } catch {}
+  }, []);
+
+  const updateDraftPolygon = useCallback((points: Array<{ lat: number; lng: number }>) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const lineCoords = points.map((p) => [p.lng, p.lat]);
+    const polygonCoords = points.length >= 3 ? [[...lineCoords, lineCoords[0]]] : [];
+    const data: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: [
+        ...(polygonCoords.length ? [{ type: "Feature" as const, properties: { kind: "fill" }, geometry: { type: "Polygon" as const, coordinates: polygonCoords } }] : []),
+        ...(lineCoords.length >= 2 ? [{ type: "Feature" as const, properties: { kind: "line" }, geometry: { type: "LineString" as const, coordinates: lineCoords } }] : []),
+        ...lineCoords.map((coord, index) => ({ type: "Feature" as const, properties: { kind: "point", index: index + 1 }, geometry: { type: "Point" as const, coordinates: coord } })),
+      ],
+    };
+
+    if (map.getSource(draftSourceId)) {
+      (map.getSource(draftSourceId) as maplibregl.GeoJSONSource).setData(data);
+      return;
+    }
+
+    map.addSource(draftSourceId, { type: "geojson", data });
+    map.addLayer({ id: draftFillLayerId, type: "fill", source: draftSourceId, filter: ["==", ["get", "kind"], "fill"], paint: { "fill-color": "#8DC63F", "fill-opacity": 0.18 } });
+    map.addLayer({ id: draftLineLayerId, type: "line", source: draftSourceId, filter: ["==", ["get", "kind"], "line"], paint: { "line-color": "#8DC63F", "line-width": 3, "line-dasharray": [2, 1] } });
+    map.addLayer({ id: draftPointLayerId, type: "circle", source: draftSourceId, filter: ["==", ["get", "kind"], "point"], paint: { "circle-color": "#8DC63F", "circle-radius": 5, "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });
+  }, []);
+
+  // Initialize map hooks when ready
   const handleMapReady = (map: maplibregl.Map) => {
     mapRef.current = map;
-    
-    const draw = new MapboxDraw({
-      displayControlsDefault: false,
-      controls: {},
-    });
-    
-    drawRef.current = draw;
-    map.addControl(draw);
-
-    map.on('draw.create', (e: any) => {
-      const feature = e.features[0];
-      if (feature.geometry.type === 'Polygon') {
-        const coords = feature.geometry.coordinates[0].map((coord: number[]) => ({
-          lng: coord[0],
-          lat: coord[1]
-        }));
-        coords.pop();
-        setFormData(prev => ({
-          ...prev,
-          polygon_points: coords,
-          geometry_type: 'polygon'
-        }));
-        setIsCreateDialogOpen(true);
-        toast({
-          title: "✓ Area Selected",
-          description: `Polygon with ${coords.length} points captured.`
-        });
-      }
-      try { draw.deleteAll(); } catch {}
-      setDrawingMode(null);
-    });
   };
 
   // Handle drawing mode changes
