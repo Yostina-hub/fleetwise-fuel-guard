@@ -2353,6 +2353,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <VRField
                   id="vr-contact-phone"
                   label="Contact Phone"
+                  icon={UserCog}
                   required
                   error={getError("contact_phone")}
                 >
