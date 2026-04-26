@@ -502,6 +502,130 @@ export const MergedTripStopsPanel = ({
     };
   }, [showMap, open, stopsWithCoords]);
 
+  // ── Render geofences as filled polygons on the map ────────────────
+  // Reacts to (a) the map being mounted via the route effect above and
+  // (b) the geofences query resolving. Cleans up its own layers on each
+  // run so toggling visibility never leaves orphan sources behind.
+  useEffect(() => {
+    if (!showMap || !open) return;
+    const map = mapRef.current;
+    if (!map || geofences.length === 0) return;
+
+    const addedIds: string[] = [];
+
+    const renderGeofences = () => {
+      geofences.forEach((fence: any) => {
+        const sourceId = `mtsp-geofence-${fence.id}`;
+        const fillId = `${sourceId}-fill`;
+        const lineId = `${sourceId}-line`;
+        if (map.getSource(sourceId)) return;
+        const color = fence.color || "hsl(160 84% 39%)";
+
+        let feature: GeoJSON.Feature | null = null;
+        if (
+          fence.geometry_type === "circle" &&
+          fence.center_lat != null &&
+          fence.center_lng != null
+        ) {
+          const lat = Number(fence.center_lat);
+          const lng = Number(fence.center_lng);
+          const radius = Number(fence.radius_meters) || 500;
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+          const points = 64;
+          const coords: number[][] = [];
+          for (let i = 0; i <= points; i++) {
+            const angle = (i / points) * 2 * Math.PI;
+            const dx = radius * Math.cos(angle);
+            const dy = radius * Math.sin(angle);
+            const py = lat + dy / 111320;
+            const px = lng + dx / (111320 * Math.cos((lat * Math.PI) / 180));
+            coords.push([px, py]);
+          }
+          feature = {
+            type: "Feature",
+            properties: { name: fence.name },
+            geometry: { type: "Polygon", coordinates: [coords] },
+          };
+        } else if (
+          fence.geometry_type === "polygon" &&
+          Array.isArray(fence.polygon_points) &&
+          fence.polygon_points.length >= 3
+        ) {
+          const coords = fence.polygon_points.map((p: any) => [
+            Number(p.lng),
+            Number(p.lat),
+          ]);
+          coords.push(coords[0]);
+          feature = {
+            type: "Feature",
+            properties: { name: fence.name },
+            geometry: { type: "Polygon", coordinates: [coords] },
+          };
+        }
+        if (!feature) return;
+
+        try {
+          map.addSource(sourceId, { type: "geojson", data: feature });
+          // Keep geofences UNDER the route lines so the chosen path stays
+          // the visual hero. Anchor before the first route casing when it
+          // exists so insertion order is deterministic.
+          const beforeId = map.getLayer("route-alt-casing-0")
+            ? "route-alt-casing-0"
+            : undefined;
+          map.addLayer(
+            {
+              id: fillId,
+              type: "fill",
+              source: sourceId,
+              paint: { "fill-color": color, "fill-opacity": 0.12 },
+            },
+            beforeId,
+          );
+          map.addLayer(
+            {
+              id: lineId,
+              type: "line",
+              source: sourceId,
+              paint: {
+                "line-color": color,
+                "line-width": 1.5,
+                "line-opacity": 0.85,
+                "line-dasharray": [3, 1.5],
+              },
+            },
+            beforeId,
+          );
+          addedIds.push(fillId, lineId, sourceId);
+        } catch {
+          /* style not ready — load handler below will retry */
+        }
+      });
+    };
+
+    if (map.isStyleLoaded()) {
+      renderGeofences();
+    } else {
+      map.once("load", renderGeofences);
+    }
+
+    return () => {
+      const m = mapRef.current;
+      if (!m) return;
+      addedIds.forEach((id) => {
+        try {
+          if (m.getLayer(id)) m.removeLayer(id);
+        } catch {
+          /* noop */
+        }
+        try {
+          if (m.getSource(id)) m.removeSource(id);
+        } catch {
+          /* noop */
+        }
+      });
+    };
+  }, [showMap, open, geofences, routesInfo.length]);
+
   // Ask Lovable AI to recommend the best candidate route. The AI never
   // invents measurements — it weighs the OSRM-supplied numbers against the
   // trip context (passengers, time window, pool) and returns a ranked pick
