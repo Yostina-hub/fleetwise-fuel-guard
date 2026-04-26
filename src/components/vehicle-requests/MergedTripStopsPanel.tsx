@@ -670,8 +670,8 @@ export const MergedTripStopsPanel = ({
                       </div>
                     )}
                     {!routesLoading && routesError && (
-                      <div className="text-[11px] text-destructive px-3 py-2.5 leading-snug">
-                        {routesError}. Showing straight-line fallback.
+                      <div className="text-[11px] text-amber-700 dark:text-amber-300 bg-amber-500/10 px-3 py-2.5 leading-snug">
+                        {routesError}
                       </div>
                     )}
 
