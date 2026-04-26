@@ -278,8 +278,9 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
             Bulk Import Vehicles
           </DialogTitle>
           <DialogDescription>
-            Upload an Excel (.xlsx) or CSV file. We'll preview & validate before saving.
-            Existing vehicles (matched by plate number) will be updated.
+            Upload an Excel (.xlsx) or CSV file. We'll preview, validate, and
+            check for duplicates before saving. You decide what happens to
+            existing vehicles.
           </DialogDescription>
         </DialogHeader>
 
@@ -355,9 +356,10 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
           )}
 
           {/* Parsing indicator */}
-          {parsing && (
+          {(parsing || scanning) && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" /> Parsing file...
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {parsing ? "Parsing file..." : "Checking for duplicates..."}
             </div>
           )}
 
@@ -374,6 +376,12 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
                     <XCircle className="w-3 h-3 mr-1" /> Errors: {preview.invalidRows}
                   </Badge>
                 )}
+                {dupScan && dupScan.duplicates.length > 0 && (
+                  <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/15">
+                    <AlertCircle className="w-3 h-3 mr-1" /> Duplicates:{" "}
+                    {dupScan.duplicates.length}
+                  </Badge>
+                )}
                 {preview.unmappedHeaders.length > 0 && (
                   <Badge variant="secondary">
                     <AlertCircle className="w-3 h-3 mr-1" />
@@ -386,6 +394,19 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
                 <div className="text-xs text-muted-foreground bg-muted/50 rounded p-2">
                   Ignored columns (not in schema): {preview.unmappedHeaders.join(", ")}
                 </div>
+              )}
+
+              {/* Duplicate handling picker */}
+              {dupScan && !scanning && preview.validRows > 0 && (
+                <ConflictStrategyPicker
+                  entityLabel="vehicle"
+                  keyLabel="plate number"
+                  duplicates={dupScan.duplicates}
+                  newCount={dupScan.newRows.length}
+                  strategy={strategy}
+                  onStrategyChange={setStrategy}
+                  disabled={importing}
+                />
               )}
 
               {allRowErrors.length > 0 && (
