@@ -46,7 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Fuel, MapPin, Gauge, Loader2, AlertTriangle, Route } from "lucide-react";
+import { Fuel, MapPin, Gauge, Loader2, AlertTriangle, Route, Satellite, RefreshCw } from "lucide-react";
 import ConfirmActionDialog from "@/components/users/ConfirmActionDialog";
 
 interface ActiveRequestLike {
@@ -185,68 +185,143 @@ export const OnRoadFuelRequestDialog = ({
   const vehicle = request?.assigned_vehicle ?? fallbackVehicle ?? null;
   const vehicleId = vehicle?.id ?? request?.assigned_vehicle_id ?? null;
 
-  // Auto-capture latest e-fuel telemetry for the vehicle so the driver does
-  // not have to type fuel level / odometer manually when a sensor is present.
-  const { data: fuelSensor } = useQuery({
-    queryKey: ["onroad-fuel-sensor", vehicleId],
+  // Auto-capture LIVE telemetry for the vehicle from the smart device.
+  // Pulls position, odometer and fuel level from the latest_vehicle_telemetry
+  // view so the driver does not have to type any of these manually — they
+  // come straight off the on-board GPS / e-fuel sensor.
+  const {
+    data: liveTelemetry,
+    isFetching: telemetryFetching,
+    refetch: refetchTelemetry,
+  } = useQuery({
+    queryKey: ["onroad-live-telemetry", vehicleId],
     enabled: open && !!vehicleId,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_vehicle_fuel_status", {
-        p_vehicle_ids: [vehicleId],
-      });
+      const { data, error } = await supabase
+        .from("latest_vehicle_telemetry" as any)
+        .select(
+          "latitude, longitude, fuel_level_percent, odometer_km, speed_kmh, last_communication_at, device_connected"
+        )
+        .eq("vehicle_id", vehicleId!)
+        .maybeSingle();
       if (error) throw error;
-      const row = (data || [])[0] as any;
-      if (!row) return null;
+      if (!data) return null;
+      const row = data as any;
       return {
-        last_fuel_reading:
-          row.last_fuel_reading == null ? null : Number(row.last_fuel_reading),
+        latitude: row.latitude == null ? null : Number(row.latitude),
+        longitude: row.longitude == null ? null : Number(row.longitude),
+        fuel_level_percent:
+          row.fuel_level_percent == null ? null : Number(row.fuel_level_percent),
+        odometer_km: row.odometer_km == null ? null : Number(row.odometer_km),
+        speed_kmh: row.speed_kmh == null ? null : Number(row.speed_kmh),
         last_communication_at: row.last_communication_at as string | null,
+        device_connected: !!row.device_connected,
       };
     },
-    staleTime: 30_000,
+    refetchInterval: open ? 15_000 : false,
+    staleTime: 10_000,
   });
 
-  // Latest known odometer from telemetry (best-effort — silent fail).
-  const { data: telemetryOdo } = useQuery({
-    queryKey: ["onroad-vehicle-odo", vehicleId],
-    enabled: open && !!vehicleId,
+  // Reverse-geocode the device's GPS fix to a human-readable place so the
+  // "Current location" field is also auto-captured.
+  const { data: geocodedPlace } = useQuery({
+    queryKey: [
+      "onroad-reverse-geocode",
+      liveTelemetry?.latitude,
+      liveTelemetry?.longitude,
+    ],
+    enabled:
+      open &&
+      liveTelemetry?.latitude != null &&
+      liveTelemetry?.longitude != null,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("vehicles")
-        .select("odometer_km")
-        .eq("id", vehicleId!)
-        .maybeSingle();
-      return data?.odometer_km ?? null;
+      try {
+        const lat = liveTelemetry!.latitude!;
+        const lng = liveTelemetry!.longitude!;
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
+          { headers: { Accept: "application/json" } }
+        );
+        if (!res.ok) return null;
+        const j = await res.json();
+        const a = j.address || {};
+        const parts = [
+          a.road || a.neighbourhood || a.suburb,
+          a.city || a.town || a.village || a.county,
+        ].filter(Boolean);
+        return parts.length
+          ? parts.join(", ")
+          : (j.display_name as string | undefined) ?? null;
+      } catch {
+        return null;
+      }
     },
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 
   // Reset every time the dialog re-opens, then prefill from telemetry once
-  // the e-fuel + odometer queries resolve.
+  // the live telemetry + geocode resolve.
   useEffect(() => {
     if (open) setForm(initialState(lastOdometerKm));
   }, [open, lastOdometerKm]);
 
+  // Always overwrite the four device-captured fields with the latest values
+  // from the smart device whenever telemetry refreshes — these inputs are
+  // read-only and reflect the current state of the vehicle.
   useEffect(() => {
     if (!open) return;
     setForm((f) => {
       const next = { ...f };
-      // Prefer telemetry odometer when the local prop is empty.
-      if ((!f.current_odometer || f.current_odometer === "") && telemetryOdo != null) {
-        next.current_odometer = String(telemetryOdo);
+      if (liveTelemetry?.odometer_km != null && Number.isFinite(liveTelemetry.odometer_km)) {
+        next.current_odometer = String(Math.round(liveTelemetry.odometer_km));
       }
-      // Auto-fill fuel level from sensor (clamp to 0–100).
       if (
-        (!f.current_fuel_percent || f.current_fuel_percent === "") &&
-        fuelSensor?.last_fuel_reading != null &&
-        Number.isFinite(fuelSensor.last_fuel_reading)
+        liveTelemetry?.fuel_level_percent != null &&
+        Number.isFinite(liveTelemetry.fuel_level_percent)
       ) {
-        const pct = Math.max(0, Math.min(100, Math.round(fuelSensor.last_fuel_reading)));
+        const pct = Math.max(0, Math.min(100, Math.round(liveTelemetry.fuel_level_percent)));
         next.current_fuel_percent = String(pct);
+      }
+      // Geocoded place always wins over manual input — these fields are
+      // device-driven now.
+      if (geocodedPlace) {
+        next.current_location = geocodedPlace;
+      } else if (
+        liveTelemetry?.latitude != null &&
+        liveTelemetry?.longitude != null
+      ) {
+        next.current_location = `GPS ${liveTelemetry.latitude.toFixed(5)}, ${liveTelemetry.longitude.toFixed(5)}`;
+      }
+      // Estimate remaining distance from live fuel %. Heuristic: ~4 km per
+      // percent of fuel (≈ 400 km on a full tank). Operators can refine via
+      // org settings later; for now this gives dispatchers a useful signal
+      // without asking the driver to guess.
+      if (
+        liveTelemetry?.fuel_level_percent != null &&
+        Number.isFinite(liveTelemetry.fuel_level_percent)
+      ) {
+        const km = Math.max(
+          0,
+          Math.round(liveTelemetry.fuel_level_percent * 4)
+        );
+        next.remaining_distance_km = String(km);
       }
       return next;
     });
-  }, [open, telemetryOdo, fuelSensor?.last_fuel_reading]);
+  }, [
+    open,
+    liveTelemetry?.odometer_km,
+    liveTelemetry?.fuel_level_percent,
+    liveTelemetry?.latitude,
+    liveTelemetry?.longitude,
+    geocodedPlace,
+  ]);
+
+  // Backwards-compat alias so the existing JSX (badge in the trip context
+  // card) keeps working without further changes.
+  const fuelSensor = liveTelemetry
+    ? { last_fuel_reading: liveTelemetry.fuel_level_percent }
+    : null;
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -489,72 +564,121 @@ export const OnRoadFuelRequestDialog = ({
 
             <Separator />
 
-            {/* Where you are */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="onroad-location"
-                className="text-sm font-medium flex items-center gap-1.5"
-              >
-                <MapPin className="w-3.5 h-3.5" aria-hidden="true" /> Current location *
-              </Label>
-              <Input
-                id="onroad-location"
-                value={form.current_location}
-                onChange={(e) => set("current_location", e.target.value)}
-                placeholder="Closest town, landmark or KM marker"
-                maxLength={200}
-                required
-              />
-            </div>
+            {/* ── Live device telemetry (read-only, auto-captured) ─────── */}
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+                  <Satellite className="w-3.5 h-3.5" aria-hidden="true" />
+                  Live from smart device
+                  {liveTelemetry?.device_connected ? (
+                    <Badge
+                      variant="outline"
+                      className="ml-1 bg-success/10 text-success border-success/30 text-[10px]"
+                    >
+                      online
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="ml-1 bg-warning/10 text-warning border-warning/30 text-[10px]"
+                    >
+                      stale
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => refetchTelemetry()}
+                  disabled={telemetryFetching || !vehicleId}
+                >
+                  <RefreshCw
+                    className={`w-3 h-3 mr-1 ${telemetryFetching ? "animate-spin" : ""}`}
+                    aria-hidden="true"
+                  />
+                  Refresh
+                </Button>
+              </div>
 
-            {/* Numbers */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="onroad-odometer" className="text-sm font-medium flex items-center gap-1.5">
-                  <Gauge className="w-3.5 h-3.5" aria-hidden="true" /> Current odometer (km) *
+              {/* Where you are — auto-captured from GPS */}
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="onroad-location"
+                  className="text-sm font-medium flex items-center gap-1.5"
+                >
+                  <MapPin className="w-3.5 h-3.5" aria-hidden="true" /> Current location
+                  <Badge variant="outline" className="text-[10px] ml-1">auto</Badge>
                 </Label>
                 <Input
-                  id="onroad-odometer"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  step="1"
-                  value={form.current_odometer}
-                  onChange={(e) => set("current_odometer", e.target.value)}
-                  required
+                  id="onroad-location"
+                  value={form.current_location}
+                  readOnly
+                  className="bg-muted/40 cursor-not-allowed"
+                  placeholder={
+                    vehicleId
+                      ? "Waiting for GPS fix from device…"
+                      : "No vehicle assigned"
+                  }
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="onroad-fuel-pct" className="text-sm font-medium">
-                  Fuel level (%)
-                </Label>
-                <Input
-                  id="onroad-fuel-pct"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  max={100}
-                  step="1"
-                  value={form.current_fuel_percent}
-                  onChange={(e) => set("current_fuel_percent", e.target.value)}
-                  placeholder="0–100"
-                />
+
+              {/* Numbers — odometer / fuel% / distance left, all from device */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="onroad-odometer" className="text-sm font-medium flex items-center gap-1.5">
+                    <Gauge className="w-3.5 h-3.5" aria-hidden="true" /> Odometer (km)
+                    <Badge variant="outline" className="text-[10px] ml-1">auto</Badge>
+                  </Label>
+                  <Input
+                    id="onroad-odometer"
+                    value={form.current_odometer}
+                    readOnly
+                    className="bg-muted/40 cursor-not-allowed"
+                    placeholder="—"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="onroad-fuel-pct" className="text-sm font-medium">
+                    Fuel level (%)
+                    <Badge variant="outline" className="text-[10px] ml-1">auto</Badge>
+                  </Label>
+                  <Input
+                    id="onroad-fuel-pct"
+                    value={form.current_fuel_percent}
+                    readOnly
+                    className="bg-muted/40 cursor-not-allowed"
+                    placeholder="—"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="onroad-distance" className="text-sm font-medium">
+                    Distance left (km)
+                    <Badge variant="outline" className="text-[10px] ml-1">auto</Badge>
+                  </Label>
+                  <Input
+                    id="onroad-distance"
+                    value={form.remaining_distance_km}
+                    readOnly
+                    className="bg-muted/40 cursor-not-allowed"
+                    placeholder="—"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="onroad-distance" className="text-sm font-medium">
-                  Distance left (km)
-                </Label>
-                <Input
-                  id="onroad-distance"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  step="1"
-                  value={form.remaining_distance_km}
-                  onChange={(e) => set("remaining_distance_km", e.target.value)}
-                  placeholder="Estimated km to destination"
-                />
-              </div>
+
+              {liveTelemetry?.last_communication_at && (
+                <p className="text-[11px] text-muted-foreground">
+                  Last device update:{" "}
+                  {new Date(liveTelemetry.last_communication_at).toLocaleString()}
+                </p>
+              )}
+              {!liveTelemetry && vehicleId && (
+                <p className="text-[11px] text-warning flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                  No telemetry received yet from this vehicle's device.
+                </p>
+              )}
             </div>
 
             {/* Liters + urgency */}
