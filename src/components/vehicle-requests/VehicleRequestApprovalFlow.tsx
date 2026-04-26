@@ -509,30 +509,64 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       {/* Issue #36 — Route shown clearly with named places + addresses */}
       <Section title="Route">
         <div className="space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="mt-1 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
-            <div className="flex-1 min-w-0">
-              <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Departure</div>
-              <div className="text-sm font-medium text-foreground break-words">
-                {request.departure_place || request.departure_address || "—"}
-              </div>
-              {request.departure_address && request.departure_place !== request.departure_address && (
-                <div className="text-xs text-muted-foreground break-words">{request.departure_address}</div>
-              )}
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="mt-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-500/20" />
-            <div className="flex-1 min-w-0">
-              <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Destination</div>
-              <div className="text-sm font-medium text-foreground break-words">
-                {request.destination || request.destination_address || "—"}
-              </div>
-              {request.destination_address && request.destination !== request.destination_address && (
-                <div className="text-xs text-muted-foreground break-words">{request.destination_address}</div>
-              )}
-            </div>
-          </div>
+          {(() => {
+            const depName =
+              (typeof request.departure_place === "string" && request.departure_place.trim()) ||
+              (typeof request.departure_address === "string" && request.departure_address.trim()) ||
+              null;
+            const depAddress =
+              (typeof request.departure_address === "string" && request.departure_address.trim()) ||
+              null;
+            const depCoords =
+              Number.isFinite(Number(request.departure_lat)) && Number.isFinite(Number(request.departure_lng))
+                ? `${Number(request.departure_lat).toFixed(5)}°, ${Number(request.departure_lng).toFixed(5)}°`
+                : null;
+            const destName =
+              (typeof request.destination === "string" && request.destination.trim()) ||
+              (typeof request.destination_address === "string" && request.destination_address.trim()) ||
+              null;
+            const destAddress =
+              (typeof request.destination_address === "string" && request.destination_address.trim()) ||
+              null;
+            const destCoords =
+              Number.isFinite(Number(request.destination_lat)) && Number.isFinite(Number(request.destination_lng))
+                ? `${Number(request.destination_lat).toFixed(5)}°, ${Number(request.destination_lng).toFixed(5)}°`
+                : null;
+            return (
+              <>
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Departure</div>
+                    <div className="text-sm font-medium text-foreground break-words">
+                      {depName || depCoords || "—"}
+                    </div>
+                    {depAddress && depAddress !== depName && (
+                      <div className="text-xs text-muted-foreground break-words">{depAddress}</div>
+                    )}
+                    {depCoords && (
+                      <div className="text-[11px] text-muted-foreground/80 font-mono">{depCoords}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-500/20" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Destination</div>
+                    <div className="text-sm font-medium text-foreground break-words">
+                      {destName || destCoords || "—"}
+                    </div>
+                    {destAddress && destAddress !== destName && (
+                      <div className="text-xs text-muted-foreground break-words">{destAddress}</div>
+                    )}
+                    {destCoords && (
+                      <div className="text-[11px] text-muted-foreground/80 font-mono">{destCoords}</div>
+                    )}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
           {request.distance_log_km && (
             <div className="text-xs text-muted-foreground pt-1 border-t border-border/40">
               Estimated distance: <span className="text-foreground font-medium">{request.distance_log_km} km</span>
