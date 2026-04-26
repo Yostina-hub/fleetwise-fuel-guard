@@ -313,7 +313,7 @@ export const MergedTripStopsPanel = ({
   >(null);
 
   useEffect(() => {
-    if (!showMap || !open || !mapReady) return;
+    if (!showMap || !open) return;
     if (!containerRef.current || mapRef.current) return;
     if (stopsWithCoords.length === 0) return;
 
