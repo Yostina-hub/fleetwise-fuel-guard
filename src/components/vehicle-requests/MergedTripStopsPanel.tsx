@@ -339,11 +339,13 @@ export const MergedTripStopsPanel = ({
       setRoutesLoading(true);
       setRoutesError(null);
 
-      // Fallback colors for up to 3 alternatives. Best = primary blue.
+      // Professional palette — strong primary blue for the recommended route,
+      // warm amber and muted violet for alternatives. Each route gets a darker
+      // outline ("casing") drawn underneath for that map-app polish.
       const palette = [
-        { name: "Route A", color: "hsl(217 91% 55%)" },
-        { name: "Route B", color: "hsl(38 92% 50%)" },
-        { name: "Route C", color: "hsl(280 70% 60%)" },
+        { name: "Route A", color: "hsl(217 91% 50%)", casing: "hsl(217 91% 30%)" },
+        { name: "Route B", color: "hsl(32 95% 48%)", casing: "hsl(32 95% 28%)" },
+        { name: "Route C", color: "hsl(265 60% 55%)", casing: "hsl(265 60% 35%)" },
       ];
 
       try {
@@ -385,10 +387,25 @@ export const MergedTripStopsPanel = ({
           const isBest = i === bestIdx;
           const meta = palette[i] ?? palette[0];
           const sourceId = `route-alt-${i}`;
+          const casingId = `route-alt-casing-${i}`;
           const layerId = `route-alt-layer-${i}`;
           map.addSource(sourceId, {
             type: "geojson",
-            data: { type: "Feature", properties: {}, geometry: r.geometry },
+            data: { type: "Feature", properties: { idx: i, isBest }, geometry: r.geometry },
+          });
+          // Casing — a darker, slightly thicker line drawn beneath each route
+          // so the coloured stroke reads cleanly over the basemap. Standard
+          // technique used by professional mapping apps (Google, Mapbox).
+          map.addLayer({
+            id: casingId,
+            type: "line",
+            source: sourceId,
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": meta.casing,
+              "line-width": isBest ? 9 : 5,
+              "line-opacity": isBest ? 0.55 : 0.3,
+            },
           });
           map.addLayer({
             id: layerId,
@@ -396,11 +413,20 @@ export const MergedTripStopsPanel = ({
             source: sourceId,
             layout: { "line-cap": "round", "line-join": "round" },
             paint: {
-              "line-color": isBest ? "hsl(217 91% 50%)" : meta.color,
-              "line-width": isBest ? 6 : 3,
-              "line-opacity": isBest ? 0.95 : 0.45,
-              ...(isBest ? {} : { "line-dasharray": [1.5, 1] }),
+              "line-color": meta.color,
+              "line-width": isBest ? 6 : 3.5,
+              "line-opacity": isBest ? 1 : 0.7,
+              ...(isBest ? {} : { "line-dasharray": [2, 1.2] }),
             },
+          });
+
+          // Click on route line → focus that alternative in the legend.
+          map.on("click", layerId, () => setFocusedRouteIdx(i));
+          map.on("mouseenter", layerId, () => {
+            map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", layerId, () => {
+            map.getCanvas().style.cursor = "";
           });
         });
 
@@ -413,7 +439,7 @@ export const MergedTripStopsPanel = ({
             b.extend([s.departure_lng!, s.departure_lat!]);
             b.extend([s.destination_lng!, s.destination_lat!]);
           });
-          map.fitBounds(b, { padding: 50, maxZoom: 14, duration: 400 });
+          map.fitBounds(b, { padding: 60, maxZoom: 14, duration: 400 });
         } catch {
           /* noop */
         }
@@ -425,7 +451,7 @@ export const MergedTripStopsPanel = ({
             distanceKm: r.distance / 1000,
             durationMin: r.duration / 60,
             isBest: i === bestIdx,
-            color: i === bestIdx ? "hsl(217 91% 50%)" : palette[i].color,
+            color: palette[i]?.color ?? palette[0].color,
           })),
         );
       } catch (err: any) {
