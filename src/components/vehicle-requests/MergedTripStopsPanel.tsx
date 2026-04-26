@@ -593,7 +593,12 @@ export const MergedTripStopsPanel = ({
               }]
             : [];
 
-        const results = rawAlts
+        const uniqueAlts = rawAlts.filter((route, idx, arr) => {
+          const signature = `${Math.round(Number(route.distance_m) || 0)}:${Math.round(Number(route.duration_s) || 0)}:${route.geometry?.length || 0}`;
+          return arr.findIndex((other) => `${Math.round(Number(other.distance_m) || 0)}:${Math.round(Number(other.duration_s) || 0)}:${other.geometry?.length || 0}` === signature) === idx;
+        });
+
+        const results = uniqueAlts
           .filter((r) => Array.isArray(r.geometry) && r.geometry.length >= 2)
           .slice(0, 3)
           .map((r) => ({
