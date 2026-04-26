@@ -87,6 +87,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { PageDateRangeProvider, usePageDateRange } from "@/contexts/PageDateRangeContext";
 import PageDateRangeFilter from "@/components/common/PageDateRangeFilter";
+import { formatRequestNumber } from "@/lib/formatRequestNumber";
 
 type StatusKey = "all" | "pending" | "approved" | "assigned" | "completed" | "rejected" | "cancelled";
 
