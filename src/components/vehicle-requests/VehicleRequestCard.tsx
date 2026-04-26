@@ -116,6 +116,15 @@ export const VehicleRequestCard = ({
           <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 gap-1 border-border/60">
             {tMeta.icon} {tMeta.label}
           </Badge>
+          {showMismatch && reqMeta && sysMeta && (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 h-4 gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/40"
+              title={`Requester picked ${reqMeta.label} · System evaluated ${sysMeta.label} from the trip times`}
+            >
+              ⚠ Req: {reqMeta.label} → Sys: {sysMeta.label}
+            </Badge>
+          )}
           <SlaCountdownBadge
             createdAt={request.created_at}
             slaDueAt={request.sla_due_at}
