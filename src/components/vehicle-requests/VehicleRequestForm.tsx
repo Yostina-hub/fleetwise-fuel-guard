@@ -971,7 +971,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     if (raw <= SINGLE_VEHICLE_MAX_PAX) return 1;
     return Math.ceil(raw / SINGLE_VEHICLE_MAX_PAX);
   }, [form.passengers]);
-  const effectiveMaxVehicles = 50;
+  // Cap "No. of Vehicles" by the count actually present in the chosen pool
+  // (when a pool is selected and has vehicles). Falls back to 50 otherwise.
+  const effectiveMaxVehicles = form.pool_name && poolVehicleCount > 0
+    ? poolVehicleCount
+    : 50;
   useEffect(() => {
     const current = parseInt(form.num_vehicles) || 1;
     // Only bump UP to the passenger-driven minimum when crossing the 25-seat
