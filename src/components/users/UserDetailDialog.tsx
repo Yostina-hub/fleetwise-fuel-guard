@@ -453,6 +453,89 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Save Identity
               </Button>
+
+              <Separator />
+
+              {/* Pool Assignment — mirrors Vehicle Registration (Pool Category + Specific Pool) */}
+              <div className="space-y-3 rounded-lg border border-border/40 bg-muted/20 p-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-primary" /> Pool Assignment
+                  </Label>
+                  {poolCode && poolCategory && (
+                    <Badge variant="outline" className={POOL_CATEGORY_META[poolCategory].tone}>
+                      {POOL_CATEGORY_META[poolCategory].label} · {poolCode}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="pool-category" className="text-xs">Pool Category</Label>
+                    <Select
+                      value={poolCategory}
+                      onValueChange={(v) => {
+                        const cat = v as PoolCategory;
+                        setPoolCategory(cat);
+                        // Reset specific pool if it doesn't belong to the new category
+                        if (!POOL_HIERARCHY[cat].some(p => p.code === poolCode)) {
+                          setPoolCode("");
+                        }
+                      }}
+                      disabled={loadingExtras || savingPool}
+                    >
+                      <SelectTrigger id="pool-category">
+                        <SelectValue placeholder="Select category..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(POOL_HIERARCHY) as PoolCategory[]).map(cat => {
+                          const meta = POOL_CATEGORY_META[cat];
+                          const Icon = meta.icon;
+                          return (
+                            <SelectItem key={cat} value={cat}>
+                              <span className="flex items-center gap-2">
+                                <Icon className="w-3.5 h-3.5" />
+                                {meta.label}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="pool-code" className="text-xs">Specific Pool</Label>
+                    <Select
+                      value={poolCode}
+                      onValueChange={setPoolCode}
+                      disabled={!poolCategory || loadingExtras || savingPool}
+                    >
+                      <SelectTrigger id="pool-code" className={!poolCategory ? "opacity-50" : ""}>
+                        <SelectValue placeholder={poolCategory ? "Select pool..." : "Pick category first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {poolCategory &&
+                          POOL_HIERARCHY[poolCategory].map(p => (
+                            <SelectItem key={p.code} value={p.code}>
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleSavePool}
+                  disabled={savingPool || loadingExtras || !poolCategory || !poolCode}
+                  variant="secondary"
+                  className="w-full gap-2"
+                >
+                  {savingPool ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save Pool
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
