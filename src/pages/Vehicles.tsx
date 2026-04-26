@@ -277,6 +277,7 @@ const Vehicles = () => {
         todayDistance: calculatedMetrics.todayDistance || 0,
         odometer: vehicleTelemetry?.odometer_km ?? 0,
         createdAt: v.created_at,
+        ownershipType: v.ownership_type,
       };
     });
   }, [dbVehicles, telemetry, isVehicleOnline, getMetrics]);
