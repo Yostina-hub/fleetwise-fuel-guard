@@ -618,6 +618,141 @@ export function RouteMapPreview({
     resolvedLabels,
   ]);
 
+  // Render geofence overlays (circles approximated as polygons + polygons).
+  // Adds three layers: fill, outline, and a label symbol layer per render pass.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+
+    const FILL_LAYER = "vr-geofence-fill";
+    const LINE_LAYER = "vr-geofence-line";
+    const LABEL_LAYER = "vr-geofence-label";
+    const SOURCE = "vr-geofence-src";
+
+    const cleanup = () => {
+      try {
+        if (map.getLayer(LABEL_LAYER)) map.removeLayer(LABEL_LAYER);
+        if (map.getLayer(LINE_LAYER)) map.removeLayer(LINE_LAYER);
+        if (map.getLayer(FILL_LAYER)) map.removeLayer(FILL_LAYER);
+        if (map.getSource(SOURCE)) map.removeSource(SOURCE);
+      } catch {
+        /* noop */
+      }
+    };
+    cleanup();
+
+    if (!geofences || geofences.length === 0) return;
+
+    // Convert each fence to a GeoJSON Polygon feature.
+    const circleToPolygon = (
+      lat: number,
+      lng: number,
+      radiusM: number,
+      steps = 48,
+    ): [number, number][] => {
+      const coords: [number, number][] = [];
+      const earth = 6378137; // meters
+      const latRad = (lat * Math.PI) / 180;
+      for (let i = 0; i <= steps; i++) {
+        const theta = (i / steps) * 2 * Math.PI;
+        const dx = (radiusM * Math.cos(theta)) / (earth * Math.cos(latRad)) * (180 / Math.PI);
+        const dy = (radiusM * Math.sin(theta)) / earth * (180 / Math.PI);
+        coords.push([lng + dx, lat + dy]);
+      }
+      return coords;
+    };
+
+    const features = geofences
+      .map((f) => {
+        let ring: [number, number][] | null = null;
+        if (
+          f.geometry_type === "circle" &&
+          f.center_lat != null &&
+          f.center_lng != null &&
+          f.radius_meters
+        ) {
+          ring = circleToPolygon(
+            Number(f.center_lat),
+            Number(f.center_lng),
+            Number(f.radius_meters),
+          );
+        } else if (
+          f.geometry_type === "polygon" &&
+          Array.isArray(f.polygon_points) &&
+          f.polygon_points.length >= 3
+        ) {
+          ring = f.polygon_points.map((p) => [p.lng, p.lat] as [number, number]);
+          // Close ring
+          const first = ring[0];
+          const last = ring[ring.length - 1];
+          if (first[0] !== last[0] || first[1] !== last[1]) ring.push(first);
+        }
+        if (!ring) return null;
+
+        // Centroid for label placement
+        const cx =
+          ring.reduce((s, c) => s + c[0], 0) / ring.length;
+        const cy =
+          ring.reduce((s, c) => s + c[1], 0) / ring.length;
+
+        return {
+          type: "Feature" as const,
+          properties: { name: f.name, id: f.id, cx, cy },
+          geometry: {
+            type: "Polygon" as const,
+            coordinates: [ring],
+          },
+        };
+      })
+      .filter(Boolean) as GeoJSON.Feature[];
+
+    if (features.length === 0) return;
+
+    map.addSource(SOURCE, {
+      type: "geojson",
+      data: { type: "FeatureCollection", features },
+    });
+
+    map.addLayer({
+      id: FILL_LAYER,
+      type: "fill",
+      source: SOURCE,
+      paint: {
+        "fill-color": "hsl(217 91% 60%)",
+        "fill-opacity": 0.12,
+      },
+    });
+    map.addLayer({
+      id: LINE_LAYER,
+      type: "line",
+      source: SOURCE,
+      paint: {
+        "line-color": "hsl(217 91% 50%)",
+        "line-width": 1.5,
+        "line-opacity": 0.85,
+        "line-dasharray": [2, 1.5],
+      },
+    });
+    map.addLayer({
+      id: LABEL_LAYER,
+      type: "symbol",
+      source: SOURCE,
+      layout: {
+        "text-field": ["get", "name"],
+        "text-size": 10,
+        "text-anchor": "center",
+        "text-allow-overlap": false,
+      },
+      paint: {
+        "text-color": "hsl(217 91% 25%)",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1.5,
+      },
+    });
+
+    return () => cleanup();
+  }, [ready, geofences]);
+
   const hasAny = orderedPoints.length > 0;
   const hasStops = stops.some((s) => s.lat != null && s.lng != null);
 
