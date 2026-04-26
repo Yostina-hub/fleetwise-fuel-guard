@@ -175,6 +175,7 @@ const Geofencing = () => {
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   const mapRef = useRef<maplibregl.Map | null>(null);
   const geofenceLayersRef = useRef<string[]>([]);
+  const geofenceMarkersRef = useRef<maplibregl.Marker[]>([]);
   const draftPolygonRef = useRef<Array<{ lat: number; lng: number }>>([]);
   const [draftPolygonPoints, setDraftPolygonPoints] = useState<Array<{ lat: number; lng: number }>>([]);
   const [mapReady, setMapReady] = useState(false);
@@ -345,8 +346,13 @@ const Geofencing = () => {
 
   const focusFenceOnMap = useCallback((fence: GeofenceRecord) => {
     const bounds = getFenceBounds(fence);
-    if (!mapRef.current || !bounds) return;
-    mapRef.current.fitBounds(bounds, { padding: 90, maxZoom: 16, duration: 600 });
+    const center = getFenceCenter(fence);
+    if (!mapRef.current) return;
+    if (bounds) {
+      mapRef.current.fitBounds(bounds, { padding: 130, maxZoom: 18, duration: 600 });
+      return;
+    }
+    if (center) mapRef.current.flyTo({ center, zoom: 17, duration: 600 });
   }, []);
 
   // Render geofences on map
