@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import VehicleVideoPlaybackDialog from "./VehicleVideoPlaybackDialog";
 import {
   MapPin,
   Layers,
@@ -114,6 +115,10 @@ export const OpsMapView = ({ organizationId }: Props) => {
   }>(null);
   const [borrowReason, setBorrowReason] = useState("");
   const [selectedPool, setSelectedPool] = useState<string | null>(null);
+  const [playbackVehicle, setPlaybackVehicle] = useState<null | {
+    id: string;
+    label: string;
+  }>(null);
 
   const { available, allVehicles } = useAvailableVehicles();
   const { data: borrowRows = [], refetch: refetchBorrow } = useCrossPoolBorrowRequests(organizationId);
@@ -438,20 +443,40 @@ export const OpsMapView = ({ organizationId }: Props) => {
         const pool = fullV?.specific_pool || "Unassigned";
         const color = poolColor(pool);
         const el = document.createElement("div");
-        el.style.cssText = `display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:${color};color:#fff;font:700 10px system-ui;border:2px solid hsl(var(--background));box-shadow:0 2px 6px rgba(0,0,0,.3);`;
+        el.style.cssText = `display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:${color};color:#fff;font:700 10px system-ui;border:2px solid hsl(var(--background));box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;`;
         el.textContent = "🚚";
+        el.title = `${v.plate_number} — click for live position & video playback`;
+
+        // Build popup as DOM so we can attach a "Video Playback" handler.
+        const popupEl = document.createElement("div");
+        popupEl.style.cssText = "font:500 12px system-ui;padding:4px;min-width:180px;";
+        popupEl.innerHTML = `
+          <div style="font-weight:700">${v.plate_number}</div>
+          <div style="font-size:11px;">${v.make ?? ""} ${v.model ?? ""}</div>
+          <div style="font-size:11px;color:hsl(var(--muted-foreground));">Pool: ${pool}</div>
+          <div style="margin-top:4px;font-size:10px;color:hsl(142 71% 45%);font-weight:600;">● IDLE</div>
+        `;
+        const playBtn = document.createElement("button");
+        playBtn.type = "button";
+        playBtn.textContent = "▶ Video Playback";
+        playBtn.style.cssText = `
+          margin-top:8px;width:100%;padding:6px 10px;border-radius:6px;
+          border:1px solid hsl(var(--primary));background:hsl(var(--primary));
+          color:hsl(var(--primary-foreground));font:600 11px system-ui;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;gap:6px;
+        `;
+        playBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          setPlaybackVehicle({
+            id: v.id,
+            label: `${v.plate_number}${v.make ? ` · ${v.make} ${v.model ?? ""}` : ""}`,
+          });
+        });
+        popupEl.appendChild(playBtn);
+
         const m = new maplibregl.Marker({ element: el })
           .setLngLat([loc.lng, loc.lat])
-          .setPopup(
-            new maplibregl.Popup({ offset: 12 }).setHTML(
-              `<div style="font:500 12px system-ui;padding:4px;">
-                 <div style="font-weight:700">${v.plate_number}</div>
-                 <div style="font-size:11px;">${v.make} ${v.model}</div>
-                 <div style="font-size:11px;color:hsl(var(--muted-foreground));">Pool: ${pool}</div>
-                 <div style="margin-top:4px;font-size:10px;color:hsl(142 71% 45%);font-weight:600;">● IDLE</div>
-               </div>`,
-            ),
-          )
+          .setPopup(new maplibregl.Popup({ offset: 12 }).setDOMContent(popupEl))
           .addTo(map);
         markersRef.current.push(m);
         bounds.extend([loc.lng, loc.lat]);
@@ -794,6 +819,13 @@ export const OpsMapView = ({ organizationId }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <VehicleVideoPlaybackDialog
+        open={!!playbackVehicle}
+        onOpenChange={(o) => !o && setPlaybackVehicle(null)}
+        vehicleId={playbackVehicle?.id ?? null}
+        vehicleLabel={playbackVehicle?.label}
+      />
       </div>
     </div>
   );
