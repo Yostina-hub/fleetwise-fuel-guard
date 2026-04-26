@@ -222,6 +222,18 @@ export const VehicleTableView = ({
 
   const [visibleColumns, setVisibleColumns] = useState<VehicleColumnId[]>(() => loadVisibleColumns());
 
+  const handleUnassignDriver = async (vehicle: VehicleItem) => {
+    const { error } = await supabase
+      .from("vehicles")
+      .update({ assigned_driver_id: null })
+      .eq("id", vehicle.vehicleId);
+    if (error) {
+      toast.error("Failed to unassign driver", { description: error.message });
+    } else {
+      toast.success(`Driver unassigned from ${vehicle.plate}`);
+    }
+  };
+
   /** Local client-side sort, used for any column that isn't a backend SortField. */
   const [localSort, setLocalSort] = useState<{ col: VehicleColumnId; dir: SortDirection } | null>(null);
 
