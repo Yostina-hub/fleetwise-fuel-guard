@@ -448,7 +448,12 @@ const Geofencing = () => {
           markerEl.type = "button";
           markerEl.className = "geofence-map-marker";
           markerEl.style.setProperty("--geofence-color", color);
-          markerEl.innerHTML = `<span class="geofence-map-marker-dot"></span><span class="geofence-map-marker-label">${fence.name}</span>`;
+          const dotEl = document.createElement("span");
+          dotEl.className = "geofence-map-marker-dot";
+          const labelEl = document.createElement("span");
+          labelEl.className = "geofence-map-marker-label";
+          labelEl.textContent = fence.name;
+          markerEl.append(dotEl, labelEl);
           markerEl.addEventListener("click", (event) => {
             event.stopPropagation();
             focusFenceOnMap(fence);
