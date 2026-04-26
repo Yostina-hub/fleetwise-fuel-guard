@@ -285,6 +285,7 @@ export const MergedTripStopsPanel = ({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const geofenceFitAppliedRef = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
 
   const [routesInfo, setRoutesInfo] = useState<
     Array<{
@@ -327,6 +328,7 @@ export const MergedTripStopsPanel = ({
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
     map.on("load", async () => {
+      setMapReady(true);
       const bounds = new maplibregl.LngLatBounds();
 
       // ── Markers (numbered pickups + drops) ─────────────────────────
@@ -612,6 +614,8 @@ export const MergedTripStopsPanel = ({
       markersRef.current = [];
       mapRef.current?.remove();
       mapRef.current = null;
+      setMapReady(false);
+      geofenceFitAppliedRef.current = false;
       setRoutesInfo([]);
       setRoutesError(null);
       setRoutesLoading(false);
