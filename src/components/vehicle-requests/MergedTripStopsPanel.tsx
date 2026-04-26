@@ -11,11 +11,14 @@
  *     blocked public routing calls or straight-line placeholders.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   GitMerge,
   Users,
@@ -29,11 +32,13 @@ import {
   Route as RouteIcon,
   Trophy,
   Sparkles,
+  Settings2,
 } from "lucide-react";
 import { format } from "date-fns";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getPreviewSafeMapStyle } from "@/lib/lemat";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface Props {
   parentRequestId: string;
