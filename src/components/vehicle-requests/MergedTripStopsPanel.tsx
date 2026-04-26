@@ -1330,7 +1330,7 @@ export const MergedTripStopsPanel = ({
                                     />
                                     <span
                                       className="mt-1 h-2 w-2 rounded-full shrink-0 border border-border"
-                                      style={{ background: g.color || "hsl(160 84% 39%)" }}
+                                      style={{ background: geofenceVisualColor(g) }}
                                     />
                                     <span className="min-w-0 flex-1">
                                       <span className="block truncate font-medium">
