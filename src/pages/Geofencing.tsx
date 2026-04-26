@@ -138,6 +138,25 @@ const getFenceBounds = (fence: GeofenceRecord): maplibregl.LngLatBounds | null =
   return bounds;
 };
 
+const getFenceCenter = (fence: GeofenceRecord): [number, number] | null => {
+  const centerLat = toFiniteNumber(fence.center_lat);
+  const centerLng = toFiniteNumber(fence.center_lng);
+  if (centerLat != null && centerLng != null) return [centerLng, centerLat];
+
+  if (Array.isArray(fence.polygon_points) && fence.polygon_points.length > 0) {
+    const coords = (fence.polygon_points as Array<{ lat: number | string; lng: number | string }>)
+      .map((p) => ({ lat: toFiniteNumber(p.lat), lng: toFiniteNumber(p.lng) }))
+      .filter((p): p is { lat: number; lng: number } => p.lat != null && p.lng != null);
+    if (coords.length === 0) return null;
+    return [
+      coords.reduce((sum, p) => sum + p.lng, 0) / coords.length,
+      coords.reduce((sum, p) => sum + p.lat, 0) / coords.length,
+    ];
+  }
+
+  return null;
+};
+
 const draftSourceId = "geofence-draft-source";
 const draftFillLayerId = "geofence-draft-fill";
 const draftLineLayerId = "geofence-draft-line";
