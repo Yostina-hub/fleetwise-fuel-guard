@@ -424,36 +424,39 @@ export const OnRoadFuelRequestDialog = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Fuel className="w-5 h-5 text-primary" aria-hidden="true" />
-              On-Road Refuel Request
+              Additional Fuel Request
             </DialogTitle>
             <DialogDescription>
-              You are mid-trip and need an additional refuel. Tell dispatch where you
-              are and how much fuel you need — they will arrange the nearest
-              clearance.
+              Need an extra refuel during a trip or shift. Vehicle, driver and
+              live e-fuel telemetry are captured automatically — just tell
+              dispatch where you are and how much you need.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Trip context (read-only) */}
+            {/* Trip / shift context (read-only, auto-captured) */}
             <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <Route className="w-3.5 h-3.5" aria-hidden="true" /> Active Trip
+                <Route className="w-3.5 h-3.5" aria-hidden="true" />
+                {request?.id ? "Active Trip" : "Current Shift"}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                 <div>
                   <span className="text-muted-foreground">Trip #: </span>
                   <span className="font-mono">
-                    {request?.request_number || request?.id?.slice(0, 8) || "—"}
+                    {request?.request_number || request?.id?.slice(0, 8) || "— (no active trip)"}
                   </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Vehicle: </span>
                   <span className="font-medium">{vehicleLabel}</span>
                 </div>
-                <div className="md:col-span-2">
-                  <span className="text-muted-foreground">Route: </span>
-                  <span>{routeLine}</span>
-                </div>
+                {routeLine !== "—" && (
+                  <div className="md:col-span-2">
+                    <span className="text-muted-foreground">Route: </span>
+                    <span>{routeLine}</span>
+                  </div>
+                )}
                 <div className="md:col-span-2">
                   <span className="text-muted-foreground">Driver: </span>
                   <span>{driverName || "—"}</span>
@@ -461,11 +464,25 @@ export const OnRoadFuelRequestDialog = ({
                     <span className="text-muted-foreground"> · {driverPhone}</span>
                   )}
                 </div>
+                {fuelSensor?.last_fuel_reading != null && (
+                  <div className="md:col-span-2">
+                    <span className="text-muted-foreground">E-fuel sensor: </span>
+                    <span className="font-medium">
+                      {Math.round(fuelSensor.last_fuel_reading)}%
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="ml-2 bg-success/10 text-success border-success/30 text-[10px]"
+                    >
+                      auto-captured
+                    </Badge>
+                  </div>
+                )}
               </div>
               {!vehicleId && (
                 <div className="flex items-center gap-1.5 text-xs text-destructive">
                   <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-                  This trip has no assigned vehicle — refuel cannot be filed.
+                  No vehicle assigned — refuel cannot be filed.
                 </div>
               )}
             </div>
