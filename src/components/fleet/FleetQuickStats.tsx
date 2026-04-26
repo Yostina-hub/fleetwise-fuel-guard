@@ -95,7 +95,7 @@ const FleetQuickStats = ({
       filter: "idle_engine_on",
     },
     {
-      label: "Idle • Parked",
+      label: "Parked",
       value: engineOffIdle.toString(),
       icon: ParkingSquare,
       color: "text-sky-500",
