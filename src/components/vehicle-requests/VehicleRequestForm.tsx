@@ -989,7 +989,33 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.start_date, form.request_type, isDaily]);
 
-  // Compute the system-classified trip type from the entered start/end times.
+  // Live "machine clock" — re-renders every 30s so the system evaluation
+  // reflects the user's actual local time (not just the typed start/end).
+  const [machineNow, setMachineNow] = useState<Date>(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setMachineNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const DAY_START = 8 * 60 + 30;  // 08:30 local
+  const DAY_END   = 17 * 60 + 30; // 17:30 local
+
+  // Classify a single minute-of-day against the day window.
+  const classifyMin = (m: number | null): "daily_operation" | "nighttime_operation" | null => {
+    if (m == null) return null;
+    return (m < DAY_START || m > DAY_END) ? "nighttime_operation" : "daily_operation";
+  };
+
+  // Current machine-clock classification (always available, even before times are typed).
+  const machineNowMin = machineNow.getHours() * 60 + machineNow.getMinutes();
+  const machineNowClass = classifyMin(machineNowMin)!;
+  const machineNowLabel = machineNow.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const machineTzLabel = (() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "local"; }
+  })();
+
+  // Compute the system-classified trip type from the entered start/end times,
+  // falling back to the current machine clock when no times are typed yet.
   // We DO NOT overwrite the requester's chosen request_type — both values
   // are preserved separately so dispatchers can see the original intent
   // alongside the system's evaluation when the two disagree.
@@ -1003,14 +1029,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     };
     const startMin = toMin(form.start_time);
     const endMin = toMin(form.end_time);
-    if (startMin == null && endMin == null) return null;
-    const DAY_START = 8 * 60 + 30;  // 08:30
-    const DAY_END   = 17 * 60 + 30; // 17:30
+    if (startMin == null && endMin == null) {
+      // No times yet — use the live machine clock so the system is "aware of now".
+      return machineNowClass;
+    }
     const isNight =
       (startMin != null && (startMin < DAY_START || startMin > DAY_END)) ||
       (endMin   != null && (endMin   > DAY_END   || endMin   < DAY_START));
     return isNight ? "nighttime_operation" : "daily_operation";
-  }, [form.request_type, form.start_time, form.end_time]);
+  }, [form.request_type, form.start_time, form.end_time, machineNowClass]);
 
   // True when the requester picked one type but the times point to another.
   const requesterVsSystemMismatch =
@@ -1588,6 +1615,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   System-evaluated:{" "}
                   <span className="font-semibold">
                     {systemClassifiedType === "nighttime_operation" ? "Night Request" : "Day Request"}
+                  </span>
+                </Badge>
+                <Badge variant="outline" className="text-[10px] gap-1 border-sky-500/40 text-sky-700 dark:text-sky-300">
+                  Machine clock:{" "}
+                  <span className="font-semibold">
+                    {machineNowLabel} ({machineTzLabel}) — {machineNowClass === "nighttime_operation" ? "Night" : "Day"} window
                   </span>
                 </Badge>
                 {requesterVsSystemMismatch ? (
