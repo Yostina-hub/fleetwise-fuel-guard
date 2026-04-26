@@ -83,7 +83,8 @@ export async function scanForDuplicates(
   const CHUNK_SIZE = 200;
   for (let i = 0; i < candidateValues.length; i += CHUNK_SIZE) {
     const slice = candidateValues.slice(i, i + CHUNK_SIZE);
-    let query = supabase
+    // Cast through `any` — generic table+column at runtime exceeds TS depth.
+    let query: any = (supabase as any)
       .from(options.table)
       .select(`id, ${options.keyColumn}`)
       .in(options.keyColumn, slice);
