@@ -1935,6 +1935,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 <Select
                   value={form.pool_category}
                   onValueChange={v => {
+                    userTouchedPoolRef.current = true;
                     update("pool_category", v);
                     handleBlur("pool_category", v, form as any);
                     // Reset the dependent location whenever category changes
