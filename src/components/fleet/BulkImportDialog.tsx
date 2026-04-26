@@ -167,13 +167,52 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
       return;
     }
 
+    const dupCount = dupScan?.duplicates.length ?? 0;
+
+    // Reject mode: bail out if ANY duplicate exists
+    if (dupCount > 0 && strategy === "reject") {
+      toast({
+        title: "Import rejected",
+        description: `${dupCount} duplicate ${dupCount === 1 ? "row matches" : "rows match"} existing vehicles. Change the duplicate strategy or remove them from the file.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Build the per-row plan: which rows actually go to the DB
+    const dupKeys = new Set(
+      (dupScan?.duplicates ?? []).map((d) => d.keyValue.trim().toLowerCase()),
+    );
+    const existingByKey = dupScan?.existingByKey ?? new Map<string, string>();
+
+    const rowsToProcess =
+      strategy === "skip"
+        ? validRows.filter(
+            (r) =>
+              !dupKeys.has(
+                String(r.data.plate_number ?? "").trim().toLowerCase(),
+              ),
+          )
+        : validRows;
+
+    if (rowsToProcess.length === 0) {
+      toast({
+        title: "Nothing to import",
+        description:
+          "All rows in the file are duplicates and your strategy is set to skip them.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setImporting(true);
     setProgress(0);
     const outcome: ImportOutcome = { inserted: 0, updated: 0, failed: 0, errors: [] };
 
-    for (let i = 0; i < validRows.length; i++) {
-      const row = validRows[i];
+    for (let i = 0; i < rowsToProcess.length; i++) {
+      const row = rowsToProcess[i];
       const plate = String(row.data.plate_number ?? "").trim();
+      const plateKey = plate.toLowerCase();
       const payload: Record<string, any> = {
         ...row.data,
         organization_id: organizationId,
@@ -182,23 +221,19 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
       };
 
       try {
-        // Upsert by (organization_id, plate_number)
-        const { data: existing } = await supabase
-          .from("vehicles")
-          .select("id")
-          .eq("organization_id", organizationId)
-          .eq("plate_number", plate)
-          .maybeSingle();
-
-        if (existing?.id) {
+        const existingId = existingByKey.get(plateKey);
+        if (existingId) {
+          // Only reachable when strategy === "update"
           const { error } = await supabase
             .from("vehicles")
             .update(payload)
-            .eq("id", existing.id);
+            .eq("id", existingId);
           if (error) throw error;
           outcome.updated++;
         } else {
-          const { error } = await supabase.from("vehicles").insert(payload as any);
+          const { error } = await supabase
+            .from("vehicles")
+            .insert(payload as any);
           if (error) throw error;
           outcome.inserted++;
         }
@@ -206,7 +241,7 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
         outcome.failed++;
         outcome.errors.push({ row: row.rowNumber, message: err.message ?? "Insert failed" });
       }
-      setProgress(Math.round(((i + 1) / validRows.length) * 100));
+      setProgress(Math.round(((i + 1) / rowsToProcess.length) * 100));
     }
 
     setResult(outcome);
@@ -214,10 +249,14 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
     queryClient.invalidateQueries({ queryKey: ["vehicles"] });
 
     const total = outcome.inserted + outcome.updated;
+    const skippedCount =
+      strategy === "skip" ? validRows.length - rowsToProcess.length : 0;
     if (total > 0) {
       toast({
         title: "Import complete",
-        description: `${outcome.inserted} added · ${outcome.updated} updated${outcome.failed ? ` · ${outcome.failed} failed` : ""}`,
+        description: `${outcome.inserted} added · ${outcome.updated} updated${
+          skippedCount ? ` · ${skippedCount} skipped` : ""
+        }${outcome.failed ? ` · ${outcome.failed} failed` : ""}`,
       });
     } else {
       toast({
