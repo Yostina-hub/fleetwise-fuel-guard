@@ -1969,7 +1969,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </Label>
                 <Select
                   value={form.pool_name}
-                  onValueChange={v => { update("pool_name", v); handleBlur("pool_name", v, { ...form, pool_name: v } as any); }}
+                  onValueChange={v => { userTouchedPoolRef.current = true; update("pool_name", v); handleBlur("pool_name", v, { ...form, pool_name: v } as any); }}
                   disabled={!form.pool_category}
                 >
                   <SelectTrigger
