@@ -441,6 +441,19 @@ export default function BulkImportDriversDialog({
                 </div>
               )}
 
+              {/* Duplicate handling picker */}
+              {dupScan && !scanning && preview.validRows > 0 && (
+                <ConflictStrategyPicker
+                  entityLabel="driver"
+                  keyLabel="license number"
+                  duplicates={dupScan.duplicates}
+                  newCount={dupScan.newRows.length}
+                  strategy={strategy}
+                  onStrategyChange={setStrategy}
+                  disabled={importing}
+                />
+              )}
+
               {allRowErrors.length > 0 && (
                 <ScrollArea className="h-40 border rounded-lg p-2">
                   <div className="space-y-1">
