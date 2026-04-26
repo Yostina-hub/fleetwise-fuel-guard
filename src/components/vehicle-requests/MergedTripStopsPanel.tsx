@@ -452,8 +452,56 @@ export const MergedTripStopsPanel = ({
       setRoutesInfo([]);
       setRoutesError(null);
       setRoutesLoading(false);
+      setAiPick(null);
+      setAiError(null);
+      setAiLoading(false);
     };
   }, [showMap, open, stopsWithCoords]);
+
+  // Ask Lovable AI to recommend the best candidate route. The AI never
+  // invents measurements — it weighs the OSRM-supplied numbers against the
+  // trip context (passengers, time window, pool) and returns a ranked pick
+  // plus a 1-2 sentence justification.
+  const requestAiRecommendation = async () => {
+    if (routesInfo.length < 2 || aiLoading) return;
+    setAiLoading(true);
+    setAiError(null);
+    setAiPick(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("route-recommend", {
+        body: {
+          candidates: routesInfo.map((r) => ({
+            label: r.label,
+            distance_km: Number(r.distanceKm.toFixed(2)),
+            duration_min: Number(r.durationMin.toFixed(1)),
+            sample_coords: r.sampleCoords,
+          })),
+          context: {
+            pool_name: poolName ?? undefined,
+            passengers: totalPax || undefined,
+            stop_count: stopsWithCoords.length,
+            needed_from: earliest?.toISOString(),
+            needed_until: latest?.toISOString(),
+            city: "Addis Ababa",
+          },
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.ok) {
+        throw new Error(data?.message || data?.error || "AI could not pick a route");
+      }
+      setAiPick({
+        bestIdx: Number(data.best_index),
+        runnerUpIdx: typeof data.runner_up_index === "number" ? Number(data.runner_up_index) : undefined,
+        reasoning: String(data.reasoning || ""),
+      });
+      setFocusedRouteIdx(Number(data.best_index));
+    } catch (err: any) {
+      setAiError(err?.message || "AI recommendation unavailable");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   // Reset focus whenever a fresh batch of routes is loaded.
   useEffect(() => {
