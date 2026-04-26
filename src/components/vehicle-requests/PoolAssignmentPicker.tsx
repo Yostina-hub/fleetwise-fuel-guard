@@ -240,6 +240,170 @@ export const PoolAssignmentPicker = ({
         )}
       </div>
 
+      {/* ───── Route geofence validation ─────
+          Pre-assignment guardrail. We classify pickup + destination against
+          the org's active geofences and surface a banner when one or both
+          are out-of-zone. The supervisor must explicitly opt in via the
+          override checkbox to proceed. */}
+      {routeCheck && routeCheck.fence_count > 0 && (
+        <div
+          className={cn(
+            "rounded-md border p-2.5 space-y-1.5 text-xs",
+            routeCheck.valid
+              ? "border-emerald-500/30 bg-emerald-500/5"
+              : "border-amber-500/40 bg-amber-500/5",
+          )}
+        >
+          <div className="flex items-center gap-2 font-medium">
+            {routeCheck.valid ? (
+              <>
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-emerald-700 dark:text-emerald-400">
+                  Route validated — both points inside operational zones
+                </span>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                <span className="text-amber-700 dark:text-amber-400">
+                  Route is outside operational geofences
+                </span>
+              </>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <RouteFenceLine
+              label="Pickup"
+              status={routeCheck.pickup.status}
+              fenceName={routeCheck.pickup.fence_name}
+              dotClass="bg-emerald-500"
+            />
+            <RouteFenceLine
+              label="Destination"
+              status={routeCheck.destination.status}
+              fenceName={routeCheck.destination.fence_name}
+              dotClass="bg-rose-500"
+            />
+          </div>
+          {!routeCheck.valid && (
+            <div className="flex items-start gap-2 pt-1.5 mt-1 border-t border-amber-500/20">
+              <Checkbox
+                id={`override-zone-${request.id}`}
+                checked={overrideZone}
+                onCheckedChange={(v) => setOverrideZone(!!v)}
+                className="mt-0.5"
+              />
+              <label
+                htmlFor={`override-zone-${request.id}`}
+                className="text-[11px] text-foreground cursor-pointer leading-snug"
+              >
+                I confirm this trip operates outside the geofenced zones and
+                I'm authorising the assignment.
+              </label>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ───── On-the-way matches ─────
+          Vehicles already on a trip whose route passes near this pickup AND
+          destination. Selecting one shares the trip with the existing
+          driver/vehicle (saves fuel, shrinks time-to-pickup). */}
+      {(onTheWayLoading || onTheWay.length > 0) && (
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-2.5 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-medium">
+            <Route className="w-3.5 h-3.5 text-primary" />
+            <span>
+              On-the-way vehicles
+              {onTheWay.length > 0 && (
+                <span className="text-muted-foreground font-normal ml-1">
+                  ({onTheWay.length} match{onTheWay.length === 1 ? "" : "es"})
+                </span>
+              )}
+            </span>
+            {onTheWayLoading && (
+              <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+            )}
+          </div>
+          {onTheWay.length === 0 && !onTheWayLoading ? (
+            <p className="text-[11px] text-muted-foreground">
+              No active trips currently match this corridor.
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {onTheWay.map((m: OnTheWayMatch) => {
+                const selected = vehicleId === m.vehicle_id;
+                return (
+                  <button
+                    key={m.vehicle_id}
+                    type="button"
+                    onClick={() => {
+                      setVehicleId(m.vehicle_id);
+                      if (m.driver_id) setDriverId(m.driver_id);
+                    }}
+                    className={cn(
+                      "w-full text-left rounded-md border px-2.5 py-2 transition-colors",
+                      selected
+                        ? "border-primary bg-primary/10 ring-1 ring-primary/40"
+                        : "border-border/40 bg-background/60 hover:bg-background hover:border-border",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <CheckCircle
+                          className={cn(
+                            "w-3.5 h-3.5 shrink-0",
+                            selected ? "text-emerald-500" : "text-transparent",
+                          )}
+                        />
+                        <span className="font-mono text-xs font-semibold">
+                          {m.plate_number}
+                        </span>
+                        {(m.make || m.model) && (
+                          <span className="text-[11px] text-muted-foreground truncate">
+                            {[m.make, m.model].filter(Boolean).join(" ")}
+                          </span>
+                        )}
+                        {m.driver_name && (
+                          <Badge variant="outline" className="text-[9px] py-0 h-4 gap-0.5">
+                            <User className="w-2.5 h-2.5" /> {m.driver_name}
+                          </Badge>
+                        )}
+                      </div>
+                      <Badge variant="default" className="text-[9px] py-0 h-4 shrink-0 bg-primary/15 text-primary border border-primary/30">
+                        {m.km_to_pickup} km from pickup
+                      </Badge>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground pl-5 mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                      <span>
+                        On trip{" "}
+                        {m.current_request_number && (
+                          <span className="font-mono text-foreground/80">
+                            {m.current_request_number}
+                          </span>
+                        )}
+                        {m.current_destination && (
+                          <> → {m.current_destination}</>
+                        )}
+                      </span>
+                      {Number.isFinite(m.km_dest_to_dest) && (
+                        <span>· {m.km_dest_to_dest} km dest gap</span>
+                      )}
+                      {m.detour_km > 0.1 && (
+                        <span>· +{m.detour_km} km detour</span>
+                      )}
+                      {m.remaining_seats != null && (
+                        <span>· {m.remaining_seats} seat{m.remaining_seats === 1 ? "" : "s"} free</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grid sm:grid-cols-2 gap-3">
         {/* ───── Vehicle ───── */}
         <div className="space-y-1">
