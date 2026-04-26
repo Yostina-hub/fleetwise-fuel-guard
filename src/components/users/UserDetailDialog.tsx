@@ -153,6 +153,9 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
   const [poolCategory, setPoolCategory] = useState<PoolCategory | "">("");
   const [poolCode, setPoolCode] = useState<string>("");
   const [savingPool, setSavingPool] = useState(false);
+  // Pools loaded from `fleet_pools` (same source as Vehicle Request Form).
+  // Falls back to POOL_HIERARCHY if the table has no rows for this org.
+  const [fleetPools, setFleetPools] = useState<{ code: string; name: string; category: PoolCategory; sort_order?: number | null }[]>([]);
 
   const [loadingExtras, setLoadingExtras] = useState(false);
   const [saving, setSaving] = useState(false);
