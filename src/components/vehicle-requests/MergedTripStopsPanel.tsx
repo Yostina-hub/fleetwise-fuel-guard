@@ -1095,7 +1095,7 @@ export const MergedTripStopsPanel = ({
                       );
                     })()}
 
-                    {/* AI recommend action + reasoning */}
+                    {/* AI recommend action + inline geofence controls */}
                     {!routesLoading && routesInfo.length > 1 && (
                       <div className="px-3 py-2 border-t border-border/60 bg-muted/30 space-y-2">
                         <div className="flex items-center gap-1.5">
@@ -1118,96 +1118,64 @@ export const MergedTripStopsPanel = ({
                                 ? "Re-run AI recommendation"
                                 : "Recommend best with AI"}
                           </Button>
-                          {/* Per-trip geofence rule editor */}
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2 text-[11px] gap-1"
-                                title="Edit geofence rule for this trip"
-                              >
-                                <Settings2 className="w-3 h-3" />
-                                {geofenceAware ? "Geofence rule on" : "Geofence rule off"}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              side="right"
-                              align="end"
-                              sideOffset={8}
-                              avoidCollisions
-                              collisionPadding={12}
-                              className="w-80 max-w-[calc(100vw-2rem)] p-3 max-h-[min(520px,calc(100vh-2rem))] flex flex-col gap-3 overflow-hidden"
-                            >
-                              <div className="flex items-center justify-between gap-3 shrink-0">
-                                <div className="space-y-0.5">
-                                  <div className="text-xs font-semibold">Use geofence rules</div>
-                                  <div className="text-[10px] text-muted-foreground leading-snug">
-                                    When on, the AI weighs each zone's prefer/avoid policy
-                                    when picking the best route.
-                                  </div>
-                                </div>
-                                <Switch
-                                  checked={geofenceAware}
-                                  onCheckedChange={(v) =>
-                                    updateRequestSettings.mutate({ geofence_aware_dispatch: v })
-                                  }
-                                />
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+                            <Settings2 className="w-3 h-3" />
+                            {renderableGeofences.length} zone{renderableGeofences.length === 1 ? "" : "s"}
+                          </div>
+                        </div>
+                        <div className="rounded-md border bg-background/70 overflow-hidden">
+                          <div className="px-2 py-1.5 flex items-center justify-between gap-2 border-b bg-muted/30">
+                            <div className="min-w-0">
+                              <div className="text-[11px] font-semibold">Use geofence rules</div>
+                              <div className="text-[10px] text-muted-foreground truncate">
+                                Zones are always shown on the map; this controls AI route scoring.
                               </div>
-                              {geofenceAware && (
-                                <div className="flex flex-col min-h-0 flex-1 space-y-1.5">
-                                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0 flex items-center justify-between">
-                                    <span>Avoid for this trip only</span>
-                                    <span className="normal-case text-muted-foreground/70">
-                                      {(geofences as any[]).length} zone
-                                      {(geofences as any[]).length === 1 ? "" : "s"}
+                            </div>
+                            <Switch
+                              checked={geofenceAware}
+                              onCheckedChange={(v) =>
+                                updateRequestSettings.mutate({ geofence_aware_dispatch: v })
+                              }
+                            />
+                          </div>
+                          <div className="max-h-28 overflow-y-auto overscroll-contain p-2 space-y-1.5">
+                            {renderableGeofences.length === 0 && (
+                              <div className="text-[10px] text-muted-foreground italic">
+                                No active geofences with valid geometry.
+                              </div>
+                            )}
+                            {renderableGeofences.map((g: any) => {
+                              const checked = avoidOverrides.includes(g.id);
+                              const orgPolicy = (g.dispatch_policy as string) || "neutral";
+                              return (
+                                <label key={g.id} className="flex items-start gap-2 text-[11px] cursor-pointer">
+                                  <Checkbox
+                                    checked={checked}
+                                    disabled={!geofenceAware}
+                                    onCheckedChange={(c) => {
+                                      const next = c === true
+                                        ? Array.from(new Set([...avoidOverrides, g.id]))
+                                        : avoidOverrides.filter((id) => id !== g.id);
+                                      updateRequestSettings.mutate({ geofence_avoid_overrides: next });
+                                    }}
+                                    className="mt-0.5"
+                                  />
+                                  <span
+                                    className="mt-1 h-2 w-2 rounded-full shrink-0 border border-border"
+                                    style={{ background: g.color || "hsl(160 84% 39%)" }}
+                                  />
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate font-medium">
+                                      {String(g.name || "Zone").split(",")[0]}
                                     </span>
-                                  </div>
-                                  <div className="min-h-[160px] max-h-[min(340px,calc(100vh-14rem))] overflow-y-auto overscroll-contain pr-2 rounded-md border bg-muted/20">
-                                    <div className="space-y-1.5 p-2 pr-3">
-                                      {(geofences as any[]).length === 0 && (
-                                        <div className="text-[10px] text-muted-foreground italic">
-                                          No active geofences in this organisation.
-                                        </div>
-                                      )}
-                                      {(geofences as any[]).map((g) => {
-                                        const checked = avoidOverrides.includes(g.id);
-                                        const orgPolicy = (g.dispatch_policy as string) || "neutral";
-                                        return (
-                                          <label
-                                            key={g.id}
-                                            className="flex items-start gap-2 text-[11px] cursor-pointer"
-                                          >
-                                            <Checkbox
-                                              checked={checked}
-                                              onCheckedChange={(c) => {
-                                                const next = c === true
-                                                  ? Array.from(new Set([...avoidOverrides, g.id]))
-                                                  : avoidOverrides.filter((id) => id !== g.id);
-                                                updateRequestSettings.mutate({
-                                                  geofence_avoid_overrides: next,
-                                                });
-                                              }}
-                                              className="mt-0.5"
-                                            />
-                                            <span className="min-w-0 flex-1">
-                                              <span className="block truncate font-medium">
-                                                {String(g.name || "Zone").split(",")[0]}
-                                              </span>
-                                              <span className="text-[10px] text-muted-foreground">
-                                                Org: {orgPolicy}
-                                              </span>
-                                            </span>
-                                          </label>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </PopoverContent>
-                          </Popover>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      Org: {orgPolicy}
+                                    </span>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
                         </div>
                         {aiError && (
                           <div className="text-[10px] text-destructive leading-snug">
