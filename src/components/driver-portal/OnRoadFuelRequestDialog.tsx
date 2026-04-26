@@ -299,13 +299,18 @@ export const OnRoadFuelRequestDialog = ({
       const { data: userResp } = await supabase.auth.getUser();
 
       // Compose a verbose remark/description so reviewers immediately see
-      // it is an on-road refuel and the trip context.
+      // it is an on-road refuel and (when present) the trip context.
+      const tripLabel = request?.request_number
+        ? `trip ${request.request_number}`
+        : request?.id
+          ? `trip ${request.id.slice(0, 8)}`
+          : "current shift (no active trip)";
       const description = [
-        `On-road refuel during trip ${request.request_number || request.id.slice(0, 8)}`,
+        `Additional fuel request — ${tripLabel}`,
         `Reason: ${reasonLabel}`,
         `Urgency: ${urgencyLabel}`,
         parsed.current_fuel_percent != null
-          ? `Current fuel level: ~${parsed.current_fuel_percent}%`
+          ? `Current fuel level: ~${parsed.current_fuel_percent}% (auto from sensor when available)`
           : null,
         parsed.remaining_distance_km != null
           ? `Estimated remaining distance: ${parsed.remaining_distance_km} km`
@@ -324,11 +329,11 @@ export const OnRoadFuelRequestDialog = ({
         request_number: reqNum,
         fuel_type: vehicle?.fuel_type || "diesel",
         liters_requested: parsed.liters_requested,
-        purpose: `On-road refuel — ${reasonLabel}`,
+        purpose: `Additional fuel — ${reasonLabel}`,
         current_odometer: parsed.current_odometer,
         notes: parsed.notes || null,
         additional_description: description,
-        remark: `Trip ${request.request_number ?? ""} · ${parsed.current_location}`.trim(),
+        remark: `${tripLabel} · ${parsed.current_location}`.trim(),
         route: routeLine !== "—" ? routeLine : parsed.current_location,
         // Reuse existing free-text fields to encode the on-road context
         // without requiring a schema change.
