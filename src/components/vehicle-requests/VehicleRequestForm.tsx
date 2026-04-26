@@ -563,8 +563,20 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     if (form.pool_category || form.pool_name) return;
     if (!requesterPoolCodes.length) return;
 
-    // Map each pool_code to its category via POOL_HIERARCHY.
+    // Map each pool_code to its category using the same complete pool source
+    // as the Specific Pool dropdown: DB-backed fleet_pools + ASSIGNED_LOCATIONS
+    // + legacy short codes. This keeps impersonated users with newer pool codes
+    // like corp_fom1_ho_day / region_* from landing on an empty category.
     const codeToCategory = new Map<string, string>();
+    for (const pool of pools as any[]) {
+      if (pool?.code && pool?.category) codeToCategory.set(pool.code, pool.category);
+    }
+    for (const location of ASSIGNED_LOCATIONS as any[]) {
+      if (!location?.value) continue;
+      if (location.group === "Corporate") codeToCategory.set(location.value, "corporate");
+      if (location.group === "Zone") codeToCategory.set(location.value, "zone");
+      if (location.group === "Region") codeToCategory.set(location.value, "region");
+    }
     for (const [cat, codes] of Object.entries(POOL_HIERARCHY)) {
       for (const c of codes) codeToCategory.set(c, cat);
     }
@@ -585,7 +597,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     } else if (categories.length === 1) {
       setForm((prev) => (prev.pool_category ? prev : { ...prev, pool_category: categories[0] }));
     }
-  }, [open, requesterPoolCodes, form.pool_category, form.pool_name]);
+  }, [open, requesterPoolCodes, pools, form.pool_category, form.pool_name]);
 
   // Reset the manual-touch flag whenever the dialog re-opens or the effective
   // requester changes (e.g. user switches "on behalf of"), so a fresh session
@@ -601,10 +613,15 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // protection as the pool fields: once the user types a phone, we stop
   // overwriting it.
   const userTouchedContactPhoneRef = useRef(false);
+  const effectiveProfilePhone =
+    effectiveRequesterId && effectiveRequesterId === user?.id
+      ? ((profile as any)?.phone?.trim?.() || "")
+      : "";
   const { data: requesterPhone } = useQuery({
-    queryKey: ["vr-requester-phone", effectiveRequesterId, onBehalfOf?.driverId ?? null],
+    queryKey: ["vr-requester-phone", effectiveRequesterId, onBehalfOf?.driverId ?? null, effectiveProfilePhone],
     queryFn: async () => {
       if (!effectiveRequesterId) return "";
+      if (effectiveProfilePhone) return effectiveProfilePhone;
       // 1) Profile phone is the canonical source of truth for any user.
       const { data: profile } = await (supabase as any)
         .from("profiles")
