@@ -924,11 +924,6 @@ const Geofencing = () => {
             </TooltipTrigger>
             <TooltipContent>Minimize panel</TooltipContent>
           </Tooltip>
-          {mode === "overlay" && false && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setPanelOpen(false)}>
-              <X className="h-4 w-4" />
-            </Button>
-          )}
         </div>
 
         <div className="mt-3 grid grid-cols-4 gap-2">
