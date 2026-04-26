@@ -30,11 +30,17 @@ import {
   User,
   XCircle,
   Loader2,
+  Route,
+  AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSuggestedVehicles } from "@/hooks/useSuggestedVehicles";
 import { useSuggestedDrivers } from "@/hooks/useSuggestedDrivers";
+import { useOnTheWayVehicles, type OnTheWayMatch } from "@/hooks/useOnTheWayVehicles";
+import { useRouteGeofenceCheck } from "@/hooks/useRouteGeofenceCheck";
 import ConfirmActionDialog from "@/components/users/ConfirmActionDialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Props {
   request: any;
