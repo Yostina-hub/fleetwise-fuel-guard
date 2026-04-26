@@ -178,16 +178,50 @@ export default function BulkImportDriversDialog({
         throw new Error("Fix the validation errors and try again");
       }
 
+      const dupCount = dupScan?.duplicates.length ?? 0;
+      if (dupCount > 0 && strategy === "reject") {
+        throw new Error(
+          `Import rejected — ${dupCount} duplicate ${
+            dupCount === 1 ? "row matches" : "rows match"
+          } existing drivers.`,
+        );
+      }
+
+      const dupKeys = new Set(
+        (dupScan?.duplicates ?? []).map((d) => d.keyValue.trim().toLowerCase()),
+      );
+      const existingByKey = dupScan?.existingByKey ?? new Map<string, string>();
+
+      const rowsToProcess =
+        strategy === "skip"
+          ? validRows.filter(
+              (r) =>
+                !dupKeys.has(
+                  String(r.data.license_number ?? "").trim().toLowerCase(),
+                ),
+            )
+          : validRows;
+
+      if (rowsToProcess.length === 0) {
+        throw new Error(
+          "All rows in the file are duplicates and your strategy is set to skip them.",
+        );
+      }
+
+      const skippedCount =
+        strategy === "skip" ? validRows.length - rowsToProcess.length : 0;
       const outcome: ImportOutcome = {
         inserted: 0,
         updated: 0,
+        skipped: skippedCount,
         failed: 0,
         errors: [],
       };
 
-      for (let i = 0; i < validRows.length; i++) {
-        const row = validRows[i];
+      for (let i = 0; i < rowsToProcess.length; i++) {
+        const row = rowsToProcess[i];
         const license = String(row.data.license_number ?? "").trim();
+        const licenseKey = license.toLowerCase();
         const payload: Record<string, any> = {
           ...row.data,
           organization_id: organizationId,
@@ -195,18 +229,13 @@ export default function BulkImportDriversDialog({
         };
 
         try {
-          // Upsert by license_number (globally unique)
-          const { data: existing } = await supabase
-            .from("drivers")
-            .select("id")
-            .eq("license_number", license)
-            .maybeSingle();
-
-          if (existing?.id) {
+          const existingId = existingByKey.get(licenseKey);
+          if (existingId) {
+            // Only reachable when strategy === "update"
             const { error } = await supabase
               .from("drivers")
               .update(payload)
-              .eq("id", existing.id);
+              .eq("id", existingId);
             if (error) throw error;
             outcome.updated++;
           } else {
@@ -223,7 +252,7 @@ export default function BulkImportDriversDialog({
             message: err.message ?? "Insert failed",
           });
         }
-        setProgress(Math.round(((i + 1) / validRows.length) * 100));
+        setProgress(Math.round(((i + 1) / rowsToProcess.length) * 100));
       }
 
       return outcome;
@@ -238,8 +267,8 @@ export default function BulkImportDriversDialog({
         toast({
           title: "Import complete",
           description: `${outcome.inserted} added · ${outcome.updated} updated${
-            outcome.failed ? ` · ${outcome.failed} failed` : ""
-          }`,
+            outcome.skipped ? ` · ${outcome.skipped} skipped` : ""
+          }${outcome.failed ? ` · ${outcome.failed} failed` : ""}`,
         });
       } else {
         toast({
