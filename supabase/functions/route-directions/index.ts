@@ -215,6 +215,46 @@ const tryOsrmStitched = async (coords: Coord[]) => {
   };
 };
 
+const tryOsrmViaAlternatives = async (coords: Coord[]) => {
+  if (coords.length !== 2) return null;
+  const [start, end] = coords;
+  const midLng = (start[0] + end[0]) / 2;
+  const midLat = (start[1] + end[1]) / 2;
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const len = Math.sqrt(dx * dx + dy * dy) || 0.01;
+  const scale = Math.max(0.006, Math.min(0.025, len * 0.45));
+  const candidates: Coord[] = [
+    [midLng - (dy / len) * scale, midLat + (dx / len) * scale],
+    [midLng + (dy / len) * scale, midLat - (dx / len) * scale],
+    [midLng, midLat + scale],
+    [midLng + scale, midLat],
+  ].filter(isValidCoord) as Coord[];
+
+  const variants = await Promise.all(
+    candidates.map(async (via) => {
+      const routed = await tryOsrm([start, via, end], false);
+      if (!routed.ok) return null;
+      return {
+        geometry: routed.geometry,
+        distance_m: routed.distance_m,
+        duration_s: routed.duration_s,
+        legs: routed.legs,
+      };
+    }),
+  );
+
+  const unique = variants
+    .filter((route): route is NonNullable<typeof route> => route !== null)
+    .filter((route, idx, arr) => {
+      const key = `${Math.round(route.distance_m / 25)}:${Math.round(route.duration_s / 10)}:${route.geometry.length}`;
+      return arr.findIndex((other) => `${Math.round(other.distance_m / 25)}:${Math.round(other.duration_s / 10)}:${other.geometry.length}` === key) === idx;
+    })
+    .slice(0, 2);
+
+  return unique.length > 0 ? unique : null;
+};
+
 serve(async (req) => {
   const preflight = handleCorsPreflightRequest(req);
   if (preflight) return preflight;
