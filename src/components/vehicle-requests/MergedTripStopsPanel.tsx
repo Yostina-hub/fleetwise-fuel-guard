@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   GitMerge,
@@ -28,6 +27,7 @@ import {
   ChevronUp,
   ArrowRight,
   Map as MapIcon,
+  MapPin,
   EyeOff,
   Route as RouteIcon,
   Trophy,
@@ -133,6 +133,15 @@ const getMergedTripFenceCenter = (fence: any): [number, number] | null => {
     points.reduce((sum, point) => sum + point.lng, 0) / points.length,
     points.reduce((sum, point) => sum + point.lat, 0) / points.length,
   ];
+};
+
+const getMergedTripFenceBounds = (fence: any): maplibregl.LngLatBounds | null => {
+  const feature = buildMergedTripFenceFeature(fence);
+  const coords = feature?.geometry.coordinates[0];
+  if (!coords?.length) return null;
+  const bounds = new maplibregl.LngLatBounds(coords[0] as [number, number], coords[0] as [number, number]);
+  coords.forEach((coord) => bounds.extend(coord as [number, number]));
+  return bounds;
 };
 
 
@@ -255,6 +264,10 @@ export const MergedTripStopsPanel = ({
   });
   const geofenceAware = requestSettings?.geofence_aware_dispatch ?? true;
   const avoidOverrides: string[] = requestSettings?.geofence_avoid_overrides ?? [];
+  const renderableGeofences = useMemo(
+    () => (geofences as any[]).filter((fence) => buildMergedTripFenceFeature(fence)),
+    [geofences],
+  );
 
   const updateRequestSettings = useMutation({
     mutationFn: async (patch: {
@@ -527,19 +540,8 @@ export const MergedTripStopsPanel = ({
           });
         });
 
-        // Fit bounds around the best route
-        try {
-          const coords: Array<[number, number]> = results[bestIdx].geometry.coordinates;
-          const b = new maplibregl.LngLatBounds();
-          coords.forEach((c) => b.extend(c as any));
-          stopsWithCoords.forEach((s) => {
-            b.extend([s.departure_lng!, s.departure_lat!]);
-            b.extend([s.destination_lng!, s.destination_lat!]);
-          });
-          map.fitBounds(b, { padding: 60, maxZoom: 14, duration: 400 });
-        } catch {
-          /* noop */
-        }
+        // Keep the initial stop viewport. The geofence overlay owns the final
+        // combined fit so route rendering never zooms zones back out of view.
 
         setRoutesInfo(
           results.map((r, i) => {
@@ -632,7 +634,7 @@ export const MergedTripStopsPanel = ({
   useEffect(() => {
     if (!showMap || !open) return;
     const map = mapRef.current;
-    if (!map || geofences.length === 0) return;
+    if (!map || !mapReady || renderableGeofences.length === 0) return;
 
     const addedLayers: string[] = [];
     const addedSources: string[] = [];
@@ -640,62 +642,44 @@ export const MergedTripStopsPanel = ({
 
     const renderGeofences = () => {
       const allBounds = new maplibregl.LngLatBounds();
-      let hasFenceBounds = false;
-      geofences.forEach((fence: any) => {
+      renderableGeofences.forEach((fence: any) => {
         const sourceId = `mtsp-geofence-${fence.id}`;
         const fillId = `${sourceId}-fill`;
         const lineId = `${sourceId}-line`;
-        const labelId = `${sourceId}-label`;
         if (map.getSource(sourceId)) return;
         const color = fence.color || "hsl(160 84% 39%)";
         const feature = buildMergedTripFenceFeature(fence);
         if (!feature) return;
-        feature.geometry.coordinates[0].forEach((coord) => {
-          allBounds.extend(coord as [number, number]);
-          hasFenceBounds = true;
-        });
+        feature.geometry.coordinates[0].forEach((coord) => allBounds.extend(coord as [number, number]));
 
         try {
           map.addSource(sourceId, { type: "geojson", data: feature });
           addedSources.push(sourceId);
+          const beforeRouteLayer = map.getLayer("route-alt-casing-0")
+            ? "route-alt-casing-0"
+            : map.getLayer("legs-fallback-line")
+              ? "legs-fallback-line"
+              : undefined;
           map.addLayer({
             id: fillId,
             type: "fill",
             source: sourceId,
-            paint: { "fill-color": color, "fill-opacity": 0.48 },
-          });
+            paint: { "fill-color": color, "fill-opacity": 0.32 },
+          }, beforeRouteLayer);
           map.addLayer({
             id: lineId,
             type: "line",
             source: sourceId,
             paint: {
               "line-color": color,
-              "line-width": 4,
+              "line-width": 6,
               "line-opacity": 1,
             },
           });
-          // Short label centred on the geometry. Allow overlap so every
-          // zone gets a legend even when several fences cluster together.
+          // HTML labels are used instead of symbol layers so labels remain
+          // visible even when the base style has limited glyph/font support.
           const shortName = String(fence.name || "Zone").split(",")[0].slice(0, 28);
-          map.addLayer({
-            id: labelId,
-            type: "symbol",
-            source: sourceId,
-            layout: {
-              "symbol-placement": "point",
-              "text-field": shortName,
-              "text-size": 11,
-              "text-allow-overlap": true,
-              "text-ignore-placement": true,
-              "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-            },
-            paint: {
-              "text-color": color,
-              "text-halo-color": "rgba(255,255,255,0.95)",
-              "text-halo-width": 2.2,
-            },
-          });
-          addedLayers.push(fillId, lineId, labelId);
+          addedLayers.push(fillId, lineId);
 
           const center = getMergedTripFenceCenter(fence);
           if (center) {
@@ -718,7 +702,7 @@ export const MergedTripStopsPanel = ({
         }
       });
 
-      if (hasFenceBounds && !geofenceFitAppliedRef.current) {
+      if (!allBounds.isEmpty() && !geofenceFitAppliedRef.current) {
         try {
           const combined = new maplibregl.LngLatBounds();
           const fenceCorners = allBounds.toArray() as [[number, number], [number, number]];
@@ -738,7 +722,7 @@ export const MergedTripStopsPanel = ({
     if (map.isStyleLoaded()) {
       renderGeofences();
     } else {
-      map.once("load", renderGeofences);
+      map.once("style.load", renderGeofences);
     }
 
     return () => {
@@ -760,7 +744,7 @@ export const MergedTripStopsPanel = ({
         }
       });
     };
-  }, [showMap, open, mapReady, geofences, routesInfo.length, stopsWithCoords]);
+  }, [showMap, open, mapReady, renderableGeofences, routesInfo.length, stopsWithCoords]);
 
   // Ask Lovable AI to recommend the best candidate route. The AI never
   // invents measurements — it weighs the OSRM-supplied numbers against the
@@ -1014,7 +998,7 @@ export const MergedTripStopsPanel = ({
                     aria-label="Consolidated trip map"
                   />
                   {/* Floating legend overlay — Google-Maps-style route picker */}
-                  <div className="absolute top-3 left-3 bg-card/95 backdrop-blur-md rounded-lg border border-border/60 shadow-lg overflow-hidden w-[260px] max-w-[calc(100%-1.5rem)]">
+                  <div className="absolute top-3 left-3 bg-card/95 backdrop-blur-md rounded-lg border border-border/60 shadow-lg overflow-hidden w-[260px] max-w-[calc(100%-1.5rem)] max-h-[calc(100%-1.5rem)] overflow-y-auto">
                     <div className="px-3 py-2 border-b border-border/60 bg-muted/40 flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
                         <RouteIcon className="w-3.5 h-3.5 text-primary" />
@@ -1110,7 +1094,7 @@ export const MergedTripStopsPanel = ({
                       );
                     })()}
 
-                    {/* AI recommend action + reasoning */}
+                    {/* AI recommend action + inline geofence controls */}
                     {!routesLoading && routesInfo.length > 1 && (
                       <div className="px-3 py-2 border-t border-border/60 bg-muted/30 space-y-2">
                         <div className="flex items-center gap-1.5">
@@ -1133,96 +1117,78 @@ export const MergedTripStopsPanel = ({
                                 ? "Re-run AI recommendation"
                                 : "Recommend best with AI"}
                           </Button>
-                          {/* Per-trip geofence rule editor */}
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2 text-[11px] gap-1"
-                                title="Edit geofence rule for this trip"
-                              >
-                                <Settings2 className="w-3 h-3" />
-                                {geofenceAware ? "Geofence rule on" : "Geofence rule off"}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              side="right"
-                              align="end"
-                              sideOffset={8}
-                              avoidCollisions
-                              collisionPadding={12}
-                              className="w-80 max-w-[calc(100vw-2rem)] p-3 max-h-[min(520px,calc(100vh-2rem))] flex flex-col gap-3 overflow-hidden"
-                            >
-                              <div className="flex items-center justify-between gap-3 shrink-0">
-                                <div className="space-y-0.5">
-                                  <div className="text-xs font-semibold">Use geofence rules</div>
-                                  <div className="text-[10px] text-muted-foreground leading-snug">
-                                    When on, the AI weighs each zone's prefer/avoid policy
-                                    when picking the best route.
-                                  </div>
-                                </div>
-                                <Switch
-                                  checked={geofenceAware}
-                                  onCheckedChange={(v) =>
-                                    updateRequestSettings.mutate({ geofence_aware_dispatch: v })
-                                  }
-                                />
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+                            <Settings2 className="w-3 h-3" />
+                            {renderableGeofences.length} zone{renderableGeofences.length === 1 ? "" : "s"}
+                          </div>
+                        </div>
+                        <div className="rounded-md border bg-background/70 overflow-hidden">
+                          <div className="px-2 py-1.5 flex items-center justify-between gap-2 border-b bg-muted/30">
+                            <div className="min-w-0">
+                              <div className="text-[11px] font-semibold">Use geofence rules</div>
+                            </div>
+                            <Switch
+                              checked={geofenceAware}
+                              onCheckedChange={(v) =>
+                                updateRequestSettings.mutate({ geofence_aware_dispatch: v })
+                              }
+                            />
+                          </div>
+                          <div className="max-h-28 overflow-y-auto overscroll-contain p-2 space-y-1.5">
+                            {renderableGeofences.length === 0 && (
+                              <div className="text-[10px] text-muted-foreground italic">
+                                No active geofences with valid geometry.
                               </div>
-                              {geofenceAware && (
-                                <div className="flex flex-col min-h-0 flex-1 space-y-1.5">
-                                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0 flex items-center justify-between">
-                                    <span>Avoid for this trip only</span>
-                                    <span className="normal-case text-muted-foreground/70">
-                                      {(geofences as any[]).length} zone
-                                      {(geofences as any[]).length === 1 ? "" : "s"}
+                            )}
+                            {renderableGeofences.map((g: any) => {
+                              const checked = avoidOverrides.includes(g.id);
+                              const orgPolicy = (g.dispatch_policy as string) || "neutral";
+                              return (
+                                <div key={g.id} className="flex items-start gap-2 text-[11px]">
+                                  <label className="flex items-start gap-2 min-w-0 flex-1 cursor-pointer">
+                                    <Checkbox
+                                      checked={checked}
+                                      disabled={!geofenceAware}
+                                      onCheckedChange={(c) => {
+                                        const next = c === true
+                                          ? Array.from(new Set([...avoidOverrides, g.id]))
+                                          : avoidOverrides.filter((id) => id !== g.id);
+                                        updateRequestSettings.mutate({ geofence_avoid_overrides: next });
+                                      }}
+                                      className="mt-0.5"
+                                    />
+                                    <span
+                                      className="mt-1 h-2 w-2 rounded-full shrink-0 border border-border"
+                                      style={{ background: g.color || "hsl(160 84% 39%)" }}
+                                    />
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block truncate font-medium">
+                                        {String(g.name || "Zone").split(",")[0]}
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        Org: {orgPolicy}
+                                      </span>
                                     </span>
-                                  </div>
-                                  <div className="min-h-[160px] max-h-[min(340px,calc(100vh-14rem))] overflow-y-auto overscroll-contain pr-2 rounded-md border bg-muted/20">
-                                    <div className="space-y-1.5 p-2 pr-3">
-                                      {(geofences as any[]).length === 0 && (
-                                        <div className="text-[10px] text-muted-foreground italic">
-                                          No active geofences in this organisation.
-                                        </div>
-                                      )}
-                                      {(geofences as any[]).map((g) => {
-                                        const checked = avoidOverrides.includes(g.id);
-                                        const orgPolicy = (g.dispatch_policy as string) || "neutral";
-                                        return (
-                                          <label
-                                            key={g.id}
-                                            className="flex items-start gap-2 text-[11px] cursor-pointer"
-                                          >
-                                            <Checkbox
-                                              checked={checked}
-                                              onCheckedChange={(c) => {
-                                                const next = c === true
-                                                  ? Array.from(new Set([...avoidOverrides, g.id]))
-                                                  : avoidOverrides.filter((id) => id !== g.id);
-                                                updateRequestSettings.mutate({
-                                                  geofence_avoid_overrides: next,
-                                                });
-                                              }}
-                                              className="mt-0.5"
-                                            />
-                                            <span className="min-w-0 flex-1">
-                                              <span className="block truncate font-medium">
-                                                {String(g.name || "Zone").split(",")[0]}
-                                              </span>
-                                              <span className="text-[10px] text-muted-foreground">
-                                                Org: {orgPolicy}
-                                              </span>
-                                            </span>
-                                          </label>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
+                                  </label>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 shrink-0"
+                                    title="Show this geofence on the map"
+                                    onClick={() => {
+                                      const bounds = getMergedTripFenceBounds(g);
+                                      if (bounds && mapRef.current) {
+                                        mapRef.current.fitBounds(bounds, { padding: 88, maxZoom: 16, duration: 350 });
+                                      }
+                                    }}
+                                  >
+                                    <MapPin className="w-3 h-3" />
+                                  </Button>
                                 </div>
-                              )}
-                            </PopoverContent>
-                          </Popover>
+                              );
+                            })}
+                          </div>
                         </div>
                         {aiError && (
                           <div className="text-[10px] text-destructive leading-snug">
