@@ -176,10 +176,11 @@ const sameCoordinate = (a: [number, number], b: [number, number]) =>
 
 const geofenceVisualColor = (fence: any) => {
   const raw = String(fence?.color || "").trim();
+  const isMapColor = /^(#[0-9a-f]{3,8}|rgba?\(|hsla?\()/i.test(raw) && !raw.includes("var(");
   // Most seeded zones use the same primary blue as the trip route, which made
   // the zone spots blend into the route line. Keep custom colors, but use a
   // contrasting map color for the default-blue geofence set.
-  return !raw || raw.toLowerCase() === "#3b82f6" ? "hsl(160 84% 39%)" : raw;
+  return !isMapColor || raw.toLowerCase() === "#3b82f6" ? "hsl(160, 84%, 39%)" : raw;
 };
 
 
