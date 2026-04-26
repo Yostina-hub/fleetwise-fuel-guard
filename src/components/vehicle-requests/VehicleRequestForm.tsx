@@ -1009,7 +1009,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // Current machine-clock classification (always available, even before times are typed).
   const machineNowMin = machineNow.getHours() * 60 + machineNow.getMinutes();
   const machineNowClass = classifyMin(machineNowMin)!;
-  const machineNowLabel = machineNow.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const machineNowLabel = machineNow.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
   const machineTzLabel = (() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "local"; }
   })();
