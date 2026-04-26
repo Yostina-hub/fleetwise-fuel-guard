@@ -1491,12 +1491,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   handleBlur("request_type", v, { ...(form as any), request_type: v });
                   return;
                 }
-                update("request_type", v);
+                setForm((f) => ({ ...f, request_type: v, requested_request_type: v }));
                 // Clear night subcategory when leaving Night Request.
                 if (v !== "nighttime_operation") {
                   update("night_request_subcategory", "" as any);
                 }
-                handleBlur("request_type", v, form as any);
+                handleBlur("request_type", v, { ...(form as any), request_type: v });
               }}
             >
               <SelectTrigger
