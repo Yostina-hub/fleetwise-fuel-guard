@@ -174,6 +174,14 @@ const getMergedTripFenceBounds = (fence: any): maplibregl.LngLatBounds | null =>
 const sameCoordinate = (a: [number, number], b: [number, number]) =>
   Math.abs(a[0] - b[0]) < 0.000001 && Math.abs(a[1] - b[1]) < 0.000001;
 
+const geofenceVisualColor = (fence: any) => {
+  const raw = String(fence?.color || "").trim();
+  // Most seeded zones use the same primary blue as the trip route, which made
+  // the zone spots blend into the route line. Keep custom colors, but use a
+  // contrasting map color for the default-blue geofence set.
+  return !raw || raw.toLowerCase() === "#3b82f6" ? "hsl(160 84% 39%)" : raw;
+};
+
 
 
 export const MergedTripStopsPanel = ({
@@ -513,6 +521,26 @@ export const MergedTripStopsPanel = ({
       setRoutesLoading(true);
       setRoutesError(null);
 
+      const uniqueOrderedPoints = orderedPoints.filter(
+        (point, idx, arr) => idx === 0 || !sameCoordinate(point.coord, arr[idx - 1].coord),
+      );
+
+      if (uniqueOrderedPoints.length < 2) {
+        setRoutesInfo([
+          {
+            label: "Single location",
+            strategy: "Pickup and drop-off use the same coordinate",
+            distanceKm: 0,
+            durationMin: 0,
+            isBest: true,
+            color: "hsl(217 91% 50%)",
+            sampleCoords: orderedPoints.map((p) => p.coord),
+          },
+        ]);
+        setRoutesLoading(false);
+        return;
+      }
+
       // Professional palette — strong primary blue for the recommended route,
       // warm amber and muted violet for alternatives. Each route gets a darker
       // outline ("casing") drawn underneath for that map-app polish.
@@ -529,7 +557,7 @@ export const MergedTripStopsPanel = ({
         const callRouting = async () =>
           supabase.functions.invoke("route-directions", {
             body: {
-              coordinates: orderedPoints.map((p) => p.coord),
+              coordinates: uniqueOrderedPoints.map((p) => p.coord),
               alternatives: true,
             },
           });
@@ -565,7 +593,12 @@ export const MergedTripStopsPanel = ({
               }]
             : [];
 
-        const results = rawAlts
+        const uniqueAlts = rawAlts.filter((route, idx, arr) => {
+          const signature = `${Math.round(Number(route.distance_m) || 0)}:${Math.round(Number(route.duration_s) || 0)}:${route.geometry?.length || 0}`;
+          return arr.findIndex((other) => `${Math.round(Number(other.distance_m) || 0)}:${Math.round(Number(other.duration_s) || 0)}:${other.geometry?.length || 0}` === signature) === idx;
+        });
+
+        const results = uniqueAlts
           .filter((r) => Array.isArray(r.geometry) && r.geometry.length >= 2)
           .slice(0, 3)
           .map((r) => ({
@@ -743,7 +776,7 @@ export const MergedTripStopsPanel = ({
         const fillId = `${sourceId}-fill`;
         const lineId = `${sourceId}-line`;
         if (map.getSource(sourceId)) return;
-        const color = fence.color || "hsl(160 84% 39%)";
+        const color = geofenceVisualColor(fence);
         const feature = buildMergedTripFenceFeature(fence);
         if (!feature) return;
         feature.geometry.coordinates[0].forEach((coord) => allBounds.extend(coord as [number, number]));
@@ -760,7 +793,7 @@ export const MergedTripStopsPanel = ({
             id: fillId,
             type: "fill",
             source: sourceId,
-            paint: { "fill-color": color, "fill-opacity": 0.32 },
+            paint: { "fill-color": color, "fill-opacity": 0.42 },
           }, beforeRouteLayer);
           map.addLayer({
             id: lineId,
@@ -768,7 +801,7 @@ export const MergedTripStopsPanel = ({
             source: sourceId,
             paint: {
               "line-color": color,
-              "line-width": 6,
+              "line-width": 8,
               "line-opacity": 1,
             },
           });
@@ -805,6 +838,54 @@ export const MergedTripStopsPanel = ({
           /* style not ready — load handler below will retry */
         }
       });
+
+      const centerFeatures = renderableGeofences
+        .map((fence: any) => {
+          const center = getMergedTripFenceCenter(fence);
+          if (!center) return null;
+          return {
+            type: "Feature" as const,
+            properties: { name: fence.name || "Zone", color: geofenceVisualColor(fence) },
+            geometry: { type: "Point" as const, coordinates: center },
+          };
+        })
+        .filter((feature): feature is NonNullable<typeof feature> => feature !== null);
+
+      if (centerFeatures.length > 0 && !map.getSource("mtsp-geofence-centers")) {
+        try {
+          map.addSource("mtsp-geofence-centers", {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: centerFeatures },
+          });
+          addedSources.push("mtsp-geofence-centers");
+          map.addLayer({
+            id: "mtsp-geofence-center-halo",
+            type: "circle",
+            source: "mtsp-geofence-centers",
+            paint: {
+              "circle-radius": 12,
+              "circle-color": "hsl(0 0% 100%)",
+              "circle-opacity": 0.92,
+              "circle-stroke-width": 3,
+              "circle-stroke-color": ["get", "color"],
+              "circle-stroke-opacity": 1,
+            },
+          });
+          map.addLayer({
+            id: "mtsp-geofence-center-dot",
+            type: "circle",
+            source: "mtsp-geofence-centers",
+            paint: {
+              "circle-radius": 5,
+              "circle-color": ["get", "color"],
+              "circle-opacity": 1,
+            },
+          });
+          addedLayers.push("mtsp-geofence-center-halo", "mtsp-geofence-center-dot");
+        } catch {
+          /* noop */
+        }
+      }
 
       if (!allBounds.isEmpty() && !geofenceFitAppliedRef.current && !stopBounds) {
         try {
@@ -1297,7 +1378,7 @@ export const MergedTripStopsPanel = ({
                                     />
                                     <span
                                       className="mt-1 h-2 w-2 rounded-full shrink-0 border border-border"
-                                      style={{ background: g.color || "hsl(160 84% 39%)" }}
+                                      style={{ background: geofenceVisualColor(g) }}
                                     />
                                     <span className="min-w-0 flex-1">
                                       <span className="block truncate font-medium">

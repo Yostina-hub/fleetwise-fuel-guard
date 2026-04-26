@@ -24,10 +24,7 @@ import {
 
 const UPSTREAM_TIMEOUT_MS = 9000;
 
-interface Coord {
-  0: number; // lng
-  1: number; // lat
-}
+type Coord = [number, number]; // [lng, lat]
 
 const isValidCoord = (c: unknown): c is Coord =>
   Array.isArray(c) &&
@@ -215,6 +212,46 @@ const tryOsrmStitched = async (coords: Coord[]) => {
   };
 };
 
+const tryOsrmViaAlternatives = async (coords: Coord[]) => {
+  if (coords.length !== 2) return null;
+  const [start, end] = coords;
+  const midLng = (start[0] + end[0]) / 2;
+  const midLat = (start[1] + end[1]) / 2;
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const len = Math.sqrt(dx * dx + dy * dy) || 0.01;
+  const scale = Math.max(0.006, Math.min(0.025, len * 0.45));
+  const candidates = [
+    [midLng - (dy / len) * scale, midLat + (dx / len) * scale],
+    [midLng + (dy / len) * scale, midLat - (dx / len) * scale],
+    [midLng, midLat + scale],
+    [midLng + scale, midLat],
+  ].filter(isValidCoord);
+
+  const variants = await Promise.all(
+    candidates.map(async (via) => {
+      const routed = await tryOsrm([start, via, end], false);
+      if (!routed.ok) return null;
+      return {
+        geometry: routed.geometry,
+        distance_m: routed.distance_m,
+        duration_s: routed.duration_s,
+        legs: routed.legs,
+      };
+    }),
+  );
+
+  const unique = variants
+    .filter((route): route is NonNullable<typeof route> => route !== null)
+    .filter((route, idx, arr) => {
+      const key = `${Math.round(route.distance_m / 25)}:${Math.round(route.duration_s / 10)}:${route.geometry.length}`;
+      return arr.findIndex((other) => `${Math.round(other.distance_m / 25)}:${Math.round(other.duration_s / 10)}:${other.geometry.length}` === key) === idx;
+    })
+    .slice(0, 2);
+
+  return unique.length > 0 ? unique : null;
+};
+
 serve(async (req) => {
   const preflight = handleCorsPreflightRequest(req);
   if (preflight) return preflight;
@@ -278,6 +315,22 @@ serve(async (req) => {
         const stitched = await tryOsrmStitched(coords as Coord[]);
         if (stitched.ok && stitched.alternatives.length >= 1) {
           alternatives = stitched.alternatives;
+        }
+      }
+      if (
+        wantAlternatives &&
+        Array.isArray(alternatives) &&
+        alternatives.length < 2 &&
+        coords.length === 2
+      ) {
+        const viaAlternatives = await tryOsrmViaAlternatives(coords as Coord[]);
+        if (viaAlternatives?.length) {
+          alternatives = [osrm.alternatives?.[0] ?? {
+            geometry: osrm.geometry,
+            distance_m: osrm.distance_m,
+            duration_s: osrm.duration_s,
+            legs: osrm.legs,
+          }, ...viaAlternatives].slice(0, 3);
         }
       }
       return secureJsonResponse(
