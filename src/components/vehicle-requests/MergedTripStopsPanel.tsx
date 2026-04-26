@@ -717,7 +717,8 @@ export const MergedTripStopsPanel = ({
       if (hasFenceBounds && !geofenceFitAppliedRef.current) {
         try {
           const combined = new maplibregl.LngLatBounds();
-          allBounds.toArray().flat().forEach((coord) => combined.extend(coord as [number, number]));
+          const fenceCorners = allBounds.toArray() as [[number, number], [number, number]];
+          fenceCorners.forEach((coord) => combined.extend(coord));
           stopsWithCoords.forEach((s) => {
             combined.extend([s.departure_lng!, s.departure_lat!]);
             combined.extend([s.destination_lng!, s.destination_lat!]);
