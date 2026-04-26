@@ -609,7 +609,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     if (prevRequesterIdRef.current === effectiveRequesterId) return;
     prevRequesterIdRef.current = effectiveRequesterId;
     userTouchedPoolRef.current = false;
-    setForm((prev) => ({ ...prev, pool_category: "", pool_name: "" }));
+    setForm((prev) =>
+      !prev.pool_category && !prev.pool_name
+        ? prev
+        : { ...prev, pool_category: "", pool_name: "" },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveRequesterId]);
 
