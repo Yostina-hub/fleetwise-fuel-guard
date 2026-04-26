@@ -264,9 +264,10 @@ const Geofencing = () => {
 
   // Handle drawing mode changes
   useEffect(() => {
-    if (!drawRef.current || !mapRef.current) return;
-
-    drawRef.current.deleteAll();
+    const map = mapRef.current;
+    if (!map) return;
+    clearDraftPolygon();
+    map.getCanvas().style.cursor = drawingMode ? "crosshair" : "";
 
     if (drawingMode === 'circle') {
       const handleMapClick = (e: any) => {
@@ -282,18 +283,45 @@ const Geofencing = () => {
           description: `Center point set at ${e.lngLat.lat.toFixed(4)}, ${e.lngLat.lng.toFixed(4)}`,
         });
         setDrawingMode(null);
-        mapRef.current?.off('click', handleMapClick);
+        map.off('click', handleMapClick);
       };
 
-      mapRef.current.on('click', handleMapClick);
+      map.on('click', handleMapClick);
       
       return () => {
-        mapRef.current?.off('click', handleMapClick);
+        map.off('click', handleMapClick);
+        map.getCanvas().style.cursor = "";
       };
     } else if (drawingMode === 'polygon') {
-      drawRef.current.changeMode('draw_polygon');
+      const handleMapClick = (e: any) => {
+        const next = [...draftPolygonRef.current, { lat: e.lngLat.lat, lng: e.lngLat.lng }];
+        draftPolygonRef.current = next;
+        setDraftPolygonPoints(next);
+        updateDraftPolygon(next);
+      };
+      const handleDoubleClick = (e: any) => {
+        e.preventDefault();
+        const points = draftPolygonRef.current;
+        if (points.length < 3) {
+          toast({ title: "Add at least 3 points", variant: "destructive" });
+          return;
+        }
+        setFormData((prev) => ({ ...prev, polygon_points: points, geometry_type: "polygon" }));
+        setIsCreateDialogOpen(true);
+        toast({ title: "✓ Area Selected", description: `Polygon with ${points.length} points captured.` });
+        setDrawingMode(null);
+      };
+      map.doubleClickZoom.disable();
+      map.on('click', handleMapClick);
+      map.on('dblclick', handleDoubleClick);
+      return () => {
+        map.off('click', handleMapClick);
+        map.off('dblclick', handleDoubleClick);
+        map.doubleClickZoom.enable();
+        map.getCanvas().style.cursor = "";
+      };
     }
-  }, [drawingMode, toast]);
+  }, [clearDraftPolygon, drawingMode, toast, updateDraftPolygon]);
 
   const focusFenceOnMap = useCallback((fence: GeofenceRecord) => {
     const bounds = getFenceBounds(fence);
