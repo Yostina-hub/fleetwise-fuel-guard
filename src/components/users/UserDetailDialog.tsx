@@ -199,7 +199,35 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
         setLinkedDriverId(data?.linked_driver_id || null);
         setLinkedEmployeeId(data?.linked_employee_id || null);
 
-        // Load current pool membership (first row, latest)
+        // Load fleet_pools for this org (same source as Vehicle Request Form)
+        let loadedPools: { code: string; name: string; category: PoolCategory; sort_order?: number | null }[] = [];
+        if (user.organization_id) {
+          const { data: poolDefs } = await (supabase as any)
+            .from("fleet_pools")
+            .select("code, name, category, sort_order")
+            .eq("organization_id", user.organization_id)
+            .eq("is_active", true)
+            .order("category")
+            .order("sort_order", { ascending: true });
+          if (cancelled) return;
+          // Dedupe by code (the table currently has duplicate rows for some codes)
+          const seen = new Set<string>();
+          loadedPools = (poolDefs || [])
+            .filter((p: any) => p && p.code && p.category && ["corporate", "zone", "region"].includes(p.category))
+            .filter((p: any) => {
+              if (seen.has(p.code)) return false;
+              seen.add(p.code);
+              return true;
+            })
+            .map((p: any) => ({ code: p.code, name: p.name || p.code, category: p.category as PoolCategory, sort_order: p.sort_order ?? 100 }));
+        }
+        setFleetPools(loadedPools);
+
+        // Build a code → category map combining DB and the hardcoded fallback
+        const codeToCat: Record<string, PoolCategory> = { ...CODE_TO_CATEGORY };
+        loadedPools.forEach(p => { codeToCat[p.code] = p.category; });
+
+        // Load current pool membership (latest)
         const { data: poolRows } = await supabase
           .from("pool_memberships")
           .select("pool_code")
@@ -208,8 +236,8 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
           .limit(1);
         if (cancelled) return;
         const code = poolRows?.[0]?.pool_code as string | undefined;
-        if (code && CODE_TO_CATEGORY[code]) {
-          setPoolCategory(CODE_TO_CATEGORY[code]);
+        if (code && codeToCat[code]) {
+          setPoolCategory(codeToCat[code]);
           setPoolCode(code);
         } else {
           setPoolCategory("");
