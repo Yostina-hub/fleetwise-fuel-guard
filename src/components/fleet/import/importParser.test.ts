@@ -119,3 +119,189 @@ describe("importParser - XLSX", () => {
     await expect(parseImportFile(f)).rejects.toThrow(/unsupported/i);
   });
 });
+
+/* ---------- Driver schema tests ---------- */
+
+function driverCsvFile(content: string, name = "drivers.csv"): File {
+  return new File([content], name, { type: "text/csv" });
+}
+
+function driverXlsxFile(matrix: any[][], name = "drivers.xlsx"): File {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(matrix);
+  XLSX.utils.book_append_sheet(wb, ws, "Drivers");
+  const out = XLSX.write(wb, { type: "array", bookType: "xlsx" });
+  const blob = new Blob([out as ArrayBuffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  return new File([blob], name, { type: blob.type });
+}
+
+const driverOpts = {
+  fields: DRIVER_IMPORT_FIELDS,
+  resolveField: resolveDriverField,
+};
+
+describe("importParser - Drivers", () => {
+  it("parses a minimal valid driver CSV with required fields only", async () => {
+    const csv = [
+      "First Name,Last Name,License Number",
+      "Abebe,Bekele,DL-AA-123456",
+    ].join("\n");
+    const result = await parseImportFile(driverCsvFile(csv), driverOpts);
+    expect(result.totalRows).toBe(1);
+    expect(result.validRows).toBe(1);
+    expect(result.rows[0].data.first_name).toBe("Abebe");
+    expect(result.rows[0].data.license_number).toBe("DL-AA-123456");
+  });
+
+  it("flags missing required driver fields", async () => {
+    const csv = [
+      "First Name,Last Name,License Number",
+      "Abebe,,DL-AA-1",
+    ].join("\n");
+    const result = await parseImportFile(driverCsvFile(csv), driverOpts);
+    expect(result.invalidRows).toBe(1);
+    expect(
+      result.rows[0].errors.some((e) => e.includes("Last Name is required")),
+    ).toBe(true);
+  });
+
+  it("validates driver enums (driver_type, gender, status)", async () => {
+    const csv = [
+      "First Name,Last Name,License Number,Driver Type,Gender,Status",
+      "Abebe,Bekele,DL-1,alien,unknown,vacationing",
+    ].join("\n");
+    const result = await parseImportFile(driverCsvFile(csv), driverOpts);
+    const errs = result.rows[0].errors.join(" | ");
+    expect(errs).toMatch(/Driver Type/);
+    expect(errs).toMatch(/Gender/);
+    expect(errs).toMatch(/Status/);
+  });
+
+  it("coerces driver date fields", async () => {
+    const csv = [
+      "First Name,Last Name,License Number,Hire Date,License Expiry",
+      "Abebe,Bekele,DL-1,2022-03-01,2027-06-30",
+    ].join("\n");
+    const result = await parseImportFile(driverCsvFile(csv), driverOpts);
+    expect(result.validRows).toBe(1);
+    expect(result.rows[0].data.hire_date).toBe("2022-03-01");
+    expect(result.rows[0].data.license_expiry).toBe("2027-06-30");
+  });
+
+  it("parses a valid driver XLSX workbook", async () => {
+    const result = await parseImportFile(
+      driverXlsxFile([
+        ["First Name", "Last Name", "License Number", "Driver Type"],
+        ["Abebe", "Bekele", "DL-1", "company"],
+        ["Hana", "Tadesse", "DL-2", "outsource"],
+      ]),
+      driverOpts,
+    );
+    expect(result.totalRows).toBe(2);
+    expect(result.validRows).toBe(2);
+    expect(result.rows[1].data.driver_type).toBe("outsource");
+  });
+
+  it("skips the hint row in driver template", async () => {
+    const csv = [
+      "First Name,Last Name,License Number",
+      "REQUIRED — max 100 chars,REQUIRED — max 100 chars,REQUIRED — Unique key for upsert",
+      "Abebe,Bekele,DL-1",
+    ].join("\n");
+    const result = await parseImportFile(driverCsvFile(csv), driverOpts);
+    expect(result.totalRows).toBe(1);
+    expect(result.validRows).toBe(1);
+  });
+});
+
+/* ---------- Template round-trip ---------- */
+
+/** Capture the Blob that downloadImportTemplate would download. */
+function captureDownloadedBlob(fn: () => void): Blob {
+  let captured: Blob | null = null;
+  const origCreate = URL.createObjectURL;
+  const origRevoke = URL.revokeObjectURL;
+  // jsdom: stub anchor.click so it doesn't navigate
+  const origClick = HTMLAnchorElement.prototype.click;
+  URL.createObjectURL = (b: Blob) => {
+    captured = b;
+    return "blob:mock";
+  };
+  URL.revokeObjectURL = () => {};
+  HTMLAnchorElement.prototype.click = function () {};
+  try {
+    fn();
+  } finally {
+    URL.createObjectURL = origCreate;
+    URL.revokeObjectURL = origRevoke;
+    HTMLAnchorElement.prototype.click = origClick;
+  }
+  if (!captured) throw new Error("no blob captured");
+  return captured;
+}
+
+describe("Template round-trip", () => {
+  it("vehicle template downloads → parses cleanly", async () => {
+    const blob = captureDownloadedBlob(() =>
+      downloadImportTemplate("xlsx"),
+    );
+    const file = new File([blob], "vehicle-import-template.xlsx", {
+      type: blob.type,
+    });
+    const result = await parseImportFile(file);
+    expect(result.totalRows).toBe(1); // only the sample row, hint row skipped
+    expect(result.validRows).toBe(1);
+    expect(result.invalidRows).toBe(0);
+    expect(result.rows[0].data.plate_number).toBe("AA-12345");
+  });
+
+  it("driver template downloads → parses cleanly", async () => {
+    const blob = captureDownloadedBlob(() =>
+      downloadImportTemplate("xlsx", {
+        fields: DRIVER_IMPORT_FIELDS,
+        sampleValues: DRIVER_SAMPLE_VALUES,
+        filenameBase: "driver-import-template",
+        sheetName: "Drivers",
+      }),
+    );
+    const file = new File([blob], "driver-import-template.xlsx", {
+      type: blob.type,
+    });
+    const result = await parseImportFile(file, driverOpts);
+    expect(result.totalRows).toBe(1);
+    expect(result.validRows).toBe(1);
+    expect(result.invalidRows).toBe(0);
+    expect(result.rows[0].data.first_name).toBe("Abebe");
+    expect(result.rows[0].data.license_number).toBe("DL-AA-123456");
+  });
+
+  it("vehicle CSV template downloads → parses cleanly", async () => {
+    const blob = captureDownloadedBlob(() =>
+      downloadImportTemplate("csv"),
+    );
+    const file = new File([blob], "vehicle-import-template.csv", {
+      type: "text/csv",
+    });
+    const result = await parseImportFile(file);
+    expect(result.validRows).toBe(1);
+    expect(result.invalidRows).toBe(0);
+  });
+
+  it("driver CSV template downloads → parses cleanly", async () => {
+    const blob = captureDownloadedBlob(() =>
+      downloadImportTemplate("csv", {
+        fields: DRIVER_IMPORT_FIELDS,
+        sampleValues: DRIVER_SAMPLE_VALUES,
+        filenameBase: "driver-import-template",
+      }),
+    );
+    const file = new File([blob], "driver-import-template.csv", {
+      type: "text/csv",
+    });
+    const result = await parseImportFile(file, driverOpts);
+    expect(result.validRows).toBe(1);
+    expect(result.invalidRows).toBe(0);
+  });
+});
