@@ -430,7 +430,13 @@ export const MergedTripStopsPanel = ({
         setAiPick(null);
         setAiError(null);
       } catch (err: any) {
-        setRoutesError(err?.message || "Could not load route alternatives");
+        const raw = String(err?.message || "");
+        // The supabase-js wrapper surfaces upstream 5xx as "non-2xx status
+        // code", which means nothing to a dispatcher. Translate to plain text.
+        const friendly = /non-2xx|5\d\d|upstream|unavailable/i.test(raw)
+          ? "Routing service is busy — showing straight-line preview."
+          : raw || "Could not load route alternatives.";
+        setRoutesError(friendly);
         // Fallback: render straight dashed legs so the user still sees connectivity
         if (!mapRef.current) return;
         const features = stopsWithCoords.map((c) => ({
