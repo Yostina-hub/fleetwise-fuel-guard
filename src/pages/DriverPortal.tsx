@@ -1058,11 +1058,13 @@ const DriverPortal = () => {
           location={reportIncidentContext?.location ?? null}
         />
 
-        {/* On-road refuel — uses the active trip context (request + vehicle). */}
+        {/* Additional Fuel Request — uses active trip context when available,
+            otherwise falls back to the driver's permanently assigned vehicle. */}
         <OnRoadFuelRequestDialog
           open={showOnRoadFuel}
           onOpenChange={setShowOnRoadFuel}
           request={viewRequest ?? activeRequest ?? null}
+          fallbackVehicle={vehicle ?? null}
           driverId={driverId}
           driverName={driverName}
           driverPhone={driver?.phone}
