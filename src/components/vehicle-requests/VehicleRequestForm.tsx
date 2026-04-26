@@ -56,6 +56,7 @@ import {
   recommendVehicleClass,
   isUpgradeOverRecommendation,
   getVehicleClassProfile,
+  VEHICLE_CLASS_CATALOG,
   isPassengerVehicleType,
   NON_PASSENGER_SENTINEL,
   COST_BAND_LABELS,
