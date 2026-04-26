@@ -29,15 +29,15 @@ const DriverQuickActions = ({
   const actions = [
     {
       label: "Report Issue",
-      tooltip: "Report a vehicle problem or breakdown",
+      tooltip: "Report a vehicle technical issue, accident, or passenger health emergency",
       icon: Wrench,
       onClick: onReportIssue,
       variant: "default" as const,
       className: "bg-primary hover:bg-primary/90",
     },
     {
-      label: "Request Fuel",
-      tooltip: "Submit a fuel refill request",
+      label: "Additional Fuel Request",
+      tooltip: "Request an additional refuel during a trip — e-fuel data is captured automatically",
       icon: Fuel,
       onClick: onRequestFuel,
       variant: "outline" as const,
