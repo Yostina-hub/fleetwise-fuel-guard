@@ -8,8 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import MapboxDraw from '@mapbox/mapbox-gl-draw';
-import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import maplibregl from 'maplibre-gl';
 import {
   Dialog,
@@ -34,6 +32,8 @@ import {
   Crosshair,
   Ban,
   Building2,
+  Navigation,
+  RotateCcw,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -138,6 +138,11 @@ const getFenceBounds = (fence: GeofenceRecord): maplibregl.LngLatBounds | null =
   coords.forEach((coord) => bounds.extend(coord as [number, number]));
   return bounds;
 };
+
+const draftSourceId = "geofence-draft-source";
+const draftFillLayerId = "geofence-draft-fill";
+const draftLineLayerId = "geofence-draft-line";
+const draftPointLayerId = "geofence-draft-points";
 
 const Geofencing = () => {
   const { t } = useTranslation();
