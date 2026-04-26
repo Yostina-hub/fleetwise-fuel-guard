@@ -185,6 +185,8 @@ const Geofencing = () => {
   const [draftPolygonPoints, setDraftPolygonPoints] = useState<Array<{ lat: number; lng: number }>>([]);
   const [mapReady, setMapReady] = useState(false);
   const [activeTab, setActiveTab] = useState<"geofences" | "events">("geofences");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   
   useEffect(() => {
     const token = sessionStorage.getItem('mapbox_token') || envToken || '';
