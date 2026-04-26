@@ -1157,33 +1157,43 @@ export const MergedTripStopsPanel = ({
                     })()}
 
                     {/* AI recommend action + inline geofence controls */}
-                    {!routesLoading && routesInfo.length > 1 && (
+                    {!routesLoading && (routesInfo.length > 1 || renderableGeofences.length > 0) && (
                       <div className="px-3 py-2 border-t border-border/60 bg-muted/30 space-y-2">
-                        <div className="flex items-center gap-1.5">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={aiPick ? "secondary" : "default"}
-                            className="flex-1 h-7 text-[11px] gap-1.5"
-                            onClick={requestAiRecommendation}
-                            disabled={aiLoading}
-                          >
-                            {aiLoading ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Sparkles className="w-3 h-3" />
-                            )}
-                            {aiLoading
-                              ? "Asking AI…"
-                              : aiPick
-                                ? "Re-run AI recommendation"
-                                : "Recommend best with AI"}
-                          </Button>
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
-                            <Settings2 className="w-3 h-3" />
-                            {renderableGeofences.length} zone{renderableGeofences.length === 1 ? "" : "s"}
+                        {routesInfo.length > 1 ? (
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={aiPick ? "secondary" : "default"}
+                              className="flex-1 h-7 text-[11px] gap-1.5"
+                              onClick={requestAiRecommendation}
+                              disabled={aiLoading}
+                            >
+                              {aiLoading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Sparkles className="w-3 h-3" />
+                              )}
+                              {aiLoading
+                                ? "Asking AI…"
+                                : aiPick
+                                  ? "Re-run AI recommendation"
+                                  : "Recommend best with AI"}
+                            </Button>
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+                              <Settings2 className="w-3 h-3" />
+                              {renderableGeofences.length} zone{renderableGeofences.length === 1 ? "" : "s"}
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                            <span className="flex items-center gap-1.5 font-medium text-foreground">
+                              <Settings2 className="w-3 h-3 text-primary" />
+                              Geofence rules
+                            </span>
+                            <span>{renderableGeofences.length} zone{renderableGeofences.length === 1 ? "" : "s"}</span>
+                          </div>
+                        )}
                         <div className="rounded-md border bg-background/70 overflow-hidden">
                           <div className="px-2 py-1.5 flex items-center justify-between gap-2 border-b bg-muted/30">
                             <div className="min-w-0">
