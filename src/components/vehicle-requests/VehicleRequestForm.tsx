@@ -2417,6 +2417,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             <VRField
               id="vr-purpose"
               label="Trip Description"
+              icon={FileText}
               required
               error={getError("purpose")}
             >
