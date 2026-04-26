@@ -144,6 +144,7 @@ describe("VR form validation — Project Operation", () => {
     pool_name: "Adama Region Pool",
     priority: "high",
     trip_type: "round_trip",
+    contact_phone: "0911234567",
   };
 
   it("accepts a valid project request", () => {
