@@ -189,9 +189,7 @@ describe("VR form validation — Field Operation", () => {
     contact_phone: "0911234567",
   };
   it("accepts a field request without project number", () => {
-    const r = validateVehicleRequestForm(base as any);
-    if (!r.valid) console.log("FIELD errors:", r.errors);
-    expect(r.valid).toBe(true);
+    expect(validateVehicleRequestForm(base as any).valid).toBe(true);
   });
 });
 
