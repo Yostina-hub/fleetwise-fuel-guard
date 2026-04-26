@@ -490,6 +490,7 @@ const Geofencing = () => {
       enable_entry_alarm: true,
       enable_exit_alarm: true,
       color: "#3B82F6",
+      dispatch_policy: "neutral",
     });
     setDrawingMode(null);
     setIsEditMode(false);
@@ -508,6 +509,7 @@ const Geofencing = () => {
       enable_entry_alarm: fence.enable_entry_alarm ?? true,
       enable_exit_alarm: fence.enable_exit_alarm ?? true,
       color: fence.color || "#3B82F6",
+      dispatch_policy: (fence.dispatch_policy as DispatchPolicy) || getCategoryDefaultPolicy(fence.category || "customer_site"),
     });
     setEditingGeofenceId(fence.id);
     setIsEditMode(true);
@@ -541,6 +543,7 @@ const Geofencing = () => {
       enable_entry_alarm: formData.enable_entry_alarm,
       enable_exit_alarm: formData.enable_exit_alarm,
       color: formData.color,
+      dispatch_policy: formData.dispatch_policy,
     };
 
     if (isEditMode && editingGeofenceId) {
