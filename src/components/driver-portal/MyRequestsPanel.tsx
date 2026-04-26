@@ -72,26 +72,89 @@ export default function MyRequestsPanel({
   const [tracking, setTracking] = useState<{ kind: TrackingKind; id: string } | null>(null);
 
   const { data: instances, isLoading } = useQuery({
-    queryKey: ["my-driver-workflow-instances", driverId, userId, organizationId],
+    queryKey: ["my-driver-unified-requests", driverId, userId, organizationId],
     enabled: !!organizationId && (!!driverId || !!userId),
     queryFn: async () => {
-      let q = supabase
+      // 1) workflow_instances (license, vehicle, safety, etc.)
+      let wq = supabase
         .from("workflow_instances")
         .select("id, workflow_type, reference_number, title, current_stage, status, created_at, updated_at, data")
         .eq("organization_id", organizationId!)
         .order("created_at", { ascending: false })
         .limit(100);
-
-      // RLS already restricts to (created_by = me) OR (driver_id linked to me).
-      // We add an explicit OR so super-admin impersonation works too.
       const orParts: string[] = [];
       if (driverId) orParts.push(`driver_id.eq.${driverId}`);
       if (userId) orParts.push(`created_by.eq.${userId}`);
-      if (orParts.length) q = q.or(orParts.join(","));
+      if (orParts.length) wq = wq.or(orParts.join(","));
+      const { data: wfData, error: wfErr } = await wq;
+      if (wfErr) throw wfErr;
 
-      const { data, error } = await q;
-      if (error) throw error;
-      return data ?? [];
+      // 2) fuel_requests filed by this driver/user
+      const fuelOr: string[] = [];
+      if (driverId) fuelOr.push(`driver_id.eq.${driverId}`);
+      if (userId) fuelOr.push(`requested_by.eq.${userId}`);
+      const { data: fuelRows } = fuelOr.length
+        ? await (supabase as any)
+            .from("fuel_requests")
+            .select("id, request_number, status, fuel_type, purpose, created_at, updated_at")
+            .eq("organization_id", organizationId!)
+            .or(fuelOr.join(","))
+            .order("created_at", { ascending: false })
+            .limit(50)
+        : { data: [] };
+
+      // 3) incidents reported by this driver
+      const { data: incRows } = driverId
+        ? await (supabase as any)
+            .from("incidents")
+            .select("id, incident_number, status, incident_type, severity, description, location, created_at, updated_at")
+            .eq("organization_id", organizationId!)
+            .eq("driver_id", driverId)
+            .order("created_at", { ascending: false })
+            .limit(50)
+        : { data: [] };
+
+      // Build a set of entity ids already represented by workflow_instances so
+      // we don't duplicate fuel/incident rows that already have an instance.
+      const wfFuelIds = new Set<string>();
+      const wfIncidentIds = new Set<string>();
+      for (const w of wfData ?? []) {
+        const d: any = w.data || {};
+        if (w.workflow_type === "fuel_request" && d.fuel_request_id) wfFuelIds.add(d.fuel_request_id);
+        if (w.workflow_type === "incident_report" && d.incident_id) wfIncidentIds.add(d.incident_id);
+      }
+
+      const fuelExtras = (fuelRows || [])
+        .filter((r: any) => !wfFuelIds.has(r.id))
+        .map((r: any) => ({
+          id: `fuel-${r.id}`,
+          workflow_type: "fuel_request",
+          reference_number: r.request_number,
+          title: r.purpose || `Fuel request (${r.fuel_type || "—"})`,
+          current_stage: r.status,
+          status: r.status === "fulfilled" ? "completed" : r.status === "rejected" ? "rejected" : "in_progress",
+          created_at: r.created_at,
+          updated_at: r.updated_at,
+          data: { fuel_request_id: r.id },
+        }));
+
+      const incExtras = (incRows || [])
+        .filter((r: any) => !wfIncidentIds.has(r.id))
+        .map((r: any) => ({
+          id: `inc-${r.id}`,
+          workflow_type: "incident_report",
+          reference_number: r.incident_number,
+          title: r.description?.slice(0, 80) || `${(r.incident_type || "incident").replace(/_/g, " ")} report`,
+          current_stage: r.status,
+          status: ["closed", "resolved"].includes(r.status) ? "completed" : "in_progress",
+          created_at: r.created_at,
+          updated_at: r.updated_at,
+          data: { incident_id: r.id },
+        }));
+
+      const merged = [...(wfData ?? []), ...fuelExtras, ...incExtras]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return merged;
     },
   });
 
