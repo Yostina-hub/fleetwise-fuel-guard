@@ -471,7 +471,7 @@ export const MergedTripStopsPanel = ({
               `<div style="font:500 11px system-ui;padding:2px;min-width:160px;">
                  <div style="font-weight:700">Pickup ${idx + 1} · ${c.requester_name || c.request_number}</div>
                  <div style="color:#666;margin-top:2px;">📍 ${c.departure_place || "Pickup"}</div>
-                 <div style="margin-top:3px;font-size:10px;">${c.passengers ?? 0} pax · ${format(new Date(c.needed_from), "HH:mm")}</div>
+                 <div style="margin-top:3px;font-size:10px;">${c.passengers ?? 0} pax · ${format(new Date(c.needed_from), "h:mm a")}</div>
                </div>`,
             ),
           )
@@ -1134,7 +1134,7 @@ export const MergedTripStopsPanel = ({
               {latest && (
                 <>
                   <ArrowRight className="w-3 h-3 mx-0.5" />
-                  {format(latest, "HH:mm")}
+                  {format(latest, "h:mm a")}
                 </>
               )}
               {poolName && <span className="ml-2 truncate">· {poolName}</span>}

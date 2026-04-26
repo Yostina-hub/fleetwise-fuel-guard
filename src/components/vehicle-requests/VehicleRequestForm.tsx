@@ -566,7 +566,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       const startMins = sH * 60 + sM;
       const endMins = eH * 60 + eM;
       if (mins < startMins || mins > endMins) {
-        return `Working-hours policy: ${p.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} is outside the working window. Allowed window: ${winLabel}.`;
+        return `Working-hours policy: ${p.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true })} is outside the working window. Allowed window: ${winLabel}.`;
       }
     }
     return null;
@@ -1009,7 +1009,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // Current machine-clock classification (always available, even before times are typed).
   const machineNowMin = machineNow.getHours() * 60 + machineNow.getMinutes();
   const machineNowClass = classifyMin(machineNowMin)!;
-  const machineNowLabel = machineNow.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const machineNowLabel = machineNow.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
   const machineTzLabel = (() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "local"; }
   })();
@@ -1371,7 +1371,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       {savedAt && (
         <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <CheckCircle2 className="w-3 h-3 text-success" />
-          Auto-saved {new Date(savedAt).toLocaleTimeString()}
+          Auto-saved {new Date(savedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true })}
         </span>
       )}
     </div>
