@@ -113,7 +113,10 @@ const normalizeFencePoints = (points: unknown): Array<{ lat: number; lng: number
 
   if (!Array.isArray(raw)) return [];
   return raw
-    .map((point: any) => ({ lat: toFiniteNumber(point?.lat), lng: toFiniteNumber(point?.lng) }))
+    .map((point: any) => ({
+      lat: toFiniteNumber(point?.lat ?? point?.[1]),
+      lng: toFiniteNumber(point?.lng ?? point?.[0]),
+    }))
     .filter((point): point is { lat: number; lng: number } => point.lat != null && point.lng != null);
 };
 
@@ -741,13 +744,21 @@ export const MergedTripStopsPanel = ({
           if (center) {
             const markerEl = document.createElement("div");
             markerEl.style.cssText = `
-              max-width:150px;padding:3px 7px;border-radius:6px;
-              background:rgba(255,255,255,.95);color:${color};
+              display:flex;align-items:center;gap:5px;max-width:160px;
+              padding:3px 7px;border-radius:9999px;background:hsl(var(--card));color:${color};
               font:700 11px system-ui;line-height:1.15;border:2px solid ${color};
-              box-shadow:0 2px 8px rgba(0,0,0,.28);pointer-events:none;
+              box-shadow:0 2px 10px hsl(var(--foreground) / .28);pointer-events:none;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
             `;
-            markerEl.textContent = shortName;
+            const dotEl = document.createElement("span");
+            dotEl.style.cssText = `
+              width:9px;height:9px;border-radius:9999px;background:${color};
+              box-shadow:0 0 0 3px ${color}33;flex:0 0 auto;
+            `;
+            const labelEl = document.createElement("span");
+            labelEl.style.cssText = "overflow:hidden;text-overflow:ellipsis;min-width:0;";
+            labelEl.textContent = shortName;
+            markerEl.append(dotEl, labelEl);
             const marker = new maplibregl.Marker({ element: markerEl, anchor: "center" })
               .setLngLat(center)
               .addTo(map);
@@ -1157,33 +1168,43 @@ export const MergedTripStopsPanel = ({
                     })()}
 
                     {/* AI recommend action + inline geofence controls */}
-                    {!routesLoading && routesInfo.length > 1 && (
+                    {!routesLoading && (routesInfo.length > 1 || renderableGeofences.length > 0) && (
                       <div className="px-3 py-2 border-t border-border/60 bg-muted/30 space-y-2">
-                        <div className="flex items-center gap-1.5">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={aiPick ? "secondary" : "default"}
-                            className="flex-1 h-7 text-[11px] gap-1.5"
-                            onClick={requestAiRecommendation}
-                            disabled={aiLoading}
-                          >
-                            {aiLoading ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Sparkles className="w-3 h-3" />
-                            )}
-                            {aiLoading
-                              ? "Asking AI…"
-                              : aiPick
-                                ? "Re-run AI recommendation"
-                                : "Recommend best with AI"}
-                          </Button>
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
-                            <Settings2 className="w-3 h-3" />
-                            {renderableGeofences.length} zone{renderableGeofences.length === 1 ? "" : "s"}
+                        {routesInfo.length > 1 ? (
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={aiPick ? "secondary" : "default"}
+                              className="flex-1 h-7 text-[11px] gap-1.5"
+                              onClick={requestAiRecommendation}
+                              disabled={aiLoading}
+                            >
+                              {aiLoading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Sparkles className="w-3 h-3" />
+                              )}
+                              {aiLoading
+                                ? "Asking AI…"
+                                : aiPick
+                                  ? "Re-run AI recommendation"
+                                  : "Recommend best with AI"}
+                            </Button>
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+                              <Settings2 className="w-3 h-3" />
+                              {renderableGeofences.length} zone{renderableGeofences.length === 1 ? "" : "s"}
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                            <span className="flex items-center gap-1.5 font-medium text-foreground">
+                              <Settings2 className="w-3 h-3 text-primary" />
+                              Geofence rules
+                            </span>
+                            <span>{renderableGeofences.length} zone{renderableGeofences.length === 1 ? "" : "s"}</span>
+                          </div>
+                        )}
                         <div className="rounded-md border bg-background/70 overflow-hidden">
                           <div className="px-2 py-1.5 flex items-center justify-between gap-2 border-b bg-muted/30">
                             <div className="min-w-0">
