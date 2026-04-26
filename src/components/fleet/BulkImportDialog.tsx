@@ -94,6 +94,7 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
     }
     setFile(selected);
     setResult(null);
+    setDupScan(null);
     setParsing(true);
     try {
       const parsed = await parseImportFile(selected);
@@ -104,6 +105,29 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
           description: `Maximum ${MAX_ROWS} vehicles per import. Found ${parsed.totalRows}.`,
           variant: "destructive",
         });
+        return;
+      }
+
+      // Duplicate detection — scope to this organization
+      const validRows = parsed.rows.filter((r) => r.errors.length === 0);
+      if (validRows.length > 0 && organizationId) {
+        setScanning(true);
+        try {
+          const scan = await scanForDuplicates(validRows, {
+            table: "vehicles",
+            keyColumn: "plate_number",
+            organizationId,
+          });
+          setDupScan(scan);
+        } catch (e: any) {
+          toast({
+            title: "Duplicate check failed",
+            description: e.message ?? "Could not scan existing vehicles",
+            variant: "destructive",
+          });
+        } finally {
+          setScanning(false);
+        }
       }
     } catch (err: any) {
       toast({
@@ -115,7 +139,7 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
     } finally {
       setParsing(false);
     }
-  }, [toast]);
+  }, [toast, organizationId]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
