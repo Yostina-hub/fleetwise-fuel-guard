@@ -1174,9 +1174,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       : Math.max(1, passengersRaw || 1);
     const cargoOrder = { none: 0, small: 1, medium: 2, large: 3 } as const;
     const cargoNeeded = cargoOrder[(form.cargo_load || "none") as CargoLoad] ?? 0;
+    // When a Specific Pool is chosen AND it has vehicles registered, restrict
+    // selectable vehicle types to those physically present in that pool.
+    // Empty pool inventory → fall back to capability-only filtering so the
+    // user is not silently blocked by missing master-data.
+    const restrictToPool = !!form.pool_name && poolVehicleTypeKeys.size > 0;
     let list = VEHICLE_TYPES_OPTIONS
       .map((vt) => ({ vt, profile: getVehicleClassProfile(vt.value) }))
-      .filter(({ profile }) => {
+      .filter(({ vt, profile }) => {
         if (!profile) return false;
         if (profile.costBand === "specialised") return false; // dispatcher-only
         // Courier-only classes (motorbike/scooter/bicycle) are restricted to
@@ -1190,6 +1195,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         if (passengers > 0 && profile.capacity < passengers) return false;
         if (cargoOrder[profile.cargo] < cargoNeeded) return false;
         if (cargoWeightKgNum > 0 && profile.maxPayloadKg < cargoWeightKgNum) return false;
+        if (restrictToPool) {
+          // Match either the canonical value ("double_cab") or the human
+          // label ("DoubleCab"/"Double Cab Pickup") — DB rows use both.
+          const valueKey = normalizeVT(vt.value);
+          const labelKey = normalizeVT(vt.label);
+          const inPool = Array.from(poolVehicleTypeKeys).some(
+            (k) => k === valueKey || k === labelKey || k.includes(valueKey) || valueKey.includes(k),
+          );
+          if (!inPool) return false;
+        }
         return true;
       });
     return list.sort((a, b) => {
@@ -1198,7 +1213,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       if (aRec !== bRec) return aRec - bRec;
       return (a.profile!.rank) - (b.profile!.rank);
     });
-  }, [form.passengers, form.cargo_load, cargoWeightKgNum, recommendation?.value, isMessenger]);
+  }, [form.passengers, form.cargo_load, form.pool_name, cargoWeightKgNum, recommendation?.value, isMessenger, poolVehicleTypeKeys]);
 
   // Whenever passengers/cargo/weight change, clear the manual-override flag
   // so the recommender takes back control and downgrades/upgrades the
