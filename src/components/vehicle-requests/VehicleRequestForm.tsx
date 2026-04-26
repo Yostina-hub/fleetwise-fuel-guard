@@ -1464,91 +1464,96 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* TYPE SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={Sparkles} title="Vehicle Request Type" />
-            <Label className="text-primary font-medium text-sm flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              Vehicle Request Type <span className="text-destructive">*</span>
-            </Label>
-            <Select
-              value={form.request_type}
-              onValueChange={(v) => {
-                // When the user *manually* picks Night Request, snap the
-                // start/end times to the night window's lower bound (20:00 → 06:00)
-                // so the auto-classifier (08:30–17:30 = Day) doesn't immediately
-                // bounce them back to Day Operation.
-                if (v === "nighttime_operation") {
-                  setForm((f) => ({
-                    ...f,
-                    request_type: v,
-                    requested_request_type: v,
-                    start_time: "20:00",
-                    end_time: f.end_time && f.end_time !== "" ? f.end_time : "06:00",
-                  }));
-                  handleBlur("request_type", v, { ...(form as any), request_type: v });
-                  return;
-                }
-                if (v === "daily_operation") {
-                  // Reset to canonical day window if coming from night.
-                  setForm((f) => ({
-                    ...f,
-                    request_type: v,
-                    requested_request_type: v,
-                    start_time: f.start_time && f.start_time !== "20:00" ? f.start_time : "08:30",
-                    end_time: f.end_time && f.end_time !== "06:00" ? f.end_time : "17:30",
-                  }));
-                  handleBlur("request_type", v, { ...(form as any), request_type: v });
-                  return;
-                }
-                setForm((f) => ({ ...f, request_type: v, requested_request_type: v }));
-                // Clear night subcategory when leaving Night Request.
-                if (v !== "nighttime_operation") {
-                  update("night_request_subcategory", "" as any);
-                }
-                handleBlur("request_type", v, { ...(form as any), request_type: v });
-              }}
-            >
-              <SelectTrigger
-                className={`w-full md:max-w-sm h-9 text-sm ${getError("request_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
-                aria-invalid={!!getError("request_type")}
-              >
-                <SelectValue placeholder="Please select request type…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="incident_urgent">🚨 Incident / Urgent (10 min SLA)</SelectItem>
-                <SelectItem value="daily_operation">Day Request (8:30 AM – 5:30 PM) — 30 min SLA</SelectItem>
-                <SelectItem value="nighttime_operation">Night Request (8:00 PM – 6:00 AM)</SelectItem>
-                <SelectItem value="field_operation">Field Request — 1.5 day SLA</SelectItem>
-                <SelectItem value="project_operation">Project Request — 30 day SLA</SelectItem>
-                <SelectItem value="group_operation">Group Request</SelectItem>
-                <SelectItem value="messenger_service">Messenger Request</SelectItem>
-              </SelectContent>
-            </Select>
-            <FieldError field="request_type" />
-
-            {/* Night Request subcategory — required only when Night Request is selected. */}
-            {isNighttime && (
-              <div className="space-y-2 pt-1">
-                <Label className="text-sm font-medium flex items-center gap-1.5">
-                  <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                  Night Request Category <span className="text-destructive">*</span>
+            <div className={`grid grid-cols-1 ${isNighttime ? "md:grid-cols-2" : ""} gap-3 items-start`}>
+              {/* Vehicle Request Type */}
+              <div className="space-y-2">
+                <Label className="text-primary font-medium text-sm flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Vehicle Request Type <span className="text-destructive">*</span>
                 </Label>
                 <Select
-                  value={form.night_request_subcategory || ""}
-                  onValueChange={(v) => update("night_request_subcategory", v as any)}
+                  value={form.request_type}
+                  onValueChange={(v) => {
+                    // When the user *manually* picks Night Request, snap the
+                    // start/end times to the night window's lower bound (20:00 → 06:00)
+                    // so the auto-classifier (08:30–17:30 = Day) doesn't immediately
+                    // bounce them back to Day Operation.
+                    if (v === "nighttime_operation") {
+                      setForm((f) => ({
+                        ...f,
+                        request_type: v,
+                        requested_request_type: v,
+                        start_time: "20:00",
+                        end_time: f.end_time && f.end_time !== "" ? f.end_time : "06:00",
+                      }));
+                      handleBlur("request_type", v, { ...(form as any), request_type: v });
+                      return;
+                    }
+                    if (v === "daily_operation") {
+                      // Reset to canonical day window if coming from night.
+                      setForm((f) => ({
+                        ...f,
+                        request_type: v,
+                        requested_request_type: v,
+                        start_time: f.start_time && f.start_time !== "20:00" ? f.start_time : "08:30",
+                        end_time: f.end_time && f.end_time !== "06:00" ? f.end_time : "17:30",
+                      }));
+                      handleBlur("request_type", v, { ...(form as any), request_type: v });
+                      return;
+                    }
+                    setForm((f) => ({ ...f, request_type: v, requested_request_type: v }));
+                    // Clear night subcategory when leaving Night Request.
+                    if (v !== "nighttime_operation") {
+                      update("night_request_subcategory", "" as any);
+                    }
+                    handleBlur("request_type", v, { ...(form as any), request_type: v });
+                  }}
                 >
-                  <SelectTrigger className="w-full md:max-w-sm h-9 text-sm">
-                    <SelectValue placeholder="Select night request category…" />
+                  <SelectTrigger
+                    className={`w-full h-9 text-sm ${getError("request_type") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("request_type")}
+                  >
+                    <SelectValue placeholder="Please select request type…" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="night_shift">🌙 Night shift request</SelectItem>
-                    <SelectItem value="emergency">🚨 Emergency request</SelectItem>
+                    <SelectItem value="incident_urgent">🚨 Incident / Urgent (10 min SLA)</SelectItem>
+                    <SelectItem value="daily_operation">Day Request (8:30 AM – 5:30 PM) — 30 min SLA</SelectItem>
+                    <SelectItem value="nighttime_operation">Night Request (8:00 PM – 6:00 AM)</SelectItem>
+                    <SelectItem value="field_operation">Field Request — 1.5 day SLA</SelectItem>
+                    <SelectItem value="project_operation">Project Request — 30 day SLA</SelectItem>
+                    <SelectItem value="group_operation">Group Request</SelectItem>
+                    <SelectItem value="messenger_service">Messenger Request</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">
-                  Choose <span className="font-medium">Night shift</span> for planned overnight work, or{" "}
-                  <span className="font-medium">Emergency</span> for urgent night incidents.
-                </p>
+                <FieldError field="request_type" />
               </div>
-            )}
+
+              {/* Night Request subcategory — sits next to the request type when Night is selected. */}
+              {isNighttime && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                    Night Request Category <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={form.night_request_subcategory || ""}
+                    onValueChange={(v) => update("night_request_subcategory", v as any)}
+                  >
+                    <SelectTrigger className="w-full h-9 text-sm">
+                      <SelectValue placeholder="Select night request category…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="night_shift">🌙 Night shift request</SelectItem>
+                      <SelectItem value="emergency">🚨 Emergency request</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">
+                    <span className="font-medium">Night shift</span> for planned overnight work ·{" "}
+                    <span className="font-medium">Emergency</span> for urgent night incidents.
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Requester vs System trip-type evaluation
                 ----------------------------------------
