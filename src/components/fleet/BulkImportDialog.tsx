@@ -46,6 +46,7 @@ interface BulkImportDialogProps {
 interface ImportOutcome {
   inserted: number;
   updated: number;
+  skipped: number;
   failed: number;
   errors: { row: number; message: string }[];
 }
