@@ -1014,6 +1014,30 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "local"; }
   })();
 
+  // Auto-pick Day vs Night request_type from the machine clock the FIRST time
+  // the form is shown (and whenever it's still empty / hasn't been touched).
+  // The user can always override via the dropdown — once they do, we stop
+  // auto-overwriting via `userPickedRequestTypeRef`.
+  const userPickedRequestTypeRef = useRef(false);
+  useEffect(() => {
+    if (!open) return;
+    if (userPickedRequestTypeRef.current) return;
+    if (form.request_type === "daily_operation" || form.request_type === "nighttime_operation") return;
+    const auto = machineNowClass; // "daily_operation" | "nighttime_operation"
+    setForm((f) => {
+      if (f.request_type === "daily_operation" || f.request_type === "nighttime_operation") return f;
+      const next = { ...f, request_type: auto, requested_request_type: auto };
+      if (auto === "nighttime_operation") {
+        if (!f.start_time) next.start_time = "20:00";
+        if (!f.end_time) next.end_time = "06:00";
+      } else {
+        if (!f.start_time) next.start_time = "08:30";
+        if (!f.end_time) next.end_time = "17:30";
+      }
+      return next;
+    });
+  }, [open, machineNowClass, form.request_type]);
+
   // Compute the system-classified trip type from the entered start/end times,
   // falling back to the current machine clock when no times are typed yet.
   // We DO NOT overwrite the requester's chosen request_type — both values
