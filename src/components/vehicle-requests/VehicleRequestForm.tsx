@@ -1852,6 +1852,141 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <section className="space-y-3">
             <SectionHeader icon={Layers} title="Vehicle & Resources" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {/* Pool Category and Specific Pool come first — Vehicle Type and
+                  No. of Vehicles below are filtered by the chosen pool's
+                  actual inventory, so the user MUST pick a pool first. */}
+              <div>
+                <Label className="text-primary font-medium text-sm mb-1 block">
+                  Pool Category <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.pool_category}
+                  onValueChange={v => {
+                    update("pool_category", v);
+                    handleBlur("pool_category", v, form as any);
+                    // Reset the dependent location whenever category changes
+                    const meta = POOL_CATEGORY_META[v as keyof typeof POOL_CATEGORY_META];
+                    const cur = ASSIGNED_LOCATIONS.find(l => l.value === form.pool_name);
+                    if (!cur || cur.group !== meta?.locationGroup) {
+                      update("pool_name", "");
+                    }
+                  }}
+                >
+                  <SelectTrigger
+                    className={`h-9 text-sm ${getError("pool_category") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("pool_category")}
+                  >
+                    <SelectValue placeholder="Please select category…">
+                      {form.pool_category && <PoolCategoryChip value={form.pool_category} />}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="corporate"><PoolCategoryChip value="corporate" /></SelectItem>
+                    <SelectItem value="zone"><PoolCategoryChip value="zone" /></SelectItem>
+                    <SelectItem value="region"><PoolCategoryChip value="region" /></SelectItem>
+                  </SelectContent>
+                </Select>
+                <FieldError field="pool_category" />
+              </div>
+
+              <div>
+                <Label className="text-primary font-medium text-sm mb-1 block">
+                  Specific Pool <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.pool_name}
+                  onValueChange={v => { update("pool_name", v); handleBlur("pool_name", v, { ...form, pool_name: v } as any); }}
+                  disabled={!form.pool_category}
+                >
+                  <SelectTrigger
+                    className={`h-9 text-sm ${!form.pool_category ? "opacity-50" : ""} ${getError("pool_name") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("pool_name")}
+                  >
+                    <SelectValue placeholder={form.pool_category ? "Select location..." : "Pick category first"}>
+                      {form.pool_name && (
+                        <span className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-primary" />
+                          <span className="truncate">
+                            {ASSIGNED_LOCATIONS.find(l => l.value === form.pool_name)?.label || form.pool_name}
+                          </span>
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {(() => {
+                      const inCategory = ASSIGNED_LOCATIONS.filter(
+                        (l: any) =>
+                          form.pool_category === "corporate"
+                            ? l.group === "Corporate"
+                            : l.group === POOL_CATEGORY_META[form.pool_category as keyof typeof POOL_CATEGORY_META]?.locationGroup,
+                      );
+                      const allowed = poolUnrestricted
+                        ? inCategory
+                        : inCategory.filter((l: any) => userPoolCodes.includes(l.value));
+
+                      if (!poolUnrestricted && allowed.length === 0) {
+                        return (
+                          <div className="px-3 py-4 text-xs text-muted-foreground">
+                            {hasAnyMembership
+                              ? "No pools in this category are assigned to you."
+                              : "You aren't assigned to any pool yet. Ask your fleet admin to add you to a pool."}
+                          </div>
+                        );
+                      }
+
+                      if (form.pool_category === "corporate") {
+                        return allowed
+                          .filter((l: any) => !l.parent)
+                          .flatMap((parent: any) => {
+                            const subs = allowed.filter((l: any) => l.parent === parent.value);
+                            if (!poolUnrestricted && subs.length === 0 && !userPoolCodes.includes(parent.value)) {
+                              return [];
+                            }
+                            return [
+                              <SelectItem key={parent.value} value={parent.value}>
+                                <span className="flex items-center gap-2 font-semibold">
+                                  {parent.label}
+                                </span>
+                              </SelectItem>,
+                              ...subs.map((s: any) => (
+                                <SelectItem key={s.value} value={s.value}>
+                                  <span className="flex items-center gap-2 pl-4 text-sm">
+                                    <span className="truncate">{s.label}</span>
+                                    {s.shift && s.shift !== "all" && (
+                                      <span className="ml-auto text-[10px] uppercase text-muted-foreground">{s.shift}</span>
+                                    )}
+                                  </span>
+                                </SelectItem>
+                              )),
+                            ];
+                          });
+                      }
+                      return allowed.map((l: any) => (
+                        <SelectItem key={l.value} value={l.value}>
+                          <span className="flex items-center gap-2">
+                            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                            {l.label}
+                          </span>
+                        </SelectItem>
+                      ));
+                    })()}
+                  </SelectContent>
+                </Select>
+                {form.pool_name && poolVehicleCount > 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    {poolVehicleCount} vehicle{poolVehicleCount === 1 ? "" : "s"} available in this pool
+                    {poolVehicleTypeKeys.size > 0 && ` · ${poolVehicleTypeKeys.size} type${poolVehicleTypeKeys.size === 1 ? "" : "s"}`}
+                  </p>
+                )}
+                {form.pool_name && poolVehicleCount === 0 && (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+                    No vehicles registered in this pool yet — vehicle type list shows all eligible classes.
+                  </p>
+                )}
+                <FieldError field="pool_name" />
+              </div>
+
               {/* No. Of Vehicles is rendered inline next to the Trip Type
                   field below to keep related quantity inputs side-by-side. */}
               <VRField
