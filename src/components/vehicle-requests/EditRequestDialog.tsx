@@ -385,9 +385,18 @@ export const EditRequestDialog = ({ request, open, onClose }: Props) => {
           <div>
             <Label>Contact phone</Label>
             <Input
+              type="tel"
+              inputMode="tel"
+              maxLength={13}
               value={form.contact_phone}
-              onChange={(e) => update("contact_phone", e.target.value)}
-              placeholder="+251 911 234 567"
+              onChange={(e) => {
+                // Live-strip everything except digits and a single leading +.
+                const raw = e.target.value;
+                const hasPlus = raw.trimStart().startsWith("+");
+                const digits = raw.replace(/\D/g, "").slice(0, 12);
+                update("contact_phone", hasPlus ? `+${digits}` : digits);
+              }}
+              placeholder="0911234567 or +251911234567"
               disabled={!editable}
             />
           </div>

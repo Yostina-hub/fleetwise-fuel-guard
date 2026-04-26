@@ -39,17 +39,50 @@ export const sanitizeText = (v: unknown): string => {
 export const sanitizeShortText = (v: unknown): string =>
   sanitizeText(v).replace(/\s+/g, " ");
 
-/** Phone normalizer: keep digits, +, spaces, dashes, parentheses. */
-export const sanitizePhone = (v: unknown): string =>
-  sanitizeText(v).replace(/[^\d+\s\-()]/g, "");
+/**
+ * Phone normalizer — Ethiopian numbers only.
+ * Strips every character except digits and an optional leading `+`.
+ * Spaces, dashes, parentheses, and any other formatting are removed so the
+ * stored value is the raw E.164-style string (e.g. "+251911234567" or
+ * "0911234567"). This matches what the SMS gateway and ERPNext expect.
+ */
+export const sanitizePhone = (v: unknown): string => {
+  const s = sanitizeText(v);
+  if (!s) return "";
+  // Keep only digits and a single leading +.
+  const hasPlus = s.trim().startsWith("+");
+  const digits = s.replace(/\D/g, "");
+  return hasPlus ? `+${digits}` : digits;
+};
 
 /** Project number normalizer: uppercase, allow letters/digits/dash/underscore. */
 export const sanitizeProjectNumber = (v: unknown): string =>
   sanitizeText(v).toUpperCase().replace(/[^A-Z0-9_\-/]/g, "");
 
 const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
-const PHONE_RE = /^\+?[\d\s\-()]{7,20}$/;
+/**
+ * Ethiopian phone formats accepted (digits only, no separators):
+ *   • Mobile local:        09XXXXXXXX                (10 digits)
+ *   • Mobile international: +2519XXXXXXXX            (13 chars incl. +)
+ *   • Landline local:       0[1-8]XXXXXXXX           (10 digits, area codes 11–88)
+ *   • Landline international: +251[1-8]XXXXXXXX      (13 chars incl. +)
+ * Numbers from any other country are rejected.
+ */
+const ETHIOPIAN_MOBILE_LOCAL_RE = /^09\d{8}$/;
+const ETHIOPIAN_MOBILE_INTL_RE = /^\+2519\d{8}$/;
+const ETHIOPIAN_LANDLINE_LOCAL_RE = /^0[1-8]\d{8}$/;
+const ETHIOPIAN_LANDLINE_INTL_RE = /^\+251[1-8]\d{8}$/;
 const PROJECT_RE = /^[A-Z0-9][A-Z0-9_\-/]{2,29}$/;
+
+/** True when the (already sanitized) phone matches any Ethiopian format. */
+export function isEthiopianPhone(v: string): boolean {
+  return (
+    ETHIOPIAN_MOBILE_LOCAL_RE.test(v) ||
+    ETHIOPIAN_MOBILE_INTL_RE.test(v) ||
+    ETHIOPIAN_LANDLINE_LOCAL_RE.test(v) ||
+    ETHIOPIAN_LANDLINE_INTL_RE.test(v)
+  );
+}
 
 export type VRFieldName =
   | "request_type"
@@ -409,39 +442,29 @@ export function validateVRField(
     case "contact_phone": {
       const raw = sanitizeText(value);
       if (!raw) return "Contact phone is required so dispatch can reach you during the trip.";
+      // Anything other than digits and a single leading + is rejected.
+      // Letters, spaces, dashes, parentheses, dots are all blocked so we
+      // store a clean E.164-style number.
+      if (!/^\+?\d+$/.test(raw))
+        return "Phone number must contain only digits (no letters, spaces, dashes, or other symbols). Optionally starts with +.";
       const v = sanitizePhone(value);
-      // User typed something but only invalid characters remained after sanitizing.
-      if (!v)
-        return "Phone number contains invalid characters. Use digits, spaces, dashes, parentheses, and an optional leading + (e.g. 0911 234 567 or +251 911 234 567).";
-      // Detect characters the user typed that are not allowed in a phone.
-      if (raw.replace(/[^\d+\s\-()]/g, "").length !== raw.length)
-        return "Phone number contains invalid characters. Only digits, spaces, dashes, parentheses, and a leading + are allowed.";
-      if (!PHONE_RE.test(v))
-        return "Phone number looks invalid. Use Ethiopian local format starting with 09 (e.g. 0911 234 567), or international format (e.g. +251 911 234 567).";
+      if (!v) return "Phone number is required.";
       const digitsOnly = v.replace(/\D/g, "");
-      // Reject a leading + followed by no digits, or multiple + signs.
-      if ((v.match(/\+/g) || []).length > 1)
-        return "Phone number can only contain one leading + sign.";
-      if (v.includes("+") && !v.startsWith("+"))
-        return "The + sign must appear only at the start of the phone number.";
       const hasPlus = v.startsWith("+");
-      // Ethiopian local format: must start with 09 and be exactly 10 digits.
-      if (!hasPlus && digitsOnly.startsWith("09")) {
-        if (digitsOnly.length !== 10)
-          return `Ethiopian mobile numbers must be exactly 10 digits starting with 09 (you entered ${digitsOnly.length} digits).`;
-        return;
-      }
-      // Ethiopian local format requirement: if no + sign, the number must
-      // start with 09 for mobile.
-      if (!hasPlus && digitsOnly.startsWith("0") && !digitsOnly.startsWith("09"))
-        return "Local Ethiopian numbers must start with 09 (e.g. 0911 234 567).";
+      // Reject any country code other than Ethiopia (+251).
+      if (hasPlus && !v.startsWith("+251"))
+        return "Only Ethiopian phone numbers are accepted. Use +251 9XX XXX XXX (mobile) or +251 1X XXX XXXX (landline), or local format starting with 09 / 01.";
+      // Local must start with 0 (mobile 09 or landline 01–08).
       if (!hasPlus && !digitsOnly.startsWith("0"))
-        return "Phone number must start with 09 (local) or + (international, e.g. +251 911 234 567).";
-      // International format checks.
-      if (digitsOnly.length < 7)
-        return `Phone number is too short (${digitsOnly.length} digits). It must contain at least 7 digits.`;
-      if (digitsOnly.length > 15)
-        return `Phone number is too long (${digitsOnly.length} digits). Maximum is 15 digits per ITU E.164.`;
+        return "Local Ethiopian numbers must start with 0 (e.g. 0911234567 for mobile, 0111234567 for landline).";
+      // Length checks tailored per format.
+      if (!hasPlus && digitsOnly.length !== 10)
+        return `Local Ethiopian numbers must be exactly 10 digits (you entered ${digitsOnly.length}).`;
+      if (hasPlus && digitsOnly.length !== 12)
+        return `International Ethiopian numbers must be exactly 12 digits after the + (e.g. +251911234567). You entered ${digitsOnly.length}.`;
+      // Final structural check against the canonical Ethiopian formats.
+      if (!isEthiopianPhone(v))
+        return "Phone number doesn't match an Ethiopian format. Mobile: 09XXXXXXXX or +2519XXXXXXXX. Landline: 0[1-8]XXXXXXXX or +251[1-8]XXXXXXXX.";
       return;
     }
 
@@ -576,7 +599,11 @@ export const vehicleRequestZodSchema = z.object({
     .string()
     .trim()
     .min(1, "Contact phone is required so dispatch can reach you during the trip.")
-    .max(20, "Phone number must be 20 characters or fewer."),
+    .max(13, "Ethiopian phone numbers cannot exceed 13 characters (e.g. +251911234567).")
+    .refine(
+      (v) => isEthiopianPhone(v),
+      "Phone must be an Ethiopian number: 09XXXXXXXX or +2519XXXXXXXX (mobile), 0[1-8]XXXXXXXX or +251[1-8]XXXXXXXX (landline). Digits only.",
+    ),
   departure_place: z.string().trim().max(200).optional().or(z.literal("")),
   destination: z.string().trim().max(200).optional().or(z.literal("")),
   num_vehicles: z.coerce.number().int().min(1).max(50),

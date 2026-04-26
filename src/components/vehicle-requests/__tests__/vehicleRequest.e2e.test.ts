@@ -62,6 +62,7 @@ describe("VR form validation — Daily Operation", () => {
     pool_name: "Head Office Pool",
     priority: "normal",
     trip_type: "round_trip",
+    contact_phone: "0911234567",
   };
 
   it("accepts a valid daily request", () => {
@@ -143,6 +144,7 @@ describe("VR form validation — Project Operation", () => {
     pool_name: "Adama Region Pool",
     priority: "high",
     trip_type: "round_trip",
+    contact_phone: "0911234567",
   };
 
   it("accepts a valid project request", () => {
@@ -184,6 +186,7 @@ describe("VR form validation — Field Operation", () => {
     passengers: 3,
     priority: "normal",
     trip_type: "round_trip",
+    contact_phone: "0911234567",
   };
   it("accepts a field request without project number", () => {
     expect(validateVehicleRequestForm(base as any).valid).toBe(true);
@@ -198,22 +201,25 @@ describe("VR sanitizers", () => {
   it("normalizes project number to uppercase", () => {
     expect(sanitizeProjectNumber("prj-2026/01")).toBe("PRJ-2026/01");
   });
-  it("keeps only valid phone characters", () => {
-    expect(sanitizePhone("+251 (911) 234-567 ext42")).toBe("+251 (911) 234-567 42");
+  it("strips all non-digit characters and keeps a leading +", () => {
+    // Spaces, dashes, parentheses, and any extra letters are now stripped —
+    // only digits and a single leading + survive (Ethiopian E.164).
+    expect(sanitizePhone("+251 (911) 234-567 ext42")).toBe("+25191123456742");
+    expect(sanitizePhone("0911 234 567")).toBe("0911234567");
   });
   it("sanitizeVehicleRequestForm normalizes all fields", () => {
     const out = sanitizeVehicleRequestForm({
       request_type: "daily_operation",
       purpose: "  Big   trip  \u0007 ",
       project_number: " prj_001 ",
-      contact_phone: " +251@911 ",
+      contact_phone: " +251@911 234 567 ",
       departure_place: "  HQ  ",
       destination: "  Site  ",
     } as any);
     expect(out.purpose).toBe("Big   trip");
     expect(out.project_number).toBe("PRJ_001");
-    // sanitizePhone strips '@' (invalid char) leaving the digits concatenated
-    expect(out.contact_phone).toBe("+251911");
+    // Letters, spaces, and symbols all stripped — only digits + leading + survive.
+    expect(out.contact_phone).toBe("+251911234567");
     expect(out.departure_place).toBe("HQ");
   });
 });
