@@ -2044,6 +2044,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
                 <FieldError field="pool_category" />
+                {!form.pool_category && requesterPoolCodes.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    No pool assigned to this requester — please pick one manually.
+                  </p>
+                )}
               </div>
 
               <div>
