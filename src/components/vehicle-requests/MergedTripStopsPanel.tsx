@@ -715,24 +715,30 @@ export const MergedTripStopsPanel = ({
     try {
       // ── Geofence intersection per route ───────────────────────────
       // For each candidate route we list which org geofences its sampled
-      // geometry passes through. Pure JS (haversine for circles, ray-cast
-      // for polygons) so no extra deps. The AI then knows e.g. "Route 0
-      // crosses 'Restricted Zone A'" and can downrank it accordingly.
-      const intersectFences = (coords: [number, number][]): string[] => {
-        const hits = new Set<string>();
+      // geometry passes through, together with the *effective* policy:
+      //   • the org-wide `dispatch_policy` (prefer / avoid / neutral), but
+      //   • forced to "avoid" if the dispatcher flagged the zone as a
+      //     per-trip override (e.g. one-off road closure).
+      // The AI then knows e.g. "Route 0 crosses 'Restricted Zone A'
+      // (avoid)" and can downrank it accordingly.
+      type FenceHit = { name: string; policy: "prefer" | "avoid" | "neutral"; priority: number };
+      const intersectFences = (coords: [number, number][]): FenceHit[] => {
+        const hits = new Map<string, FenceHit>();
         for (const fence of geofences as any[]) {
+          let crosses = false;
           if (fence.geometry_type === "circle") {
             const lat = Number(fence.center_lat);
             const lng = Number(fence.center_lng);
             const r = Number(fence.radius_meters) || 0;
-            if (!Number.isFinite(lat) || !Number.isFinite(lng) || r <= 0) continue;
-            for (const [px, py] of coords) {
-              // Equirectangular distance — fine at city scale.
-              const dx = (px - lng) * 111320 * Math.cos((lat * Math.PI) / 180);
-              const dy = (py - lat) * 111320;
-              if (dx * dx + dy * dy <= r * r) {
-                hits.add(fence.name);
-                break;
+            if (Number.isFinite(lat) && Number.isFinite(lng) && r > 0) {
+              for (const [px, py] of coords) {
+                // Equirectangular distance — fine at city scale.
+                const dx = (px - lng) * 111320 * Math.cos((lat * Math.PI) / 180);
+                const dy = (py - lat) * 111320;
+                if (dx * dx + dy * dy <= r * r) {
+                  crosses = true;
+                  break;
+                }
               }
             }
           } else if (
@@ -757,13 +763,24 @@ export const MergedTripStopsPanel = ({
             };
             for (const [px, py] of coords) {
               if (inside(px, py)) {
-                hits.add(fence.name);
+                crosses = true;
                 break;
               }
             }
           }
+          if (!crosses) continue;
+          // Per-trip override always wins.
+          const overridden = avoidOverrides.includes(fence.id);
+          const policy: "prefer" | "avoid" | "neutral" = overridden
+            ? "avoid"
+            : (fence.dispatch_policy as any) || "neutral";
+          hits.set(fence.id, {
+            name: fence.name,
+            policy,
+            priority: Number(fence.dispatch_priority ?? 5),
+          });
         }
-        return Array.from(hits).slice(0, 5);
+        return Array.from(hits.values()).slice(0, 8);
       };
 
       const { data, error } = await supabase.functions.invoke("route-recommend", {
@@ -782,12 +799,20 @@ export const MergedTripStopsPanel = ({
             needed_from: earliest?.toISOString(),
             needed_until: latest?.toISOString(),
             city: "Addis Ababa",
+            // Lets the AI know whether to factor zone policy at all.
+            // When false, it ignores all geofence inputs.
+            geofence_aware: geofenceAware,
             // Surface the fact that geofences exist so the AI knows the
             // empty geofences[] case is meaningful (no zone crossed).
             known_geofences: (geofences as any[])
-              .map((g) => g.name)
-              .filter(Boolean)
-              .slice(0, 20),
+              .map((g) => ({
+                name: g.name,
+                policy: avoidOverrides.includes(g.id)
+                  ? "avoid"
+                  : g.dispatch_policy || "neutral",
+              }))
+              .filter((g) => g.name)
+              .slice(0, 30),
           },
         },
       });
