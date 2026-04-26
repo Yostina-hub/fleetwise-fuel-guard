@@ -271,6 +271,13 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
           )}
         </TabsContent>
       </Tabs>
+
+      <RequestTrackingDialog
+        open={!!tracking}
+        onOpenChange={(o) => { if (!o) setTracking(null); }}
+        kind={tracking?.kind ?? null}
+        recordId={tracking?.id ?? null}
+      />
     </Card>
   );
 };
