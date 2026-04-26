@@ -268,14 +268,38 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="bg-amber-500/10 rounded-lg p-3 flex items-start gap-2 text-sm">
-            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5" />
-            <div>
-              <p className="font-medium">Temporary Cross-Pool Assignment</p>
-              <p className="text-muted-foreground text-xs mt-0.5">
-                This assigns a vehicle from a different pool. The vehicle will be temporarily reassigned and should be returned to its original pool after the trip.
-              </p>
+          {/* Approval-mode banner — drives whether the action assigns
+              immediately or only files a borrow request for approval. */}
+          {canApproveCrossPool ? (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 flex items-start gap-2 text-sm">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 mt-0.5" />
+              <div>
+                <p className="font-medium">You may approve this cross-pool borrow</p>
+                <p className="text-muted-foreground text-xs mt-0.5">
+                  Acting as <span className="font-medium">{profile?.full_name || user?.email}</span> — your name
+                  and timestamp will be recorded on the cross-pool approval log.
+                </p>
+              </div>
             </div>
+          ) : (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-start gap-2 text-sm">
+              <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5" />
+              <div>
+                <p className="font-medium">Approval required</p>
+                <p className="text-muted-foreground text-xs mt-0.5">
+                  You don't have rights to assign across pools. Submitting will create a
+                  borrow request for a fleet manager to approve before the vehicle is reassigned.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-amber-500/5 rounded-lg p-2.5 flex items-start gap-2 text-xs text-muted-foreground">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5" />
+            <span>
+              Cross-pool assignments are temporary — the vehicle should return to its
+              original pool after the trip.
+            </span>
           </div>
 
           {request.pool_name && (
