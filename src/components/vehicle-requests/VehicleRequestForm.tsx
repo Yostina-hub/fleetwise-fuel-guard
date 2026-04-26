@@ -657,15 +657,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   });
 
   // Auto-fill Contact Phone when we have a value AND the user hasn't typed
-  // anything yet. Re-runs whenever the dialog opens or the requester changes.
+  // anything yet. Re-runs whenever the dialog opens, the requester changes,
+  // or the fetched phone resolves. We always overwrite an empty/non-touched
+  // field — the manual-touch flag is the single source of truth for whether
+  // the user has explicitly chosen a phone, so the stale-value check from the
+  // earlier implementation is no longer needed.
   useEffect(() => {
     if (!open) return;
     if (userTouchedContactPhoneRef.current) return;
     if (!requesterPhone) return;
     setForm((prev) =>
-      prev.contact_phone?.trim() ? prev : { ...prev, contact_phone: requesterPhone },
+      prev.contact_phone === requesterPhone ? prev : { ...prev, contact_phone: requesterPhone },
     );
-  }, [open, requesterPhone]);
+  }, [open, requesterPhone, effectiveRequesterId]);
 
   // Reset the contact-phone touch flag on dialog open / requester change so
   // the auto-fill re-evaluates for the new session. Also clear the previously
