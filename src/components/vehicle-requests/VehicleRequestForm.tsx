@@ -733,6 +733,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           isUpgrade && safe.vehicle_type_justification?.trim()
             ? safe.vehicle_type_justification.trim()
             : null,
+        // Night Request subcategory — only persisted when the operation is a Night Request.
+        night_request_subcategory:
+          safe.request_type === "nighttime_operation" && form.night_request_subcategory
+            ? form.night_request_subcategory
+            : null,
         status: "pending",
       };
 
