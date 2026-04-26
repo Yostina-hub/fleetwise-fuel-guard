@@ -175,6 +175,8 @@ const buildInitialForm = () => {
     cargo_description: "" as string,
     vehicle_type_justification: "" as string,
     night_request_subcategory: "" as "" | "night_shift" | "emergency",
+    /** What the requester explicitly selected (preserved verbatim). */
+    requested_request_type: "" as string,
   };
 };
 
