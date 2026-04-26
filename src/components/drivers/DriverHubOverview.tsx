@@ -33,6 +33,53 @@ const stagger = {
 
 export const DriverHubOverview = ({ onNavigate }: DriverHubOverviewProps) => {
   const { drivers } = useDrivers();
+  const { organizationId } = useOrganization();
+  const navigate = useNavigate();
+
+  // Fetch vehicle assignments to compute assigned vs. unassigned drivers
+  const { data: assignedDriverIds = new Set<string>() } = useQuery({
+    queryKey: ["driver-hub-assignments", organizationId],
+    enabled: !!organizationId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("assigned_driver_id")
+        .eq("organization_id", organizationId!)
+        .not("assigned_driver_id", "is", null);
+      if (error) throw error;
+      return new Set<string>((data || []).map((v: any) => v.assigned_driver_id).filter(Boolean));
+    },
+  });
+
+  const assignedCount = useMemo(
+    () => drivers.filter(d => assignedDriverIds.has(d.id)).length,
+    [drivers, assignedDriverIds],
+  );
+  const unassignedCount = drivers.length - assignedCount;
+  const assignedPct = drivers.length > 0 ? Math.round((assignedCount / drivers.length) * 100) : 0;
+
+  // Group by driver type (descending by count)
+  const byDriverType = useMemo(() => {
+    const counts: Record<string, number> = {};
+    drivers.forEach(d => {
+      const key = d.driver_type || "unspecified";
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [drivers]);
+
+  const driverTypeMeta: Record<string, { label: string; icon: any; color: string; bg: string }> = {
+    company:        { label: "Company",        icon: Building2,  color: "text-cyan-600 dark:text-cyan-400",       bg: "bg-cyan-500/10" },
+    ethio_contract: { label: "Ethio Contract", icon: Shield,     color: "text-amber-600 dark:text-amber-400",     bg: "bg-amber-500/10" },
+    outsource:      { label: "Outsource",      icon: UserCog,    color: "text-fuchsia-600 dark:text-fuchsia-400", bg: "bg-fuchsia-500/10" },
+    rental:         { label: "Car Rental",     icon: Car,        color: "text-orange-600 dark:text-orange-400",   bg: "bg-orange-500/10" },
+    third_party:    { label: "Third Party",    icon: Truck,      color: "text-indigo-600 dark:text-indigo-400",   bg: "bg-indigo-500/10" },
+    government:     { label: "Government",     icon: Briefcase,  color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10" },
+    unspecified:    { label: "Unspecified",    icon: HelpCircle, color: "text-muted-foreground",                  bg: "bg-muted/50" },
+  };
+
+  const formatLabel = (key: string) =>
+    key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
   const active = drivers.filter(d => d.status === "active").length;
   const inactive = drivers.filter(d => d.status === "inactive").length;
