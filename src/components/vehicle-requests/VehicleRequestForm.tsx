@@ -620,9 +620,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           .select("phone")
           .eq("id", onBehalfOf.driverId)
           .maybeSingle();
-        return ((drv as any)?.phone?.trim?.() || "") as string;
+        const driverPhone = ((drv as any)?.phone?.trim?.() || "") as string;
+        if (driverPhone) return driverPhone;
       }
-      return "" as string;
+      // 3) Final fallback: HR/employees record linked by user_id.
+      const { data: emp } = await (supabase as any)
+        .from("employees")
+        .select("phone")
+        .eq("user_id", effectiveRequesterId)
+        .maybeSingle();
+      return (((emp as any)?.phone?.trim?.() || "") as string);
     },
     enabled: !!effectiveRequesterId && open,
     staleTime: 60_000,
