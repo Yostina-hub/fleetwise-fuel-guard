@@ -28,6 +28,7 @@ import {
   EyeOff,
   Route as RouteIcon,
   Trophy,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import maplibregl from "maplibre-gl";
@@ -149,12 +150,29 @@ export const MergedTripStopsPanel = ({
   const markersRef = useRef<maplibregl.Marker[]>([]);
 
   const [routesInfo, setRoutesInfo] = useState<
-    Array<{ label: string; strategy: string; distanceKm: number; durationMin: number; isBest: boolean; color: string }>
+    Array<{
+      label: string;
+      strategy: string;
+      distanceKm: number;
+      durationMin: number;
+      isBest: boolean;
+      color: string;
+      // Down-sampled geometry — fed to the AI recommender so it can reason
+      // about *where* a route goes, not just totals.
+      sampleCoords: [number, number][];
+    }>
   >([]);
   const [routesError, setRoutesError] = useState<string | null>(null);
   const [routesLoading, setRoutesLoading] = useState(false);
   /** Index of the route alternative the user has clicked to focus on the map. */
   const [focusedRouteIdx, setFocusedRouteIdx] = useState<number | null>(null);
+
+  // ── AI route recommendation ─────────────────────────────────────────
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiPick, setAiPick] = useState<
+    { bestIdx: number; runnerUpIdx?: number; reasoning: string } | null
+  >(null);
 
   useEffect(() => {
     if (!showMap || !open) return;
@@ -365,16 +383,32 @@ export const MergedTripStopsPanel = ({
         }
 
         setRoutesInfo(
-          results.map((r, i) => ({
-            label: palette[i]?.name ?? `Route ${i + 1}`,
-            // Honest, source-accurate descriptor — no synthesised "strategy".
-            strategy: i === bestIdx ? "Fastest by OSRM road network" : "OSRM alternative road path",
-            distanceKm: r.distance / 1000,
-            durationMin: r.duration / 60,
-            isBest: i === bestIdx,
-            color: palette[i]?.color ?? palette[0].color,
-          })),
+          results.map((r, i) => {
+            // Down-sample geometry to ≤8 points so the AI prompt stays compact.
+            const coords = r.geometry.coordinates;
+            const step = Math.max(1, Math.floor(coords.length / 8));
+            const sampleCoords: [number, number][] = [];
+            for (let k = 0; k < coords.length; k += step) {
+              sampleCoords.push(coords[k] as [number, number]);
+            }
+            if (sampleCoords[sampleCoords.length - 1] !== coords[coords.length - 1]) {
+              sampleCoords.push(coords[coords.length - 1] as [number, number]);
+            }
+            return {
+              label: palette[i]?.name ?? `Route ${i + 1}`,
+              // Honest, source-accurate descriptor — no synthesised "strategy".
+              strategy: i === bestIdx ? "Fastest by OSRM road network" : "OSRM alternative road path",
+              distanceKm: r.distance / 1000,
+              durationMin: r.duration / 60,
+              isBest: i === bestIdx,
+              color: palette[i]?.color ?? palette[0].color,
+              sampleCoords,
+            };
+          }),
         );
+        // Reset any prior AI verdict — it referred to old routes.
+        setAiPick(null);
+        setAiError(null);
       } catch (err: any) {
         setRoutesError(err?.message || "Could not load route alternatives");
         // Fallback: render straight dashed legs so the user still sees connectivity
@@ -418,8 +452,56 @@ export const MergedTripStopsPanel = ({
       setRoutesInfo([]);
       setRoutesError(null);
       setRoutesLoading(false);
+      setAiPick(null);
+      setAiError(null);
+      setAiLoading(false);
     };
   }, [showMap, open, stopsWithCoords]);
+
+  // Ask Lovable AI to recommend the best candidate route. The AI never
+  // invents measurements — it weighs the OSRM-supplied numbers against the
+  // trip context (passengers, time window, pool) and returns a ranked pick
+  // plus a 1-2 sentence justification.
+  const requestAiRecommendation = async () => {
+    if (routesInfo.length < 2 || aiLoading) return;
+    setAiLoading(true);
+    setAiError(null);
+    setAiPick(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("route-recommend", {
+        body: {
+          candidates: routesInfo.map((r) => ({
+            label: r.label,
+            distance_km: Number(r.distanceKm.toFixed(2)),
+            duration_min: Number(r.durationMin.toFixed(1)),
+            sample_coords: r.sampleCoords,
+          })),
+          context: {
+            pool_name: poolName ?? undefined,
+            passengers: totalPax || undefined,
+            stop_count: stopsWithCoords.length,
+            needed_from: earliest?.toISOString(),
+            needed_until: latest?.toISOString(),
+            city: "Addis Ababa",
+          },
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.ok) {
+        throw new Error(data?.message || data?.error || "AI could not pick a route");
+      }
+      setAiPick({
+        bestIdx: Number(data.best_index),
+        runnerUpIdx: typeof data.runner_up_index === "number" ? Number(data.runner_up_index) : undefined,
+        reasoning: String(data.reasoning || ""),
+      });
+      setFocusedRouteIdx(Number(data.best_index));
+    } catch (err: any) {
+      setAiError(err?.message || "AI recommendation unavailable");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   // Reset focus whenever a fresh batch of routes is loaded.
   useEffect(() => {
@@ -615,6 +697,16 @@ export const MergedTripStopsPanel = ({
                                           +{deltaMin} min
                                         </span>
                                       )}
+                                      {aiPick?.bestIdx === i && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="h-4 px-1.5 text-[9px] uppercase tracking-wide gap-0.5 border border-primary/40"
+                                          title="AI recommended this route"
+                                        >
+                                          <Sparkles className="w-2.5 h-2.5" />
+                                          AI pick
+                                        </Badge>
+                                      )}
                                     </div>
                                     <div className="text-[10px] text-muted-foreground truncate mt-0.5">
                                       {r.strategy}
@@ -628,9 +720,51 @@ export const MergedTripStopsPanel = ({
                       );
                     })()}
 
+                    {/* AI recommend action + reasoning */}
                     {!routesLoading && routesInfo.length > 1 && (
-                      <div className="px-3 py-1.5 border-t border-border/60 bg-muted/30 text-[10px] text-muted-foreground">
-                        Tap a route to highlight it on the map
+                      <div className="px-3 py-2 border-t border-border/60 bg-muted/30 space-y-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={aiPick ? "secondary" : "default"}
+                          className="w-full h-7 text-[11px] gap-1.5"
+                          onClick={requestAiRecommendation}
+                          disabled={aiLoading}
+                        >
+                          {aiLoading ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-3 h-3" />
+                          )}
+                          {aiLoading
+                            ? "Asking AI…"
+                            : aiPick
+                              ? "Re-run AI recommendation"
+                              : "Recommend best with AI"}
+                        </Button>
+                        {aiError && (
+                          <div className="text-[10px] text-destructive leading-snug">
+                            {aiError}
+                          </div>
+                        )}
+                        {aiPick && !aiError && (
+                          <div className="text-[10px] leading-snug rounded-md bg-primary/5 border border-primary/20 p-2">
+                            <div className="flex items-center gap-1 font-semibold text-primary mb-0.5">
+                              <Sparkles className="w-3 h-3" />
+                              AI rationale
+                            </div>
+                            <p className="text-foreground/80">{aiPick.reasoning}</p>
+                            {typeof aiPick.runnerUpIdx === "number" && routesInfo[aiPick.runnerUpIdx] && (
+                              <p className="text-muted-foreground mt-1">
+                                Runner-up: {routesInfo[aiPick.runnerUpIdx].label} ·{" "}
+                                {Math.round(routesInfo[aiPick.runnerUpIdx].durationMin)} min
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <div className="text-[10px] text-muted-foreground">
+                          Tap a route to highlight it on the map
+                        </div>
                       </div>
                     )}
                   </div>

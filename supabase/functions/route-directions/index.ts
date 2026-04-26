@@ -41,11 +41,9 @@ const isValidCoord = (c: unknown): c is Coord =>
 
 const tryOsrm = async (coords: Coord[], wantAlternatives: boolean) => {
   const path = coords.map((c) => `${c[0]},${c[1]}`).join(";");
-  // Public OSRM demo. Reasonable for low traffic; if it ever rate-limits us
-  // we can swap in a self-hosted instance without changing the client.
-  // `alternatives=2` asks OSRM for up to 2 *real* driving alternatives in
-  // addition to the recommended route — these are genuinely different paths
-  // through the road network, not synthetic stop reorderings.
+  // `alternatives=2` asks OSRM for up to 2 driving alternatives in addition to
+  // the recommended route. For multi-stop tours OSRM frequently returns 0
+  // alternatives — see `tryOsrmStitched` for the per-leg fallback.
   const altParam = wantAlternatives ? "&alternatives=2" : "";
   const url = `https://router.project-osrm.org/route/v1/driving/${path}?overview=full&geometries=geojson${altParam}`;
   const res = await fetch(url, {
@@ -92,6 +90,109 @@ const tryOsrm = async (coords: Coord[], wantAlternatives: boolean) => {
   };
 };
 
+/**
+ * Fetch OSRM `alternatives=2` for EACH consecutive pair of waypoints, then
+ * stitch full-trip variants by swapping in the alternative path of the legs
+ * that have the most room to differ. This is what gives the dispatcher 2-3
+ * genuinely different end-to-end options even when OSRM declines to return
+ * alternatives for the whole multi-stop tour (which happens often).
+ *
+ * Returns up to 3 full-trip variants:
+ *   - variant 0: every leg uses its primary OSRM route (the recommended path)
+ *   - variant 1: the *longest* leg uses its alternative path
+ *   - variant 2: the *second-longest* leg uses its alternative path
+ */
+const tryOsrmStitched = async (coords: Coord[]) => {
+  type LegOption = { geometry: [number, number][]; distance_m: number; duration_s: number };
+  const legPairs: Array<[Coord, Coord]> = [];
+  for (let i = 0; i < coords.length - 1; i += 1) {
+    legPairs.push([coords[i], coords[i + 1]]);
+  }
+
+  const legResults: LegOption[][] = await Promise.all(
+    legPairs.map(async ([a, b]) => {
+      const url = `https://router.project-osrm.org/route/v1/driving/${a[0]},${a[1]};${b[0]},${b[1]}?overview=full&geometries=geojson&alternatives=2`;
+      const res = await fetch(url, {
+        headers: { "User-Agent": "fleetwise-route-preview/1.0" },
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      });
+      if (!res.ok) return [];
+      const j = await res.json().catch(() => null);
+      const routes = Array.isArray(j?.routes) ? j.routes : [];
+      return routes
+        .map((r: any) => {
+          const geometry = r?.geometry?.coordinates as [number, number][] | undefined;
+          if (!geometry || geometry.length < 2) return null;
+          return {
+            geometry,
+            distance_m: Number(r.distance) || 0,
+            duration_s: Number(r.duration) || 0,
+          } as LegOption;
+        })
+        .filter((x: LegOption | null): x is LegOption => x !== null);
+    }),
+  );
+
+  // Every leg must have at least one option, otherwise we can't stitch.
+  if (legResults.some((opts) => opts.length === 0)) {
+    return { ok: false as const, error: "osrm_leg_failed" };
+  }
+
+  const stitch = (selection: number[]): LegOption => {
+    const geom: [number, number][] = [];
+    let dist = 0;
+    let dur = 0;
+    legResults.forEach((opts, i) => {
+      const opt = opts[Math.min(selection[i], opts.length - 1)];
+      // Avoid duplicating the shared waypoint between legs
+      const seg = i === 0 ? opt.geometry : opt.geometry.slice(1);
+      geom.push(...seg);
+      dist += opt.distance_m;
+      dur += opt.duration_s;
+    });
+    return { geometry: geom, distance_m: dist, duration_s: dur };
+  };
+
+  // Variant 0 — primary on every leg.
+  const variants: LegOption[] = [stitch(legResults.map(() => 0))];
+
+  // Rank legs by primary duration to pick which leg to vary.
+  const legOrder = legResults
+    .map((opts, i) => ({ i, dur: opts[0]?.duration_s ?? 0 }))
+    .sort((a, b) => b.dur - a.dur)
+    .map((x) => x.i);
+
+  for (const legIdx of legOrder) {
+    if (variants.length >= 3) break;
+    if (legResults[legIdx].length < 2) continue;
+    const sel = legResults.map(() => 0);
+    sel[legIdx] = 1;
+    variants.push(stitch(sel));
+  }
+
+  // De-duplicate by geometry length + total distance (cheap fingerprint).
+  const seen = new Set<string>();
+  const unique = variants.filter((v) => {
+    const key = `${v.geometry.length}|${Math.round(v.distance_m)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const primary = unique[0];
+  return {
+    ok: true as const,
+    geometry: primary.geometry,
+    distance_m: primary.distance_m,
+    duration_s: primary.duration_s,
+    legs: legResults.map((opts) => ({
+      distance_m: opts[0].distance_m,
+      duration_s: opts[0].duration_s,
+    })),
+    alternatives: unique,
+  };
+};
+
 serve(async (req) => {
   const preflight = handleCorsPreflightRequest(req);
   if (preflight) return preflight;
@@ -124,6 +225,22 @@ serve(async (req) => {
   try {
     const osrm = await tryOsrm(coords as Coord[], wantAlternatives);
     if (osrm.ok) {
+      // For multi-stop tours OSRM rarely returns more than 1 alternative for
+      // the whole path. If we asked for alternatives but only got the primary
+      // back, fall back to the per-leg stitched approach to give the
+      // dispatcher 2-3 genuinely different end-to-end variants.
+      let alternatives = osrm.alternatives;
+      if (
+        wantAlternatives &&
+        Array.isArray(alternatives) &&
+        alternatives.length < 2 &&
+        coords.length >= 3
+      ) {
+        const stitched = await tryOsrmStitched(coords as Coord[]);
+        if (stitched.ok && stitched.alternatives.length >= 1) {
+          alternatives = stitched.alternatives;
+        }
+      }
       return secureJsonResponse(
         {
           ok: true,
@@ -133,7 +250,7 @@ serve(async (req) => {
           duration_s: osrm.duration_s,
           legs: osrm.legs,
           // Real OSRM-computed driving alternatives (different roads, same stops).
-          alternatives: osrm.alternatives,
+          alternatives,
         },
         req,
       );
