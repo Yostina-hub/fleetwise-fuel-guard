@@ -25,6 +25,8 @@ const statusVariant = (s: string): "default" | "destructive" | "outline" | "seco
 
 const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleRequest }: Props) => {
   const queryClient = useQueryClient();
+  const [tracking, setTracking] = useState<{ kind: TrackingKind; id: string } | null>(null);
+  const openTracker = (kind: TrackingKind, id: string) => setTracking({ kind, id });
 
   const { data: maintenance, isLoading: lm } = useQuery({
     queryKey: ["driver-portal-submissions", "maintenance", driverId],
