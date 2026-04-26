@@ -20,9 +20,35 @@ const ResetPasswordDialog = ({ open, onOpenChange, user }: ResetPasswordDialogPr
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [ssoManaged, setSsoManaged] = useState(false);
+  const [checkingSso, setCheckingSso] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      if (!open || !user?.email) {
+        setSsoManaged(false);
+        return;
+      }
+      setCheckingSso(true);
+      const { data } = await supabase.rpc("is_sso_managed_email", { _email: user.email });
+      if (!cancelled) {
+        setSsoManaged(data === true);
+        setCheckingSso(false);
+      }
+    };
+    check();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, user?.email]);
 
   const handleReset = async () => {
     if (!user) return;
+    if (ssoManaged) {
+      friendlyToastError(null, { title: "This account is managed by SSO/AD. Reset password via your identity provider." });
+      return;
+    }
     if (newPassword.length < 8) {
       friendlyToastError(null, { title: "Password must be at least 8 characters" });
       return;
