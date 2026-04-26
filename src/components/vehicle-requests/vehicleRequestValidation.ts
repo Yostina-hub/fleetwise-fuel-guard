@@ -599,7 +599,11 @@ export const vehicleRequestZodSchema = z.object({
     .string()
     .trim()
     .min(1, "Contact phone is required so dispatch can reach you during the trip.")
-    .max(20, "Phone number must be 20 characters or fewer."),
+    .max(13, "Ethiopian phone numbers cannot exceed 13 characters (e.g. +251911234567).")
+    .refine(
+      (v) => isEthiopianPhone(v),
+      "Phone must be an Ethiopian number: 09XXXXXXXX or +2519XXXXXXXX (mobile), 0[1-8]XXXXXXXX or +251[1-8]XXXXXXXX (landline). Digits only.",
+    ),
   departure_place: z.string().trim().max(200).optional().or(z.literal("")),
   destination: z.string().trim().max(200).optional().or(z.literal("")),
   num_vehicles: z.coerce.number().int().min(1).max(50),
