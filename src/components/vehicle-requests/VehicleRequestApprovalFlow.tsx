@@ -589,15 +589,6 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
           )}
         </div>
       </Section>
-      <Section title="Schedule">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-          <Field label="Needed From" value={fmtOrgTime(request.needed_from)} />
-          <Field label="Needed Until" value={request.needed_until ? fmtOrgTime(request.needed_until) : "—"} />
-          {request.trip_duration_days && (
-            <Field label="Duration" value={`${request.trip_duration_days} day${request.trip_duration_days > 1 ? "s" : ""}`} />
-          )}
-        </div>
-      </Section>
 
       {/* Resource — pool / vehicle / cargo */}
       <Section title="Vehicle & Resources">
