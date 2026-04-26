@@ -634,7 +634,7 @@ export const MergedTripStopsPanel = ({
               id: fillId,
               type: "fill",
               source: sourceId,
-              paint: { "fill-color": color, "fill-opacity": 0.22 },
+              paint: { "fill-color": color, "fill-opacity": 0.35 },
             },
             beforeId,
           );
@@ -645,14 +645,14 @@ export const MergedTripStopsPanel = ({
               source: sourceId,
               paint: {
                 "line-color": color,
-                "line-width": 2,
+                "line-width": 2.5,
                 "line-opacity": 1,
               },
             },
             beforeId,
           );
-          // Short label centred on the geometry. Truncated so long Amharic
-          // descriptors don't blanket the map.
+          // Short label centred on the geometry. Allow overlap so every
+          // zone gets a legend even when several fences cluster together.
           const labelId = `${sourceId}-label`;
           const shortName = String(fence.name || "Zone").split(",")[0].slice(0, 28);
           map.addLayer({
@@ -662,13 +662,15 @@ export const MergedTripStopsPanel = ({
             layout: {
               "symbol-placement": "point",
               "text-field": shortName,
-              "text-size": 10,
-              "text-allow-overlap": false,
+              "text-size": 11,
+              "text-allow-overlap": true,
+              "text-ignore-placement": true,
+              "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
             },
             paint: {
               "text-color": color,
               "text-halo-color": "rgba(255,255,255,0.95)",
-              "text-halo-width": 1.4,
+              "text-halo-width": 1.6,
             },
           });
           addedIds.push(fillId, lineId, labelId, sourceId);
