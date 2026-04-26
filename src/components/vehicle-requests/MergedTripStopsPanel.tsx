@@ -776,7 +776,7 @@ export const MergedTripStopsPanel = ({
         const fillId = `${sourceId}-fill`;
         const lineId = `${sourceId}-line`;
         if (map.getSource(sourceId)) return;
-        const color = fence.color || "hsl(160 84% 39%)";
+        const color = geofenceVisualColor(fence);
         const feature = buildMergedTripFenceFeature(fence);
         if (!feature) return;
         feature.geometry.coordinates[0].forEach((coord) => allBounds.extend(coord as [number, number]));
@@ -793,7 +793,7 @@ export const MergedTripStopsPanel = ({
             id: fillId,
             type: "fill",
             source: sourceId,
-            paint: { "fill-color": color, "fill-opacity": 0.32 },
+            paint: { "fill-color": color, "fill-opacity": 0.42 },
           }, beforeRouteLayer);
           map.addLayer({
             id: lineId,
@@ -801,7 +801,7 @@ export const MergedTripStopsPanel = ({
             source: sourceId,
             paint: {
               "line-color": color,
-              "line-width": 6,
+              "line-width": 8,
               "line-opacity": 1,
             },
           });
