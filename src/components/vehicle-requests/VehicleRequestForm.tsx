@@ -175,6 +175,8 @@ const buildInitialForm = () => {
     cargo_description: "" as string,
     vehicle_type_justification: "" as string,
     night_request_subcategory: "" as "" | "night_shift" | "emergency",
+    /** What the requester explicitly selected (preserved verbatim). */
+    requested_request_type: "" as string,
   };
 };
 
@@ -686,6 +688,27 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         // sanitized + Zod-validated payload). Lat/lng + dates remain raw
         // because they're not free-text user input.
         request_type: safe.request_type,
+        // Preserve the requester's explicit selection (verbatim) and the
+        // type the system inferred from the time window — both are surfaced
+        // to dispatchers so a mismatch is visible end-to-end.
+        requested_request_type: form.requested_request_type || safe.request_type,
+        system_classified_type: (() => {
+          if (safe.request_type !== "daily_operation" && safe.request_type !== "nighttime_operation") return null;
+          const toMin = (t: string) => {
+            if (!t) return null;
+            const [h, m] = t.split(":").map(Number);
+            if (Number.isNaN(h) || Number.isNaN(m)) return null;
+            return h * 60 + m;
+          };
+          const sMin = toMin(form.start_time);
+          const eMin = toMin(form.end_time);
+          if (sMin == null && eMin == null) return null;
+          const DS = 8 * 60 + 30, DE = 17 * 60 + 30;
+          const isNight =
+            (sMin != null && (sMin < DS || sMin > DE)) ||
+            (eMin != null && (eMin > DE || eMin < DS));
+          return isNight ? "nighttime_operation" : "daily_operation";
+        })(),
         // OLA operation type drives SLA timer (10m / 30m / 1.5d / 30d)
         operation_type:
           (safe.request_type as string) === "incident_urgent" ? "incident_urgent" :
@@ -966,21 +989,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.start_date, form.request_type, isDaily]);
 
-  // Auto-switch between Daily and Nighttime based on the trip's clock window.
-  //
-  // Definition (per operations policy):
-  //   • Night Request: 8:00 PM – 6:00 AM (any part of the trip touching this window)
-  //   • Day Request:   everything else (fully inside 6:00 AM – 8:00 PM)
-  //
-  // Rule (24h):
-  //   • Day Operation:   08:30 ≤ start AND end ≤ 17:30
-  //   • Night Request:   anything outside 08:30 – 17:30 (i.e. touches 17:30 – 08:30 next day,
-  //                      with the strict night window being 20:00 – 06:00)
-  //
-  // Only auto-toggles when the user is on daily/nighttime — never overrides
-  // Project / Field / Group / Messenger selections.
-  useEffect(() => {
-    if (form.request_type !== "daily_operation" && form.request_type !== "nighttime_operation") return;
+  // Compute the system-classified trip type from the entered start/end times.
+  // We DO NOT overwrite the requester's chosen request_type — both values
+  // are preserved separately so dispatchers can see the original intent
+  // alongside the system's evaluation when the two disagree.
+  const systemClassifiedType = useMemo<"daily_operation" | "nighttime_operation" | null>(() => {
+    if (form.request_type !== "daily_operation" && form.request_type !== "nighttime_operation") return null;
     const toMin = (t: string) => {
       if (!t) return null;
       const [h, m] = t.split(":").map(Number);
@@ -989,26 +1003,21 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     };
     const startMin = toMin(form.start_time);
     const endMin = toMin(form.end_time);
-    if (startMin == null && endMin == null) return; // wait for input
+    if (startMin == null && endMin == null) return null;
     const DAY_START = 8 * 60 + 30;  // 08:30
     const DAY_END   = 17 * 60 + 30; // 17:30
     const isNight =
       (startMin != null && (startMin < DAY_START || startMin > DAY_END)) ||
       (endMin   != null && (endMin   > DAY_END   || endMin   < DAY_START));
-    const desired = isNight ? "nighttime_operation" : "daily_operation";
-    if (desired !== form.request_type) {
-      setForm((f) => ({ ...f, request_type: desired }));
-      toast.message(
-        isNight ? "Switched to Night Request" : "Switched to Day Operation",
-        {
-          description: isNight
-            ? "Trip falls outside 8:30 AM – 5:30 PM (night window 8:00 PM – 6:00 AM) — categorized as Night Request."
-            : "Trip is fully within 8:30 AM – 5:30 PM — categorized as Day Operation.",
-        }
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.start_time, form.end_time, form.request_type]);
+    return isNight ? "nighttime_operation" : "daily_operation";
+  }, [form.request_type, form.start_time, form.end_time]);
+
+  // True when the requester picked one type but the times point to another.
+  const requesterVsSystemMismatch =
+    !!systemClassifiedType &&
+    !!form.request_type &&
+    systemClassifiedType !== form.request_type;
+
 
   // Professional, descriptive validation (per-field, on blur + on submit).
   const validation = useVehicleRequestValidation();
@@ -1470,6 +1479,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   setForm((f) => ({
                     ...f,
                     request_type: v,
+                    requested_request_type: v,
                     start_time: "20:00",
                     end_time: f.end_time && f.end_time !== "" ? f.end_time : "06:00",
                   }));
@@ -1481,18 +1491,19 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   setForm((f) => ({
                     ...f,
                     request_type: v,
+                    requested_request_type: v,
                     start_time: f.start_time && f.start_time !== "20:00" ? f.start_time : "08:30",
                     end_time: f.end_time && f.end_time !== "06:00" ? f.end_time : "17:30",
                   }));
                   handleBlur("request_type", v, { ...(form as any), request_type: v });
                   return;
                 }
-                update("request_type", v);
+                setForm((f) => ({ ...f, request_type: v, requested_request_type: v }));
                 // Clear night subcategory when leaving Night Request.
                 if (v !== "nighttime_operation") {
                   update("night_request_subcategory", "" as any);
                 }
-                handleBlur("request_type", v, form as any);
+                handleBlur("request_type", v, { ...(form as any), request_type: v });
               }}
             >
               <SelectTrigger
@@ -1536,6 +1547,52 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   Choose <span className="font-medium">Night shift</span> for planned overnight work, or{" "}
                   <span className="font-medium">Emergency</span> for urgent night incidents.
                 </p>
+              </div>
+            )}
+
+            {/* Requester vs System trip-type evaluation
+                ----------------------------------------
+                Shows the requester's selected type alongside the type the
+                system inferred from the start/end time window. Both values
+                are persisted on the request so dispatchers can see the
+                original intent even when they disagree. */}
+            {systemClassifiedType && (
+              <div
+                className={`rounded-lg border p-2.5 text-xs flex flex-wrap items-center gap-2 ${
+                  requesterVsSystemMismatch
+                    ? "border-amber-500/40 bg-amber-500/5"
+                    : "border-border bg-muted/30"
+                }`}
+                role="status"
+                aria-live="polite"
+              >
+                <Badge variant="outline" className="text-[10px] gap-1 border-primary/40">
+                  Requester time:{" "}
+                  <span className="font-semibold">
+                    {form.requested_request_type === "nighttime_operation" ? "Night Request" : "Day Request"}
+                  </span>
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] gap-1 ${
+                    requesterVsSystemMismatch
+                      ? "border-amber-500/60 text-amber-700 dark:text-amber-300"
+                      : "border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+                  }`}
+                >
+                  System-evaluated:{" "}
+                  <span className="font-semibold">
+                    {systemClassifiedType === "nighttime_operation" ? "Night Request" : "Day Request"}
+                  </span>
+                </Badge>
+                {requesterVsSystemMismatch ? (
+                  <span className="text-amber-700 dark:text-amber-300">
+                    ⚠ Times fall in the {systemClassifiedType === "nighttime_operation" ? "night" : "day"} window —
+                    your selection is preserved, but dispatch will see both.
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">Selection matches the time window.</span>
+                )}
               </div>
             )}
           </section>

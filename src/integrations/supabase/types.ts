@@ -24481,6 +24481,7 @@ export type Database = {
           rejection_reason: string | null
           request_number: string
           request_type: string | null
+          requested_request_type: string | null
           requester_confirmation_notes: string | null
           requester_confirmed_at: string | null
           requester_confirmed_by: string | null
@@ -24495,6 +24496,7 @@ export type Database = {
           sms_sent_at: string | null
           start_time: string | null
           status: string | null
+          system_classified_type: string | null
           trip_duration_days: number | null
           trip_type: string | null
           updated_at: string
@@ -24595,6 +24597,7 @@ export type Database = {
           rejection_reason?: string | null
           request_number: string
           request_type?: string | null
+          requested_request_type?: string | null
           requester_confirmation_notes?: string | null
           requester_confirmed_at?: string | null
           requester_confirmed_by?: string | null
@@ -24609,6 +24612,7 @@ export type Database = {
           sms_sent_at?: string | null
           start_time?: string | null
           status?: string | null
+          system_classified_type?: string | null
           trip_duration_days?: number | null
           trip_type?: string | null
           updated_at?: string
@@ -24709,6 +24713,7 @@ export type Database = {
           rejection_reason?: string | null
           request_number?: string
           request_type?: string | null
+          requested_request_type?: string | null
           requester_confirmation_notes?: string | null
           requester_confirmed_at?: string | null
           requester_confirmed_by?: string | null
@@ -24723,6 +24728,7 @@ export type Database = {
           sms_sent_at?: string | null
           start_time?: string | null
           status?: string | null
+          system_classified_type?: string | null
           trip_duration_days?: number | null
           trip_type?: string | null
           updated_at?: string
