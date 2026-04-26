@@ -779,8 +779,6 @@ export const MergedTripStopsPanel = ({
     const map = mapRef.current;
     if (!map || !mapReady || renderableGeofences.length === 0) return;
 
-    const addedLayers: string[] = [];
-    const addedSources: string[] = [];
     const addedMarkers: maplibregl.Marker[] = [];
 
     const renderGeofences = () => {
@@ -789,40 +787,50 @@ export const MergedTripStopsPanel = ({
         const sourceId = `mtsp-geofence-${fence.id}`;
         const fillId = `${sourceId}-fill`;
         const lineId = `${sourceId}-line`;
-        if (map.getSource(sourceId)) return;
         const color = geofenceVisualColor(fence);
         const feature = buildMergedTripFenceFeature(fence);
         if (!feature) return;
         feature.geometry.coordinates[0].forEach((coord) => allBounds.extend(coord as [number, number]));
 
         try {
-          map.addSource(sourceId, { type: "geojson", data: feature });
-          addedSources.push(sourceId);
+          const existingSource = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
+          if (existingSource) {
+            existingSource.setData(feature);
+          } else {
+            map.addSource(sourceId, { type: "geojson", data: feature });
+          }
           const beforeRouteLayer = map.getLayer("route-alt-casing-0")
             ? "route-alt-casing-0"
             : map.getLayer("legs-fallback-line")
               ? "legs-fallback-line"
               : undefined;
-          map.addLayer({
-            id: fillId,
-            type: "fill",
-            source: sourceId,
-            paint: { "fill-color": color, "fill-opacity": 0.42 },
-          }, beforeRouteLayer);
-          map.addLayer({
-            id: lineId,
-            type: "line",
-            source: sourceId,
-            paint: {
-              "line-color": color,
-              "line-width": 8,
-              "line-opacity": 1,
-            },
-          });
+          if (!map.getLayer(fillId)) {
+            map.addLayer({
+              id: fillId,
+              type: "fill",
+              source: sourceId,
+              paint: { "fill-color": color, "fill-opacity": 0.42 },
+            }, beforeRouteLayer);
+          } else {
+            map.setPaintProperty(fillId, "fill-color", color);
+          }
+          if (!map.getLayer(lineId)) {
+            map.addLayer({
+              id: lineId,
+              type: "line",
+              source: sourceId,
+              paint: {
+                "line-color": color,
+                "line-width": 8,
+                "line-opacity": 1,
+              },
+            });
+          } else {
+            map.setPaintProperty(lineId, "line-color", color);
+          }
           // HTML labels are used instead of symbol layers so labels remain
           // visible even when the base style has limited glyph/font support.
           const shortName = String(fence.name || "Zone").split(",")[0].slice(0, 28);
-          addedLayers.push(fillId, lineId);
 
           const center = getMergedTripFenceCenter(fence);
           if (center) {
@@ -874,7 +882,13 @@ export const MergedTripStopsPanel = ({
             type: "geojson",
             data: { type: "FeatureCollection", features: centerFeatures },
           });
-          addedSources.push("mtsp-geofence-centers");
+        } catch {
+          /* noop */
+        }
+      }
+
+      try {
+        if (!map.getLayer("mtsp-geofence-center-halo") && map.getSource("mtsp-geofence-centers")) {
           map.addLayer({
             id: "mtsp-geofence-center-halo",
             type: "circle",
@@ -888,6 +902,8 @@ export const MergedTripStopsPanel = ({
               "circle-stroke-opacity": 1,
             },
           });
+        }
+        if (!map.getLayer("mtsp-geofence-center-dot") && map.getSource("mtsp-geofence-centers")) {
           map.addLayer({
             id: "mtsp-geofence-center-dot",
             type: "circle",
@@ -898,11 +914,10 @@ export const MergedTripStopsPanel = ({
               "circle-opacity": 1,
             },
           });
-          addedLayers.push("mtsp-geofence-center-halo", "mtsp-geofence-center-dot");
-          liftMergedTripGeofenceSpots(map);
-        } catch {
-          /* noop */
         }
+        liftMergedTripGeofenceSpots(map);
+      } catch {
+        /* noop */
       }
 
       if (!allBounds.isEmpty() && !geofenceFitAppliedRef.current && !stopBounds) {
@@ -925,20 +940,6 @@ export const MergedTripStopsPanel = ({
       const m = mapRef.current;
       if (!m) return;
       addedMarkers.forEach((marker) => marker.remove());
-      addedLayers.forEach((id) => {
-        try {
-          if (m.getLayer(id)) m.removeLayer(id);
-        } catch {
-          /* noop */
-        }
-      });
-      addedSources.forEach((id) => {
-        try {
-          if (m.getSource(id)) m.removeSource(id);
-        } catch {
-          /* noop */
-        }
-      });
     };
   }, [showMap, open, mapReady, renderableGeofences, routesInfo.length, stopBounds]);
 
