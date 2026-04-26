@@ -594,6 +594,57 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     userTouchedPoolRef.current = false;
   }, [open, effectiveRequesterId]);
 
+  // ── Contact phone auto-fill ──────────────────────────────────────────────
+  // Fetch the effective requester's phone from `profiles` (falling back to
+  // `drivers.phone` for driver-type "on behalf of" requesters) so the Contact
+  // Phone field pre-populates without manual entry. Same manual-override
+  // protection as the pool fields: once the user types a phone, we stop
+  // overwriting it.
+  const userTouchedContactPhoneRef = useRef(false);
+  const { data: requesterPhone } = useQuery({
+    queryKey: ["vr-requester-phone", effectiveRequesterId, onBehalfOf?.driverId ?? null],
+    queryFn: async () => {
+      if (!effectiveRequesterId) return "";
+      // 1) Profile phone is the canonical source of truth for any user.
+      const { data: profile } = await (supabase as any)
+        .from("profiles")
+        .select("phone")
+        .eq("id", effectiveRequesterId)
+        .maybeSingle();
+      const profilePhone = (profile as any)?.phone?.trim?.() || "";
+      if (profilePhone) return profilePhone;
+      // 2) For driver-type on-behalf-of requesters, fall back to drivers.phone.
+      if (onBehalfOf?.type === "driver" && onBehalfOf?.driverId) {
+        const { data: drv } = await (supabase as any)
+          .from("drivers")
+          .select("phone")
+          .eq("id", onBehalfOf.driverId)
+          .maybeSingle();
+        return ((drv as any)?.phone?.trim?.() || "") as string;
+      }
+      return "" as string;
+    },
+    enabled: !!effectiveRequesterId && open,
+    staleTime: 60_000,
+  });
+
+  // Auto-fill Contact Phone when we have a value AND the user hasn't typed
+  // anything yet. Re-runs whenever the dialog opens or the requester changes.
+  useEffect(() => {
+    if (!open) return;
+    if (userTouchedContactPhoneRef.current) return;
+    if (!requesterPhone) return;
+    setForm((prev) =>
+      prev.contact_phone?.trim() ? prev : { ...prev, contact_phone: requesterPhone },
+    );
+  }, [open, requesterPhone]);
+
+  // Reset the contact-phone touch flag on dialog open / requester change so
+  // the auto-fill re-evaluates for the new session.
+  useEffect(() => {
+    userTouchedContactPhoneRef.current = false;
+  }, [open, effectiveRequesterId]);
+
   // Vehicles that physically live in the chosen Specific Pool. Drives:
   //  • the upper cap on "No. of Vehicles" (can't book more than exist)
   //  • the eligibility filter on "Vehicle Type" (only types present in pool)
