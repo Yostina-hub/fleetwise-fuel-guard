@@ -113,7 +113,10 @@ const normalizeFencePoints = (points: unknown): Array<{ lat: number; lng: number
 
   if (!Array.isArray(raw)) return [];
   return raw
-    .map((point: any) => ({ lat: toFiniteNumber(point?.lat), lng: toFiniteNumber(point?.lng) }))
+    .map((point: any) => ({
+      lat: toFiniteNumber(point?.lat ?? point?.[1]),
+      lng: toFiniteNumber(point?.lng ?? point?.[0]),
+    }))
     .filter((point): point is { lat: number; lng: number } => point.lat != null && point.lng != null);
 };
 
