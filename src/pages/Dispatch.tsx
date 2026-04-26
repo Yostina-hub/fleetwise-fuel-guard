@@ -1,12 +1,13 @@
 import { useState, useRef, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Truck, Package, Navigation, Clock, Loader2 } from "lucide-react";
+import { Truck, Package, Navigation, Clock, Loader2, Inbox } from "lucide-react";
 import DispatchJobsTab from "@/components/dispatch/DispatchJobsTab";
 import DispatchQuickStats from "@/components/dispatch/DispatchQuickStats";
 import DispatchQuickActions from "@/components/dispatch/DispatchQuickActions";
 import DispatchInsightsCard from "@/components/dispatch/DispatchInsightsCard";
 import { DispatchRerouteSuggestions } from "@/components/dispatch/DispatchRerouteSuggestions";
+import OperatorInboxTab from "@/components/dispatch/OperatorInboxTab";
 import { useDispatchJobs } from "@/hooks/useDispatchJobs";
 import { useNavigate } from "react-router-dom";
 import { startOfDay, isAfter, parseISO } from "date-fns";
