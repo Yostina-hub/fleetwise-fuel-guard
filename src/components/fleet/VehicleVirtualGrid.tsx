@@ -11,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import StatusBadge from "@/components/StatusBadge";
+import VehicleLiveStatusBadge from "@/components/fleet/VehicleLiveStatusBadge";
+import type { VehicleLiveStatusKey } from "@/lib/vehicleLiveStatus";
 import { 
   Fuel, 
   MapPin, 
@@ -42,7 +43,10 @@ interface VehicleItem {
   make: string;
   model: string;
   year: number;
+  /** Collapsed 3-state — kept for back-compat; UI prefers liveStatus. */
   status: 'moving' | 'idle' | 'offline';
+  /** Full 5-state live status — drives the badge in the card header. */
+  liveStatus?: VehicleLiveStatusKey;
   fuel: number | null;
   odometer: number;
   nextService: string | null;
@@ -221,17 +225,19 @@ export const VehicleVirtualGrid = ({
                       </div>
                     )}
 
-                    {/* Device status indicator */}
+                    {/* Device link status — distinct from live driving status.
+                        Labelled "Device Online/Offline" to avoid confusion with
+                        the live status badge in the card header. */}
                     <div className="absolute top-3 left-10 z-10">
                       {vehicle.deviceConnected ? (
                         <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm">
                           <Wifi className="w-3 h-3 text-success" />
-                          <span className="text-xs">Online</span>
+                          <span className="text-xs">Device Online</span>
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm">
                           <WifiOff className="w-3 h-3 text-muted-foreground" />
-                          <span className="text-xs">Offline</span>
+                          <span className="text-xs">Device Offline</span>
                         </Badge>
                       )}
                     </div>
@@ -322,12 +328,12 @@ export const VehicleVirtualGrid = ({
                             {vehicle.make} {vehicle.model} • {vehicle.year}
                           </p>
                         </div>
-                        <StatusBadge status={vehicle.status} />
+                        <VehicleLiveStatusBadge status={vehicle.liveStatus ?? vehicle.status} />
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3 relative">
-                      {/* Speed indicator (if moving) */}
-                      {vehicle.status === "moving" && (
+                      {/* Speed indicator (if actually moving) */}
+                      {(vehicle.liveStatus ?? vehicle.status) === "moving" && (
                         <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20">
                           <Gauge className="w-4 h-4 text-primary" />
                           <span className="text-sm font-medium">{vehicle.speed} km/h</span>
