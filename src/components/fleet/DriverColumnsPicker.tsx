@@ -118,7 +118,7 @@ export const DriverColumnsPicker = ({
             <div>
               <h4 className="text-sm font-semibold leading-tight">Driver columns</h4>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Toggle which fields appear in the directory
+                Toggle which fields appear in the driver list
               </p>
             </div>
             <Button
