@@ -688,6 +688,27 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         // sanitized + Zod-validated payload). Lat/lng + dates remain raw
         // because they're not free-text user input.
         request_type: safe.request_type,
+        // Preserve the requester's explicit selection (verbatim) and the
+        // type the system inferred from the time window — both are surfaced
+        // to dispatchers so a mismatch is visible end-to-end.
+        requested_request_type: form.requested_request_type || safe.request_type,
+        system_classified_type: (() => {
+          if (safe.request_type !== "daily_operation" && safe.request_type !== "nighttime_operation") return null;
+          const toMin = (t: string) => {
+            if (!t) return null;
+            const [h, m] = t.split(":").map(Number);
+            if (Number.isNaN(h) || Number.isNaN(m)) return null;
+            return h * 60 + m;
+          };
+          const sMin = toMin(form.start_time);
+          const eMin = toMin(form.end_time);
+          if (sMin == null && eMin == null) return null;
+          const DS = 8 * 60 + 30, DE = 17 * 60 + 30;
+          const isNight =
+            (sMin != null && (sMin < DS || sMin > DE)) ||
+            (eMin != null && (eMin > DE || eMin < DS));
+          return isNight ? "nighttime_operation" : "daily_operation";
+        })(),
         // OLA operation type drives SLA timer (10m / 30m / 1.5d / 30d)
         operation_type:
           (safe.request_type as string) === "incident_urgent" ? "incident_urgent" :
