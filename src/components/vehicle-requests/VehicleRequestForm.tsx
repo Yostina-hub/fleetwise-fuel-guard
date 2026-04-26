@@ -1712,9 +1712,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               {/* Night Request subcategory — sits next to the request type when Night is selected. */}
               {isNighttime && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-1.5">
-                    <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                    Night Request Category <span className="text-destructive">*</span>
+                  <Label className="text-primary font-medium text-sm flex items-center gap-1.5 leading-tight">
+                    <Moon className="w-4 h-4 shrink-0" />
+                    <span>Night Request Category</span>
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={form.night_request_subcategory || ""}
