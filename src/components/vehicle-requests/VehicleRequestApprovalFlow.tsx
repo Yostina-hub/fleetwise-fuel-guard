@@ -584,6 +584,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         </div>
       )}
 
+      {/* Issue #41 — Requester organisational context.
           Division ← user_roles.business_unit, Department ← request override
           or profile, Section ← profile.job_title. Always rendered (with "—"
           fallback) so approvers can spot missing org placement. */}
