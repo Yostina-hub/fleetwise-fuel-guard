@@ -1144,8 +1144,12 @@ export const MergedTripStopsPanel = ({
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent
+                              side="right"
                               align="end"
-                              className="w-72 p-3 max-h-[70vh] flex flex-col gap-3 overflow-hidden"
+                              sideOffset={8}
+                              avoidCollisions
+                              collisionPadding={12}
+                              className="w-80 max-w-[calc(100vw-2rem)] p-3 max-h-[min(520px,calc(100vh-2rem))] flex flex-col gap-3 overflow-hidden"
                             >
                               <div className="flex items-center justify-between gap-3 shrink-0">
                                 <div className="space-y-0.5">
@@ -1171,11 +1175,8 @@ export const MergedTripStopsPanel = ({
                                       {(geofences as any[]).length === 1 ? "" : "s"}
                                     </span>
                                   </div>
-                                  <ScrollArea
-                                    className="flex-1 min-h-0 max-h-[44vh] pr-2 rounded-md border bg-muted/20"
-                                    type="always"
-                                  >
-                                    <div className="space-y-1.5 p-2">
+                                  <div className="min-h-[160px] max-h-[min(340px,calc(100vh-14rem))] overflow-y-auto overscroll-contain pr-2 rounded-md border bg-muted/20">
+                                    <div className="space-y-1.5 p-2 pr-3">
                                       {(geofences as any[]).length === 0 && (
                                         <div className="text-[10px] text-muted-foreground italic">
                                           No active geofences in this organisation.
@@ -1213,7 +1214,7 @@ export const MergedTripStopsPanel = ({
                                         );
                                       })}
                                     </div>
-                                  </ScrollArea>
+                                  </div>
                                 </div>
                               )}
                             </PopoverContent>
