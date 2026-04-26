@@ -1371,7 +1371,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       {savedAt && (
         <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <CheckCircle2 className="w-3 h-3 text-success" />
-          Auto-saved {new Date(savedAt).toLocaleTimeString()}
+          Auto-saved {new Date(savedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true })}
         </span>
       )}
     </div>
