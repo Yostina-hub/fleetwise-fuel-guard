@@ -7,9 +7,15 @@ import {
   UserPlus, ClipboardCheck, FileSearch, Zap, ChevronRight,
   CheckCircle2, XCircle, AlertCircle, BarChart3, Briefcase,
   ShieldAlert, Radio, Clock, ArrowUpRight, ArrowDownRight,
+  Link2, Unlink, Building2, UserCog, Car, Truck, HelpCircle,
 } from "lucide-react";
 import { useDrivers } from "@/hooks/useDrivers";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useMemo } from "react";
 
 interface DriverHubOverviewProps {
   onNavigate: (category: string, tab?: string) => void;
