@@ -160,9 +160,11 @@ const DriverPortal = () => {
         .from("vehicle_requests")
         .select(`
           id, request_number, status, approval_status, purpose, destination,
+          departure_place, passengers,
           needed_from, needed_until, assigned_at, driver_checked_in_at, driver_checked_out_at,
-          assigned_vehicle_id,
-          assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model, year, fuel_type, status)
+          assigned_vehicle_id, requester_name,
+          assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model, year, fuel_type, status),
+          requester:requester_id(first_name, last_name, full_name, phone)
         `)
         .eq("organization_id", organizationId)
         .eq("assigned_driver_id", driver.id)
