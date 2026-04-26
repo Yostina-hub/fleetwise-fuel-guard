@@ -1617,6 +1617,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     {systemClassifiedType === "nighttime_operation" ? "Night Request" : "Day Request"}
                   </span>
                 </Badge>
+                <Badge variant="outline" className="text-[10px] gap-1 border-sky-500/40 text-sky-700 dark:text-sky-300">
+                  Machine clock:{" "}
+                  <span className="font-semibold">
+                    {machineNowLabel} ({machineTzLabel}) — {machineNowClass === "nighttime_operation" ? "Night" : "Day"} window
+                  </span>
+                </Badge>
                 {requesterVsSystemMismatch ? (
                   <span className="text-amber-700 dark:text-amber-300">
                     ⚠ Times fall in the {systemClassifiedType === "nighttime_operation" ? "night" : "day"} window —
