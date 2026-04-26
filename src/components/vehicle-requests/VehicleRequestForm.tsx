@@ -1464,7 +1464,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           {/* TYPE SECTION */}
           <section className="space-y-3">
             <SectionHeader icon={Sparkles} title="Vehicle Request Type" />
-            <div className={`grid grid-cols-1 ${isNighttime ? "md:grid-cols-2" : ""} gap-3 items-start`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
               {/* Vehicle Request Type */}
               <div className="space-y-2">
                 <Label className="text-primary font-medium text-sm flex items-center gap-1.5">
