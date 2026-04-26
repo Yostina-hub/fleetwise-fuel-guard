@@ -186,6 +186,7 @@ describe("VR form validation — Field Operation", () => {
     passengers: 3,
     priority: "normal",
     trip_type: "round_trip",
+    contact_phone: "0911234567",
   };
   it("accepts a field request without project number", () => {
     expect(validateVehicleRequestForm(base as any).valid).toBe(true);
