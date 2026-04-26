@@ -28,6 +28,7 @@ import {
   Edit,
   Trash2,
   UserPlus,
+  UserMinus,
   Power,
   Radio,
   FileText,
