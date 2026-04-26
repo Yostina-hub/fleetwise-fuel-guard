@@ -32,11 +32,12 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// Limited to the four categories drivers actually need to report from the
+// portal. Anything more nuanced is captured under "Other" with a description.
 type ReasonValue =
   | "vehicle_technical"
-  | "accident"
-  | "driver_health"
   | "passenger_health"
+  | "accident"
   | "other";
 
 const REASONS: Array<{
@@ -57,6 +58,14 @@ const REASONS: Array<{
     severity: "high",
   },
   {
+    value: "passenger_health",
+    label: "Passenger Health Issue",
+    description: "Passenger illness, injury or medical emergency",
+    icon: HeartPulse,
+    incidentType: "violation",
+    severity: "high",
+  },
+  {
     value: "accident",
     label: "Accident",
     description: "Collision, scratch, or any vehicle damage",
@@ -65,25 +74,9 @@ const REASONS: Array<{
     severity: "critical",
   },
   {
-    value: "driver_health",
-    label: "Driver Health Issue",
-    description: "Fatigue, illness, injury affecting the driver",
-    icon: HeartPulse,
-    incidentType: "violation",
-    severity: "high",
-  },
-  {
-    value: "passenger_health",
-    label: "Passenger Health Issue",
-    description: "Passenger illness, injury or medical emergency",
-    icon: Users,
-    incidentType: "violation",
-    severity: "high",
-  },
-  {
     value: "other",
     label: "Other",
-    description: "Anything else that needs to be reported",
+    description: "Describe anything else that needs to be reported",
     icon: HelpCircle,
     incidentType: "damage",
     severity: "medium",
@@ -93,9 +86,8 @@ const REASONS: Array<{
 const formSchema = z.object({
   reason: z.enum([
     "vehicle_technical",
-    "accident",
-    "driver_health",
     "passenger_health",
+    "accident",
     "other",
   ]),
   description: z
@@ -137,6 +129,7 @@ export const ReportTripIncidentDialog = ({
   const queryClient = useQueryClient();
 
   const [reason, setReason] = useState<ReasonValue>("vehicle_technical");
+  // ↑ default reflects the most common report from drivers
   const [description, setDescription] = useState("");
   const [kmReading, setKmReading] = useState("");
   const [files, setFiles] = useState<File[]>([]);
