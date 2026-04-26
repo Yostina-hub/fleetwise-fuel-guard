@@ -73,6 +73,68 @@ type RoutePoint = {
   label: string;
 };
 
+const toFiniteNumber = (value: unknown): number | null => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+const normalizeFencePoints = (points: unknown): Array<{ lat: number; lng: number }> => {
+  const raw = typeof points === "string" ? (() => {
+    try {
+      return JSON.parse(points);
+    } catch {
+      return null;
+    }
+  })() : points;
+
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((point: any) => ({ lat: toFiniteNumber(point?.lat), lng: toFiniteNumber(point?.lng) }))
+    .filter((point): point is { lat: number; lng: number } => point.lat != null && point.lng != null);
+};
+
+const buildMergedTripFenceFeature = (fence: any): GeoJSON.Feature<GeoJSON.Polygon> | null => {
+  if (fence.geometry_type === "circle") {
+    const lat = toFiniteNumber(fence.center_lat);
+    const lng = toFiniteNumber(fence.center_lng);
+    const radius = toFiniteNumber(fence.radius_meters) || 500;
+    if (lat == null || lng == null || radius <= 0) return null;
+    const points = 112;
+    const coords: number[][] = [];
+    for (let i = 0; i <= points; i++) {
+      const angle = (i / points) * 2 * Math.PI;
+      const dx = radius * Math.cos(angle);
+      const dy = radius * Math.sin(angle);
+      coords.push([
+        lng + dx / (111320 * Math.cos((lat * Math.PI) / 180)),
+        lat + dy / 111320,
+      ]);
+    }
+    return { type: "Feature", properties: { name: fence.name }, geometry: { type: "Polygon", coordinates: [coords] } };
+  }
+
+  const polygonPoints = normalizeFencePoints(fence.polygon_points);
+  if (fence.geometry_type === "polygon" && polygonPoints.length >= 3) {
+    const coords = polygonPoints.map((point) => [point.lng, point.lat]);
+    coords.push(coords[0]);
+    return { type: "Feature", properties: { name: fence.name }, geometry: { type: "Polygon", coordinates: [coords] } };
+  }
+
+  return null;
+};
+
+const getMergedTripFenceCenter = (fence: any): [number, number] | null => {
+  const centerLat = toFiniteNumber(fence.center_lat);
+  const centerLng = toFiniteNumber(fence.center_lng);
+  if (centerLat != null && centerLng != null) return [centerLng, centerLat];
+  const points = normalizeFencePoints(fence.polygon_points);
+  if (!points.length) return null;
+  return [
+    points.reduce((sum, point) => sum + point.lng, 0) / points.length,
+    points.reduce((sum, point) => sum + point.lat, 0) / points.length,
+  ];
+};
+
 
 
 export const MergedTripStopsPanel = ({
