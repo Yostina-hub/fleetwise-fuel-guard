@@ -916,11 +916,14 @@ const Geofencing = () => {
             </div>
             <p className="mt-1 text-xs text-muted-foreground">Dispatch rules, alerts, and geofence visibility.</p>
           </div>
-          {mode === "overlay" && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setPanelOpen(false)}>
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setPanelOpen(false)} aria-label="Minimize zone panel">
+                <PanelRightClose className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Minimize panel</TooltipContent>
+          </Tooltip>
         </div>
 
         <div className="mt-3 grid grid-cols-4 gap-2">
@@ -1037,9 +1040,9 @@ const Geofencing = () => {
                   New zone
                 </Button>
 
-                <Button variant="outline" size="sm" className="h-10 gap-2 lg:hidden" onClick={() => setPanelOpen((open) => !open)}>
+                <Button variant="outline" size="sm" className="h-10 gap-2" onClick={() => setPanelOpen((open) => !open)}>
                   {panelOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-                  Zones
+                  {panelOpen ? "Hide zones" : "Show zones"}
                 </Button>
               </div>
             </div>
@@ -1091,9 +1094,26 @@ const Geofencing = () => {
               )}
             </main>
 
-            <aside className="hidden w-[380px] xl:w-[420px] shrink-0 flex-col border-l border-border bg-card lg:flex">
-              {renderZonePanel("aside")}
-            </aside>
+            {panelOpen ? (
+              <aside className="hidden w-[380px] xl:w-[420px] shrink-0 flex-col border-l border-border bg-card lg:flex">
+                {renderZonePanel("aside")}
+              </aside>
+            ) : (
+              <aside className="hidden w-12 shrink-0 flex-col items-center gap-2 border-l border-border bg-card py-3 lg:flex">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setPanelOpen(true)} aria-label="Expand zone panel">
+                      <PanelRightOpen className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">Expand zones</TooltipContent>
+                </Tooltip>
+                <div className="mt-1 flex flex-col items-center gap-1 text-[10px] font-medium text-muted-foreground [writing-mode:vertical-rl]">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <span className="rotate-180">Zones · {geofenceStats.total}</span>
+                </div>
+              </aside>
+            )}
           </div>
         </div>
 
