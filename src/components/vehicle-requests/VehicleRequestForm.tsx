@@ -1019,49 +1019,26 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // The user can always override via the dropdown — once they do, we stop
   // auto-overwriting via `userPickedRequestTypeRef`.
   const userPickedRequestTypeRef = useRef(false);
-  // Track whether the user manually edited start_time during this open session.
-  // Reset every time the dialog opens so we re-snap start_time to "now".
-  const userPickedStartTimeRef = useRef(false);
   useEffect(() => {
-    if (open) {
-      userPickedRequestTypeRef.current = false;
-      userPickedStartTimeRef.current = false;
-    }
+    if (open) userPickedRequestTypeRef.current = false;
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    // Always refresh start_time to the current machine clock when opening,
-    // unless the user has manually edited it in this session.
-    if (userPickedStartTimeRef.current) return;
-
-    const now = new Date();
-    const mins = Math.round((now.getHours() * 60 + now.getMinutes()) / 5) * 5;
-    const h = Math.floor(mins / 60) % 24;
-    const m = mins % 60;
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const nowStr = `${pad(h)}:${pad(m)}`;
-
+    if (userPickedRequestTypeRef.current) return;
+    if (form.request_type === "daily_operation" || form.request_type === "nighttime_operation") return;
     const auto = machineNowClass; // "daily_operation" | "nighttime_operation"
     setForm((f) => {
-      const next = { ...f };
-      if (!userPickedRequestTypeRef.current &&
-          f.request_type !== "daily_operation" &&
-          f.request_type !== "nighttime_operation") {
-        next.request_type = auto;
-        next.requested_request_type = auto;
-      }
-      // Snap start_time to "now" on every open.
-      next.start_time = nowStr;
-      // Default end_time only if missing — don't overwrite a user's chosen end.
-      if (!f.end_time) {
-        next.end_time = (next.request_type === "nighttime_operation") ? "06:00" : "17:30";
+      if (f.request_type === "daily_operation" || f.request_type === "nighttime_operation") return f;
+      const next = { ...f, request_type: auto, requested_request_type: auto };
+      if (auto === "nighttime_operation") {
+        if (!f.end_time) next.end_time = "06:00";
+      } else {
+        if (!f.end_time) next.end_time = "17:30";
       }
       return next;
     });
-    // Only depend on `open` so this fires once per open, not on every clock tick.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, machineNowClass, form.request_type]);
 
   // Compute the system-classified trip type from the entered start/end times,
   // falling back to the current machine clock when no times are typed yet.
