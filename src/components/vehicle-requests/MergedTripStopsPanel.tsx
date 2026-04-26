@@ -852,7 +852,10 @@ export const MergedTripStopsPanel = ({
         })
         .filter((feature): feature is NonNullable<typeof feature> => feature !== null);
 
-      if (centerFeatures.length > 0 && !map.getSource("mtsp-geofence-centers")) {
+      const centerSource = map.getSource("mtsp-geofence-centers") as maplibregl.GeoJSONSource | undefined;
+      if (centerSource) {
+        centerSource.setData({ type: "FeatureCollection", features: centerFeatures });
+      } else if (centerFeatures.length > 0) {
         try {
           map.addSource("mtsp-geofence-centers", {
             type: "geojson",
@@ -865,7 +868,7 @@ export const MergedTripStopsPanel = ({
             source: "mtsp-geofence-centers",
             paint: {
               "circle-radius": 12,
-              "circle-color": "hsl(0 0% 100%)",
+              "circle-color": "hsl(0, 0%, 100%)",
               "circle-opacity": 0.92,
               "circle-stroke-width": 3,
               "circle-stroke-color": ["get", "color"],
