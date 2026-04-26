@@ -174,6 +174,18 @@ const getMergedTripFenceBounds = (fence: any): maplibregl.LngLatBounds | null =>
 const sameCoordinate = (a: [number, number], b: [number, number]) =>
   Math.abs(a[0] - b[0]) < 0.000001 && Math.abs(a[1] - b[1]) < 0.000001;
 
+const GEOFENCE_CENTER_LAYER_IDS = ["mtsp-geofence-center-halo", "mtsp-geofence-center-dot"];
+
+const liftMergedTripGeofenceSpots = (map: maplibregl.Map) => {
+  GEOFENCE_CENTER_LAYER_IDS.forEach((id) => {
+    try {
+      if (map.getLayer(id)) map.moveLayer(id);
+    } catch {
+      /* layer may be mid-refresh */
+    }
+  });
+};
+
 const geofenceVisualColor = (fence: any) => {
   const raw = String(fence?.color || "").trim();
   const isMapColor = /^(#[0-9a-f]{3,8}|rgba?\(|hsla?\()/i.test(raw) && !raw.includes("var(");
