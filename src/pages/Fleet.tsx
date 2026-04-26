@@ -582,10 +582,30 @@ const Fleet = () => {
           offlineVehicles={fleetStats.offline}
           inMaintenance={0}
           avgFuelLevel={0}
+          ownedVehicles={ownershipMix.owned}
+          rentalVehicles={ownershipMix.rental}
           activeFilter={liveStatusFilter}
+          activeOwnership={
+            ownershipFilter === "all"
+              ? "all"
+              : ownershipFilter === "owned"
+                ? "owned"
+                : "rental"
+          }
           onFilterChange={(filter) => {
             setLiveStatusFilter((prev) => (prev === filter ? "all" : filter));
             // Smooth scroll to vehicle list
+            setTimeout(() => {
+              document.getElementById("fleet-vehicle-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 50);
+          }}
+          onOwnershipChange={(segment) => {
+            if (segment === "owned") {
+              setOwnershipFilter((prev) => (prev === "owned" ? "all" : "owned"));
+            } else {
+              // Toggle between "all" and the most representative non-owned bucket
+              setOwnershipFilter((prev) => (prev === "3pl" ? "all" : "3pl"));
+            }
             setTimeout(() => {
               document.getElementById("fleet-vehicle-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
             }, 50);
