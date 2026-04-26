@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wrench, Fuel, Car, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
+import RequestTrackingDialog, { TrackingKind } from "./RequestTrackingDialog";
 
 interface Props {
   driverId?: string;
