@@ -697,6 +697,16 @@ export const MergedTripStopsPanel = ({
                                           +{deltaMin} min
                                         </span>
                                       )}
+                                      {aiPick?.bestIdx === i && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="h-4 px-1.5 text-[9px] uppercase tracking-wide gap-0.5 border border-primary/40"
+                                          title="AI recommended this route"
+                                        >
+                                          <Sparkles className="w-2.5 h-2.5" />
+                                          AI pick
+                                        </Badge>
+                                      )}
                                     </div>
                                     <div className="text-[10px] text-muted-foreground truncate mt-0.5">
                                       {r.strategy}
@@ -710,9 +720,51 @@ export const MergedTripStopsPanel = ({
                       );
                     })()}
 
+                    {/* AI recommend action + reasoning */}
                     {!routesLoading && routesInfo.length > 1 && (
-                      <div className="px-3 py-1.5 border-t border-border/60 bg-muted/30 text-[10px] text-muted-foreground">
-                        Tap a route to highlight it on the map
+                      <div className="px-3 py-2 border-t border-border/60 bg-muted/30 space-y-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={aiPick ? "secondary" : "default"}
+                          className="w-full h-7 text-[11px] gap-1.5"
+                          onClick={requestAiRecommendation}
+                          disabled={aiLoading}
+                        >
+                          {aiLoading ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-3 h-3" />
+                          )}
+                          {aiLoading
+                            ? "Asking AI…"
+                            : aiPick
+                              ? "Re-run AI recommendation"
+                              : "Recommend best with AI"}
+                        </Button>
+                        {aiError && (
+                          <div className="text-[10px] text-destructive leading-snug">
+                            {aiError}
+                          </div>
+                        )}
+                        {aiPick && !aiError && (
+                          <div className="text-[10px] leading-snug rounded-md bg-primary/5 border border-primary/20 p-2">
+                            <div className="flex items-center gap-1 font-semibold text-primary mb-0.5">
+                              <Sparkles className="w-3 h-3" />
+                              AI rationale
+                            </div>
+                            <p className="text-foreground/80">{aiPick.reasoning}</p>
+                            {typeof aiPick.runnerUpIdx === "number" && routesInfo[aiPick.runnerUpIdx] && (
+                              <p className="text-muted-foreground mt-1">
+                                Runner-up: {routesInfo[aiPick.runnerUpIdx].label} ·{" "}
+                                {Math.round(routesInfo[aiPick.runnerUpIdx].durationMin)} min
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <div className="text-[10px] text-muted-foreground">
+                          Tap a route to highlight it on the map
+                        </div>
                       </div>
                     )}
                   </div>
