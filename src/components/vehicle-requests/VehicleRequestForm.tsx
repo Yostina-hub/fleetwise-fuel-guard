@@ -520,6 +520,44 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     enabled: !!organizationId && open,
   });
 
+  // Vehicles that physically live in the chosen Specific Pool. Drives:
+  //  • the upper cap on "No. of Vehicles" (can't book more than exist)
+  //  • the eligibility filter on "Vehicle Type" (only types present in pool)
+  // Falls back gracefully when no pool is chosen yet (returns []).
+  const { data: poolVehicles = [] } = useQuery({
+    queryKey: ["pool-vehicles", organizationId, form.pool_name],
+    queryFn: async () => {
+      if (!form.pool_name) return [];
+      const { data, error } = await (supabase as any)
+        .from("vehicles")
+        .select("id, vehicle_type, status")
+        .eq("organization_id", organizationId!)
+        .eq("specific_pool", form.pool_name);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId && open && !!form.pool_name,
+    staleTime: 60_000,
+  });
+
+  // Normalise free-text vehicle_type strings ("Double Cab Pickup",
+  // "double_cab", "DoubleCab") into a stable comparison key so DB rows and
+  // VEHICLE_TYPES_OPTIONS values can be matched fuzzily.
+  const normalizeVT = (s: string | null | undefined) =>
+    String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  const poolVehicleTypeKeys = useMemo(() => {
+    const set = new Set<string>();
+    for (const v of poolVehicles as any[]) {
+      const k = normalizeVT(v.vehicle_type);
+      if (k) set.add(k);
+    }
+    return set;
+  }, [poolVehicles]);
+
+  const poolVehicleCount = (poolVehicles as any[]).length;
+
+
   // ── Working-hours policy (per-tenant, configurable) ───────────────────────
   // Loaded from organization_settings. Used to hard-block Project /
   // operational requests that fall outside the org's working window.
@@ -933,7 +971,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     if (raw <= SINGLE_VEHICLE_MAX_PAX) return 1;
     return Math.ceil(raw / SINGLE_VEHICLE_MAX_PAX);
   }, [form.passengers]);
-  const effectiveMaxVehicles = 50;
+  // Cap "No. of Vehicles" by the count actually present in the chosen pool
+  // (when a pool is selected and has vehicles). Falls back to 50 otherwise.
+  const effectiveMaxVehicles = form.pool_name && poolVehicleCount > 0
+    ? poolVehicleCount
+    : 50;
   useEffect(() => {
     const current = parseInt(form.num_vehicles) || 1;
     // Only bump UP to the passenger-driven minimum when crossing the 25-seat
@@ -1132,9 +1174,14 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       : Math.max(1, passengersRaw || 1);
     const cargoOrder = { none: 0, small: 1, medium: 2, large: 3 } as const;
     const cargoNeeded = cargoOrder[(form.cargo_load || "none") as CargoLoad] ?? 0;
+    // When a Specific Pool is chosen AND it has vehicles registered, restrict
+    // selectable vehicle types to those physically present in that pool.
+    // Empty pool inventory → fall back to capability-only filtering so the
+    // user is not silently blocked by missing master-data.
+    const restrictToPool = !!form.pool_name && poolVehicleTypeKeys.size > 0;
     let list = VEHICLE_TYPES_OPTIONS
       .map((vt) => ({ vt, profile: getVehicleClassProfile(vt.value) }))
-      .filter(({ profile }) => {
+      .filter(({ vt, profile }) => {
         if (!profile) return false;
         if (profile.costBand === "specialised") return false; // dispatcher-only
         // Courier-only classes (motorbike/scooter/bicycle) are restricted to
@@ -1148,6 +1195,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         if (passengers > 0 && profile.capacity < passengers) return false;
         if (cargoOrder[profile.cargo] < cargoNeeded) return false;
         if (cargoWeightKgNum > 0 && profile.maxPayloadKg < cargoWeightKgNum) return false;
+        if (restrictToPool) {
+          // Match either the canonical value ("double_cab") or the human
+          // label ("DoubleCab"/"Double Cab Pickup") — DB rows use both.
+          const valueKey = normalizeVT(vt.value);
+          const labelKey = normalizeVT(vt.label);
+          const inPool = Array.from(poolVehicleTypeKeys).some(
+            (k) => k === valueKey || k === labelKey || k.includes(valueKey) || valueKey.includes(k),
+          );
+          if (!inPool) return false;
+        }
         return true;
       });
     return list.sort((a, b) => {
@@ -1156,7 +1213,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       if (aRec !== bRec) return aRec - bRec;
       return (a.profile!.rank) - (b.profile!.rank);
     });
-  }, [form.passengers, form.cargo_load, cargoWeightKgNum, recommendation?.value, isMessenger]);
+  }, [form.passengers, form.cargo_load, form.pool_name, cargoWeightKgNum, recommendation?.value, isMessenger, poolVehicleTypeKeys]);
 
   // Whenever passengers/cargo/weight change, clear the manual-override flag
   // so the recommender takes back control and downgrades/upgrades the
@@ -1795,6 +1852,141 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <section className="space-y-3">
             <SectionHeader icon={Layers} title="Vehicle & Resources" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {/* Pool Category and Specific Pool come first — Vehicle Type and
+                  No. of Vehicles below are filtered by the chosen pool's
+                  actual inventory, so the user MUST pick a pool first. */}
+              <div>
+                <Label className="text-primary font-medium text-sm mb-1 block">
+                  Pool Category <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.pool_category}
+                  onValueChange={v => {
+                    update("pool_category", v);
+                    handleBlur("pool_category", v, form as any);
+                    // Reset the dependent location whenever category changes
+                    const meta = POOL_CATEGORY_META[v as keyof typeof POOL_CATEGORY_META];
+                    const cur = ASSIGNED_LOCATIONS.find(l => l.value === form.pool_name);
+                    if (!cur || cur.group !== meta?.locationGroup) {
+                      update("pool_name", "");
+                    }
+                  }}
+                >
+                  <SelectTrigger
+                    className={`h-9 text-sm ${getError("pool_category") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("pool_category")}
+                  >
+                    <SelectValue placeholder="Please select category…">
+                      {form.pool_category && <PoolCategoryChip value={form.pool_category} />}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="corporate"><PoolCategoryChip value="corporate" /></SelectItem>
+                    <SelectItem value="zone"><PoolCategoryChip value="zone" /></SelectItem>
+                    <SelectItem value="region"><PoolCategoryChip value="region" /></SelectItem>
+                  </SelectContent>
+                </Select>
+                <FieldError field="pool_category" />
+              </div>
+
+              <div>
+                <Label className="text-primary font-medium text-sm mb-1 block">
+                  Specific Pool <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.pool_name}
+                  onValueChange={v => { update("pool_name", v); handleBlur("pool_name", v, { ...form, pool_name: v } as any); }}
+                  disabled={!form.pool_category}
+                >
+                  <SelectTrigger
+                    className={`h-9 text-sm ${!form.pool_category ? "opacity-50" : ""} ${getError("pool_name") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    aria-invalid={!!getError("pool_name")}
+                  >
+                    <SelectValue placeholder={form.pool_category ? "Select location..." : "Pick category first"}>
+                      {form.pool_name && (
+                        <span className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-primary" />
+                          <span className="truncate">
+                            {ASSIGNED_LOCATIONS.find(l => l.value === form.pool_name)?.label || form.pool_name}
+                          </span>
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {(() => {
+                      const inCategory = ASSIGNED_LOCATIONS.filter(
+                        (l: any) =>
+                          form.pool_category === "corporate"
+                            ? l.group === "Corporate"
+                            : l.group === POOL_CATEGORY_META[form.pool_category as keyof typeof POOL_CATEGORY_META]?.locationGroup,
+                      );
+                      const allowed = poolUnrestricted
+                        ? inCategory
+                        : inCategory.filter((l: any) => userPoolCodes.includes(l.value));
+
+                      if (!poolUnrestricted && allowed.length === 0) {
+                        return (
+                          <div className="px-3 py-4 text-xs text-muted-foreground">
+                            {hasAnyMembership
+                              ? "No pools in this category are assigned to you."
+                              : "You aren't assigned to any pool yet. Ask your fleet admin to add you to a pool."}
+                          </div>
+                        );
+                      }
+
+                      if (form.pool_category === "corporate") {
+                        return allowed
+                          .filter((l: any) => !l.parent)
+                          .flatMap((parent: any) => {
+                            const subs = allowed.filter((l: any) => l.parent === parent.value);
+                            if (!poolUnrestricted && subs.length === 0 && !userPoolCodes.includes(parent.value)) {
+                              return [];
+                            }
+                            return [
+                              <SelectItem key={parent.value} value={parent.value}>
+                                <span className="flex items-center gap-2 font-semibold">
+                                  {parent.label}
+                                </span>
+                              </SelectItem>,
+                              ...subs.map((s: any) => (
+                                <SelectItem key={s.value} value={s.value}>
+                                  <span className="flex items-center gap-2 pl-4 text-sm">
+                                    <span className="truncate">{s.label}</span>
+                                    {s.shift && s.shift !== "all" && (
+                                      <span className="ml-auto text-[10px] uppercase text-muted-foreground">{s.shift}</span>
+                                    )}
+                                  </span>
+                                </SelectItem>
+                              )),
+                            ];
+                          });
+                      }
+                      return allowed.map((l: any) => (
+                        <SelectItem key={l.value} value={l.value}>
+                          <span className="flex items-center gap-2">
+                            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                            {l.label}
+                          </span>
+                        </SelectItem>
+                      ));
+                    })()}
+                  </SelectContent>
+                </Select>
+                {form.pool_name && poolVehicleCount > 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    {poolVehicleCount} vehicle{poolVehicleCount === 1 ? "" : "s"} available in this pool
+                    {poolVehicleTypeKeys.size > 0 && ` · ${poolVehicleTypeKeys.size} type${poolVehicleTypeKeys.size === 1 ? "" : "s"}`}
+                  </p>
+                )}
+                {form.pool_name && poolVehicleCount === 0 && (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+                    No vehicles registered in this pool yet — vehicle type list shows all eligible classes.
+                  </p>
+                )}
+                <FieldError field="pool_name" />
+              </div>
+
               {/* No. Of Vehicles is rendered inline next to the Trip Type
                   field below to keep related quantity inputs side-by-side. */}
               <VRField
@@ -2066,129 +2258,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   />
                 </div>
               )}
-              <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Pool Category <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={form.pool_category}
-                  onValueChange={v => {
-                    update("pool_category", v);
-                    handleBlur("pool_category", v, form as any);
-                    // Reset the dependent location whenever category changes
-                    const meta = POOL_CATEGORY_META[v as keyof typeof POOL_CATEGORY_META];
-                    const cur = ASSIGNED_LOCATIONS.find(l => l.value === form.pool_name);
-                    if (!cur || cur.group !== meta?.locationGroup) {
-                      update("pool_name", "");
-                    }
-                  }}
-                >
-                  <SelectTrigger
-                    className={`h-9 text-sm ${getError("pool_category") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
-                    aria-invalid={!!getError("pool_category")}
-                  >
-                    <SelectValue placeholder="Please select category…">
-                      {form.pool_category && <PoolCategoryChip value={form.pool_category} />}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="corporate"><PoolCategoryChip value="corporate" /></SelectItem>
-                    <SelectItem value="zone"><PoolCategoryChip value="zone" /></SelectItem>
-                    <SelectItem value="region"><PoolCategoryChip value="region" /></SelectItem>
-                  </SelectContent>
-                </Select>
-                <FieldError field="pool_category" />
-              </div>
-
-              <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Specific Pool <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={form.pool_name}
-                  onValueChange={v => { update("pool_name", v); handleBlur("pool_name", v, { ...form, pool_name: v } as any); }}
-                  disabled={!form.pool_category}
-                >
-                  <SelectTrigger
-                    className={`h-9 text-sm ${!form.pool_category ? "opacity-50" : ""} ${getError("pool_name") ? "border-destructive ring-1 ring-destructive/30" : ""}`}
-                    aria-invalid={!!getError("pool_name")}
-                  >
-                    <SelectValue placeholder={form.pool_category ? "Select location..." : "Pick category first"}>
-                      {form.pool_name && (
-                        <span className="flex items-center gap-2">
-                          <MapPin className="h-3.5 w-3.5 text-primary" />
-                          <span className="truncate">
-                            {ASSIGNED_LOCATIONS.find(l => l.value === form.pool_name)?.label || form.pool_name}
-                          </span>
-                        </span>
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {(() => {
-                      // Build the candidate list, then restrict to pools the
-                      // user is a member of (unless they have org-wide reach).
-                      const inCategory = ASSIGNED_LOCATIONS.filter(
-                        (l: any) =>
-                          form.pool_category === "corporate"
-                            ? l.group === "Corporate"
-                            : l.group === POOL_CATEGORY_META[form.pool_category as keyof typeof POOL_CATEGORY_META]?.locationGroup,
-                      );
-                      const allowed = poolUnrestricted
-                        ? inCategory
-                        : inCategory.filter((l: any) => userPoolCodes.includes(l.value));
-
-                      if (!poolUnrestricted && allowed.length === 0) {
-                        return (
-                          <div className="px-3 py-4 text-xs text-muted-foreground">
-                            {hasAnyMembership
-                              ? "No pools in this category are assigned to you."
-                              : "You aren't assigned to any pool yet. Ask your fleet admin to add you to a pool."}
-                          </div>
-                        );
-                      }
-
-                      if (form.pool_category === "corporate") {
-                        return allowed
-                          .filter((l: any) => !l.parent)
-                          .flatMap((parent: any) => {
-                            const subs = allowed.filter((l: any) => l.parent === parent.value);
-                            // If user can't see this parent and has no subs, skip entirely.
-                            if (!poolUnrestricted && subs.length === 0 && !userPoolCodes.includes(parent.value)) {
-                              return [];
-                            }
-                            return [
-                              <SelectItem key={parent.value} value={parent.value}>
-                                <span className="flex items-center gap-2 font-semibold">
-                                  {parent.label}
-                                </span>
-                              </SelectItem>,
-                              ...subs.map((s: any) => (
-                                <SelectItem key={s.value} value={s.value}>
-                                  <span className="flex items-center gap-2 pl-4 text-sm">
-                                    <span className="truncate">{s.label}</span>
-                                    {s.shift && s.shift !== "all" && (
-                                      <span className="ml-auto text-[10px] uppercase text-muted-foreground">{s.shift}</span>
-                                    )}
-                                  </span>
-                                </SelectItem>
-                              )),
-                            ];
-                          });
-                      }
-                      return allowed.map((l: any) => (
-                        <SelectItem key={l.value} value={l.value}>
-                          <span className="flex items-center gap-2">
-                            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                            {l.label}
-                          </span>
-                        </SelectItem>
-                      ));
-                    })()}
-                  </SelectContent>
-                </Select>
-                <FieldError field="pool_name" />
-              </div>
+              {/* Pool Category and Specific Pool moved to the top of the
+                  Resources section so vehicle type / count can derive their
+                  available options from the chosen pool inventory. */}
               <div>
                 <VRField
                   id="vr-contact-phone"
