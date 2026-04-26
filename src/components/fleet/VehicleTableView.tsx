@@ -612,8 +612,16 @@ export const VehicleTableView = ({
                     <Edit className="w-4 h-4 mr-2" /> Edit Vehicle
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onAssignDriver?.(vehicle)}>
-                    <UserPlus className="w-4 h-4 mr-2" /> Assign Driver
+                    <UserPlus className="w-4 h-4 mr-2" /> {vehicle.assignedDriver ? "Reassign Driver" : "Assign Driver"}
                   </DropdownMenuItem>
+                  {vehicle.assignedDriver && (
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => handleUnassignDriver(vehicle)}
+                    >
+                      <UserMinus className="w-4 h-4 mr-2" /> Unassign Driver
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => onAssignDevice?.(vehicle)}>
                     <Radio className="w-4 h-4 mr-2" /> GPS Device
                   </DropdownMenuItem>
