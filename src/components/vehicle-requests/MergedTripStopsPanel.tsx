@@ -40,6 +40,22 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { getPreviewSafeMapStyle } from "@/lib/lemat";
 import { friendlyToastError } from "@/lib/errorMessages";
 
+interface SingleRequestShim {
+  id: string;
+  request_number?: string | null;
+  requester_name?: string | null;
+  passengers?: number | null;
+  needed_from?: string | null;
+  needed_until?: string | null;
+  departure_place?: string | null;
+  destination?: string | null;
+  pool_name?: string | null;
+  departure_lat?: number | null;
+  departure_lng?: number | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
+}
+
 interface Props {
   parentRequestId: string;
   organizationId: string;
@@ -50,7 +66,15 @@ interface Props {
   neededFrom?: string | null;
   neededUntil?: string | null;
   defaultOpen?: boolean;
+  /**
+   * When provided, the panel renders for a single (non-consolidated) request
+   * instead of querying merged children. This unifies the trip-route view so
+   * dispatchers always see Route Alternatives + Use geofence rules / Mark all,
+   * regardless of whether the request is consolidated.
+   */
+  singleRequest?: SingleRequestShim | null;
 }
+
 
 interface Child {
   id: string;
