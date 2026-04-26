@@ -138,7 +138,7 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
               </TableHeader>
               <TableBody>
                 {maintenance.map((r: any) => (
-                  <TableRow key={r.id}>
+                  <TableRow key={r.id} className="cursor-pointer hover:bg-muted/40" onClick={() => openTracker("maintenance", r.id)}>
                     <TableCell className="font-mono text-xs">{r.request_number}</TableCell>
                     <TableCell className="capitalize">{r.request_type}</TableCell>
                     <TableCell>
@@ -175,7 +175,7 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
               </TableHeader>
               <TableBody>
                 {fuel.map((r: any) => (
-                  <TableRow key={r.id}>
+                  <TableRow key={r.id} className="cursor-pointer hover:bg-muted/40" onClick={() => openTracker("fuel", r.id)}>
                     <TableCell className="font-mono text-xs">{r.request_number}</TableCell>
                     <TableCell className="capitalize">{r.fuel_type || "—"}</TableCell>
                     <TableCell>{r.liters_approved || r.liters_requested}</TableCell>
@@ -208,7 +208,7 @@ const DriverSubmissionsTab = ({ driverId, organizationId, userId, onViewVehicleR
               </TableHeader>
               <TableBody>
                 {incidents.map((r: any) => (
-                  <TableRow key={r.id}>
+                  <TableRow key={r.id} className="cursor-pointer hover:bg-muted/40" onClick={() => openTracker("incident", r.id)}>
                     <TableCell className="font-mono text-xs">{r.incident_number}</TableCell>
                     <TableCell className="capitalize">{(r.incident_type || "—").replace(/_/g, " ")}</TableCell>
                     <TableCell>
