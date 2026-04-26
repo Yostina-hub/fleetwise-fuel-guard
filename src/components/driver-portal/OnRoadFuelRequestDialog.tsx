@@ -21,7 +21,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
@@ -68,13 +68,26 @@ interface ActiveRequestLike {
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  /** Active vehicle_request the driver is currently on. */
+  /** Active vehicle_request the driver is currently on (optional). */
   request: ActiveRequestLike | null;
   driverId?: string | null;
   driverName?: string | null;
   driverPhone?: string | null;
   /** Last known odometer (used as default current odometer). */
   lastOdometerKm?: number | null;
+  /**
+   * Fallback vehicle when there is no active trip (e.g. when the dialog is
+   * opened from the driver portal "Additional Fuel Request" quick action).
+   * Lets the driver still file a refuel request against their permanently
+   * assigned vehicle without an active vehicle_request row.
+   */
+  fallbackVehicle?: {
+    id: string;
+    plate_number?: string | null;
+    make?: string | null;
+    model?: string | null;
+    fuel_type?: string | null;
+  } | null;
 }
 
 const URGENCY_OPTIONS = [
@@ -159,6 +172,7 @@ export const OnRoadFuelRequestDialog = ({
   driverName,
   driverPhone,
   lastOdometerKm,
+  fallbackVehicle,
 }: Props) => {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
@@ -166,16 +180,77 @@ export const OnRoadFuelRequestDialog = ({
   const [form, setForm] = useState<FormState>(() => initialState(lastOdometerKm));
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Reset every time the dialog re-opens so a fresh refuel can be filed.
+  // Resolve effective vehicle: prefer the active trip's assigned vehicle,
+  // otherwise fall back to the driver's permanently assigned vehicle.
+  const vehicle = request?.assigned_vehicle ?? fallbackVehicle ?? null;
+  const vehicleId = vehicle?.id ?? request?.assigned_vehicle_id ?? null;
+
+  // Auto-capture latest e-fuel telemetry for the vehicle so the driver does
+  // not have to type fuel level / odometer manually when a sensor is present.
+  const { data: fuelSensor } = useQuery({
+    queryKey: ["onroad-fuel-sensor", vehicleId],
+    enabled: open && !!vehicleId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_vehicle_fuel_status", {
+        p_vehicle_ids: [vehicleId],
+      });
+      if (error) throw error;
+      const row = (data || [])[0] as any;
+      if (!row) return null;
+      return {
+        last_fuel_reading:
+          row.last_fuel_reading == null ? null : Number(row.last_fuel_reading),
+        last_communication_at: row.last_communication_at as string | null,
+      };
+    },
+    staleTime: 30_000,
+  });
+
+  // Latest known odometer from telemetry (best-effort — silent fail).
+  const { data: telemetryOdo } = useQuery({
+    queryKey: ["onroad-vehicle-odo", vehicleId],
+    enabled: open && !!vehicleId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("vehicles")
+        .select("odometer_km")
+        .eq("id", vehicleId!)
+        .maybeSingle();
+      return data?.odometer_km ?? null;
+    },
+    staleTime: 30_000,
+  });
+
+  // Reset every time the dialog re-opens, then prefill from telemetry once
+  // the e-fuel + odometer queries resolve.
   useEffect(() => {
     if (open) setForm(initialState(lastOdometerKm));
   }, [open, lastOdometerKm]);
 
+  useEffect(() => {
+    if (!open) return;
+    setForm((f) => {
+      const next = { ...f };
+      // Prefer telemetry odometer when the local prop is empty.
+      if ((!f.current_odometer || f.current_odometer === "") && telemetryOdo != null) {
+        next.current_odometer = String(telemetryOdo);
+      }
+      // Auto-fill fuel level from sensor (clamp to 0–100).
+      if (
+        (!f.current_fuel_percent || f.current_fuel_percent === "") &&
+        fuelSensor?.last_fuel_reading != null &&
+        Number.isFinite(fuelSensor.last_fuel_reading)
+      ) {
+        const pct = Math.max(0, Math.min(100, Math.round(fuelSensor.last_fuel_reading)));
+        next.current_fuel_percent = String(pct);
+      }
+      return next;
+    });
+  }, [open, telemetryOdo, fuelSensor?.last_fuel_reading]);
+
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  const vehicle = request?.assigned_vehicle;
-  const vehicleId = vehicle?.id ?? request?.assigned_vehicle_id ?? null;
   const vehicleLabel = useMemo(() => {
     if (!vehicle) return "—";
     return [
@@ -196,8 +271,9 @@ export const OnRoadFuelRequestDialog = ({
   const submit = useMutation({
     mutationFn: async () => {
       if (!organizationId) throw new Error("Missing organization context");
-      if (!request?.id) throw new Error("No active trip — open this from a trip in progress");
-      if (!vehicleId) throw new Error("Active trip has no assigned vehicle");
+      // Active trip is preferred but no longer required — drivers can also
+      // file a refuel from quick actions when no trip row exists.
+      if (!vehicleId) throw new Error("No vehicle assigned — cannot file a refuel request");
 
       const parsed = schema.parse({
         current_location: form.current_location,
@@ -223,13 +299,18 @@ export const OnRoadFuelRequestDialog = ({
       const { data: userResp } = await supabase.auth.getUser();
 
       // Compose a verbose remark/description so reviewers immediately see
-      // it is an on-road refuel and the trip context.
+      // it is an on-road refuel and (when present) the trip context.
+      const tripLabel = request?.request_number
+        ? `trip ${request.request_number}`
+        : request?.id
+          ? `trip ${request.id.slice(0, 8)}`
+          : "current shift (no active trip)";
       const description = [
-        `On-road refuel during trip ${request.request_number || request.id.slice(0, 8)}`,
+        `Additional fuel request — ${tripLabel}`,
         `Reason: ${reasonLabel}`,
         `Urgency: ${urgencyLabel}`,
         parsed.current_fuel_percent != null
-          ? `Current fuel level: ~${parsed.current_fuel_percent}%`
+          ? `Current fuel level: ~${parsed.current_fuel_percent}% (auto from sensor when available)`
           : null,
         parsed.remaining_distance_km != null
           ? `Estimated remaining distance: ${parsed.remaining_distance_km} km`
@@ -248,11 +329,11 @@ export const OnRoadFuelRequestDialog = ({
         request_number: reqNum,
         fuel_type: vehicle?.fuel_type || "diesel",
         liters_requested: parsed.liters_requested,
-        purpose: `On-road refuel — ${reasonLabel}`,
+        purpose: `Additional fuel — ${reasonLabel}`,
         current_odometer: parsed.current_odometer,
         notes: parsed.notes || null,
         additional_description: description,
-        remark: `Trip ${request.request_number ?? ""} · ${parsed.current_location}`.trim(),
+        remark: `${tripLabel} · ${parsed.current_location}`.trim(),
         route: routeLine !== "—" ? routeLine : parsed.current_location,
         // Reuse existing free-text fields to encode the on-road context
         // without requiring a schema change.
@@ -343,36 +424,39 @@ export const OnRoadFuelRequestDialog = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Fuel className="w-5 h-5 text-primary" aria-hidden="true" />
-              On-Road Refuel Request
+              Additional Fuel Request
             </DialogTitle>
             <DialogDescription>
-              You are mid-trip and need an additional refuel. Tell dispatch where you
-              are and how much fuel you need — they will arrange the nearest
-              clearance.
+              Need an extra refuel during a trip or shift. Vehicle, driver and
+              live e-fuel telemetry are captured automatically — just tell
+              dispatch where you are and how much you need.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Trip context (read-only) */}
+            {/* Trip / shift context (read-only, auto-captured) */}
             <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <Route className="w-3.5 h-3.5" aria-hidden="true" /> Active Trip
+                <Route className="w-3.5 h-3.5" aria-hidden="true" />
+                {request?.id ? "Active Trip" : "Current Shift"}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                 <div>
                   <span className="text-muted-foreground">Trip #: </span>
                   <span className="font-mono">
-                    {request?.request_number || request?.id?.slice(0, 8) || "—"}
+                    {request?.request_number || request?.id?.slice(0, 8) || "— (no active trip)"}
                   </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Vehicle: </span>
                   <span className="font-medium">{vehicleLabel}</span>
                 </div>
-                <div className="md:col-span-2">
-                  <span className="text-muted-foreground">Route: </span>
-                  <span>{routeLine}</span>
-                </div>
+                {routeLine !== "—" && (
+                  <div className="md:col-span-2">
+                    <span className="text-muted-foreground">Route: </span>
+                    <span>{routeLine}</span>
+                  </div>
+                )}
                 <div className="md:col-span-2">
                   <span className="text-muted-foreground">Driver: </span>
                   <span>{driverName || "—"}</span>
@@ -380,11 +464,25 @@ export const OnRoadFuelRequestDialog = ({
                     <span className="text-muted-foreground"> · {driverPhone}</span>
                   )}
                 </div>
+                {fuelSensor?.last_fuel_reading != null && (
+                  <div className="md:col-span-2">
+                    <span className="text-muted-foreground">E-fuel sensor: </span>
+                    <span className="font-medium">
+                      {Math.round(fuelSensor.last_fuel_reading)}%
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="ml-2 bg-success/10 text-success border-success/30 text-[10px]"
+                    >
+                      auto-captured
+                    </Badge>
+                  </div>
+                )}
               </div>
               {!vehicleId && (
                 <div className="flex items-center gap-1.5 text-xs text-destructive">
                   <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-                  This trip has no assigned vehicle — refuel cannot be filed.
+                  No vehicle assigned — refuel cannot be filed.
                 </div>
               )}
             </div>
