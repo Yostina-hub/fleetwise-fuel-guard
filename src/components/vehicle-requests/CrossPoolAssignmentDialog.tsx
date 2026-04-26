@@ -13,6 +13,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import ConfirmActionDialog from "@/components/users/ConfirmActionDialog";
+import { RequestRouteMapCard } from "./RequestRouteMapCard";
 
 interface Props {
   request: any;
@@ -268,6 +269,9 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
         </DialogHeader>
 
         <div className="space-y-4">
+          <RequestRouteMapCard request={request} heightPx={170} />
+
+
           {/* Approval-mode banner — drives whether the action assigns
               immediately or only files a borrow request for approval. */}
           {canApproveCrossPool ? (

@@ -48,6 +48,7 @@ import { AssignmentDetailsPanel } from "./AssignmentDetailsPanel";
 import { OpsMapView } from "./OpsMapView";
 import { ConsolidationPanel } from "./ConsolidationPanel";
 import { MergedTripStopsPanel } from "./MergedTripStopsPanel";
+import { RequestRouteMapCard } from "./RequestRouteMapCard";
 import { cn } from "@/lib/utils";
 
 interface VehicleOption {
@@ -231,8 +232,8 @@ export const AssignVehicleDriverDialog = ({
           </div>
         </DialogHeader>
 
-        {/* ===== MERGED-TRIP STOPS (only for consolidated parent trips) ===== */}
-        {request?.is_consolidated_parent && request?.organization_id && (
+        {/* ===== TRIP ROUTE (every request) ===== */}
+        {request?.is_consolidated_parent && request?.organization_id ? (
           <div className="px-6 pt-3 pb-1">
             <MergedTripStopsPanel
               parentRequestId={request.id}
@@ -244,6 +245,10 @@ export const AssignVehicleDriverDialog = ({
               neededFrom={request.needed_from}
               neededUntil={request.needed_until}
             />
+          </div>
+        ) : (
+          <div className="px-6 pt-3 pb-1">
+            <RequestRouteMapCard request={request} heightPx={180} />
           </div>
         )}
 

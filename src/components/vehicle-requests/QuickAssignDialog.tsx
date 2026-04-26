@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, Clock, Layers, UserCheck, GitMerge } from "lucide-react";
 import { PoolAssignmentPicker } from "./PoolAssignmentPicker";
 import { MergedTripStopsPanel } from "./MergedTripStopsPanel";
+import { RequestRouteMapCard } from "./RequestRouteMapCard";
 
 interface Props {
   request: any;
@@ -246,8 +247,9 @@ export const QuickAssignDialog = ({ request, organizationId, open, onClose }: Pr
           )}
         </div>
 
-        {/* Full merged-trip visualisation: ordered stops + mini map */}
-        {isMerged && (
+        {/* Trip route: full merged-trip visualisation for consolidated parents,
+            simple from→to mini-map for everyone else. */}
+        {isMerged ? (
           <MergedTripStopsPanel
             parentRequestId={request.id}
             organizationId={organizationId}
@@ -258,6 +260,8 @@ export const QuickAssignDialog = ({ request, organizationId, open, onClose }: Pr
             neededFrom={request.needed_from}
             neededUntil={request.needed_until}
           />
+        ) : (
+          <RequestRouteMapCard request={request} heightPx={200} />
         )}
 
         <PoolAssignmentPicker

@@ -12,6 +12,7 @@ import { useLockedVehicles } from "@/hooks/useLockedVehicles";
 import { usePoolMembership } from "@/hooks/usePoolMembership";
 import { sendDispatchSms } from "@/services/smsNotificationService";
 import { toast } from "sonner";
+import { RequestRouteMapCard } from "./RequestRouteMapCard";
 
 interface Props {
   request: any;
@@ -155,6 +156,8 @@ export const MultiVehicleAssignDialog = ({ request, open, onClose }: Props) => {
         </DialogHeader>
 
         <div className="space-y-3">
+          <RequestRouteMapCard request={request} heightPx={180} />
+
           <div className="flex items-center gap-3 text-sm bg-muted/50 rounded p-3">
             <span className="text-muted-foreground">Requested:</span>
             <Badge variant="outline">{target} vehicle{target > 1 ? "s" : ""}</Badge>
