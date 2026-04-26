@@ -70,6 +70,9 @@ export default function BulkImportDriversDialog({
   const [file, setFile] = useState<File | null>(null);
   const [parsing, setParsing] = useState(false);
   const [preview, setPreview] = useState<ParseResult | null>(null);
+  const [dupScan, setDupScan] = useState<DuplicateScan | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [strategy, setStrategy] = useState<ConflictStrategy>("update");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportOutcome | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -77,6 +80,9 @@ export default function BulkImportDriversDialog({
   const reset = useCallback(() => {
     setFile(null);
     setPreview(null);
+    setDupScan(null);
+    setScanning(false);
+    setStrategy("update");
     setResult(null);
     setProgress(0);
     setParsing(false);
