@@ -179,15 +179,21 @@ export const MergedTripStopsPanel = ({
   neededFrom,
   neededUntil,
   defaultOpen = false,
+  singleRequest = null,
 }: Props) => {
-  const [open, setOpen] = useState(defaultOpen);
+  const isSingle = !!singleRequest;
+  // Single-request mode mirrors the legacy RequestRouteMapCard: always open,
+  // map visible by default, no "View stops" expand affordance needed.
+  const [open, setOpen] = useState(isSingle ? true : defaultOpen);
   // Map auto-shows when the panel is expanded and stops have coordinates.
   // Dispatchers asked to see optimized routes immediately without an extra click.
   const [showMap, setShowMap] = useState(true);
 
-  const { data: children = [], isLoading } = useQuery({
+  const { data: fetchedChildren = [], isLoading: isLoadingChildren } = useQuery({
     queryKey: ["merged-children", parentRequestId],
-    enabled: !!parentRequestId && !!organizationId && open,
+    // Only the consolidated-parent variant queries merged children. Single
+    // requests synthesize a single Child from the request itself.
+    enabled: !isSingle && !!parentRequestId && !!organizationId && open,
     staleTime: 30_000,
     queryFn: async (): Promise<Child[]> => {
       const { data, error } = await (supabase as any)
@@ -202,6 +208,32 @@ export const MergedTripStopsPanel = ({
       return (data || []) as Child[];
     },
   });
+
+  // In single-request mode we synthesize a one-element children array from
+  // the request itself so all downstream logic (markers, routing, AI, fit
+  // bounds) keeps working unchanged.
+  const children = useMemo<Child[]>(() => {
+    if (!isSingle || !singleRequest) return fetchedChildren;
+    return [
+      {
+        id: singleRequest.id,
+        request_number: singleRequest.request_number ?? "",
+        requester_name: singleRequest.requester_name ?? null,
+        passengers: singleRequest.passengers ?? null,
+        needed_from: singleRequest.needed_from ?? new Date().toISOString(),
+        needed_until: singleRequest.needed_until ?? null,
+        departure_place: singleRequest.departure_place ?? null,
+        destination: singleRequest.destination ?? null,
+        pool_name: singleRequest.pool_name ?? poolName ?? null,
+        departure_lat: singleRequest.departure_lat ?? null,
+        departure_lng: singleRequest.departure_lng ?? null,
+        destination_lat: singleRequest.destination_lat ?? null,
+        destination_lng: singleRequest.destination_lng ?? null,
+      },
+    ];
+  }, [isSingle, singleRequest, fetchedChildren, poolName]);
+
+  const isLoading = isSingle ? false : isLoadingChildren;
 
   // ── Derived totals (fall back to props when query is still loading) ─────
   const totalPax = useMemo(
