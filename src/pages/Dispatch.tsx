@@ -123,10 +123,14 @@ const Dispatch = () => {
         {/* Tabbed Content */}
         <div ref={tabsRef}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
               <TabsTrigger value="jobs" className="gap-2">
                 <Package className="w-4 h-4" aria-hidden="true" />
                 Dispatch Jobs
+              </TabsTrigger>
+              <TabsTrigger value="inbox" className="gap-2">
+                <Inbox className="w-4 h-4" aria-hidden="true" />
+                Operator Inbox
               </TabsTrigger>
               <TabsTrigger value="tracking" className="gap-2">
                 <Navigation className="w-4 h-4" aria-hidden="true" />
@@ -140,6 +144,9 @@ const Dispatch = () => {
 
             <TabsContent value="jobs">
               <DispatchJobsTab />
+            </TabsContent>
+            <TabsContent value="inbox">
+              <OperatorInboxTab />
             </TabsContent>
             <TabsContent value="tracking">
               <div className="text-center py-12 text-muted-foreground" role="status" aria-label="Live tracking section">
