@@ -547,7 +547,38 @@ const Vehicles = () => {
             total={vehicles.length}
           />
           <div className="flex-1 overflow-hidden">
-            <FleetVitalsDashboard vehicles={vehicles} />
+            <FleetVitalsDashboard
+              vehicles={vehicles}
+              onCardClick={(key) => {
+                switch (key) {
+                  case "online":
+                    setStatusFilter("unreachable");
+                    break;
+                  case "moving":
+                  case "speed":
+                    setStatusFilter("running");
+                    break;
+                  case "utilization":
+                    setStatusFilter("all");
+                    break;
+                  case "overspeed":
+                    setStatusFilter("overspeed");
+                    break;
+                  case "health":
+                  case "fuel":
+                  default:
+                    setStatusFilter("all");
+                    break;
+                }
+              }}
+              onFleetMixClick={(segment) => {
+                if (segment === "rental") {
+                  navigate("/rental-vehicles");
+                } else {
+                  setStatusFilter("all");
+                }
+              }}
+            />
           </div>
           <FleetRefreshTimer intervalSeconds={30} />
         </div>
