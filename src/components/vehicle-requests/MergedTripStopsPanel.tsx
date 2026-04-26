@@ -278,6 +278,13 @@ export const MergedTripStopsPanel = ({
       ),
     [children],
   );
+  const stopsKey = useMemo(
+    () =>
+      stopsWithCoords
+        .map((c) => `${c.id}:${c.departure_lng},${c.departure_lat}->${c.destination_lng},${c.destination_lat}`)
+        .join("|"),
+    [stopsWithCoords],
+  );
 
   // ── Geofences for this organization ──────────────────────────────
   // Dispatchers asked to see operational zones (depots, restricted areas,
