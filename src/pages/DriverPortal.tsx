@@ -970,33 +970,12 @@ const DriverPortal = () => {
         </Tabs>
 
         {/* Dialogs */}
-        <CreateWorkRequestDialog
-          open={showMaintenance}
-          onOpenChange={setShowMaintenance}
-          driverId={driverId}
-          driverName={driverName}
-          vehicleId={vehicle?.id}
-          vehiclePlate={vehicle?.plate_number}
-        />
-        <FuelRequestFormDialog
-          open={showFuel}
-          onOpenChange={setShowFuel}
-          source="driver_portal"
-          prefill={{
-            request_type: "vehicle",
-            vehicle_id: vehicle?.id,
-            driver_id: driverId,
-            driver_name: driverName,
-            fuel_type: vehicle?.fuel_type || undefined,
-            lockVehicle: !!vehicle?.id,
-            lockDriver: !!driverId,
-          }}
-          invalidateKeys={[
-            ["fuel-requests"],
-            ["driver-portal-requests"],
-            ["driver-portal-submissions"],
-          ]}
-        />
+        {/* Note: the broad CreateWorkRequestDialog and FuelRequestFormDialog
+            are no longer wired to the Driver quick actions — drivers now use
+            the focused ReportTripIncidentDialog (4 reasons + attachments) and
+            the OnRoadFuelRequestDialog (auto e-fuel capture). Office staff and
+            managers still file maintenance/fuel requests through the standard
+            forms in their respective modules. */}
         {/* Vehicle/Fleet requests intentionally not available to drivers — only end-users, supervisors, and managers can initiate them. */}
         <TireRequestDialog
           open={showTire}
