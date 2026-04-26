@@ -13,9 +13,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import VehicleLiveStatusBadge from "@/components/fleet/VehicleLiveStatusBadge";
+import { QuickStatusChange } from "@/components/fleet/QuickStatusChange";
 import { getVehicleTypeIcon } from "@/lib/vehicleTypeIcon";
 import type { FleetLiveStatus } from "@/lib/fleetLiveStatus";
 import { useVehicleFuelStatus } from "@/hooks/useVehicleFuelStatus";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Eye,
   MapPin,
@@ -25,6 +28,7 @@ import {
   Edit,
   Trash2,
   UserPlus,
+  UserMinus,
   Power,
   Radio,
   FileText,
@@ -218,6 +222,18 @@ export const VehicleTableView = ({
 
   const [visibleColumns, setVisibleColumns] = useState<VehicleColumnId[]>(() => loadVisibleColumns());
 
+  const handleUnassignDriver = async (vehicle: VehicleItem) => {
+    const { error } = await supabase
+      .from("vehicles")
+      .update({ assigned_driver_id: null })
+      .eq("id", vehicle.vehicleId);
+    if (error) {
+      toast.error("Failed to unassign driver", { description: error.message });
+    } else {
+      toast.success(`Driver unassigned from ${vehicle.plate}`);
+    }
+  };
+
   /** Local client-side sort, used for any column that isn't a backend SortField. */
   const [localSort, setLocalSort] = useState<{ col: VehicleColumnId; dir: SortDirection } | null>(null);
 
@@ -382,9 +398,16 @@ export const VehicleTableView = ({
       case "gps_device_id":
       case "temperature_control":
       case "depot_id":
-      case "status":
       case "notes":
         return <span className="capitalize text-sm">{fmtText(raw[col])}</span>;
+
+      case "status":
+        return (
+          <QuickStatusChange
+            vehicleId={vehicle.vehicleId}
+            currentStatus={String(raw.status ?? "active")}
+          />
+        );
 
       case "live_status":
         return <VehicleLiveStatusBadge status={vehicle.liveStatus ?? vehicle.status} />;
@@ -447,10 +470,26 @@ export const VehicleTableView = ({
 
       case "driver":
         return vehicle.assignedDriver ? (
-          <div className="flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-sm">{vehicle.assignedDriver}</span>
-          </div>
+          <TooltipProvider>
+            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <User className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-sm">{vehicle.assignedDriver}</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-destructive hover:text-destructive"
+                    onClick={() => handleUnassignDriver(vehicle)}
+                    aria-label={`Unassign driver from ${vehicle.plate}`}
+                  >
+                    <UserMinus className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Unassign driver</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         ) : (
           <span className="text-sm text-muted-foreground">Unassigned</span>
         );
@@ -573,8 +612,16 @@ export const VehicleTableView = ({
                     <Edit className="w-4 h-4 mr-2" /> Edit Vehicle
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onAssignDriver?.(vehicle)}>
-                    <UserPlus className="w-4 h-4 mr-2" /> Assign Driver
+                    <UserPlus className="w-4 h-4 mr-2" /> {vehicle.assignedDriver ? "Reassign Driver" : "Assign Driver"}
                   </DropdownMenuItem>
+                  {vehicle.assignedDriver && (
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => handleUnassignDriver(vehicle)}
+                    >
+                      <UserMinus className="w-4 h-4 mr-2" /> Unassign Driver
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => onAssignDevice?.(vehicle)}>
                     <Radio className="w-4 h-4 mr-2" /> GPS Device
                   </DropdownMenuItem>
