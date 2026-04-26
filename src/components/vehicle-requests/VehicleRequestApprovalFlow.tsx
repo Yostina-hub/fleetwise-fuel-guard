@@ -544,7 +544,46 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         </div>
       </Section>
 
-      {/* Issue #41 — Requester organisational context.
+      {/* Audit strip — surfaces approver + dispatcher names and timestamps
+          at the top of the panel so fleet ops can see accountability without
+          scrolling through the full approval history. */}
+      {(lastApproval || request.assigned_at) && (
+        <div className="rounded-md border border-border/50 bg-muted/30 p-2.5 grid sm:grid-cols-2 gap-2 text-xs">
+          {lastApproval && (
+            <div className="flex items-start gap-1.5">
+              {lastApproval.status === "approved" ? (
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
+              ) : (
+                <XCircle className="w-3.5 h-3.5 text-destructive mt-0.5 shrink-0" />
+              )}
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {lastApproval.status === "approved" ? "Approved by" : "Rejected by"}
+                </div>
+                <div className="font-medium truncate">{lastApproval.approver_name}</div>
+                <div className="text-muted-foreground text-[11px]">
+                  {lastApproval.decision_at ? fmtOrgTime(lastApproval.decision_at) : "—"}
+                </div>
+              </div>
+            </div>
+          )}
+          {request.assigned_at && (
+            <div className="flex items-start gap-1.5">
+              <Truck className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {request.cross_pool_assignment ? "Cross-pool assigned by" : "Assigned by"}
+                </div>
+                <div className="font-medium truncate">{assignerName || "Dispatcher"}</div>
+                <div className="text-muted-foreground text-[11px]">
+                  {fmtOrgTime(request.assigned_at)}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
           Division ← user_roles.business_unit, Department ← request override
           or profile, Section ← profile.job_title. Always rendered (with "—"
           fallback) so approvers can spot missing org placement. */}
