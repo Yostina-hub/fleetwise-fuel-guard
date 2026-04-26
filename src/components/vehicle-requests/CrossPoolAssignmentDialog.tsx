@@ -126,6 +126,17 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
     },
   });
 
+  /**
+   * Cross-pool assignment with approval audit trail.
+   *
+   * Behaviour:
+   *   - When the actor has cross-pool approval rights, the vehicle is
+   *     reassigned immediately AND an approved row is logged into
+   *     cross_pool_borrow_requests so fleet ops can see who approved it.
+   *   - When the actor lacks rights, we instead create a *pending* borrow
+   *     request and leave the vehicle untouched until an authorised role
+   *     resolves it. The dialog reflects this with a different CTA label.
+   */
   const assignMutation = useMutation({
     mutationFn: async () => {
       if (!targetCategory) throw new Error("Select a target pool category");
@@ -143,6 +154,29 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
         throw new Error("Selected driver is not from the target pool");
       }
 
+      const approverName = profile?.full_name || user?.email || "Unknown approver";
+      const sourcePool = request.pool_name || "unassigned";
+
+      if (!canApproveCrossPool) {
+        // No approval rights → create a pending borrow request only.
+        const { error: borrowErr } = await (supabase as any)
+          .from("cross_pool_borrow_requests")
+          .insert({
+            organization_id: organizationId,
+            vehicle_request_id: request.id,
+            source_pool: sourcePool,
+            target_pool: targetPool,
+            requested_vehicle_id: selectedVehicle,
+            requested_driver_id: selectedDriver,
+            requested_by: user?.id || null,
+            reason,
+            status: "pending",
+          });
+        if (borrowErr) throw borrowErr;
+        return { mode: "pending" as const };
+      }
+
+      // Approver path → reassign immediately + log approved audit row.
       const mins = Math.round((Date.now() - new Date(request.created_at).getTime()) / 60000);
       const { error } = await (supabase as any)
         .from("vehicle_requests")
@@ -150,21 +184,45 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose, onBack }: Pr
           status: "assigned",
           assigned_vehicle_id: selectedVehicle,
           assigned_driver_id: selectedDriver,
+          assigned_by: user?.id || null,
           assigned_at: new Date().toISOString(),
           actual_assignment_minutes: mins,
           cross_pool_assignment: true,
           original_pool_name: request.pool_name || null,
           pool_category: targetCategory,
           pool_name: targetPool || request.pool_name,
-          purpose: (request.purpose || "") + `\n[Cross-pool: ${reason}]`,
+          purpose: (request.purpose || "") + `\n[Cross-pool approved by ${approverName}: ${reason}]`,
         })
         .eq("id", request.id);
       if (error) throw error;
+
+      // Log the approval into cross_pool_borrow_requests so it appears in
+      // the cross-pool history with approver + timestamp.
+      await (supabase as any).from("cross_pool_borrow_requests").insert({
+        organization_id: organizationId,
+        vehicle_request_id: request.id,
+        source_pool: sourcePool,
+        target_pool: targetPool,
+        requested_vehicle_id: selectedVehicle,
+        requested_driver_id: selectedDriver,
+        requested_by: user?.id || null,
+        responded_by: user?.id || null,
+        responded_at: new Date().toISOString(),
+        response_notes: `Approved at assignment by ${approverName}`,
+        reason,
+        status: "approved",
+      });
+      return { mode: "approved" as const };
     },
-    onSuccess: () => {
-      toast.success("Cross-pool vehicle assigned successfully");
+    onSuccess: (res) => {
+      if (res?.mode === "pending") {
+        toast.success("Cross-pool borrow request sent for approval");
+      } else {
+        toast.success("Cross-pool vehicle assigned and approval logged");
+      }
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
+      queryClient.invalidateQueries({ queryKey: ["cross-pool-borrow", organizationId] });
       onClose();
     },
     onError: (err: any) => toast.error(err.message),
