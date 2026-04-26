@@ -265,6 +265,10 @@ export const MergedTripStopsPanel = ({
   });
   const geofenceAware = requestSettings?.geofence_aware_dispatch ?? true;
   const avoidOverrides: string[] = requestSettings?.geofence_avoid_overrides ?? [];
+  const renderableGeofences = useMemo(
+    () => (geofences as any[]).filter((fence) => buildMergedTripFenceFeature(fence)),
+    [geofences],
+  );
 
   const updateRequestSettings = useMutation({
     mutationFn: async (patch: {
@@ -537,19 +541,8 @@ export const MergedTripStopsPanel = ({
           });
         });
 
-        // Fit bounds around the best route
-        try {
-          const coords: Array<[number, number]> = results[bestIdx].geometry.coordinates;
-          const b = new maplibregl.LngLatBounds();
-          coords.forEach((c) => b.extend(c as any));
-          stopsWithCoords.forEach((s) => {
-            b.extend([s.departure_lng!, s.departure_lat!]);
-            b.extend([s.destination_lng!, s.destination_lat!]);
-          });
-          map.fitBounds(b, { padding: 60, maxZoom: 14, duration: 400 });
-        } catch {
-          /* noop */
-        }
+        // Keep the initial stop viewport. The geofence overlay owns the final
+        // combined fit so route rendering never zooms zones back out of view.
 
         setRoutesInfo(
           results.map((r, i) => {
