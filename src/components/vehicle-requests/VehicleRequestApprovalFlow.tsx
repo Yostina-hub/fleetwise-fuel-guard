@@ -184,6 +184,31 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
 
   const requestApprovals = approvals.filter((a: any) => a.request_id === request.id);
 
+  // Approver / dispatcher profile lookups so fleet ops can see at a glance
+  // WHO approved and WHO assigned the request without scrolling deep.
+  const lastApproval = useMemo(() => {
+    const sorted = [...requestApprovals].sort(
+      (a, b) =>
+        new Date(b.decision_at || b.created_at).getTime() -
+        new Date(a.decision_at || a.created_at).getTime(),
+    );
+    return sorted.find((a: any) => a.status === "approved" || a.status === "rejected") || null;
+  }, [requestApprovals]);
+
+  const { data: assignerName } = useQuery({
+    queryKey: ["request-assigner-name", request.assigned_by],
+    enabled: !!request.assigned_by,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", request.assigned_by)
+        .maybeSingle();
+      return data?.full_name || data?.email || "Unknown";
+    },
+  });
+
   const approveMutation = useMutation({
     mutationFn: async () => {
       const user = (await supabase.auth.getUser()).data.user;
