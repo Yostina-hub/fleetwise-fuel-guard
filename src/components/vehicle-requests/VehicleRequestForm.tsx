@@ -2433,7 +2433,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                     type="tel"
                     inputMode="tel"
                     value={form.contact_phone}
-                    onChange={e => update("contact_phone", e.target.value)}
+                    onChange={e => { userTouchedContactPhoneRef.current = true; update("contact_phone", e.target.value); }}
                     onBlur={e => handleBlur("contact_phone", e.target.value, form as any)}
                     placeholder="e.g. 0911 234 567 or +251 911 234 567"
                     aria-invalid={!!getError("contact_phone")}
