@@ -1081,9 +1081,10 @@ const VehicleRequests = () => {
                           <td className="py-3 px-4 font-semibold text-foreground">
                             <button
                               onClick={() => setShowDetail(r)}
-                              className="hover:text-blue-500 hover:underline underline-offset-2"
+                              className="hover:text-blue-500 hover:underline underline-offset-2 text-left"
+                              title={r.request_number}
                             >
-                              {r.request_number}
+                              {formatRequestNumber(r.request_number, { requestType: r.request_type, compact: true })}
                             </button>
                           </td>
                           <td className="py-3 px-3">
