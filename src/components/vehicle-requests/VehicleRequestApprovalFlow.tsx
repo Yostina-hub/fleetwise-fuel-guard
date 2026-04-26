@@ -501,22 +501,29 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       </Section>
 
       {/* Issue #41 — Requester organisational context.
-          Pull job title + employee code straight off the requester's profile
-          so approvers see the full org placement (Division/Dept/Section
-          mapped to: Business Unit / Department / Job Title) at a glance. */}
-      <Section title="Requester">
+          Division ← user_roles.business_unit, Department ← request override
+          or profile, Section ← profile.job_title. Always rendered (with "—"
+          fallback) so approvers can spot missing org placement. */}
+      <Section title="Requester & Organization">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3">
           <Field label="Name" value={request.requester_name || "—"} />
-          {request.filed_on_behalf && request.filed_by_name && (
-            <Field label="Filed By" value={`${request.filed_by_name} (on behalf)`} />
-          )}
           <Field label="Employee ID" value={requesterProfile?.employee_code || "—"} />
-          <Field label="Job Title / Section" value={requesterProfile?.job_title || "—"} />
+          {request.filed_on_behalf && request.filed_by_name && (
+            <Field label="Filed By" value={`${request.filed_by_name} (on behalf)`} full />
+          )}
+          <Field
+            label="Division"
+            value={
+              request.business_unit_name ||
+              requesterProfile?.business_unit_name ||
+              "—"
+            }
+          />
           <Field
             label="Department"
             value={request.department_name || requesterProfile?.department || "—"}
           />
-          <Field label="Business Unit / Division" value={request.business_unit_name || "—"} />
+          <Field label="Section" value={requesterProfile?.job_title || "—"} full />
           {(request.contact_phone || requesterProfile?.phone) && (
             <Field label="Contact Phone" value={request.contact_phone || requesterProfile?.phone} />
           )}
