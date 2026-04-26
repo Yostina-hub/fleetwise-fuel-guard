@@ -899,6 +899,7 @@ export const MergedTripStopsPanel = ({
             },
           });
           addedLayers.push("mtsp-geofence-center-halo", "mtsp-geofence-center-dot");
+          liftMergedTripGeofenceSpots(map);
         } catch {
           /* noop */
         }
