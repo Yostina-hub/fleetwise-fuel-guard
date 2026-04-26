@@ -277,14 +277,29 @@ export const MergedTripStopsPanel = ({
       ];
 
       try {
-        const { data, error } = await supabase.functions.invoke("route-directions", {
-          body: {
-            coordinates: orderedPoints.map((p) => p.coord),
-            alternatives: true,
-          },
-        });
+        // Try the routing service. The public OSRM demo backing this can be
+        // flaky for large multi-stop requests, so retry once on transient
+        // failure before falling back to straight lines.
+        const callRouting = async () =>
+          supabase.functions.invoke("route-directions", {
+            body: {
+              coordinates: orderedPoints.map((p) => p.coord),
+              alternatives: true,
+            },
+          });
+
+        let { data, error } = await callRouting();
         if (error || !data?.ok) {
-          throw new Error(data?.error || error?.message || "Route service unavailable");
+          // Single quick retry — OSRM demo throttling usually clears within ~1s.
+          await new Promise((r) => setTimeout(r, 800));
+          const retry = await callRouting();
+          data = retry.data;
+          error = retry.error;
+        }
+        if (error || !data?.ok) {
+          throw new Error(
+            data?.error || error?.message || "Route service unavailable",
+          );
         }
 
         // Edge function returns `alternatives: [{geometry, distance_m, duration_s}, …]`
@@ -296,17 +311,22 @@ export const MergedTripStopsPanel = ({
           duration_s: number;
         }> = Array.isArray(data.alternatives) && data.alternatives.length > 0
           ? data.alternatives
-          : [{
-              geometry: data.geometry as [number, number][],
-              distance_m: Number(data.distance_m) || 0,
-              duration_s: Number(data.duration_s) || 0,
-            }];
+          : Array.isArray(data.geometry) && data.geometry.length >= 2
+            ? [{
+                geometry: data.geometry as [number, number][],
+                distance_m: Number(data.distance_m) || 0,
+                duration_s: Number(data.duration_s) || 0,
+              }]
+            : [];
 
-        const results = rawAlts.slice(0, 3).map((r) => ({
-          geometry: { type: "LineString" as const, coordinates: r.geometry },
-          distance: r.distance_m,
-          duration: r.duration_s,
-        }));
+        const results = rawAlts
+          .filter((r) => Array.isArray(r.geometry) && r.geometry.length >= 2)
+          .slice(0, 3)
+          .map((r) => ({
+            geometry: { type: "LineString" as const, coordinates: r.geometry },
+            distance: r.distance_m,
+            duration: r.duration_s,
+          }));
         if (results.length === 0) throw new Error("Route service unavailable");
 
         // OSRM lists the recommended route first, but defend against any
