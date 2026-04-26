@@ -153,6 +153,9 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
   const [poolCategory, setPoolCategory] = useState<PoolCategory | "">("");
   const [poolCode, setPoolCode] = useState<string>("");
   const [savingPool, setSavingPool] = useState(false);
+  // Pools loaded from `fleet_pools` (same source as Vehicle Request Form).
+  // Falls back to POOL_HIERARCHY if the table has no rows for this org.
+  const [fleetPools, setFleetPools] = useState<{ code: string; name: string; category: PoolCategory; sort_order?: number | null }[]>([]);
 
   const [loadingExtras, setLoadingExtras] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -196,7 +199,35 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
         setLinkedDriverId(data?.linked_driver_id || null);
         setLinkedEmployeeId(data?.linked_employee_id || null);
 
-        // Load current pool membership (first row, latest)
+        // Load fleet_pools for this org (same source as Vehicle Request Form)
+        let loadedPools: { code: string; name: string; category: PoolCategory; sort_order?: number | null }[] = [];
+        if (user.organization_id) {
+          const { data: poolDefs } = await (supabase as any)
+            .from("fleet_pools")
+            .select("code, name, category, sort_order")
+            .eq("organization_id", user.organization_id)
+            .eq("is_active", true)
+            .order("category")
+            .order("sort_order", { ascending: true });
+          if (cancelled) return;
+          // Dedupe by code (the table currently has duplicate rows for some codes)
+          const seen = new Set<string>();
+          loadedPools = (poolDefs || [])
+            .filter((p: any) => p && p.code && p.category && ["corporate", "zone", "region"].includes(p.category))
+            .filter((p: any) => {
+              if (seen.has(p.code)) return false;
+              seen.add(p.code);
+              return true;
+            })
+            .map((p: any) => ({ code: p.code, name: p.name || p.code, category: p.category as PoolCategory, sort_order: p.sort_order ?? 100 }));
+        }
+        setFleetPools(loadedPools);
+
+        // Build a code → category map combining DB and the hardcoded fallback
+        const codeToCat: Record<string, PoolCategory> = { ...CODE_TO_CATEGORY };
+        loadedPools.forEach(p => { codeToCat[p.code] = p.category; });
+
+        // Load current pool membership (latest)
         const { data: poolRows } = await supabase
           .from("pool_memberships")
           .select("pool_code")
@@ -205,8 +236,8 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
           .limit(1);
         if (cancelled) return;
         const code = poolRows?.[0]?.pool_code as string | undefined;
-        if (code && CODE_TO_CATEGORY[code]) {
-          setPoolCategory(CODE_TO_CATEGORY[code]);
+        if (code && codeToCat[code]) {
+          setPoolCategory(codeToCat[code]);
           setPoolCode(code);
         } else {
           setPoolCategory("");
@@ -478,7 +509,10 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
                         const cat = v as PoolCategory;
                         setPoolCategory(cat);
                         // Reset specific pool if it doesn't belong to the new category
-                        if (!POOL_HIERARCHY[cat].some(p => p.code === poolCode)) {
+                        const dbCodes = fleetPools.filter(p => p.category === cat).map(p => p.code);
+                        const fallbackCodes = POOL_HIERARCHY[cat].map(p => p.code);
+                        const validCodes = dbCodes.length ? dbCodes : fallbackCodes;
+                        if (!validCodes.includes(poolCode)) {
                           setPoolCode("");
                         }
                       }}
@@ -514,13 +548,25 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
                       <SelectTrigger id="pool-code" className={!poolCategory ? "opacity-50" : ""}>
                         <SelectValue placeholder={poolCategory ? "Select pool..." : "Pick category first"} />
                       </SelectTrigger>
-                      <SelectContent>
-                        {poolCategory &&
-                          POOL_HIERARCHY[poolCategory].map(p => (
+                      <SelectContent className="max-h-72">
+                        {poolCategory && (() => {
+                          // Prefer fleet_pools rows for this category; fall back to the
+                          // hardcoded short list when the table has no rows for this org.
+                          const dbItems = fleetPools
+                            .filter(p => p.category === poolCategory)
+                            .sort((a, b) => (a.sort_order ?? 100) - (b.sort_order ?? 100) || a.code.localeCompare(b.code));
+                          const items = dbItems.length
+                            ? dbItems.map(p => ({ code: p.code, label: p.name || p.code }))
+                            : POOL_HIERARCHY[poolCategory];
+                          return items.map(p => (
                             <SelectItem key={p.code} value={p.code}>
-                              {p.label}
+                              <span className="flex items-center gap-2">
+                                <span className="font-mono text-[11px] text-muted-foreground">{p.code}</span>
+                                <span className="truncate">{p.label}</span>
+                              </span>
                             </SelectItem>
-                          ))}
+                          ));
+                        })()}
                       </SelectContent>
                     </Select>
                   </div>
