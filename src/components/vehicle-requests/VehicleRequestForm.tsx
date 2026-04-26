@@ -649,18 +649,28 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       }
 
       // Generate descriptive request # via DB helper (VR-{TYPE}-{YYMMDD}-{NNNN}).
-      // Falls back to the legacy timestamp format if the RPC fails for any reason
-      // (e.g. transient connectivity), so submissions never block on numbering.
-      let generatedNumber = `VR-${Date.now().toString(36).toUpperCase()}`;
-      try {
-        const { data: rpcNum, error: rpcErr } = await (supabase as any).rpc(
-          "generate_vehicle_request_number",
-          { p_org_id: organizationId, p_request_type: safe.request_type }
-        );
-        if (!rpcErr && typeof rpcNum === "string" && rpcNum.length > 0) {
-          generatedNumber = rpcNum;
-        }
-      } catch { /* keep fallback */ }
+      // Retries up to 3 times because the helper now takes an advisory lock per
+      // (org, type, day) — transient lock waits or network blips should not
+      // block submission. The fallback only fires after all retries fail and
+      // uses a high-entropy timestamp suffix that's still namespaced by VR-
+      // and unlikely to collide with the sequential numbers (which top out at
+      // 4 digits per day).
+      let generatedNumber = "";
+      for (let attempt = 0; attempt < 3 && !generatedNumber; attempt++) {
+        try {
+          const { data: rpcNum, error: rpcErr } = await (supabase as any).rpc(
+            "generate_vehicle_request_number",
+            { p_org_id: organizationId, p_request_type: safe.request_type }
+          );
+          if (!rpcErr && typeof rpcNum === "string" && rpcNum.length > 0) {
+            generatedNumber = rpcNum;
+          }
+        } catch { /* retry */ }
+      }
+      if (!generatedNumber) {
+        generatedNumber = `VR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      }
+
 
       const payload = {
         organization_id: organizationId!,
