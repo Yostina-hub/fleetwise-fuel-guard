@@ -476,7 +476,13 @@ export const MergedTripStopsPanel = ({
       });
 
       try {
-        map.fitBounds(bounds, { padding: 50, maxZoom: 14, duration: 0 });
+        map.resize();
+        const [sw, ne] = bounds.toArray() as [[number, number], [number, number]];
+        if (sameCoordinate(sw, ne)) {
+          map.jumpTo({ center: sw, zoom: 15 });
+        } else {
+          map.fitBounds(bounds, { padding: 50, maxZoom: 14, duration: 0 });
+        }
       } catch {
         /* noop */
       }
