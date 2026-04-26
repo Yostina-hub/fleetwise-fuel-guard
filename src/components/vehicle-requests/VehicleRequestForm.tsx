@@ -520,6 +520,79 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     enabled: !!organizationId && open,
   });
 
+  // Effective requester id — when filing on behalf of someone, their pool
+  // membership drives the default Pool Category / Specific Pool, not the
+  // filer's. Otherwise we fall back to the signed-in user.
+  const effectiveRequesterId = onBehalfOf?.id || user?.id || null;
+
+  // Pool memberships of the effective requester. Used to auto-fill the
+  // Pool Category + Specific Pool fields so users don't have to pick what
+  // their own assignment already implies.
+  const { data: requesterPoolCodes = [] } = useQuery({
+    queryKey: ["vr-requester-pools", organizationId, effectiveRequesterId],
+    queryFn: async () => {
+      if (!organizationId || !effectiveRequesterId) return [] as string[];
+      const { data, error } = await (supabase as any)
+        .from("pool_memberships")
+        .select("pool_code")
+        .eq("user_id", effectiveRequesterId)
+        .eq("organization_id", organizationId);
+      if (error) return [] as string[];
+      return Array.from(new Set(((data as any[]) || []).map((r) => r.pool_code).filter(Boolean)));
+    },
+    enabled: !!organizationId && !!effectiveRequesterId && open,
+    staleTime: 60_000,
+  });
+
+  // Track whether the user has manually touched the pool fields. Once they
+  // override, auto-fill stops so we never clobber their explicit choice.
+  const userTouchedPoolRef = useRef(false);
+
+  // Auto-fill Pool Category + Specific Pool from the requester's membership.
+  // Rules:
+  //   • Only fill when both fields are empty AND the user hasn't manually
+  //     touched the pool selectors.
+  //   • If the requester belongs to exactly one pool, fill both category and
+  //     specific pool. If they belong to multiple, fill only the category
+  //     when all memberships share one — leaving the specific pool for the
+  //     user to disambiguate.
+  useEffect(() => {
+    if (!open) return;
+    if (userTouchedPoolRef.current) return;
+    if (form.pool_category || form.pool_name) return;
+    if (!requesterPoolCodes.length) return;
+
+    // Map each pool_code to its category via POOL_HIERARCHY.
+    const codeToCategory = new Map<string, string>();
+    for (const [cat, codes] of Object.entries(POOL_HIERARCHY)) {
+      for (const c of codes) codeToCategory.set(c, cat);
+    }
+
+    const matched = requesterPoolCodes
+      .map((c) => ({ code: c, category: codeToCategory.get(c) }))
+      .filter((m) => !!m.category) as { code: string; category: string }[];
+
+    if (!matched.length) return;
+
+    const categories = Array.from(new Set(matched.map((m) => m.category)));
+    if (matched.length === 1) {
+      setForm((prev) =>
+        prev.pool_category || prev.pool_name
+          ? prev
+          : { ...prev, pool_category: matched[0].category, pool_name: matched[0].code },
+      );
+    } else if (categories.length === 1) {
+      setForm((prev) => (prev.pool_category ? prev : { ...prev, pool_category: categories[0] }));
+    }
+  }, [open, requesterPoolCodes, form.pool_category, form.pool_name]);
+
+  // Reset the manual-touch flag whenever the dialog re-opens or the effective
+  // requester changes (e.g. user switches "on behalf of"), so a fresh session
+  // always re-evaluates the auto-fill.
+  useEffect(() => {
+    userTouchedPoolRef.current = false;
+  }, [open, effectiveRequesterId]);
+
   // Vehicles that physically live in the chosen Specific Pool. Drives:
   //  • the upper cap on "No. of Vehicles" (can't book more than exist)
   //  • the eligibility filter on "Vehicle Type" (only types present in pool)
