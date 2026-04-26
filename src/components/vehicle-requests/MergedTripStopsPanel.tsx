@@ -567,8 +567,9 @@ export const MergedTripStopsPanel = ({
         try {
           map.addSource(sourceId, { type: "geojson", data: feature });
           // Keep geofences UNDER the route lines so the chosen path stays
-          // the visual hero. Anchor before the first route casing when it
-          // exists so insertion order is deterministic.
+          // the visual hero, but make them legible at any zoom: a clearly
+          // tinted fill, a solid 2px outline, and a label so dispatchers
+          // recognise the zone instantly.
           const beforeId = map.getLayer("route-alt-casing-0")
             ? "route-alt-casing-0"
             : undefined;
@@ -577,7 +578,7 @@ export const MergedTripStopsPanel = ({
               id: fillId,
               type: "fill",
               source: sourceId,
-              paint: { "fill-color": color, "fill-opacity": 0.12 },
+              paint: { "fill-color": color, "fill-opacity": 0.22 },
             },
             beforeId,
           );
@@ -588,14 +589,33 @@ export const MergedTripStopsPanel = ({
               source: sourceId,
               paint: {
                 "line-color": color,
-                "line-width": 1.5,
-                "line-opacity": 0.85,
-                "line-dasharray": [3, 1.5],
+                "line-width": 2,
+                "line-opacity": 1,
               },
             },
             beforeId,
           );
-          addedIds.push(fillId, lineId, sourceId);
+          // Short label centred on the geometry. Truncated so long Amharic
+          // descriptors don't blanket the map.
+          const labelId = `${sourceId}-label`;
+          const shortName = String(fence.name || "Zone").split(",")[0].slice(0, 28);
+          map.addLayer({
+            id: labelId,
+            type: "symbol",
+            source: sourceId,
+            layout: {
+              "symbol-placement": "point",
+              "text-field": shortName,
+              "text-size": 10,
+              "text-allow-overlap": false,
+            },
+            paint: {
+              "text-color": color,
+              "text-halo-color": "rgba(255,255,255,0.95)",
+              "text-halo-width": 1.4,
+            },
+          });
+          addedIds.push(fillId, lineId, labelId, sourceId);
         } catch {
           /* style not ready — load handler below will retry */
         }
