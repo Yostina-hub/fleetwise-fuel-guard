@@ -77,7 +77,7 @@ export default function MyRequestsPanel({
     queryFn: async () => {
       let q = supabase
         .from("workflow_instances")
-        .select("id, workflow_type, reference_number, title, current_stage, status, created_at, updated_at, data, entity_id")
+        .select("id, workflow_type, reference_number, title, current_stage, status, created_at, updated_at, data")
         .eq("organization_id", organizationId!)
         .order("created_at", { ascending: false })
         .limit(100);
