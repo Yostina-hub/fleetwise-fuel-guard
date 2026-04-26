@@ -150,12 +150,29 @@ export const MergedTripStopsPanel = ({
   const markersRef = useRef<maplibregl.Marker[]>([]);
 
   const [routesInfo, setRoutesInfo] = useState<
-    Array<{ label: string; strategy: string; distanceKm: number; durationMin: number; isBest: boolean; color: string }>
+    Array<{
+      label: string;
+      strategy: string;
+      distanceKm: number;
+      durationMin: number;
+      isBest: boolean;
+      color: string;
+      // Down-sampled geometry — fed to the AI recommender so it can reason
+      // about *where* a route goes, not just totals.
+      sampleCoords: [number, number][];
+    }>
   >([]);
   const [routesError, setRoutesError] = useState<string | null>(null);
   const [routesLoading, setRoutesLoading] = useState(false);
   /** Index of the route alternative the user has clicked to focus on the map. */
   const [focusedRouteIdx, setFocusedRouteIdx] = useState<number | null>(null);
+
+  // ── AI route recommendation ─────────────────────────────────────────
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiPick, setAiPick] = useState<
+    { bestIdx: number; runnerUpIdx?: number; reasoning: string } | null
+  >(null);
 
   useEffect(() => {
     if (!showMap || !open) return;
