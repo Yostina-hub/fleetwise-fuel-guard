@@ -266,6 +266,7 @@ const Geofencing = () => {
   const [activeTab, setActiveTab] = useState<"zones" | "events">("zones");
   const [panelOpen, setPanelOpen] = useState(true);
   const [selectedGeofenceId, setSelectedGeofenceId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [formData, setFormData] = useState({
