@@ -566,7 +566,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       const startMins = sH * 60 + sM;
       const endMins = eH * 60 + eM;
       if (mins < startMins || mins > endMins) {
-        return `Working-hours policy: ${p.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} is outside the working window. Allowed window: ${winLabel}.`;
+        return `Working-hours policy: ${p.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true })} is outside the working window. Allowed window: ${winLabel}.`;
       }
     }
     return null;
