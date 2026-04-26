@@ -860,7 +860,7 @@ const VehicleHints = ({
   );
 };
 
-const RouteFenceLine = ({
+function RouteFenceLine({
   label,
   status,
   fenceName,
@@ -870,7 +870,7 @@ const RouteFenceLine = ({
   status: "in_zone" | "out_of_zone" | "no_coords";
   fenceName: string | null;
   dotClass: string;
-}) => {
+}) {
   return (
     <div className="flex items-start gap-1.5 text-[11px]">
       <span className={cn("mt-1 w-1.5 h-1.5 rounded-full shrink-0", dotClass)} />
