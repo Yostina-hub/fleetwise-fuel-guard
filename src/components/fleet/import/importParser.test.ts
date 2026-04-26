@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { parseImportFile } from "./importParser";
+import { parseImportFile, downloadImportTemplate } from "./importParser";
+import {
+  DRIVER_IMPORT_FIELDS,
+  DRIVER_SAMPLE_VALUES,
+  resolveDriverField,
+} from "./driverImportSchema";
 import * as XLSX from "xlsx";
 
 /**
