@@ -2435,6 +2435,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   icon={UserCog}
                   required
                   error={getError("contact_phone")}
+                  hint={
+                    !form.contact_phone?.trim() && !requesterPhone
+                      ? "No phone on file for this requester — please type one."
+                      : undefined
+                  }
                 >
                   <Input
                     type="tel"
