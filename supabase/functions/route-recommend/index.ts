@@ -36,13 +36,23 @@ import {
 const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
 
+interface FenceHit {
+  name: string;
+  policy?: "prefer" | "avoid" | "neutral";
+  priority?: number;
+}
+
 interface Candidate {
   label?: string;
   distance_km: number;
   duration_min: number;
   sample_coords?: [number, number][];
-  /** Names of org geofences this route's geometry passes through. */
-  geofences?: string[];
+  /**
+   * Geofences this route passes through. Each entry is either a bare name
+   * (legacy) or an object with the effective dispatch policy. The effective
+   * policy already reflects the per-trip override applied client-side.
+   */
+  geofences?: Array<string | FenceHit>;
 }
 
 const isCandidate = (c: unknown): c is Candidate =>
@@ -97,6 +107,17 @@ serve(async (req) => {
 
   // Build a compact, factual prompt. We deliberately pass the OSRM numbers as
   // ground truth — the model is only being asked to weigh trade-offs.
+  // `geofence_aware` lets the dispatcher mute geofence rules for ONE trip
+  // without losing the org-wide policies; when false, we strip every
+  // geofence signal from the prompt so the AI cannot factor it.
+  const geofenceAware = ctx.geofence_aware !== false;
+
+  const formatFence = (g: string | FenceHit): string => {
+    if (typeof g === "string") return `"${g}"`;
+    const policy = g.policy ? ` (${g.policy})` : "";
+    return `"${g.name}"${policy}`;
+  };
+
   const candidateLines = candidates
     .map((c: Candidate, i: number) => {
       const sample = Array.isArray(c.sample_coords) && c.sample_coords.length > 0
@@ -104,14 +125,21 @@ serve(async (req) => {
           c.sample_coords[Math.floor(c.sample_coords.length / 2)].map((n) => n.toFixed(4)).join(",")
         }]`
         : "";
-      const fences = Array.isArray(c.geofences) && c.geofences.length > 0
-        ? ` geofences=[${c.geofences.map((g) => `"${g}"`).join(", ")}]`
-        : " geofences=[none]";
+      const fences = geofenceAware && Array.isArray(c.geofences) && c.geofences.length > 0
+        ? ` geofences=[${c.geofences.map(formatFence).join(", ")}]`
+        : geofenceAware
+          ? " geofences=[none]"
+          : "";
       return `${i}: ${c.label ?? `Route ${i + 1}`} — ${c.duration_min.toFixed(1)} min, ${c.distance_km.toFixed(1)} km${sample}${fences}`;
     })
     .join("\n");
 
-  const knownFences = Array.isArray(ctx.known_geofences) ? ctx.known_geofences : [];
+  const knownFencesRaw = Array.isArray(ctx.known_geofences) ? ctx.known_geofences : [];
+  const knownFencesFmt = knownFencesRaw
+    .map((g: any) =>
+      typeof g === "string" ? g : `${g?.name}${g?.policy ? ` (${g.policy})` : ""}`,
+    )
+    .filter(Boolean);
 
   const ctxLines = [
     ctx.pool_name && `Pool: ${ctx.pool_name}`,
@@ -120,14 +148,20 @@ serve(async (req) => {
     ctx.needed_from && `Departure: ${ctx.needed_from}`,
     ctx.needed_until && `Latest arrival: ${ctx.needed_until}`,
     ctx.city && `City: ${ctx.city}`,
-    knownFences.length > 0 &&
-      `Known organisation geofences (zones to be aware of): ${knownFences.join(", ")}`,
+    geofenceAware && knownFencesFmt.length > 0 &&
+      `Known organisation geofences (with current dispatch policy): ${knownFencesFmt.join(", ")}`,
+    !geofenceAware &&
+      "Geofence rules: DISABLED for this trip — ignore any zone information when ranking routes.",
   ].filter(Boolean).join("\n");
+
+  const policyRule = geofenceAware
+    ? `1. Geofence policy: STRONGLY prefer routes that pass through zones explicitly tagged "(prefer)" AND avoid routes that cross zones tagged "(avoid)". For zones tagged "(neutral)" or untagged, fall back to name hints (restricted/no-go/penalty/ቅጣት ⇒ avoid; depot/HQ/service/pool ⇒ prefer).`
+    : `1. Geofence policy: IGNORED for this trip — the dispatcher has turned the rule off, do not factor zones into the decision.`;
 
   const systemPrompt = `You are a fleet dispatch assistant choosing between road routes for a shared vehicle trip.
 You receive 2-5 candidate routes that all visit the same stops in the same order — only the road path differs.
 Pick the BEST route considering, in priority order:
-  1. Geofence policy: STRONGLY prefer routes that pass through authorised operational zones (depots, service areas) AND avoid routes that cross restricted/penalty zones. Use the geofence names as hints — words like "restricted", "no-go", "penalty", "ቅጣት" suggest avoid; "depot", "HQ", "service", "pool" suggest authorised.
+  ${policyRule}
   2. Duration (lower is usually better)
   3. Distance (lower is better when duration is similar)
   4. Reliability for shared rides (avoid much-longer detours unless time saving is significant)

@@ -11,11 +11,14 @@
  *     blocked public routing calls or straight-line placeholders.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   GitMerge,
   Users,
@@ -29,11 +32,13 @@ import {
   Route as RouteIcon,
   Trophy,
   Sparkles,
+  Settings2,
 } from "lucide-react";
 import { format } from "date-fns";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getPreviewSafeMapStyle } from "@/lib/lemat";
+import { friendlyToastError } from "@/lib/errorMessages";
 
 interface Props {
   parentRequestId: string;
@@ -151,12 +156,63 @@ export const MergedTripStopsPanel = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("geofences")
-        .select("id,name,color,geometry_type,center_lat,center_lng,radius_meters,polygon_points,is_active")
+        .select(
+          "id,name,color,geometry_type,center_lat,center_lng,radius_meters,polygon_points,is_active,dispatch_policy,dispatch_priority",
+        )
         .eq("organization_id", organizationId)
         .neq("is_active", false);
       if (error) throw error;
       return data || [];
     },
+  });
+
+  // ── Per-request geofence override ─────────────────────────────────
+  // Reads the parent vehicle_request row so the dispatcher can:
+  //   • toggle geofence-aware dispatch off for THIS trip only
+  //   • flag specific zones as "avoid" just for this trip (e.g. road closure)
+  // Mutations write back to the same row and bust the AI cache.
+  const queryClient = useQueryClient();
+  const { data: requestSettings } = useQuery({
+    queryKey: ["merged-trip-settings", parentRequestId],
+    enabled: !!parentRequestId && open,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("vehicle_requests")
+        .select("id, geofence_aware_dispatch, geofence_avoid_overrides")
+        .eq("id", parentRequestId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data || {
+        geofence_aware_dispatch: true,
+        geofence_avoid_overrides: [] as string[],
+      }) as {
+        geofence_aware_dispatch: boolean;
+        geofence_avoid_overrides: string[];
+      };
+    },
+  });
+  const geofenceAware = requestSettings?.geofence_aware_dispatch ?? true;
+  const avoidOverrides: string[] = requestSettings?.geofence_avoid_overrides ?? [];
+
+  const updateRequestSettings = useMutation({
+    mutationFn: async (patch: {
+      geofence_aware_dispatch?: boolean;
+      geofence_avoid_overrides?: string[];
+    }) => {
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update(patch)
+        .eq("id", parentRequestId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["merged-trip-settings", parentRequestId] });
+      // Wipe any stale AI verdict so the dispatcher knows to re-run.
+      setAiPick(null);
+      setAiError(null);
+    },
+    onError: (e: any) =>
+      friendlyToastError(e, { title: "Could not update geofence rule" }),
   });
 
   // ── Lazy-mounted map + backend-proxied optimized route options ────
@@ -659,24 +715,30 @@ export const MergedTripStopsPanel = ({
     try {
       // ── Geofence intersection per route ───────────────────────────
       // For each candidate route we list which org geofences its sampled
-      // geometry passes through. Pure JS (haversine for circles, ray-cast
-      // for polygons) so no extra deps. The AI then knows e.g. "Route 0
-      // crosses 'Restricted Zone A'" and can downrank it accordingly.
-      const intersectFences = (coords: [number, number][]): string[] => {
-        const hits = new Set<string>();
+      // geometry passes through, together with the *effective* policy:
+      //   • the org-wide `dispatch_policy` (prefer / avoid / neutral), but
+      //   • forced to "avoid" if the dispatcher flagged the zone as a
+      //     per-trip override (e.g. one-off road closure).
+      // The AI then knows e.g. "Route 0 crosses 'Restricted Zone A'
+      // (avoid)" and can downrank it accordingly.
+      type FenceHit = { name: string; policy: "prefer" | "avoid" | "neutral"; priority: number };
+      const intersectFences = (coords: [number, number][]): FenceHit[] => {
+        const hits = new Map<string, FenceHit>();
         for (const fence of geofences as any[]) {
+          let crosses = false;
           if (fence.geometry_type === "circle") {
             const lat = Number(fence.center_lat);
             const lng = Number(fence.center_lng);
             const r = Number(fence.radius_meters) || 0;
-            if (!Number.isFinite(lat) || !Number.isFinite(lng) || r <= 0) continue;
-            for (const [px, py] of coords) {
-              // Equirectangular distance — fine at city scale.
-              const dx = (px - lng) * 111320 * Math.cos((lat * Math.PI) / 180);
-              const dy = (py - lat) * 111320;
-              if (dx * dx + dy * dy <= r * r) {
-                hits.add(fence.name);
-                break;
+            if (Number.isFinite(lat) && Number.isFinite(lng) && r > 0) {
+              for (const [px, py] of coords) {
+                // Equirectangular distance — fine at city scale.
+                const dx = (px - lng) * 111320 * Math.cos((lat * Math.PI) / 180);
+                const dy = (py - lat) * 111320;
+                if (dx * dx + dy * dy <= r * r) {
+                  crosses = true;
+                  break;
+                }
               }
             }
           } else if (
@@ -701,13 +763,24 @@ export const MergedTripStopsPanel = ({
             };
             for (const [px, py] of coords) {
               if (inside(px, py)) {
-                hits.add(fence.name);
+                crosses = true;
                 break;
               }
             }
           }
+          if (!crosses) continue;
+          // Per-trip override always wins.
+          const overridden = avoidOverrides.includes(fence.id);
+          const policy: "prefer" | "avoid" | "neutral" = overridden
+            ? "avoid"
+            : (fence.dispatch_policy as any) || "neutral";
+          hits.set(fence.id, {
+            name: fence.name,
+            policy,
+            priority: Number(fence.dispatch_priority ?? 5),
+          });
         }
-        return Array.from(hits).slice(0, 5);
+        return Array.from(hits.values()).slice(0, 8);
       };
 
       const { data, error } = await supabase.functions.invoke("route-recommend", {
@@ -726,12 +799,20 @@ export const MergedTripStopsPanel = ({
             needed_from: earliest?.toISOString(),
             needed_until: latest?.toISOString(),
             city: "Addis Ababa",
+            // Lets the AI know whether to factor zone policy at all.
+            // When false, it ignores all geofence inputs.
+            geofence_aware: geofenceAware,
             // Surface the fact that geofences exist so the AI knows the
             // empty geofences[] case is meaningful (no zone crossed).
             known_geofences: (geofences as any[])
-              .map((g) => g.name)
-              .filter(Boolean)
-              .slice(0, 20),
+              .map((g) => ({
+                name: g.name,
+                policy: avoidOverrides.includes(g.id)
+                  ? "avoid"
+                  : g.dispatch_policy || "neutral",
+              }))
+              .filter((g) => g.name)
+              .slice(0, 30),
           },
         },
       });
@@ -972,25 +1053,106 @@ export const MergedTripStopsPanel = ({
                     {/* AI recommend action + reasoning */}
                     {!routesLoading && routesInfo.length > 1 && (
                       <div className="px-3 py-2 border-t border-border/60 bg-muted/30 space-y-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={aiPick ? "secondary" : "default"}
-                          className="w-full h-7 text-[11px] gap-1.5"
-                          onClick={requestAiRecommendation}
-                          disabled={aiLoading}
-                        >
-                          {aiLoading ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Sparkles className="w-3 h-3" />
-                          )}
-                          {aiLoading
-                            ? "Asking AI…"
-                            : aiPick
-                              ? "Re-run AI recommendation"
-                              : "Recommend best with AI"}
-                        </Button>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={aiPick ? "secondary" : "default"}
+                            className="flex-1 h-7 text-[11px] gap-1.5"
+                            onClick={requestAiRecommendation}
+                            disabled={aiLoading}
+                          >
+                            {aiLoading ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-3 h-3" />
+                            )}
+                            {aiLoading
+                              ? "Asking AI…"
+                              : aiPick
+                                ? "Re-run AI recommendation"
+                                : "Recommend best with AI"}
+                          </Button>
+                          {/* Per-trip geofence rule editor */}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-[11px] gap-1"
+                                title="Edit geofence rule for this trip"
+                              >
+                                <Settings2 className="w-3 h-3" />
+                                {geofenceAware ? "Geofence rule on" : "Geofence rule off"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-72 p-3 space-y-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="space-y-0.5">
+                                  <div className="text-xs font-semibold">Use geofence rules</div>
+                                  <div className="text-[10px] text-muted-foreground leading-snug">
+                                    When on, the AI weighs each zone's prefer/avoid policy
+                                    when picking the best route.
+                                  </div>
+                                </div>
+                                <Switch
+                                  checked={geofenceAware}
+                                  onCheckedChange={(v) =>
+                                    updateRequestSettings.mutate({ geofence_aware_dispatch: v })
+                                  }
+                                />
+                              </div>
+                              {geofenceAware && (
+                                <div className="space-y-1.5">
+                                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                    Avoid for this trip only
+                                  </div>
+                                  <ScrollArea className="max-h-40 pr-2">
+                                    <div className="space-y-1.5">
+                                      {(geofences as any[]).length === 0 && (
+                                        <div className="text-[10px] text-muted-foreground italic">
+                                          No active geofences in this organisation.
+                                        </div>
+                                      )}
+                                      {(geofences as any[]).map((g) => {
+                                        const checked = avoidOverrides.includes(g.id);
+                                        const orgPolicy = (g.dispatch_policy as string) || "neutral";
+                                        return (
+                                          <label
+                                            key={g.id}
+                                            className="flex items-start gap-2 text-[11px] cursor-pointer"
+                                          >
+                                            <Checkbox
+                                              checked={checked}
+                                              onCheckedChange={(c) => {
+                                                const next = c === true
+                                                  ? Array.from(new Set([...avoidOverrides, g.id]))
+                                                  : avoidOverrides.filter((id) => id !== g.id);
+                                                updateRequestSettings.mutate({
+                                                  geofence_avoid_overrides: next,
+                                                });
+                                              }}
+                                              className="mt-0.5"
+                                            />
+                                            <span className="min-w-0 flex-1">
+                                              <span className="block truncate font-medium">
+                                                {String(g.name || "Zone").split(",")[0]}
+                                              </span>
+                                              <span className="text-[10px] text-muted-foreground">
+                                                Org: {orgPolicy}
+                                              </span>
+                                            </span>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </ScrollArea>
+                                </div>
+                              )}
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                         {aiError && (
                           <div className="text-[10px] text-destructive leading-snug">
                             {aiError}

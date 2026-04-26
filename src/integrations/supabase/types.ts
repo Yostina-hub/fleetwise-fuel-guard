@@ -11168,6 +11168,8 @@ export type Database = {
           color: string | null
           created_at: string
           description: string | null
+          dispatch_policy: Database["public"]["Enums"]["geofence_dispatch_policy"]
+          dispatch_priority: number
           enable_entry_alarm: boolean | null
           enable_exit_alarm: boolean | null
           enable_speed_alarm: boolean | null
@@ -11198,6 +11200,8 @@ export type Database = {
           color?: string | null
           created_at?: string
           description?: string | null
+          dispatch_policy?: Database["public"]["Enums"]["geofence_dispatch_policy"]
+          dispatch_priority?: number
           enable_entry_alarm?: boolean | null
           enable_exit_alarm?: boolean | null
           enable_speed_alarm?: boolean | null
@@ -11228,6 +11232,8 @@ export type Database = {
           color?: string | null
           created_at?: string
           description?: string | null
+          dispatch_policy?: Database["public"]["Enums"]["geofence_dispatch_policy"]
+          dispatch_priority?: number
           enable_entry_alarm?: boolean | null
           enable_exit_alarm?: boolean | null
           enable_speed_alarm?: boolean | null
@@ -24427,6 +24433,8 @@ export type Database = {
           filed_by_name: string | null
           filed_by_user_id: string | null
           filed_on_behalf: boolean
+          geofence_avoid_overrides: string[]
+          geofence_aware_dispatch: boolean
           id: string
           is_consolidated_parent: boolean
           kpi_target_minutes: number | null
@@ -24538,6 +24546,8 @@ export type Database = {
           filed_by_name?: string | null
           filed_by_user_id?: string | null
           filed_on_behalf?: boolean
+          geofence_avoid_overrides?: string[]
+          geofence_aware_dispatch?: boolean
           id?: string
           is_consolidated_parent?: boolean
           kpi_target_minutes?: number | null
@@ -24649,6 +24659,8 @@ export type Database = {
           filed_by_name?: string | null
           filed_by_user_id?: string | null
           filed_on_behalf?: boolean
+          geofence_avoid_overrides?: string[]
+          geofence_aware_dispatch?: boolean
           id?: string
           is_consolidated_parent?: boolean
           kpi_target_minutes?: number | null
@@ -29011,6 +29023,7 @@ export type Database = {
         | "technician"
         | "coordinator"
         | "other"
+      geofence_dispatch_policy: "prefer" | "avoid" | "neutral"
     }
     CompositeTypes: {
       geometry_dump: {
@@ -29181,6 +29194,7 @@ export const Constants = {
         "coordinator",
         "other",
       ],
+      geofence_dispatch_policy: ["prefer", "avoid", "neutral"],
     },
   },
 } as const

@@ -365,6 +365,27 @@ const Geofencing = () => {
     },
   });
 
+  // Per-zone dispatch policy used by the AI route recommender.
+  // 'prefer' nudges routes through the zone, 'avoid' steers around it,
+  // 'neutral' (default) leaves the AI to decide on duration/distance alone.
+  const updateDispatchPolicy = useMutation({
+    mutationFn: async ({ id, policy }: { id: string; policy: "prefer" | "avoid" | "neutral" }) => {
+      const { error } = await supabase
+        .from("geofences")
+        .update({ dispatch_policy: policy })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["geofences"] });
+      // Also invalidate the merged-trip cache so the panel re-fetches the
+      // latest policy without a manual reload.
+      queryClient.invalidateQueries({ queryKey: ["merged-trip-geofences"] });
+      toast({ title: "Dispatch policy updated" });
+    },
+    onError: (e: any) => friendlyToastError(e, { title: "Could not update policy" }),
+  });
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -588,6 +609,33 @@ const Geofencing = () => {
                             </Badge>
                             <span>{fence.geometry_type === 'circle' ? `${fence.radius_meters}m` : 'Polygon'}</span>
                           </div>
+                        </div>
+
+                        {/* Dispatch policy — feeds the AI route recommender */}
+                        <div className="hidden sm:flex flex-col items-end gap-0.5">
+                          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Dispatch</span>
+                          <Select
+                            value={(fence.dispatch_policy as string) || "neutral"}
+                            onValueChange={(v) =>
+                              updateDispatchPolicy.mutate({
+                                id: fence.id,
+                                policy: v as "prefer" | "avoid" | "neutral",
+                              })
+                            }
+                          >
+                            <SelectTrigger className="h-7 w-[110px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="prefer">
+                                <span className="text-emerald-600 font-medium">Prefer</span>
+                              </SelectItem>
+                              <SelectItem value="avoid">
+                                <span className="text-amber-600 font-medium">Avoid</span>
+                              </SelectItem>
+                              <SelectItem value="neutral">Neutral</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         {/* Actions */}
