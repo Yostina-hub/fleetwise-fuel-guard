@@ -172,6 +172,7 @@ export const OnRoadFuelRequestDialog = ({
   driverName,
   driverPhone,
   lastOdometerKm,
+  fallbackVehicle,
 }: Props) => {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
@@ -179,16 +180,77 @@ export const OnRoadFuelRequestDialog = ({
   const [form, setForm] = useState<FormState>(() => initialState(lastOdometerKm));
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Reset every time the dialog re-opens so a fresh refuel can be filed.
+  // Resolve effective vehicle: prefer the active trip's assigned vehicle,
+  // otherwise fall back to the driver's permanently assigned vehicle.
+  const vehicle = request?.assigned_vehicle ?? fallbackVehicle ?? null;
+  const vehicleId = vehicle?.id ?? request?.assigned_vehicle_id ?? null;
+
+  // Auto-capture latest e-fuel telemetry for the vehicle so the driver does
+  // not have to type fuel level / odometer manually when a sensor is present.
+  const { data: fuelSensor } = useQuery({
+    queryKey: ["onroad-fuel-sensor", vehicleId],
+    enabled: open && !!vehicleId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_vehicle_fuel_status", {
+        p_vehicle_ids: [vehicleId],
+      });
+      if (error) throw error;
+      const row = (data || [])[0] as any;
+      if (!row) return null;
+      return {
+        last_fuel_reading:
+          row.last_fuel_reading == null ? null : Number(row.last_fuel_reading),
+        last_communication_at: row.last_communication_at as string | null,
+      };
+    },
+    staleTime: 30_000,
+  });
+
+  // Latest known odometer from telemetry (best-effort — silent fail).
+  const { data: telemetryOdo } = useQuery({
+    queryKey: ["onroad-vehicle-odo", vehicleId],
+    enabled: open && !!vehicleId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("vehicles")
+        .select("odometer_km")
+        .eq("id", vehicleId!)
+        .maybeSingle();
+      return data?.odometer_km ?? null;
+    },
+    staleTime: 30_000,
+  });
+
+  // Reset every time the dialog re-opens, then prefill from telemetry once
+  // the e-fuel + odometer queries resolve.
   useEffect(() => {
     if (open) setForm(initialState(lastOdometerKm));
   }, [open, lastOdometerKm]);
 
+  useEffect(() => {
+    if (!open) return;
+    setForm((f) => {
+      const next = { ...f };
+      // Prefer telemetry odometer when the local prop is empty.
+      if ((!f.current_odometer || f.current_odometer === "") && telemetryOdo != null) {
+        next.current_odometer = String(telemetryOdo);
+      }
+      // Auto-fill fuel level from sensor (clamp to 0–100).
+      if (
+        (!f.current_fuel_percent || f.current_fuel_percent === "") &&
+        fuelSensor?.last_fuel_reading != null &&
+        Number.isFinite(fuelSensor.last_fuel_reading)
+      ) {
+        const pct = Math.max(0, Math.min(100, Math.round(fuelSensor.last_fuel_reading)));
+        next.current_fuel_percent = String(pct);
+      }
+      return next;
+    });
+  }, [open, telemetryOdo, fuelSensor?.last_fuel_reading]);
+
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  const vehicle = request?.assigned_vehicle;
-  const vehicleId = vehicle?.id ?? request?.assigned_vehicle_id ?? null;
   const vehicleLabel = useMemo(() => {
     if (!vehicle) return "—";
     return [
@@ -209,8 +271,9 @@ export const OnRoadFuelRequestDialog = ({
   const submit = useMutation({
     mutationFn: async () => {
       if (!organizationId) throw new Error("Missing organization context");
-      if (!request?.id) throw new Error("No active trip — open this from a trip in progress");
-      if (!vehicleId) throw new Error("Active trip has no assigned vehicle");
+      // Active trip is preferred but no longer required — drivers can also
+      // file a refuel from quick actions when no trip row exists.
+      if (!vehicleId) throw new Error("No vehicle assigned — cannot file a refuel request");
 
       const parsed = schema.parse({
         current_location: form.current_location,
