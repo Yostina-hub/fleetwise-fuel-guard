@@ -28,6 +28,7 @@ import {
   EyeOff,
   Route as RouteIcon,
   Trophy,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import maplibregl from "maplibre-gl";
