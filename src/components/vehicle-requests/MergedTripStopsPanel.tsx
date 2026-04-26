@@ -256,6 +256,8 @@ export const MergedTripStopsPanel = ({
   >([]);
   const [routesError, setRoutesError] = useState<string | null>(null);
   const [routesLoading, setRoutesLoading] = useState(false);
+  /** Index of the route alternative the user has clicked to focus on the map. */
+  const [focusedRouteIdx, setFocusedRouteIdx] = useState<number | null>(null);
 
   useEffect(() => {
     if (!showMap || !open) return;
