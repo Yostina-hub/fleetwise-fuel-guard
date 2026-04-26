@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Layout from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,14 +12,6 @@ import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import maplibregl from 'maplibre-gl';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -29,15 +21,19 @@ import {
 } from "@/components/ui/dialog";
 import { 
   MapPin, 
-  Plus, 
   Trash2, 
   Edit, 
   Circle,
   Square,
-  X,
   Check,
   Eye,
-  EyeOff
+  EyeOff,
+  ShieldCheck,
+  AlertTriangle,
+  Route,
+  Crosshair,
+  Ban,
+  Building2,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,12 +41,103 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import GeofenceEventsTab from "@/components/geofencing/GeofenceEventsTab";
-import GeofenceQuickStats from "@/components/geofencing/GeofenceQuickStats";
 import { startOfDay } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 import { useTranslation } from "react-i18next";
 import { friendlyToastError } from "@/lib/errorMessages";
+
+type DispatchPolicy = "prefer" | "avoid" | "neutral";
+type GeometryType = "circle" | "polygon";
+
+type GeofenceRecord = {
+  id: string;
+  name: string;
+  category: string | null;
+  geometry_type: GeometryType | string | null;
+  center_lat: number | string | null;
+  center_lng: number | string | null;
+  radius_meters: number | string | null;
+  polygon_points: Array<{ lat: number | string; lng: number | string }> | null;
+  enable_entry_alarm?: boolean | null;
+  enable_exit_alarm?: boolean | null;
+  is_active?: boolean | null;
+  color?: string | null;
+  dispatch_policy?: DispatchPolicy | string | null;
+  dispatch_priority?: number | null;
+};
+
+const policyMeta: Record<DispatchPolicy, { label: string; icon: typeof ShieldCheck; className: string }> = {
+  prefer: { label: "Prefer", icon: ShieldCheck, className: "border-success/40 bg-success/10 text-success" },
+  avoid: { label: "Avoid", icon: Ban, className: "border-warning/40 bg-warning/10 text-warning" },
+  neutral: { label: "Neutral", icon: Route, className: "border-border bg-muted text-muted-foreground" },
+};
+
+const categoryDefaultPolicy: Record<string, DispatchPolicy> = {
+  depot: "prefer",
+  parking: "prefer",
+  service_area: "prefer",
+  no_go_zone: "avoid",
+  speed_zone: "avoid",
+  customer_site: "neutral",
+};
+
+const getCategoryDefaultPolicy = (category: string): DispatchPolicy =>
+  categoryDefaultPolicy[category] || "neutral";
+
+const toFiniteNumber = (value: unknown): number | null => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+const buildFenceFeature = (fence: GeofenceRecord): GeoJSON.Feature<GeoJSON.Polygon> | null => {
+  if (fence.geometry_type === "circle") {
+    const centerLat = toFiniteNumber(fence.center_lat);
+    const centerLng = toFiniteNumber(fence.center_lng);
+    const radius = toFiniteNumber(fence.radius_meters) || 500;
+    if (centerLat == null || centerLng == null) return null;
+
+    const points = 96;
+    const coords: number[][] = [];
+    for (let i = 0; i <= points; i++) {
+      const angle = (i / points) * 2 * Math.PI;
+      const dx = radius * Math.cos(angle);
+      const dy = radius * Math.sin(angle);
+      const lat = centerLat + dy / 111320;
+      const lng = centerLng + dx / (111320 * Math.cos((centerLat * Math.PI) / 180));
+      coords.push([lng, lat]);
+    }
+    return {
+      type: "Feature",
+      properties: { name: fence.name, policy: fence.dispatch_policy || "neutral" },
+      geometry: { type: "Polygon", coordinates: [coords] },
+    };
+  }
+
+  if (fence.geometry_type === "polygon" && Array.isArray(fence.polygon_points) && fence.polygon_points.length >= 3) {
+    const coords = fence.polygon_points
+      .map((p) => [toFiniteNumber(p.lng), toFiniteNumber(p.lat)] as const)
+      .filter((p): p is readonly [number, number] => p[0] != null && p[1] != null)
+      .map(([lng, lat]) => [lng, lat]);
+    if (coords.length < 3) return null;
+    coords.push(coords[0]);
+    return {
+      type: "Feature",
+      properties: { name: fence.name, policy: fence.dispatch_policy || "neutral" },
+      geometry: { type: "Polygon", coordinates: [coords] },
+    };
+  }
+
+  return null;
+};
+
+const getFenceBounds = (fence: GeofenceRecord): maplibregl.LngLatBounds | null => {
+  const feature = buildFenceFeature(fence);
+  const coords = feature?.geometry.coordinates[0];
+  if (!coords?.length) return null;
+  const bounds = new maplibregl.LngLatBounds(coords[0] as [number, number], coords[0] as [number, number]);
+  coords.forEach((coord) => bounds.extend(coord as [number, number]));
+  return bounds;
+};
 
 const Geofencing = () => {
   const { t } = useTranslation();
