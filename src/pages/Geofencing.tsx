@@ -377,6 +377,8 @@ const Geofencing = () => {
           } catch (e) { /* ignore */ }
         });
       geofenceLayersRef.current = [];
+      geofenceMarkersRef.current.forEach((marker) => marker.remove());
+      geofenceMarkersRef.current = [];
 
       const allBounds = new maplibregl.LngLatBounds();
       let hasBounds = false;
@@ -388,6 +390,7 @@ const Geofencing = () => {
         const labelLayerId = `geofence-label-${fence.id}`;
         const color = fence.color || '#3B82F6';
         const geojsonData = buildFenceFeature(fence);
+        const center = getFenceCenter(fence);
         if (!geojsonData) return;
         geojsonData.geometry.coordinates[0].forEach((coord) => {
           allBounds.extend(coord as [number, number]);
@@ -439,10 +442,23 @@ const Geofencing = () => {
         } catch (e) {
           console.warn('Failed to add geofence layer:', sourceId, e);
         }
+
+        if (center) {
+          const markerEl = document.createElement("button");
+          markerEl.type = "button";
+          markerEl.className = "geofence-map-marker";
+          markerEl.style.setProperty("--geofence-color", color);
+          markerEl.innerHTML = `<span class="geofence-map-marker-dot"></span><span class="geofence-map-marker-label">${fence.name}</span>`;
+          markerEl.addEventListener("click", (event) => {
+            event.stopPropagation();
+            focusFenceOnMap(fence);
+          });
+          geofenceMarkersRef.current.push(new maplibregl.Marker({ element: markerEl, anchor: "bottom" }).setLngLat(center).addTo(map));
+        }
       });
 
       if (hasBounds && !allBounds.isEmpty()) {
-        map.fitBounds(allBounds, { padding: 80, maxZoom: 13, duration: 0 });
+        map.fitBounds(allBounds, { padding: 120, maxZoom: 15, duration: 0 });
       }
     };
 
@@ -451,7 +467,7 @@ const Geofencing = () => {
     } else {
       map.once('style.load', renderGeofences);
     }
-  }, [geofences, mapReady]);
+  }, [focusFenceOnMap, geofences, mapReady]);
 
   const createGeofenceMutation = useMutation({
     mutationFn: async (data: any) => {
