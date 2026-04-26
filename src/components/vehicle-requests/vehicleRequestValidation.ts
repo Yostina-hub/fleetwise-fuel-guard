@@ -39,17 +39,50 @@ export const sanitizeText = (v: unknown): string => {
 export const sanitizeShortText = (v: unknown): string =>
   sanitizeText(v).replace(/\s+/g, " ");
 
-/** Phone normalizer: keep digits, +, spaces, dashes, parentheses. */
-export const sanitizePhone = (v: unknown): string =>
-  sanitizeText(v).replace(/[^\d+\s\-()]/g, "");
+/**
+ * Phone normalizer — Ethiopian numbers only.
+ * Strips every character except digits and an optional leading `+`.
+ * Spaces, dashes, parentheses, and any other formatting are removed so the
+ * stored value is the raw E.164-style string (e.g. "+251911234567" or
+ * "0911234567"). This matches what the SMS gateway and ERPNext expect.
+ */
+export const sanitizePhone = (v: unknown): string => {
+  const s = sanitizeText(v);
+  if (!s) return "";
+  // Keep only digits and a single leading +.
+  const hasPlus = s.trim().startsWith("+");
+  const digits = s.replace(/\D/g, "");
+  return hasPlus ? `+${digits}` : digits;
+};
 
 /** Project number normalizer: uppercase, allow letters/digits/dash/underscore. */
 export const sanitizeProjectNumber = (v: unknown): string =>
   sanitizeText(v).toUpperCase().replace(/[^A-Z0-9_\-/]/g, "");
 
 const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
-const PHONE_RE = /^\+?[\d\s\-()]{7,20}$/;
+/**
+ * Ethiopian phone formats accepted (digits only, no separators):
+ *   • Mobile local:        09XXXXXXXX                (10 digits)
+ *   • Mobile international: +2519XXXXXXXX            (13 chars incl. +)
+ *   • Landline local:       0[1-8]XXXXXXXX           (10 digits, area codes 11–88)
+ *   • Landline international: +251[1-8]XXXXXXXX      (13 chars incl. +)
+ * Numbers from any other country are rejected.
+ */
+const ETHIOPIAN_MOBILE_LOCAL_RE = /^09\d{8}$/;
+const ETHIOPIAN_MOBILE_INTL_RE = /^\+2519\d{8}$/;
+const ETHIOPIAN_LANDLINE_LOCAL_RE = /^0[1-8]\d{8}$/;
+const ETHIOPIAN_LANDLINE_INTL_RE = /^\+251[1-8]\d{8}$/;
 const PROJECT_RE = /^[A-Z0-9][A-Z0-9_\-/]{2,29}$/;
+
+/** True when the (already sanitized) phone matches any Ethiopian format. */
+export function isEthiopianPhone(v: string): boolean {
+  return (
+    ETHIOPIAN_MOBILE_LOCAL_RE.test(v) ||
+    ETHIOPIAN_MOBILE_INTL_RE.test(v) ||
+    ETHIOPIAN_LANDLINE_LOCAL_RE.test(v) ||
+    ETHIOPIAN_LANDLINE_INTL_RE.test(v)
+  );
+}
 
 export type VRFieldName =
   | "request_type"
