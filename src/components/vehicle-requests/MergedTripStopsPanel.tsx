@@ -383,16 +383,32 @@ export const MergedTripStopsPanel = ({
         }
 
         setRoutesInfo(
-          results.map((r, i) => ({
-            label: palette[i]?.name ?? `Route ${i + 1}`,
-            // Honest, source-accurate descriptor — no synthesised "strategy".
-            strategy: i === bestIdx ? "Fastest by OSRM road network" : "OSRM alternative road path",
-            distanceKm: r.distance / 1000,
-            durationMin: r.duration / 60,
-            isBest: i === bestIdx,
-            color: palette[i]?.color ?? palette[0].color,
-          })),
+          results.map((r, i) => {
+            // Down-sample geometry to ≤8 points so the AI prompt stays compact.
+            const coords = r.geometry.coordinates;
+            const step = Math.max(1, Math.floor(coords.length / 8));
+            const sampleCoords: [number, number][] = [];
+            for (let k = 0; k < coords.length; k += step) {
+              sampleCoords.push(coords[k] as [number, number]);
+            }
+            if (sampleCoords[sampleCoords.length - 1] !== coords[coords.length - 1]) {
+              sampleCoords.push(coords[coords.length - 1] as [number, number]);
+            }
+            return {
+              label: palette[i]?.name ?? `Route ${i + 1}`,
+              // Honest, source-accurate descriptor — no synthesised "strategy".
+              strategy: i === bestIdx ? "Fastest by OSRM road network" : "OSRM alternative road path",
+              distanceKm: r.distance / 1000,
+              durationMin: r.duration / 60,
+              isBest: i === bestIdx,
+              color: palette[i]?.color ?? palette[0].color,
+              sampleCoords,
+            };
+          }),
         );
+        // Reset any prior AI verdict — it referred to old routes.
+        setAiPick(null);
+        setAiError(null);
       } catch (err: any) {
         setRoutesError(err?.message || "Could not load route alternatives");
         // Fallback: render straight dashed legs so the user still sees connectivity
