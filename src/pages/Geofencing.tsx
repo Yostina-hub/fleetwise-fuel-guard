@@ -654,15 +654,6 @@ const Geofencing = () => {
               </Card>
             </div>
 
-            {/* Geofence Workflow Automations */}
-            <WorkflowAutomationPanel
-              categories={["alerts", "operations"]}
-              title="Geofence Automations"
-              description="Entry/exit notifications, work start/stop detection"
-              compact
-              maxItems={4}
-            />
-
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
