@@ -648,14 +648,68 @@ export const MergedTripStopsPanel = ({
 
   // Ask Lovable AI to recommend the best candidate route. The AI never
   // invents measurements — it weighs the OSRM-supplied numbers against the
-  // trip context (passengers, time window, pool) and returns a ranked pick
-  // plus a 1-2 sentence justification.
+  // trip context (passengers, time window, pool) AND any geofences each
+  // route passes through, then returns a ranked pick plus a 1-2 sentence
+  // justification.
   const requestAiRecommendation = async () => {
     if (routesInfo.length < 2 || aiLoading) return;
     setAiLoading(true);
     setAiError(null);
     setAiPick(null);
     try {
+      // ── Geofence intersection per route ───────────────────────────
+      // For each candidate route we list which org geofences its sampled
+      // geometry passes through. Pure JS (haversine for circles, ray-cast
+      // for polygons) so no extra deps. The AI then knows e.g. "Route 0
+      // crosses 'Restricted Zone A'" and can downrank it accordingly.
+      const intersectFences = (coords: [number, number][]): string[] => {
+        const hits = new Set<string>();
+        for (const fence of geofences as any[]) {
+          if (fence.geometry_type === "circle") {
+            const lat = Number(fence.center_lat);
+            const lng = Number(fence.center_lng);
+            const r = Number(fence.radius_meters) || 0;
+            if (!Number.isFinite(lat) || !Number.isFinite(lng) || r <= 0) continue;
+            for (const [px, py] of coords) {
+              // Equirectangular distance — fine at city scale.
+              const dx = (px - lng) * 111320 * Math.cos((lat * Math.PI) / 180);
+              const dy = (py - lat) * 111320;
+              if (dx * dx + dy * dy <= r * r) {
+                hits.add(fence.name);
+                break;
+              }
+            }
+          } else if (
+            fence.geometry_type === "polygon" &&
+            Array.isArray(fence.polygon_points) &&
+            fence.polygon_points.length >= 3
+          ) {
+            const poly = fence.polygon_points.map((p: any) => [Number(p.lng), Number(p.lat)]);
+            const inside = (x: number, y: number) => {
+              let isIn = false;
+              for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                const xi = poly[i][0], yi = poly[i][1];
+                const xj = poly[j][0], yj = poly[j][1];
+                if (
+                  ((yi > y) !== (yj > y)) &&
+                  x < ((xj - xi) * (y - yi)) / (yj - yi) + xi
+                ) {
+                  isIn = !isIn;
+                }
+              }
+              return isIn;
+            };
+            for (const [px, py] of coords) {
+              if (inside(px, py)) {
+                hits.add(fence.name);
+                break;
+              }
+            }
+          }
+        }
+        return Array.from(hits).slice(0, 5);
+      };
+
       const { data, error } = await supabase.functions.invoke("route-recommend", {
         body: {
           candidates: routesInfo.map((r) => ({
@@ -663,6 +717,7 @@ export const MergedTripStopsPanel = ({
             distance_km: Number(r.distanceKm.toFixed(2)),
             duration_min: Number(r.durationMin.toFixed(1)),
             sample_coords: r.sampleCoords,
+            geofences: intersectFences(r.sampleCoords),
           })),
           context: {
             pool_name: poolName ?? undefined,
@@ -671,6 +726,12 @@ export const MergedTripStopsPanel = ({
             needed_from: earliest?.toISOString(),
             needed_until: latest?.toISOString(),
             city: "Addis Ababa",
+            // Surface the fact that geofences exist so the AI knows the
+            // empty geofences[] case is meaningful (no zone crossed).
+            known_geofences: (geofences as any[])
+              .map((g) => g.name)
+              .filter(Boolean)
+              .slice(0, 20),
           },
         },
       });
