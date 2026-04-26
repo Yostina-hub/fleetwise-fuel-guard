@@ -550,72 +550,121 @@ export const OnRoadFuelRequestDialog = ({
 
             <Separator />
 
-            {/* Where you are */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="onroad-location"
-                className="text-sm font-medium flex items-center gap-1.5"
-              >
-                <MapPin className="w-3.5 h-3.5" aria-hidden="true" /> Current location *
-              </Label>
-              <Input
-                id="onroad-location"
-                value={form.current_location}
-                onChange={(e) => set("current_location", e.target.value)}
-                placeholder="Closest town, landmark or KM marker"
-                maxLength={200}
-                required
-              />
-            </div>
+            {/* ── Live device telemetry (read-only, auto-captured) ─────── */}
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+                  <Satellite className="w-3.5 h-3.5" aria-hidden="true" />
+                  Live from smart device
+                  {liveTelemetry?.device_connected ? (
+                    <Badge
+                      variant="outline"
+                      className="ml-1 bg-success/10 text-success border-success/30 text-[10px]"
+                    >
+                      online
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="ml-1 bg-warning/10 text-warning border-warning/30 text-[10px]"
+                    >
+                      stale
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => refetchTelemetry()}
+                  disabled={telemetryFetching || !vehicleId}
+                >
+                  <RefreshCw
+                    className={`w-3 h-3 mr-1 ${telemetryFetching ? "animate-spin" : ""}`}
+                    aria-hidden="true"
+                  />
+                  Refresh
+                </Button>
+              </div>
 
-            {/* Numbers */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="onroad-odometer" className="text-sm font-medium flex items-center gap-1.5">
-                  <Gauge className="w-3.5 h-3.5" aria-hidden="true" /> Current odometer (km) *
+              {/* Where you are — auto-captured from GPS */}
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="onroad-location"
+                  className="text-sm font-medium flex items-center gap-1.5"
+                >
+                  <MapPin className="w-3.5 h-3.5" aria-hidden="true" /> Current location
+                  <Badge variant="outline" className="text-[10px] ml-1">auto</Badge>
                 </Label>
                 <Input
-                  id="onroad-odometer"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  step="1"
-                  value={form.current_odometer}
-                  onChange={(e) => set("current_odometer", e.target.value)}
-                  required
+                  id="onroad-location"
+                  value={form.current_location}
+                  readOnly
+                  className="bg-muted/40 cursor-not-allowed"
+                  placeholder={
+                    vehicleId
+                      ? "Waiting for GPS fix from device…"
+                      : "No vehicle assigned"
+                  }
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="onroad-fuel-pct" className="text-sm font-medium">
-                  Fuel level (%)
-                </Label>
-                <Input
-                  id="onroad-fuel-pct"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  max={100}
-                  step="1"
-                  value={form.current_fuel_percent}
-                  onChange={(e) => set("current_fuel_percent", e.target.value)}
-                  placeholder="0–100"
-                />
+
+              {/* Numbers — odometer / fuel% / distance left, all from device */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="onroad-odometer" className="text-sm font-medium flex items-center gap-1.5">
+                    <Gauge className="w-3.5 h-3.5" aria-hidden="true" /> Odometer (km)
+                    <Badge variant="outline" className="text-[10px] ml-1">auto</Badge>
+                  </Label>
+                  <Input
+                    id="onroad-odometer"
+                    value={form.current_odometer}
+                    readOnly
+                    className="bg-muted/40 cursor-not-allowed"
+                    placeholder="—"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="onroad-fuel-pct" className="text-sm font-medium">
+                    Fuel level (%)
+                    <Badge variant="outline" className="text-[10px] ml-1">auto</Badge>
+                  </Label>
+                  <Input
+                    id="onroad-fuel-pct"
+                    value={form.current_fuel_percent}
+                    readOnly
+                    className="bg-muted/40 cursor-not-allowed"
+                    placeholder="—"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="onroad-distance" className="text-sm font-medium">
+                    Distance left (km)
+                    <Badge variant="outline" className="text-[10px] ml-1">auto</Badge>
+                  </Label>
+                  <Input
+                    id="onroad-distance"
+                    value={form.remaining_distance_km}
+                    readOnly
+                    className="bg-muted/40 cursor-not-allowed"
+                    placeholder="—"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="onroad-distance" className="text-sm font-medium">
-                  Distance left (km)
-                </Label>
-                <Input
-                  id="onroad-distance"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  step="1"
-                  value={form.remaining_distance_km}
-                  onChange={(e) => set("remaining_distance_km", e.target.value)}
-                  placeholder="Estimated km to destination"
-                />
-              </div>
+
+              {liveTelemetry?.last_communication_at && (
+                <p className="text-[11px] text-muted-foreground">
+                  Last device update:{" "}
+                  {new Date(liveTelemetry.last_communication_at).toLocaleString()}
+                </p>
+              )}
+              {!liveTelemetry && vehicleId && (
+                <p className="text-[11px] text-warning flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                  No telemetry received yet from this vehicle's device.
+                </p>
+              )}
             </div>
 
             {/* Liters + urgency */}
