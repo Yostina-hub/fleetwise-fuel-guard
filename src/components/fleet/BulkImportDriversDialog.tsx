@@ -398,9 +398,10 @@ export default function BulkImportDriversDialog({
           )}
 
           {/* Parsing indicator */}
-          {parsing && (
+          {(parsing || scanning) && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" /> Parsing file...
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {parsing ? "Parsing file..." : "Checking for duplicates..."}
             </div>
           )}
 
@@ -417,6 +418,12 @@ export default function BulkImportDriversDialog({
                   <Badge variant="destructive">
                     <XCircle className="w-3 h-3 mr-1" /> Errors:{" "}
                     {preview.invalidRows}
+                  </Badge>
+                )}
+                {dupScan && dupScan.duplicates.length > 0 && (
+                  <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/15">
+                    <AlertCircle className="w-3 h-3 mr-1" /> Duplicates:{" "}
+                    {dupScan.duplicates.length}
                   </Badge>
                 )}
                 {preview.unmappedHeaders.length > 0 && (
