@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,35 @@ const ResetPasswordDialog = ({ open, onOpenChange, user }: ResetPasswordDialogPr
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [ssoManaged, setSsoManaged] = useState(false);
+  const [checkingSso, setCheckingSso] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      if (!open || !user?.email) {
+        setSsoManaged(false);
+        return;
+      }
+      setCheckingSso(true);
+      const { data } = await supabase.rpc("is_sso_managed_email", { _email: user.email });
+      if (!cancelled) {
+        setSsoManaged(data === true);
+        setCheckingSso(false);
+      }
+    };
+    check();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, user?.email]);
 
   const handleReset = async () => {
     if (!user) return;
+    if (ssoManaged) {
+      friendlyToastError(null, { title: "This account is managed by SSO/AD. Reset password via your identity provider." });
+      return;
+    }
     if (newPassword.length < 8) {
       friendlyToastError(null, { title: "Password must be at least 8 characters" });
       return;
@@ -62,23 +88,33 @@ const ResetPasswordDialog = ({ open, onOpenChange, user }: ResetPasswordDialogPr
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 flex gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-300">This will immediately change the user's password. They will need to use the new password on their next login.</p>
-        </div>
+        {ssoManaged ? (
+          <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 p-3 flex gap-2">
+            <AlertTriangle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-300">
+              This account signs in via your organization's identity provider (SSO/Active Directory).
+              Password resets must be performed through the IT identity portal, not here.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 flex gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-300">This will immediately change the user's password. They will need to use the new password on their next login.</p>
+          </div>
+        )}
 
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="new-pwd">New Password</Label>
-            <Input id="new-pwd" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min. 8 characters" />
+            <Input id="new-pwd" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min. 8 characters" disabled={ssoManaged || checkingSso} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="confirm-pwd">Confirm Password</Label>
-            <Input id="confirm-pwd" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter password" />
+            <Input id="confirm-pwd" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter password" disabled={ssoManaged || checkingSso} />
           </div>
-          <Button onClick={handleReset} disabled={loading || !newPassword || !confirmPassword} className="w-full gap-2">
+          <Button onClick={handleReset} disabled={loading || !newPassword || !confirmPassword || ssoManaged || checkingSso} className="w-full gap-2">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-            Reset Password
+            {ssoManaged ? "Reset Disabled (SSO/AD)" : "Reset Password"}
           </Button>
         </div>
       </DialogContent>

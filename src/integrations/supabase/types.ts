@@ -28095,6 +28095,7 @@ export type Database = {
         Args: { _pool_code: string; _user_id: string }
         Returns: boolean
       }
+      is_sso_managed_email: { Args: { _email: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_vehicle_online: { Args: { vehicle_uuid: string }; Returns: boolean }
       log_audit_event: {
