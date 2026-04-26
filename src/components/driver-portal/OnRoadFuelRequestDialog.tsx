@@ -282,15 +282,29 @@ export const OnRoadFuelRequestDialog = ({
         const pct = Math.max(0, Math.min(100, Math.round(liveTelemetry.fuel_level_percent)));
         next.current_fuel_percent = String(pct);
       }
-      if (geocodedPlace && (!f.current_location || f.current_location.trim() === "")) {
+      // Geocoded place always wins over manual input — these fields are
+      // device-driven now.
+      if (geocodedPlace) {
         next.current_location = geocodedPlace;
       } else if (
-        !geocodedPlace &&
         liveTelemetry?.latitude != null &&
-        liveTelemetry?.longitude != null &&
-        (!f.current_location || f.current_location.trim() === "")
+        liveTelemetry?.longitude != null
       ) {
         next.current_location = `GPS ${liveTelemetry.latitude.toFixed(5)}, ${liveTelemetry.longitude.toFixed(5)}`;
+      }
+      // Estimate remaining distance from live fuel %. Heuristic: ~4 km per
+      // percent of fuel (≈ 400 km on a full tank). Operators can refine via
+      // org settings later; for now this gives dispatchers a useful signal
+      // without asking the driver to guess.
+      if (
+        liveTelemetry?.fuel_level_percent != null &&
+        Number.isFinite(liveTelemetry.fuel_level_percent)
+      ) {
+        const km = Math.max(
+          0,
+          Math.round(liveTelemetry.fuel_level_percent * 4)
+        );
+        next.remaining_distance_km = String(km);
       }
       return next;
     });
