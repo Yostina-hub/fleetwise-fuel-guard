@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck, LogIn, Send, Shuffle, UserCheck, Sparkles, MapPin } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck, LogIn, Send, Shuffle, UserCheck, Sparkles, MapPin, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -55,9 +55,13 @@ interface Props {
   onClose: () => void;
   onCheckIn?: () => void;
   onCrossPool?: () => void;
+  /** Open the Edit / Fix-and-Resubmit dialog for this request. */
+  onEdit?: () => void;
+  /** Open the Delete confirmation dialog for this request. */
+  onDelete?: () => void;
 }
 
-export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onCheckIn, onCrossPool }: Props) => {
+export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onCheckIn, onCrossPool, onEdit, onDelete }: Props) => {
   const { t } = useTranslation();
   const { available } = useAvailableVehicles();
   // Pool scoping: a manager working a request only sees vehicles & drivers
