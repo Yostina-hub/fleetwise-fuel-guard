@@ -2175,8 +2175,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 return (
                   <>
                     <div>
-                      <Label className="text-primary font-medium text-sm mb-1 block">
-                        Item description <span className="text-destructive">*</span>
+                      <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                        <Package className="w-4 h-4 shrink-0" />
+                        <span>Item Description</span>
+                        <span className="text-destructive">*</span>
                       </Label>
                       <Input
                         type="text"
