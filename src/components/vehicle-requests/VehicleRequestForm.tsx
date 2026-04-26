@@ -620,9 +620,16 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           .select("phone")
           .eq("id", onBehalfOf.driverId)
           .maybeSingle();
-        return ((drv as any)?.phone?.trim?.() || "") as string;
+        const driverPhone = ((drv as any)?.phone?.trim?.() || "") as string;
+        if (driverPhone) return driverPhone;
       }
-      return "" as string;
+      // 3) Final fallback: HR/employees record linked by user_id.
+      const { data: emp } = await (supabase as any)
+        .from("employees")
+        .select("phone")
+        .eq("user_id", effectiveRequesterId)
+        .maybeSingle();
+      return (((emp as any)?.phone?.trim?.() || "") as string);
     },
     enabled: !!effectiveRequesterId && open,
     staleTime: 60_000,
@@ -2037,6 +2044,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   </SelectContent>
                 </Select>
                 <FieldError field="pool_category" />
+                {!form.pool_category && requesterPoolCodes.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    No pool assigned to this requester — please pick one manually.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -2428,6 +2440,11 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   icon={UserCog}
                   required
                   error={getError("contact_phone")}
+                  hint={
+                    !form.contact_phone?.trim() && !requesterPhone
+                      ? "No phone on file for this requester — please type one."
+                      : undefined
+                  }
                 >
                   <Input
                     type="tel"
