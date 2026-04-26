@@ -1,22 +1,23 @@
 /**
- * MyRequestsPanel — generic list of all workflow_instances the driver has
+ * MyRequestsPanel — tabular list of all workflow_instances the driver has
  * filed (or is the linked driver on). Driven by the workflow engine — works
  * for License Renewal, Fuel Request, Vehicle Request, Safety & Comfort, etc.
  *
- * No SOP-specific logic lives here: the list groups by `workflow_type` and
- * deep-links each row to its SOP page (or workflow builder for super admins).
+ * Click any row to open the unified request tracker (for fuel / incident /
+ * maintenance) or to deep-link into the SOP page (for non-driver roles).
  */
-import { useMemo } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileText, ChevronRight, Plus, IdCard, Fuel, Car, Shield, Wrench } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Loader2, FileText, Plus, IdCard, Fuel, Car, Shield, Wrench, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
-import { WORKFLOW_CONFIGS } from "@/lib/workflow-engine/configs";
 import { useAuth } from "@/hooks/useAuth";
+import RequestTrackingDialog, { TrackingKind } from "./RequestTrackingDialog";
 
 interface Props {
   driverId?: string | null;
@@ -26,13 +27,14 @@ interface Props {
 }
 
 const WORKFLOW_LABEL: Record<string, string> = {
-  license_renewal: "Driver License Renewal",
+  license_renewal: "License Renewal",
   driver_training: "Driver Training",
   driver_allowance: "Driver Allowance",
   fuel_request: "Fuel Request",
   vehicle_request: "Vehicle Request",
   safety_comfort: "Safety & Comfort",
-  maintenance_request: "Maintenance Request",
+  maintenance_request: "Maintenance",
+  incident_report: "Incident",
 };
 
 const WORKFLOW_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -41,13 +43,22 @@ const WORKFLOW_ICON: Record<string, React.ComponentType<{ className?: string }>>
   vehicle_request: Car,
   safety_comfort: Shield,
   maintenance_request: Wrench,
+  incident_report: AlertTriangle,
 };
 
 const STATUS_VARIANT: Record<string, "default" | "outline" | "destructive" | "secondary"> = {
   in_progress: "default",
+  active: "default",
   completed: "outline",
   cancelled: "destructive",
   rejected: "destructive",
+};
+
+/** Workflow types whose progress can be tracked via the unified dialog. */
+const TRACKABLE_KIND: Record<string, TrackingKind | undefined> = {
+  fuel_request: "fuel",
+  maintenance_request: "maintenance",
+  incident_report: "incident",
 };
 
 export default function MyRequestsPanel({
@@ -58,13 +69,15 @@ export default function MyRequestsPanel({
   const isDriverOnly = hasRole("driver") && !hasRole("super_admin") && !hasRole("org_admin")
     && !hasRole("fleet_manager") && !hasRole("operations_manager") && !hasRole("operator");
 
+  const [tracking, setTracking] = useState<{ kind: TrackingKind; id: string } | null>(null);
+
   const { data: instances, isLoading } = useQuery({
     queryKey: ["my-driver-workflow-instances", driverId, userId, organizationId],
     enabled: !!organizationId && (!!driverId || !!userId),
     queryFn: async () => {
       let q = supabase
         .from("workflow_instances")
-        .select("id, workflow_type, reference_number, title, current_stage, status, created_at, updated_at, data")
+        .select("id, workflow_type, reference_number, title, current_stage, status, created_at, updated_at, data, entity_id")
         .eq("organization_id", organizationId!)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -82,15 +95,20 @@ export default function MyRequestsPanel({
     },
   });
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, any[]>();
-    for (const i of instances ?? []) {
-      const arr = map.get(i.workflow_type) ?? [];
-      arr.push(i);
-      map.set(i.workflow_type, arr);
+  const handleRowClick = (row: any) => {
+    const trackKind = TRACKABLE_KIND[row.workflow_type];
+    const entityId = row.entity_id || (row.data && (row.data.entity_id || row.data.record_id));
+    if (trackKind && entityId) {
+      setTracking({ kind: trackKind, id: entityId });
+      return;
     }
-    return Array.from(map.entries());
-  }, [instances]);
+    if (isDriverOnly) {
+      if (row.workflow_type === "license_renewal") navigate("/my-license");
+      return;
+    }
+    const path = sopPathForType(row.workflow_type);
+    if (path) navigate(path);
+  };
 
   return (
     <Card className="p-6 space-y-4">
@@ -122,63 +140,61 @@ export default function MyRequestsPanel({
           )}
         </div>
       ) : (
-        <div className="space-y-4">
-          {grouped.map(([type, rows]) => {
-            const Icon = WORKFLOW_ICON[type] ?? FileText;
-            const label = WORKFLOW_LABEL[type] ?? type.replace(/_/g, " ");
-            const cfg = (WORKFLOW_CONFIGS as Record<string, any>)[type];
-            return (
-              <div key={type} className="space-y-1.5">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                  <Icon className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span className="font-medium">{label}</span>
-                  <span className="text-muted-foreground/70">· {rows.length}</span>
-                </div>
-                {rows.map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => {
-                      // Drivers never see raw SOP pages — bounce license-renewal
-                      // to the dedicated /my-license hub. Other types fall back
-                      // to the SOP page only for non-driver roles.
-                      if (isDriverOnly) {
-                        if (type === "license_renewal") navigate("/my-license");
-                        return;
-                      }
-                      const path = sopPathForType(type);
-                      if (path) navigate(path);
-                    }}
-                    className="w-full text-left p-3 rounded-md border border-border bg-card hover:bg-accent/40 transition-colors flex items-center gap-3"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="text-[10px]">{r.reference_number}</Badge>
-                        <Badge
-                          variant={STATUS_VARIANT[r.status] ?? "outline"}
-                          className="text-[10px] capitalize"
-                        >
-                          {r.status.replace(/_/g, " ")}
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground">
-                          {format(new Date(r.created_at), "MMM dd, yyyy")}
-                        </span>
-                      </div>
-                      <p className="text-sm mt-1 truncate">
-                        {r.title || cfg?.title || label}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Stage: <span className="font-mono">{r.current_stage}</span>
-                      </p>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type</TableHead>
+              <TableHead>Reference</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Stage</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Submitted</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {(instances ?? []).map((r: any) => {
+              const Icon = WORKFLOW_ICON[r.workflow_type] ?? FileText;
+              const label = WORKFLOW_LABEL[r.workflow_type] ?? r.workflow_type.replace(/_/g, " ");
+              return (
+                <TableRow
+                  key={r.id}
+                  className="cursor-pointer hover:bg-muted/40"
+                  onClick={() => handleRowClick(r)}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
+                      <span className="text-xs font-medium">{label}</span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" aria-hidden="true" />
-                  </button>
-                ))}
-              </div>
-            );
-          })}
-        </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{r.reference_number}</TableCell>
+                  <TableCell className="text-xs max-w-[220px] truncate">{r.title || "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-[10px] capitalize font-mono">
+                      {(r.current_stage || "").replace(/_/g, " ")}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={STATUS_VARIANT[r.status] ?? "outline"} className="text-[10px] capitalize">
+                      {r.status.replace(/_/g, " ")}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {format(new Date(r.created_at), "MMM dd, yyyy")}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       )}
+
+      <RequestTrackingDialog
+        open={!!tracking}
+        onOpenChange={(o) => { if (!o) setTracking(null); }}
+        kind={tracking?.kind ?? null}
+        recordId={tracking?.id ?? null}
+      />
     </Card>
   );
 }
