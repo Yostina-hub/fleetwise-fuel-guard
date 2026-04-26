@@ -22,10 +22,11 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import DriverQuickStats from "@/components/driver-portal/DriverQuickStats";
 import DriverQuickActions from "@/components/driver-portal/DriverQuickActions";
-import { FuelRequestFormDialog } from "@/components/fuel/FuelRequestFormDialog";
+// FuelRequestFormDialog and CreateWorkRequestDialog are no longer launched
+// from the driver portal quick actions — the focused ReportTripIncidentDialog
+// and OnRoadFuelRequestDialog are used instead.
 import { VehicleInspectionFormDialog } from "@/components/maintenance/VehicleInspectionFormDialog";
 
-import CreateWorkRequestDialog from "@/components/maintenance/CreateWorkRequestDialog";
 import { TireRequestDialog } from "@/components/tire-management/TireRequestDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
@@ -51,10 +52,8 @@ const DriverPortal = () => {
   const [activeTab, setActiveTab] = useState("assignments");
 
   // Dialog states
-  const [showMaintenance, setShowMaintenance] = useState(false);
-  const [showFuel, setShowFuel] = useState(false);
-  // On-road refuel — opened from inside an active trip view (separate from
-  // the standalone "Request Fuel" quick action which still uses the main form).
+  // Maintenance/fuel quick actions now route to the focused incident + on-road
+  // refuel dialogs, so showMaintenance / showFuel are no longer needed.
   const [showOnRoadFuel, setShowOnRoadFuel] = useState(false);
   const [reportIncidentContext, setReportIncidentContext] = useState<{
     vehicleId?: string | null;
