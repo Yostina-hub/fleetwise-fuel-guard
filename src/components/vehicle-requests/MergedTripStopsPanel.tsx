@@ -156,12 +156,63 @@ export const MergedTripStopsPanel = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("geofences")
-        .select("id,name,color,geometry_type,center_lat,center_lng,radius_meters,polygon_points,is_active")
+        .select(
+          "id,name,color,geometry_type,center_lat,center_lng,radius_meters,polygon_points,is_active,dispatch_policy,dispatch_priority",
+        )
         .eq("organization_id", organizationId)
         .neq("is_active", false);
       if (error) throw error;
       return data || [];
     },
+  });
+
+  // ── Per-request geofence override ─────────────────────────────────
+  // Reads the parent vehicle_request row so the dispatcher can:
+  //   • toggle geofence-aware dispatch off for THIS trip only
+  //   • flag specific zones as "avoid" just for this trip (e.g. road closure)
+  // Mutations write back to the same row and bust the AI cache.
+  const queryClient = useQueryClient();
+  const { data: requestSettings } = useQuery({
+    queryKey: ["merged-trip-settings", parentRequestId],
+    enabled: !!parentRequestId && open,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("vehicle_requests")
+        .select("id, geofence_aware_dispatch, geofence_avoid_overrides")
+        .eq("id", parentRequestId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data || {
+        geofence_aware_dispatch: true,
+        geofence_avoid_overrides: [] as string[],
+      }) as {
+        geofence_aware_dispatch: boolean;
+        geofence_avoid_overrides: string[];
+      };
+    },
+  });
+  const geofenceAware = requestSettings?.geofence_aware_dispatch ?? true;
+  const avoidOverrides: string[] = requestSettings?.geofence_avoid_overrides ?? [];
+
+  const updateRequestSettings = useMutation({
+    mutationFn: async (patch: {
+      geofence_aware_dispatch?: boolean;
+      geofence_avoid_overrides?: string[];
+    }) => {
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update(patch)
+        .eq("id", parentRequestId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["merged-trip-settings", parentRequestId] });
+      // Wipe any stale AI verdict so the dispatcher knows to re-run.
+      setAiPick(null);
+      setAiError(null);
+    },
+    onError: (e: any) =>
+      friendlyToastError(e, { title: "Could not update geofence rule" }),
   });
 
   // ── Lazy-mounted map + backend-proxied optimized route options ────
