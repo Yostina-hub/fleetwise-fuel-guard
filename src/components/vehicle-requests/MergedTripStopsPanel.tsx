@@ -171,6 +171,9 @@ const getMergedTripFenceBounds = (fence: any): maplibregl.LngLatBounds | null =>
   return bounds;
 };
 
+const sameCoordinate = (a: [number, number], b: [number, number]) =>
+  Math.abs(a[0] - b[0]) < 0.000001 && Math.abs(a[1] - b[1]) < 0.000001;
+
 
 
 export const MergedTripStopsPanel = ({
