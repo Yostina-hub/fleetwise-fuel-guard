@@ -75,17 +75,19 @@ export default function MyRequestsPanel({
     queryKey: ["my-driver-unified-requests", driverId, userId, organizationId],
     enabled: !!organizationId && (!!driverId || !!userId),
     queryFn: async () => {
-      // 1) workflow_instances (license, vehicle, safety, etc.)
+      // 1) workflow_instances the driver actually filed (license, safety, etc.)
+      // Exclude `vehicle_request` — those are trips the driver is *assigned to
+      // drive*, not requests they made. They belong on the Assignments tab.
       let wq = supabase
         .from("workflow_instances")
         .select("id, workflow_type, reference_number, title, current_stage, status, created_at, updated_at, data")
         .eq("organization_id", organizationId!)
+        .neq("workflow_type", "vehicle_request")
         .order("created_at", { ascending: false })
         .limit(100);
-      const orParts: string[] = [];
-      if (driverId) orParts.push(`driver_id.eq.${driverId}`);
-      if (userId) orParts.push(`created_by.eq.${userId}`);
-      if (orParts.length) wq = wq.or(orParts.join(","));
+      // Only include rows the driver themselves created (not ones where they
+      // are merely the linked driver for an operator-filed request).
+      if (userId) wq = wq.eq("created_by", userId);
       const { data: wfData, error: wfErr } = await wq;
       if (wfErr) throw wfErr;
 
