@@ -57,7 +57,7 @@ type GeofenceRecord = {
   center_lat: number | string | null;
   center_lng: number | string | null;
   radius_meters: number | string | null;
-  polygon_points: Array<{ lat: number | string; lng: number | string }> | null;
+  polygon_points: unknown;
   enable_entry_alarm?: boolean | null;
   enable_exit_alarm?: boolean | null;
   is_active?: boolean | null;
@@ -114,7 +114,7 @@ const buildFenceFeature = (fence: GeofenceRecord): GeoJSON.Feature<GeoJSON.Polyg
   }
 
   if (fence.geometry_type === "polygon" && Array.isArray(fence.polygon_points) && fence.polygon_points.length >= 3) {
-    const coords = fence.polygon_points
+    const coords = (fence.polygon_points as Array<{ lat: number | string; lng: number | string }>)
       .map((p) => [toFiniteNumber(p.lng), toFiniteNumber(p.lat)] as const)
       .filter((p): p is readonly [number, number] => p[0] != null && p[1] != null)
       .map(([lng, lat]) => [lng, lat]);
@@ -164,14 +164,14 @@ const Geofencing = () => {
   const [formData, setFormData] = useState({
     name: "",
     category: "customer_site",
-    geometry_type: "circle" as "circle" | "polygon",
+      geometry_type: "circle" as "circle" | "polygon",
     center_lat: null as number | null,
     center_lng: null as number | null,
     radius_meters: 500,
     polygon_points: [] as Array<{lat: number, lng: number}>,
     enable_entry_alarm: true,
     enable_exit_alarm: true,
-    color: "#3B82F6",
+      color: "#3B82F6",
     dispatch_policy: "neutral" as DispatchPolicy,
   });
 
