@@ -1087,8 +1087,11 @@ export const MergedTripStopsPanel = ({
                                 {geofenceAware ? "Geofence rule on" : "Geofence rule off"}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent align="end" className="w-72 p-3 space-y-3">
-                              <div className="flex items-center justify-between gap-3">
+                            <PopoverContent
+                              align="end"
+                              className="w-72 p-3 max-h-[70vh] flex flex-col gap-3 overflow-hidden"
+                            >
+                              <div className="flex items-center justify-between gap-3 shrink-0">
                                 <div className="space-y-0.5">
                                   <div className="text-xs font-semibold">Use geofence rules</div>
                                   <div className="text-[10px] text-muted-foreground leading-snug">
@@ -1104,12 +1107,19 @@ export const MergedTripStopsPanel = ({
                                 />
                               </div>
                               {geofenceAware && (
-                                <div className="space-y-1.5">
-                                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                                    Avoid for this trip only
+                                <div className="flex flex-col min-h-0 flex-1 space-y-1.5">
+                                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0 flex items-center justify-between">
+                                    <span>Avoid for this trip only</span>
+                                    <span className="normal-case text-muted-foreground/70">
+                                      {(geofences as any[]).length} zone
+                                      {(geofences as any[]).length === 1 ? "" : "s"}
+                                    </span>
                                   </div>
-                                  <ScrollArea className="max-h-40 pr-2">
-                                    <div className="space-y-1.5">
+                                  <ScrollArea
+                                    className="flex-1 min-h-0 max-h-[44vh] pr-2 rounded-md border bg-muted/20"
+                                    type="always"
+                                  >
+                                    <div className="space-y-1.5 p-2">
                                       {(geofences as any[]).length === 0 && (
                                         <div className="text-[10px] text-muted-foreground italic">
                                           No active geofences in this organisation.
