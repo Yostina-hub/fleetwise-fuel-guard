@@ -1268,6 +1268,31 @@ const Geofencing = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={!!pendingDeleteId} onOpenChange={(open) => { if (!open) setPendingDeleteId(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this geofence?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove the zone and stop entry/exit alerts for it. Any dispatch policy tied to this zone will no longer apply.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => {
+                  if (pendingDeleteId) {
+                    deleteGeofenceMutation.mutate(pendingDeleteId);
+                    setPendingDeleteId(null);
+                  }
+                }}
+              >
+                Delete zone
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </TooltipProvider>
     </Layout>
   );
