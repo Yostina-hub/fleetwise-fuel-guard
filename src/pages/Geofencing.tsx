@@ -1032,7 +1032,12 @@ const Geofencing = () => {
                   </Button>
                 </div>
 
-                <Button variant="outline" size="sm" className="h-10 gap-2" onClick={() => setPanelOpen((open) => !open)}>
+                <Button size="sm" className="h-10 gap-2" onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
+                  <Plus className="h-4 w-4" />
+                  New zone
+                </Button>
+
+                <Button variant="outline" size="sm" className="h-10 gap-2 lg:hidden" onClick={() => setPanelOpen((open) => !open)}>
                   {panelOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
                   Zones
                 </Button>
