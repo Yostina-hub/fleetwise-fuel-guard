@@ -1,12 +1,19 @@
 /**
- * File parser & validator for vehicle bulk import.
- * Supports CSV (RFC 4180 quoted fields) and XLSX via SheetJS.
+ * Generic file parser & validator for bulk imports (vehicles, drivers, …).
  *
+ * Supports CSV (RFC 4180 quoted fields) and XLSX via SheetJS.
  * Returns a tabular intermediate form { rows, errors } — UI shows a
  * dry-run preview before any DB write.
+ *
+ * Pass a `ImportField[]` schema describing the columns; the parser is
+ * otherwise schema-agnostic.
  */
 import * as XLSX from "xlsx";
-import { IMPORTABLE_FIELDS, ImportField, resolveField } from "./importSchema";
+import {
+  IMPORTABLE_FIELDS as VEHICLE_FIELDS,
+  ImportField,
+  resolveField as resolveVehicleField,
+} from "./importSchema";
 
 export interface ParsedRow {
   /** 1-based row number as it appears in the file (incl. header row) */
