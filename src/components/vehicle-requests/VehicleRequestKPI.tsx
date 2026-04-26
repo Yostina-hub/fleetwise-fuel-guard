@@ -208,30 +208,30 @@ export const VehicleRequestKPI = ({ requests, activeStatus = "all", onStatusChan
                   isActive ? "opacity-100" : "opacity-0 group-hover:opacity-60"
                 )}
               />
-              <div className="p-3.5 flex items-start gap-3">
+              <div className="p-2.5 flex items-center gap-2.5">
                 <div
                   className={cn(
-                    "shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-transform",
+                    "shrink-0 w-7 h-7 rounded-md flex items-center justify-center transition-transform",
                     c.tone.iconBg,
                     isActive && "scale-105"
                   )}
                 >
-                  <Icon className={cn("w-4.5 h-4.5", c.tone.iconText)} strokeWidth={2.25} />
+                  <Icon className={cn("w-3.5 h-3.5", c.tone.iconText)} strokeWidth={2.25} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide truncate leading-tight">
                     {c.label}
                   </p>
                   <p
                     className={cn(
                       "font-bold leading-tight tabular-nums mt-0.5",
-                      c.primary ? "text-2xl" : "text-xl"
+                      c.primary ? "text-lg" : "text-base"
                     )}
                   >
                     {c.value}
                   </p>
                   {c.sublabel && (
-                    <p className="text-[10px] text-muted-foreground/80 truncate mt-0.5">
+                    <p className="text-[10px] text-muted-foreground/80 truncate leading-tight">
                       {c.sublabel}
                     </p>
                   )}
