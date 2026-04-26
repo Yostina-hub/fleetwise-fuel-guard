@@ -256,6 +256,8 @@ export const MergedTripStopsPanel = ({
   >([]);
   const [routesError, setRoutesError] = useState<string | null>(null);
   const [routesLoading, setRoutesLoading] = useState(false);
+  /** Index of the route alternative the user has clicked to focus on the map. */
+  const [focusedRouteIdx, setFocusedRouteIdx] = useState<number | null>(null);
 
   useEffect(() => {
     if (!showMap || !open) return;
@@ -337,11 +339,13 @@ export const MergedTripStopsPanel = ({
       setRoutesLoading(true);
       setRoutesError(null);
 
-      // Fallback colors for up to 3 alternatives. Best = primary blue.
+      // Professional palette — strong primary blue for the recommended route,
+      // warm amber and muted violet for alternatives. Each route gets a darker
+      // outline ("casing") drawn underneath for that map-app polish.
       const palette = [
-        { name: "Route A", color: "hsl(217 91% 55%)" },
-        { name: "Route B", color: "hsl(38 92% 50%)" },
-        { name: "Route C", color: "hsl(280 70% 60%)" },
+        { name: "Route A", color: "hsl(217 91% 50%)", casing: "hsl(217 91% 30%)" },
+        { name: "Route B", color: "hsl(32 95% 48%)", casing: "hsl(32 95% 28%)" },
+        { name: "Route C", color: "hsl(265 60% 55%)", casing: "hsl(265 60% 35%)" },
       ];
 
       try {
@@ -383,10 +387,25 @@ export const MergedTripStopsPanel = ({
           const isBest = i === bestIdx;
           const meta = palette[i] ?? palette[0];
           const sourceId = `route-alt-${i}`;
+          const casingId = `route-alt-casing-${i}`;
           const layerId = `route-alt-layer-${i}`;
           map.addSource(sourceId, {
             type: "geojson",
-            data: { type: "Feature", properties: {}, geometry: r.geometry },
+            data: { type: "Feature", properties: { idx: i, isBest }, geometry: r.geometry },
+          });
+          // Casing — a darker, slightly thicker line drawn beneath each route
+          // so the coloured stroke reads cleanly over the basemap. Standard
+          // technique used by professional mapping apps (Google, Mapbox).
+          map.addLayer({
+            id: casingId,
+            type: "line",
+            source: sourceId,
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": meta.casing,
+              "line-width": isBest ? 9 : 5,
+              "line-opacity": isBest ? 0.55 : 0.3,
+            },
           });
           map.addLayer({
             id: layerId,
@@ -394,11 +413,20 @@ export const MergedTripStopsPanel = ({
             source: sourceId,
             layout: { "line-cap": "round", "line-join": "round" },
             paint: {
-              "line-color": isBest ? "hsl(217 91% 50%)" : meta.color,
-              "line-width": isBest ? 6 : 3,
-              "line-opacity": isBest ? 0.95 : 0.45,
-              ...(isBest ? {} : { "line-dasharray": [1.5, 1] }),
+              "line-color": meta.color,
+              "line-width": isBest ? 6 : 3.5,
+              "line-opacity": isBest ? 1 : 0.7,
+              ...(isBest ? {} : { "line-dasharray": [2, 1.2] }),
             },
+          });
+
+          // Click on route line → focus that alternative in the legend.
+          map.on("click", layerId, () => setFocusedRouteIdx(i));
+          map.on("mouseenter", layerId, () => {
+            map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", layerId, () => {
+            map.getCanvas().style.cursor = "";
           });
         });
 
@@ -411,7 +439,7 @@ export const MergedTripStopsPanel = ({
             b.extend([s.departure_lng!, s.departure_lat!]);
             b.extend([s.destination_lng!, s.destination_lat!]);
           });
-          map.fitBounds(b, { padding: 50, maxZoom: 14, duration: 400 });
+          map.fitBounds(b, { padding: 60, maxZoom: 14, duration: 400 });
         } catch {
           /* noop */
         }
@@ -423,7 +451,7 @@ export const MergedTripStopsPanel = ({
             distanceKm: r.distance / 1000,
             durationMin: r.duration / 60,
             isBest: i === bestIdx,
-            color: i === bestIdx ? "hsl(217 91% 50%)" : palette[i].color,
+            color: palette[i]?.color ?? palette[0].color,
           })),
         );
       } catch (err: any) {
@@ -471,6 +499,35 @@ export const MergedTripStopsPanel = ({
       setRoutesLoading(false);
     };
   }, [showMap, open, stopsWithCoords]);
+
+  // Reset focus whenever a fresh batch of routes is loaded.
+  useEffect(() => {
+    setFocusedRouteIdx(null);
+  }, [routesInfo.length]);
+
+  // Apply focus styling — boost the focused route, dim the others.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || routesInfo.length === 0) return;
+    routesInfo.forEach((_, i) => {
+      const layerId = `route-alt-layer-${i}`;
+      const casingId = `route-alt-casing-${i}`;
+      if (!map.getLayer(layerId)) return;
+      const isFocused = focusedRouteIdx === i;
+      const isBest = routesInfo[i].isBest;
+      const dimmed = focusedRouteIdx != null && !isFocused;
+      try {
+        map.setPaintProperty(layerId, "line-opacity", dimmed ? 0.2 : isFocused || isBest ? 1 : 0.7);
+        map.setPaintProperty(layerId, "line-width", isFocused ? 7 : isBest ? 6 : 3.5);
+        if (map.getLayer(casingId)) {
+          map.setPaintProperty(casingId, "line-opacity", dimmed ? 0.1 : isFocused ? 0.7 : isBest ? 0.55 : 0.3);
+          map.setPaintProperty(casingId, "line-width", isFocused ? 10 : isBest ? 9 : 5);
+        }
+      } catch {
+        /* layer may have been torn down */
+      }
+    });
+  }, [focusedRouteIdx, routesInfo]);
 
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
@@ -563,46 +620,97 @@ export const MergedTripStopsPanel = ({
                     className="w-full h-[360px] bg-muted"
                     aria-label="Consolidated trip map"
                   />
-                  {/* Floating legend overlay */}
-                  <div className="absolute top-2 left-2 bg-background/95 backdrop-blur rounded-md border shadow-sm px-2.5 py-2 max-w-[220px] space-y-1.5">
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold">
-                      <RouteIcon className="w-3 h-3 text-primary" />
-                      Route alternatives
+                  {/* Floating legend overlay — Google-Maps-style route picker */}
+                  <div className="absolute top-3 left-3 bg-card/95 backdrop-blur-md rounded-lg border border-border/60 shadow-lg overflow-hidden w-[260px] max-w-[calc(100%-1.5rem)]">
+                    <div className="px-3 py-2 border-b border-border/60 bg-muted/40 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+                        <RouteIcon className="w-3.5 h-3.5 text-primary" />
+                        Route alternatives
+                      </div>
+                      {!routesLoading && routesInfo.length > 0 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {routesInfo.length} option{routesInfo.length === 1 ? "" : "s"}
+                        </span>
+                      )}
                     </div>
+
                     {routesLoading && (
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        Computing routes…
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-3">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Computing best route…
                       </div>
                     )}
                     {!routesLoading && routesError && (
-                      <div className="text-[10px] text-destructive">
+                      <div className="text-[11px] text-destructive px-3 py-2.5 leading-snug">
                         {routesError}. Showing straight-line fallback.
                       </div>
                     )}
-                    {!routesLoading && routesInfo.length > 0 && (
-                      <ul className="space-y-1">
-                        {routesInfo.map((r, i) => (
-                          <li
-                            key={i}
-                            className={`flex items-center gap-1.5 text-[10px] ${
-                              r.isBest ? "font-semibold" : "text-muted-foreground"
-                            }`}
-                          >
-                            <span
-                              className="inline-block w-3 h-1.5 rounded-sm shrink-0"
-                              style={{ background: r.color, opacity: r.isBest ? 1 : 0.7 }}
-                            />
-                            <span className="truncate">{r.label}</span>
-                            <span className="ml-auto font-mono">
-                              {r.distanceKm.toFixed(1)}km · {Math.round(r.durationMin)}m
-                            </span>
-                            {r.isBest && (
-                              <Trophy className="w-3 h-3 text-primary shrink-0" />
-                            )}
-                          </li>
-                        ))}
-                      </ul>
+
+                    {!routesLoading && routesInfo.length > 0 && (() => {
+                      const bestDuration = routesInfo.find((r) => r.isBest)?.durationMin ?? 0;
+                      return (
+                        <ul className="divide-y divide-border/50 max-h-[260px] overflow-y-auto">
+                          {routesInfo.map((r, i) => {
+                            const isFocused = focusedRouteIdx === i;
+                            const deltaMin = Math.round(r.durationMin - bestDuration);
+                            return (
+                              <li key={i}>
+                                <button
+                                  type="button"
+                                  onClick={() => setFocusedRouteIdx(isFocused ? null : i)}
+                                  className={`w-full text-left px-3 py-2 flex items-start gap-2 transition-colors hover:bg-muted/60 ${
+                                    isFocused ? "bg-muted/70" : ""
+                                  }`}
+                                  aria-pressed={isFocused}
+                                >
+                                  {/* Stroke swatch — mirrors line on the map */}
+                                  <span
+                                    className="mt-1 inline-block h-2.5 rounded-full shrink-0"
+                                    style={{
+                                      width: 22,
+                                      background: r.color,
+                                      boxShadow: r.isBest ? `0 0 0 2px ${r.color}33` : undefined,
+                                    }}
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-xs font-semibold truncate">
+                                        {Math.round(r.durationMin)} min
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground font-mono">
+                                        · {r.distanceKm.toFixed(1)} km
+                                      </span>
+                                      {r.isBest && (
+                                        <Badge
+                                          variant="default"
+                                          className="ml-auto h-4 px-1.5 text-[9px] uppercase tracking-wide gap-0.5"
+                                        >
+                                          <Trophy className="w-2.5 h-2.5" />
+                                          Best
+                                        </Badge>
+                                      )}
+                                      {!r.isBest && deltaMin > 0 && (
+                                        <span className="ml-auto text-[10px] text-muted-foreground">
+                                          +{deltaMin} min
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                      {r.strategy}
+                                    </div>
+                                  </div>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      );
+                    })()}
+
+                    {!routesLoading && routesInfo.length > 1 && (
+                      <div className="px-3 py-1.5 border-t border-border/60 bg-muted/30 text-[10px] text-muted-foreground">
+                        Tap a route to highlight it on the map
+                      </div>
                     )}
                   </div>
                 </div>
