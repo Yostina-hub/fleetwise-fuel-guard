@@ -1528,6 +1528,52 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </p>
               </div>
             )}
+
+            {/* Requester vs System trip-type evaluation
+                ----------------------------------------
+                Shows the requester's selected type alongside the type the
+                system inferred from the start/end time window. Both values
+                are persisted on the request so dispatchers can see the
+                original intent even when they disagree. */}
+            {systemClassifiedType && (
+              <div
+                className={`rounded-lg border p-2.5 text-xs flex flex-wrap items-center gap-2 ${
+                  requesterVsSystemMismatch
+                    ? "border-amber-500/40 bg-amber-500/5"
+                    : "border-border bg-muted/30"
+                }`}
+                role="status"
+                aria-live="polite"
+              >
+                <Badge variant="outline" className="text-[10px] gap-1 border-primary/40">
+                  Requester time:{" "}
+                  <span className="font-semibold">
+                    {form.requested_request_type === "nighttime_operation" ? "Night Request" : "Day Request"}
+                  </span>
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] gap-1 ${
+                    requesterVsSystemMismatch
+                      ? "border-amber-500/60 text-amber-700 dark:text-amber-300"
+                      : "border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+                  }`}
+                >
+                  System-evaluated:{" "}
+                  <span className="font-semibold">
+                    {systemClassifiedType === "nighttime_operation" ? "Night Request" : "Day Request"}
+                  </span>
+                </Badge>
+                {requesterVsSystemMismatch ? (
+                  <span className="text-amber-700 dark:text-amber-300">
+                    ⚠ Times fall in the {systemClassifiedType === "nighttime_operation" ? "night" : "day"} window —
+                    your selection is preserved, but dispatch will see both.
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">Selection matches the time window.</span>
+                )}
+              </div>
+            )}
           </section>
 
           {/* SCHEDULE + ROUTE — placed side by side on wider screens */}
