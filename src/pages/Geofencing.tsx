@@ -604,19 +604,22 @@ const Geofencing = () => {
   };
 
   const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
+  const visibleGeofences = (geofences || []) as unknown as GeofenceRecord[];
+  const preferCount = visibleGeofences.filter((f) => f.dispatch_policy === "prefer").length;
+  const avoidCount = visibleGeofences.filter((f) => f.dispatch_policy === "avoid").length;
+  const hasGeofences = visibleGeofences.length > 0;
 
   return (
     <Layout>
-      <div className="flex h-full">
-        {/* Map View - Takes most of the space */}
-        <div className="flex-1 relative">
+      <div className="flex h-full min-h-0 bg-background">
+        <div className="relative min-w-0 flex-1">
           <LiveTrackingMap 
             vehicles={[]} 
             token={mapToken || envToken}
             onMapReady={handleMapReady}
+            autoLocate={false}
           />
 
-          {/* Token Prompt */}
           {(!envToken && !mapToken) && (
             <div className="absolute top-4 right-4 z-10">
               <Card className="p-4 bg-card/95 backdrop-blur space-y-2 w-80">
@@ -632,77 +635,112 @@ const Geofencing = () => {
               </Card>
             </div>
           )}
-          
-          {/* Simple Drawing Tools - Floating on map */}
-          <Card className="absolute top-4 left-4 bg-card/95 backdrop-blur z-10 shadow-lg">
-            <CardContent className="p-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
-                {t('geofencing.addGeofence')}
-              </p>
-              <div className="flex gap-2">
+
+          <div className="absolute left-4 top-4 z-10 w-[min(420px,calc(100vw-2rem))] rounded-lg border border-border bg-card/95 shadow-floating backdrop-blur">
+            <div className="border-b border-border p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Crosshair className="h-4 w-4 text-primary" />
+                    {t('geofencing.addGeofence')}
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {drawingMode === "circle"
+                      ? "Click the map once, then set radius and dispatch rule."
+                      : drawingMode === "polygon"
+                        ? "Click boundary points, then double-click to save the area."
+                        : "Choose a shape to start creating an operational zone."}
+                  </p>
+                </div>
+                {drawingMode && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDrawingMode(null)}>
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 <Button
                   variant={drawingMode === 'circle' ? 'default' : 'outline'}
-                  size="sm"
                   onClick={() => setDrawingMode(drawingMode === 'circle' ? null : 'circle')}
-                  className="gap-1.5"
+                  className="h-10 justify-start gap-2"
                 >
                   <Circle className="w-4 h-4" />
                   {t('geofencing.circle')}
                 </Button>
                 <Button
                   variant={drawingMode === 'polygon' ? 'default' : 'outline'}
-                  size="sm"
                   onClick={() => setDrawingMode(drawingMode === 'polygon' ? null : 'polygon')}
-                  className="gap-1.5"
+                  className="h-10 justify-start gap-2"
                 >
                   <Square className="w-4 h-4" />
                   {t('geofencing.polygon')}
                 </Button>
               </div>
-              {drawingMode && (
-                <p className="text-xs text-primary mt-2 animate-pulse">
-                  {drawingMode === 'circle' 
-                    ? '👆 Click on map to set center' 
-                    : '👆 Click points, double-click to finish'}
-                </p>
+              {drawingMode === "polygon" && draftPolygonPoints.length > 0 && (
+                <div className="mt-3 flex items-center justify-between rounded-md border border-border bg-muted px-3 py-2 text-xs">
+                  <span className="text-muted-foreground">Points selected</span>
+                  <Badge variant="secondary">{draftPolygonPoints.length}</Badge>
+                </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            <div className="grid grid-cols-3 gap-2 p-3 text-xs">
+              <div className="rounded-md border border-border bg-muted p-2">
+                <div className="text-lg font-bold text-foreground">{geofenceStats.activeGeofences}</div>
+                <div className="text-muted-foreground">Active zones</div>
+              </div>
+              <div className="rounded-md border border-success/30 bg-success/10 p-2">
+                <div className="text-lg font-bold text-success">{preferCount}</div>
+                <div className="text-muted-foreground">Preferred</div>
+              </div>
+              <div className="rounded-md border border-warning/30 bg-warning/10 p-2">
+                <div className="text-lg font-bold text-warning">{avoidCount}</div>
+                <div className="text-muted-foreground">Avoided</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute bottom-4 left-4 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/95 px-3 py-2 text-xs shadow-elevated backdrop-blur">
+            <span className="font-medium text-foreground">Map zones</span>
+            <Badge variant="outline" className="gap-1"><ShieldCheck className="h-3 w-3" /> prefer</Badge>
+            <Badge variant="outline" className="gap-1"><Ban className="h-3 w-3" /> avoid</Badge>
+            <Badge variant="outline" className="gap-1"><Navigation className="h-3 w-3" /> click row to focus</Badge>
+          </div>
         </div>
 
-        {/* Simplified Side Panel */}
-        <div className="w-[400px] border-l border-border bg-card overflow-auto">
-          <div className="p-4 space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">{t('geofencing.title')}</h2>
-              <Badge variant="secondary">{geofenceStats.totalGeofences}</Badge>
+        <aside className="flex w-[460px] shrink-0 flex-col border-l border-border bg-card">
+          <div className="border-b border-border p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="text-2xl font-bold tracking-normal">{t('geofencing.title')}</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Operational zones for alerts and dispatch routing.</p>
+              </div>
+              <Badge variant="secondary" className="mt-1">{geofenceStats.totalGeofences}</Badge>
             </div>
 
-            {/* Quick Stats - Compact */}
-            <div className="grid grid-cols-3 gap-2">
-              <Card className="p-3 text-center">
-                <div className="text-2xl font-bold text-primary">{geofenceStats.activeGeofences}</div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="rounded-lg border border-border bg-muted p-3">
+                <div className="text-xl font-bold text-primary">{geofenceStats.activeGeofences}</div>
                 <div className="text-xs text-muted-foreground">{t('common.active')}</div>
-              </Card>
-              <Card className="p-3 text-center">
-                <div className="text-2xl font-bold text-green-500">{geofenceStats.entryEvents}</div>
-                <div className="text-xs text-muted-foreground">{t('geofencing.entryAlert')}</div>
-              </Card>
-              <Card className="p-3 text-center">
-                <div className="text-2xl font-bold text-orange-500">{geofenceStats.exitEvents}</div>
-                <div className="text-xs text-muted-foreground">{t('geofencing.exitAlert')}</div>
-              </Card>
+              </div>
+              <div className="rounded-lg border border-border bg-muted p-3">
+                <div className="text-xl font-bold text-success">{geofenceStats.entryEvents}</div>
+                <div className="text-xs text-muted-foreground">Entries</div>
+              </div>
+              <div className="rounded-lg border border-border bg-muted p-3">
+                <div className="text-xl font-bold text-warning">{geofenceStats.exitEvents}</div>
+                <div className="text-xs text-muted-foreground">Exits</div>
+              </div>
             </div>
+          </div>
 
-            {/* Tabs */}
+          <div className="min-h-0 flex-1 overflow-auto p-5">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="geofences">{t('geofencing.title')}</TabsTrigger>
                 <TabsTrigger value="events">{t('geofencing.events', 'Events')}</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="geofences" className="mt-4 space-y-2">
+              <TabsContent value="geofences" className="mt-4 space-y-3">
                 {isLoading ? (
                   <div className="space-y-2">
                     {[1,2,3].map(i => (
@@ -718,56 +756,44 @@ const Geofencing = () => {
                     </p>
                   </Card>
                 ) : (
-                  geofences?.map((fence: any) => (
-                    <Card key={fence.id} className="p-3 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        {/* Color indicator */}
-                        <div 
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: fence.color || '#3B82F6' }}
-                        />
-                        
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{fence.name}</div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              {categoryLabels[fence.category] || fence.category}
-                            </Badge>
-                            <span>{fence.geometry_type === 'circle' ? `${fence.radius_meters}m` : 'Polygon'}</span>
-                          </div>
-                        </div>
-
-                        {/* Dispatch policy — feeds the AI route recommender */}
-                        <div className="hidden sm:flex flex-col items-end gap-0.5">
-                          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Dispatch</span>
-                          <Select
-                            value={(fence.dispatch_policy as string) || "neutral"}
-                            onValueChange={(v) =>
-                              updateDispatchPolicy.mutate({
-                                id: fence.id,
-                                policy: v as "prefer" | "avoid" | "neutral",
-                              })
-                            }
-                          >
-                            <SelectTrigger className="h-7 w-[110px] text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="prefer">
-                                <span className="text-emerald-600 font-medium">Prefer</span>
-                              </SelectItem>
-                              <SelectItem value="avoid">
-                                <span className="text-amber-600 font-medium">Avoid</span>
-                              </SelectItem>
-                              <SelectItem value="neutral">Neutral</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Actions */}
+                  visibleGeofences.map((fence) => {
+                    const policy = ((fence.dispatch_policy as DispatchPolicy) || "neutral") as DispatchPolicy;
+                    const PolicyIcon = policyMeta[policy].icon;
+                    return (
+                    <Card key={fence.id} className="overflow-hidden transition-colors hover:bg-muted/40">
+                      <button type="button" className="flex w-full items-start gap-3 p-4 text-left" onClick={() => focusFenceOnMap(fence)}>
+                        <span className="mt-1 h-4 w-4 shrink-0 rounded-full border border-border" style={{ backgroundColor: fence.color || '#3B82F6' }} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-semibold text-foreground">{fence.name}</span>
+                          <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <Badge variant="outline" className="gap-1 px-1.5 py-0 text-[10px]"><Building2 className="h-3 w-3" />{categoryLabels[fence.category || ""] || fence.category}</Badge>
+                            <span>{fence.geometry_type === 'circle' ? `${Number(fence.radius_meters || 0).toLocaleString()} m` : 'Polygon'}</span>
+                            {fence.is_active === false && <Badge variant="secondary">Disabled</Badge>}
+                          </span>
+                        </span>
+                        <Badge variant="outline" className={`gap-1 ${policyMeta[policy].className}`}>
+                          <PolicyIcon className="h-3 w-3" />
+                          {policyMeta[policy].label}
+                        </Badge>
+                      </button>
+                      <div className="flex items-center gap-2 border-t border-border px-4 py-3">
+                        <Select
+                          value={policy}
+                          onValueChange={(v) =>
+                            updateDispatchPolicy.mutate({ id: fence.id, policy: v as DispatchPolicy })
+                          }
+                        >
+                          <SelectTrigger className="h-9 flex-1 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="prefer">Prefer for dispatch</SelectItem>
+                            <SelectItem value="avoid">Avoid for dispatch</SelectItem>
+                            <SelectItem value="neutral">Neutral</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <TooltipProvider>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -780,7 +806,7 @@ const Geofencing = () => {
                                   })}
                                 >
                                   {fence.is_active !== false ? (
-                                    <Eye className="h-4 w-4 text-green-500" />
+                                    <Eye className="h-4 w-4 text-success" />
                                   ) : (
                                     <EyeOff className="h-4 w-4 text-muted-foreground" />
                                   )}
@@ -824,7 +850,7 @@ const Geofencing = () => {
                         </TooltipProvider>
                       </div>
                     </Card>
-                  ))
+                  )})
                 )}
               </TabsContent>
 
@@ -833,7 +859,7 @@ const Geofencing = () => {
               </TabsContent>
             </Tabs>
           </div>
-        </div>
+        </aside>
       </div>
 
       {/* Simplified Create/Edit Dialog */}
