@@ -328,15 +328,12 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     userTouchedStartTimeRef.current = false;
 
     const sync = () => {
-      // Freeze the auto-tick once the user has configured the window. We treat
-      // "end_time is set" OR "request_type is chosen" as a strong signal the
-      // user is actively filling the form and no longer wants the start time
-      // silently rewritten on every tick.
       setForm((prev) => {
-        const userIsActive =
-          !!prev.end_time ||
-          (!!prev.request_type && prev.request_type !== "");
-        if (userIsActive) return prev;
+        // Only freeze auto-sync once the USER has explicitly touched the
+        // start time. Auto-picked request_type / default end_time should NOT
+        // freeze the live clock — otherwise reopening the form leaves a stale
+        // start time from a previous session.
+        if (userTouchedStartTimeRef.current) return prev;
 
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -355,7 +352,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             changed = true;
           }
         }
-        if (!userTouchedStartTimeRef.current && prev.start_time !== nowHHMM) {
+        if (prev.start_time !== nowHHMM) {
           next.start_time = nowHHMM;
           if (!prev.start_date_time) next.start_date_time = nowHHMM;
           changed = true;
@@ -1020,6 +1017,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   // auto-overwriting via `userPickedRequestTypeRef`.
   const userPickedRequestTypeRef = useRef(false);
   useEffect(() => {
+    if (open) userPickedRequestTypeRef.current = false;
+  }, [open]);
+
+  useEffect(() => {
     if (!open) return;
     if (userPickedRequestTypeRef.current) return;
     if (form.request_type === "daily_operation" || form.request_type === "nighttime_operation") return;
@@ -1028,10 +1029,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       if (f.request_type === "daily_operation" || f.request_type === "nighttime_operation") return f;
       const next = { ...f, request_type: auto, requested_request_type: auto };
       if (auto === "nighttime_operation") {
-        if (!f.start_time) next.start_time = "20:00";
         if (!f.end_time) next.end_time = "06:00";
       } else {
-        if (!f.start_time) next.start_time = "08:30";
         if (!f.end_time) next.end_time = "17:30";
       }
       return next;
