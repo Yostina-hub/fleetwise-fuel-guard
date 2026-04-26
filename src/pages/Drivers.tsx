@@ -88,7 +88,6 @@ import { Driver } from "@/hooks/useDrivers";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
