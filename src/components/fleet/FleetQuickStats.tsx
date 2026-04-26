@@ -179,7 +179,7 @@ const FleetQuickStats = ({
                   </p>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80 leading-tight truncate">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80 leading-tight line-clamp-2">
                     {stat.label}
                   </p>
                   {stat.subtext && (
