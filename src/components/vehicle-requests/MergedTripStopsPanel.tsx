@@ -1134,6 +1134,31 @@ export const MergedTripStopsPanel = ({
                               }
                             />
                           </div>
+                          {renderableGeofences.length > 0 && (() => {
+                            const allIds = renderableGeofences.map((g: any) => g.id);
+                            const allChecked = allIds.every((id) => avoidOverrides.includes(id));
+                            const someChecked = !allChecked && allIds.some((id) => avoidOverrides.includes(id));
+                            return (
+                              <div className="px-2 py-1 flex items-center justify-between gap-2 border-b bg-muted/10">
+                                <label className="flex items-center gap-2 text-[11px] cursor-pointer min-w-0">
+                                  <Checkbox
+                                    checked={allChecked ? true : someChecked ? "indeterminate" : false}
+                                    disabled={!geofenceAware}
+                                    onCheckedChange={(c) => {
+                                      const next = c === true ? allIds : [];
+                                      updateRequestSettings.mutate({ geofence_avoid_overrides: next });
+                                    }}
+                                  />
+                                  <span className="font-medium">
+                                    {allChecked ? "Unmark all" : "Mark all"}
+                                  </span>
+                                </label>
+                                <span className="text-[10px] text-muted-foreground shrink-0">
+                                  {avoidOverrides.filter((id) => allIds.includes(id)).length}/{allIds.length} selected
+                                </span>
+                              </div>
+                            );
+                          })()}
                           <div className="max-h-28 overflow-y-auto overscroll-contain p-2 space-y-1.5">
                             {renderableGeofences.length === 0 && (
                               <div className="text-[10px] text-muted-foreground italic">
