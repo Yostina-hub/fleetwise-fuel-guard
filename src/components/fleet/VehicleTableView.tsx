@@ -398,9 +398,16 @@ export const VehicleTableView = ({
       case "gps_device_id":
       case "temperature_control":
       case "depot_id":
-      case "status":
       case "notes":
         return <span className="capitalize text-sm">{fmtText(raw[col])}</span>;
+
+      case "status":
+        return (
+          <QuickStatusChange
+            vehicleId={vehicle.vehicleId}
+            currentStatus={String(raw.status ?? "active")}
+          />
+        );
 
       case "live_status":
         return <VehicleLiveStatusBadge status={vehicle.liveStatus ?? vehicle.status} />;
