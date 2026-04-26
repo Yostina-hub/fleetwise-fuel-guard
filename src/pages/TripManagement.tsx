@@ -413,7 +413,7 @@ const TripManagement = () => {
                 Back to Trips
               </Button>
               <span className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
-                New Fleet Request
+                New Vehicle Request
               </span>
             </div>
             <div className="p-0">

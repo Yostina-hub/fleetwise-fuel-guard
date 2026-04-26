@@ -322,7 +322,7 @@ const RequesterPortalInner = () => {
                 <Car className="h-5 w-5 text-primary" aria-hidden="true" />
               </div>
               <div>
-                <h1 className="text-xl md:text-2xl font-bold tracking-tight">My Fleet Requests</h1>
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight">My Vehicle Requests</h1>
                 <p className="text-sm text-muted-foreground mt-1">
                   Submit a new vehicle request and track every step until your trip is completed.
                 </p>
