@@ -1085,17 +1085,15 @@ const Geofencing = () => {
               </div>
 
               {panelOpen && (
-                <section className="absolute inset-x-3 bottom-14 z-20 flex max-h-[46%] min-h-[220px] flex-col overflow-hidden rounded-lg border border-border bg-card/95 shadow-floating backdrop-blur 2xl:hidden">
+                <section className="absolute inset-x-3 bottom-14 z-20 flex max-h-[46%] min-h-[220px] flex-col overflow-hidden rounded-lg border border-border bg-card/95 shadow-floating backdrop-blur lg:hidden">
                   {renderZonePanel("overlay")}
                 </section>
               )}
             </main>
 
-            {panelOpen && (
-              <aside className="hidden w-[390px] shrink-0 flex-col border-l border-border bg-card 2xl:flex">
-                {renderZonePanel("aside")}
-              </aside>
-            )}
+            <aside className="hidden w-[380px] xl:w-[420px] shrink-0 flex-col border-l border-border bg-card lg:flex">
+              {renderZonePanel("aside")}
+            </aside>
           </div>
         </div>
 
