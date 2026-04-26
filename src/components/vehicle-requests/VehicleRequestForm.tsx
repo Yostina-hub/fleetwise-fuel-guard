@@ -1472,6 +1472,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   setForm((f) => ({
                     ...f,
                     request_type: v,
+                    requested_request_type: v,
                     start_time: "20:00",
                     end_time: f.end_time && f.end_time !== "" ? f.end_time : "06:00",
                   }));
@@ -1483,6 +1484,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                   setForm((f) => ({
                     ...f,
                     request_type: v,
+                    requested_request_type: v,
                     start_time: f.start_time && f.start_time !== "20:00" ? f.start_time : "08:30",
                     end_time: f.end_time && f.end_time !== "06:00" ? f.end_time : "17:30",
                   }));
