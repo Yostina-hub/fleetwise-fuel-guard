@@ -1205,6 +1205,17 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     }
 
     setForm((f) => ({ ...f, ...sanitized }));
+
+    // Night Request requires an explicit subcategory so dispatchers can
+    // distinguish a planned night shift from an emergency.
+    if (sanitized.request_type === "nighttime_operation" && !form.night_request_subcategory) {
+      toast.error("Please choose a Night Request category (Night shift or Emergency).");
+      requestAnimationFrame(() => {
+        fieldAnchors.current["request_type" as keyof typeof fieldAnchors.current]?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      return;
+    }
+
     const result = validateAll({ ...form, ...sanitized } as any);
     if (!result.valid) {
       const firstField = Object.keys(result.errors)[0];
