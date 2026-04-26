@@ -159,6 +159,7 @@ const Geofencing = () => {
   const geofenceLayersRef = useRef<string[]>([]);
   const draftPolygonRef = useRef<Array<{ lat: number; lng: number }>>([]);
   const [draftPolygonPoints, setDraftPolygonPoints] = useState<Array<{ lat: number; lng: number }>>([]);
+  const [mapReady, setMapReady] = useState(false);
   const [activeTab, setActiveTab] = useState<"geofences" | "events">("geofences");
   
   useEffect(() => {
@@ -260,6 +261,7 @@ const Geofencing = () => {
   // Initialize map hooks when ready
   const handleMapReady = (map: maplibregl.Map) => {
     mapRef.current = map;
+    setMapReady(true);
   };
 
   // Handle drawing mode changes
@@ -331,7 +333,7 @@ const Geofencing = () => {
 
   // Render geofences on map
   useEffect(() => {
-    if (!mapRef.current || !geofences) return;
+    if (!mapReady || !mapRef.current || !geofences) return;
     const map = mapRef.current;
 
     const renderGeofences = () => {
@@ -425,7 +427,7 @@ const Geofencing = () => {
     } else {
       map.once('style.load', renderGeofences);
     }
-  }, [geofences]);
+  }, [geofences, mapReady]);
 
   const createGeofenceMutation = useMutation({
     mutationFn: async (data: any) => {
