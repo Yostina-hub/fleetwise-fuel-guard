@@ -51,6 +51,38 @@ const STATUS_OPTIONS = [
   { value: "suspended", label: "Suspended" },
 ];
 
+// Pool taxonomy mirrored from the Vehicle Registration form (BasicInfoTabs)
+// so users see the same Corporate / Zone / Region categories and the same
+// child sub-pools (FAN, TPO, HQ, SWAAZ, EAAZ, NR, SR).
+type PoolCategory = "corporate" | "zone" | "region";
+const POOL_HIERARCHY: Record<PoolCategory, { code: string; label: string }[]> = {
+  corporate: [
+    { code: "FAN", label: "FAN" },
+    { code: "TPO", label: "TPO" },
+    { code: "HQ", label: "HQ" },
+  ],
+  zone: [
+    { code: "SWAAZ", label: "SWAAZ (South West Addis)" },
+    { code: "EAAZ", label: "EAAZ (East Addis)" },
+  ],
+  region: [
+    { code: "NR", label: "NR (North Region)" },
+    { code: "SR", label: "SR (South Region)" },
+  ],
+};
+const POOL_CATEGORY_META: Record<PoolCategory, { label: string; icon: typeof Building; tone: string }> = {
+  corporate: { label: "Corporate", icon: Building, tone: "text-blue-400 bg-blue-500/10 border-blue-500/30" },
+  zone:      { label: "Zone",      icon: Layers,   tone: "text-amber-400 bg-amber-500/10 border-amber-500/30" },
+  region:    { label: "Region",    icon: MapPin,   tone: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
+};
+const CODE_TO_CATEGORY: Record<string, PoolCategory> = (() => {
+  const m: Record<string, PoolCategory> = {};
+  (Object.keys(POOL_HIERARCHY) as PoolCategory[]).forEach(cat => {
+    POOL_HIERARCHY[cat].forEach(p => { m[p.code] = cat; });
+  });
+  return m;
+})();
+
 const ROLE_COLORS: Record<string, string> = {
   super_admin: "bg-destructive/15 text-destructive border-destructive/30",
   org_admin: "bg-primary/15 text-primary border-primary/30",
