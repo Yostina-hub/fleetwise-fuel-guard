@@ -943,6 +943,46 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         {["pending", "approved"].includes(request.status) && !showRejectForm && (
           <Button size="sm" variant="outline" onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
         )}
+
+        {/* Edit / Resubmit / Delete — pushed to the right edge so requester
+            self-service controls are predictable across all statuses. */}
+        {(canEditRow || canDeleteRow) && !showRejectForm && (
+          <div className="flex items-center gap-2 ml-auto">
+            {canEditRow && onEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onEdit}
+                className="gap-1.5"
+                title={request.status === "rejected" ? "Fix and resubmit" : "Edit request"}
+              >
+                {request.status === "rejected" ? (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
+                    Fix & Resubmit
+                  </>
+                ) : (
+                  <>
+                    <Pencil className="w-3.5 h-3.5 text-primary" />
+                    Edit
+                  </>
+                )}
+              </Button>
+            )}
+            {canDeleteRow && onDelete && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onDelete}
+                className="gap-1.5 text-destructive hover:text-destructive"
+                title="Remove request"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {activeAssignment && (
