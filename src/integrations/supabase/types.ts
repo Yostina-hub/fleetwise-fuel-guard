@@ -24452,6 +24452,7 @@ export type Database = {
           merged_into_request_id: string | null
           needed_from: string
           needed_until: string | null
+          night_request_subcategory: string | null
           no_show_due_at: string | null
           no_show_released_at: string | null
           no_show_released_by: string | null
@@ -24565,6 +24566,7 @@ export type Database = {
           merged_into_request_id?: string | null
           needed_from: string
           needed_until?: string | null
+          night_request_subcategory?: string | null
           no_show_due_at?: string | null
           no_show_released_at?: string | null
           no_show_released_by?: string | null
@@ -24678,6 +24680,7 @@ export type Database = {
           merged_into_request_id?: string | null
           needed_from?: string
           needed_until?: string | null
+          night_request_subcategory?: string | null
           no_show_due_at?: string | null
           no_show_released_at?: string | null
           no_show_released_by?: string | null
