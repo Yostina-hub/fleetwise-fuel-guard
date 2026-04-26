@@ -2289,8 +2289,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
               </VRField>
 
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Vehicle Type <span className="text-destructive">*</span>
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                  <Car className="w-4 h-4 shrink-0" />
+                  <span>Vehicle Type</span>
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.vehicle_type}
