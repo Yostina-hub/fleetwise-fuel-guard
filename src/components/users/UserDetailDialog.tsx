@@ -509,7 +509,10 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
                         const cat = v as PoolCategory;
                         setPoolCategory(cat);
                         // Reset specific pool if it doesn't belong to the new category
-                        if (!POOL_HIERARCHY[cat].some(p => p.code === poolCode)) {
+                        const dbCodes = fleetPools.filter(p => p.category === cat).map(p => p.code);
+                        const fallbackCodes = POOL_HIERARCHY[cat].map(p => p.code);
+                        const validCodes = dbCodes.length ? dbCodes : fallbackCodes;
+                        if (!validCodes.includes(poolCode)) {
                           setPoolCode("");
                         }
                       }}
@@ -545,13 +548,25 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
                       <SelectTrigger id="pool-code" className={!poolCategory ? "opacity-50" : ""}>
                         <SelectValue placeholder={poolCategory ? "Select pool..." : "Pick category first"} />
                       </SelectTrigger>
-                      <SelectContent>
-                        {poolCategory &&
-                          POOL_HIERARCHY[poolCategory].map(p => (
+                      <SelectContent className="max-h-72">
+                        {poolCategory && (() => {
+                          // Prefer fleet_pools rows for this category; fall back to the
+                          // hardcoded short list when the table has no rows for this org.
+                          const dbItems = fleetPools
+                            .filter(p => p.category === poolCategory)
+                            .sort((a, b) => (a.sort_order ?? 100) - (b.sort_order ?? 100) || a.code.localeCompare(b.code));
+                          const items = dbItems.length
+                            ? dbItems.map(p => ({ code: p.code, label: p.name || p.code }))
+                            : POOL_HIERARCHY[poolCategory];
+                          return items.map(p => (
                             <SelectItem key={p.code} value={p.code}>
-                              {p.label}
+                              <span className="flex items-center gap-2">
+                                <span className="font-mono text-[11px] text-muted-foreground">{p.code}</span>
+                                <span className="truncate">{p.label}</span>
+                              </span>
                             </SelectItem>
-                          ))}
+                          ));
+                        })()}
                       </SelectContent>
                     </Select>
                   </div>
