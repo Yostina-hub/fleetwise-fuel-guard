@@ -16,6 +16,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   AlertTriangle,
   Ban,
   BellRing,
@@ -31,6 +41,7 @@ import {
   Navigation,
   PanelRightClose,
   PanelRightOpen,
+  Plus,
   Route,
   Search,
   ShieldCheck,
@@ -255,6 +266,7 @@ const Geofencing = () => {
   const [activeTab, setActiveTab] = useState<"zones" | "events">("zones");
   const [panelOpen, setPanelOpen] = useState(true);
   const [selectedGeofenceId, setSelectedGeofenceId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [formData, setFormData] = useState({
@@ -879,8 +891,8 @@ const Geofencing = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 text-destructive hover:text-destructive"
-                  onClick={() => deleteGeofenceMutation.mutate(fence.id)}
+                  className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setPendingDeleteId(fence.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -953,7 +965,11 @@ const Geofencing = () => {
             <div className="rounded-md border border-dashed border-border p-8 text-center">
               <MapPin className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" />
               <div className="font-semibold text-foreground">No zones found</div>
-              <p className="mt-1 text-sm text-muted-foreground">Create a circle or polygon from the map toolbar.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Create a circle or polygon from the map toolbar, or add one manually.</p>
+              <Button size="sm" className="mt-4 gap-2" onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
+                <Plus className="h-4 w-4" />
+                New zone
+              </Button>
             </div>
           ) : (
             <div className="space-y-3 pb-2">{filteredGeofences.map(renderZoneCard)}</div>
@@ -1016,7 +1032,12 @@ const Geofencing = () => {
                   </Button>
                 </div>
 
-                <Button variant="outline" size="sm" className="h-10 gap-2" onClick={() => setPanelOpen((open) => !open)}>
+                <Button size="sm" className="h-10 gap-2" onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
+                  <Plus className="h-4 w-4" />
+                  New zone
+                </Button>
+
+                <Button variant="outline" size="sm" className="h-10 gap-2 lg:hidden" onClick={() => setPanelOpen((open) => !open)}>
                   {panelOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
                   Zones
                 </Button>
@@ -1064,17 +1085,15 @@ const Geofencing = () => {
               </div>
 
               {panelOpen && (
-                <section className="absolute inset-x-3 bottom-14 z-20 flex max-h-[46%] min-h-[220px] flex-col overflow-hidden rounded-lg border border-border bg-card/95 shadow-floating backdrop-blur 2xl:hidden">
+                <section className="absolute inset-x-3 bottom-14 z-20 flex max-h-[46%] min-h-[220px] flex-col overflow-hidden rounded-lg border border-border bg-card/95 shadow-floating backdrop-blur lg:hidden">
                   {renderZonePanel("overlay")}
                 </section>
               )}
             </main>
 
-            {panelOpen && (
-              <aside className="hidden w-[390px] shrink-0 flex-col border-l border-border bg-card 2xl:flex">
-                {renderZonePanel("aside")}
-              </aside>
-            )}
+            <aside className="hidden w-[380px] xl:w-[420px] shrink-0 flex-col border-l border-border bg-card lg:flex">
+              {renderZonePanel("aside")}
+            </aside>
           </div>
         </div>
 
@@ -1135,17 +1154,76 @@ const Geofencing = () => {
                 </div>
               </div>
 
-              {formData.geometry_type === "circle" && (
-                <div>
-                  <Label>Radius (meters)</Label>
-                  <Input
-                    type="number"
-                    min={25}
-                    value={formData.radius_meters}
-                    onChange={(event) => setFormData({ ...formData, radius_meters: Math.max(25, parseInt(event.target.value, 10) || 500) })}
-                  />
+              <div className="grid gap-3 rounded-md border border-border bg-muted/30 p-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">Geometry</Label>
+                  <div className="mt-1 flex rounded-md border border-border bg-card p-1">
+                    <Button
+                      type="button"
+                      variant={formData.geometry_type === "circle" ? "default" : "ghost"}
+                      size="sm"
+                      className="h-8 flex-1 gap-2"
+                      onClick={() => setFormData({ ...formData, geometry_type: "circle" })}
+                    >
+                      <Circle className="h-3.5 w-3.5" />
+                      Circle
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={formData.geometry_type === "polygon" ? "default" : "ghost"}
+                      size="sm"
+                      className="h-8 flex-1 gap-2"
+                      onClick={() => setFormData({ ...formData, geometry_type: "polygon" })}
+                    >
+                      <Square className="h-3.5 w-3.5" />
+                      Polygon
+                    </Button>
+                  </div>
                 </div>
-              )}
+
+                {formData.geometry_type === "circle" ? (
+                  <>
+                    <div>
+                      <Label htmlFor="lat">Latitude *</Label>
+                      <Input
+                        id="lat"
+                        type="number"
+                        step="0.000001"
+                        placeholder="e.g., 9.0192"
+                        value={formData.center_lat ?? ""}
+                        onChange={(event) => setFormData({ ...formData, center_lat: event.target.value === "" ? null : Number(event.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lng">Longitude *</Label>
+                      <Input
+                        id="lng"
+                        type="number"
+                        step="0.000001"
+                        placeholder="e.g., 38.7525"
+                        value={formData.center_lng ?? ""}
+                        onChange={(event) => setFormData({ ...formData, center_lng: event.target.value === "" ? null : Number(event.target.value) })}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Label>Radius (meters)</Label>
+                      <Input
+                        type="number"
+                        min={25}
+                        value={formData.radius_meters}
+                        onChange={(event) => setFormData({ ...formData, radius_meters: Math.max(25, parseInt(event.target.value, 10) || 500) })}
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">Tip: Use the Circle tool on the map to pick a center visually.</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="sm:col-span-2 rounded-md border border-dashed border-border bg-card/60 p-3 text-xs text-muted-foreground">
+                    {formData.polygon_points.length >= 3
+                      ? <>Polygon has <span className="font-semibold text-foreground">{formData.polygon_points.length}</span> points. Use the Polygon tool on the map to redraw.</>
+                      : "Use the Polygon tool on the map toolbar to draw at least 3 points."}
+                  </div>
+                )}
+              </div>
 
               <div>
                 <Label>{t("common.color", "Color")}</Label>
@@ -1190,6 +1268,31 @@ const Geofencing = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={!!pendingDeleteId} onOpenChange={(open) => { if (!open) setPendingDeleteId(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this geofence?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove the zone and stop entry/exit alerts for it. Any dispatch policy tied to this zone will no longer apply.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => {
+                  if (pendingDeleteId) {
+                    deleteGeofenceMutation.mutate(pendingDeleteId);
+                    setPendingDeleteId(null);
+                  }
+                }}
+              >
+                Delete zone
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </TooltipProvider>
     </Layout>
   );
