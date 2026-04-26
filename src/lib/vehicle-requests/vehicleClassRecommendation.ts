@@ -122,10 +122,21 @@ export function recommendVehicleClass(input: {
   cargoWeightKg?: number | null;
   /** When true, restrict the candidate pool to courier-only vehicles (Messenger Service). */
   courierOnly?: boolean;
+  /**
+   * Optional whitelist of vehicle-class `value`s that are physically present
+   * in the chosen Specific Pool. When provided AND non-empty, the recommender
+   * only considers these classes. This prevents the form from recommending a
+   * Sedan (then flagging DoubleCab as an "upgrade") when the pool only has
+   * DoubleCabs available.
+   */
+  availableInPool?: string[] | null;
 }): VehicleClassProfile | null {
   const passengers = Math.max(1, input.passengers || 1);
   const cargoNeeded = CARGO_ORDER[input.cargo] ?? 0;
   const weightNeeded = Math.max(0, input.cargoWeightKg ?? 0);
+  const poolWhitelist = input.availableInPool && input.availableInPool.length > 0
+    ? new Set(input.availableInPool)
+    : null;
 
   // Only personnel-transport rows are recommendable. Cargo trucks and
   // specialised gear are reserved for dispatcher routing. Courier-only
@@ -137,6 +148,7 @@ export function recommendVehicleClass(input: {
     .filter((v) => v.capacity >= passengers)
     .filter((v) => CARGO_ORDER[v.cargo] >= cargoNeeded)
     .filter((v) => v.maxPayloadKg >= weightNeeded)
+    .filter((v) => (poolWhitelist ? poolWhitelist.has(v.value) : true))
     .sort((a, b) => a.rank - b.rank);
 
   return eligible[0] ?? null;

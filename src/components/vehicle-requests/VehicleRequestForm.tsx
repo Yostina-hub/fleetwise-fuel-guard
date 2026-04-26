@@ -56,6 +56,7 @@ import {
   recommendVehicleClass,
   isUpgradeOverRecommendation,
   getVehicleClassProfile,
+  VEHICLE_CLASS_CATALOG,
   isPassengerVehicleType,
   NON_PASSENGER_SENTINEL,
   COST_BAND_LABELS,
@@ -1220,6 +1221,25 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     return Number.isFinite(n) && n > 0 ? n : 0;
   }, [form.cargo_weight_kg]);
 
+  // When a Specific Pool is chosen, derive the canonical vehicle-class values
+  // that are physically available in that pool. This list feeds BOTH the
+  // recommender (so it never recommends a class that isn't available, which
+  // would falsely flag the only available class as an "upgrade") AND the
+  // eligible-types dropdown below.
+  const availableClassesInPool = useMemo<string[] | null>(() => {
+    if (!form.pool_name || poolVehicleTypeKeys.size === 0) return null;
+    const matched: string[] = [];
+    for (const profile of VEHICLE_CLASS_CATALOG) {
+      const valueKey = normalizeVT(profile.value);
+      const labelKey = normalizeVT(profile.label);
+      const inPool = Array.from(poolVehicleTypeKeys).some(
+        (k) => k === valueKey || k === labelKey || k.includes(valueKey) || valueKey.includes(k),
+      );
+      if (inPool) matched.push(profile.value);
+    }
+    return matched;
+  }, [form.pool_name, poolVehicleTypeKeys]);
+
   const recommendation = useMemo(() => {
     const raw = parseInt(form.passengers);
     const pax = raw === NON_PASSENGER_SENTINEL ? 1 : (raw || 1);
@@ -1232,8 +1252,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       cargo,
       cargoWeightKg: cargoWeightKgNum || null,
       courierOnly: isMessenger,
+      availableInPool: availableClassesInPool,
     });
-  }, [form.passengers, form.cargo_load, cargoWeightKgNum, isMessenger]);
+  }, [form.passengers, form.cargo_load, cargoWeightKgNum, isMessenger, availableClassesInPool]);
 
   // Eligible vehicle types — driven by passengers + cargo + weight + service
   // type. Only types that can actually carry the requested load are surfaced
