@@ -614,8 +614,17 @@ export const PoolAssignmentPicker = ({
         <Button
           size="sm"
           className="bg-emerald-600 hover:bg-emerald-700 text-xs gap-1.5"
-          disabled={!vehicleId || isAssigning}
+          disabled={
+            !vehicleId ||
+            isAssigning ||
+            (routeCheck && !routeCheck.valid && !overrideZone)
+          }
           onClick={() => setConfirmAssign(true)}
+          title={
+            routeCheck && !routeCheck.valid && !overrideZone
+              ? "Route is outside operational zones — tick the override above to proceed."
+              : undefined
+          }
         >
           {isAssigning ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
