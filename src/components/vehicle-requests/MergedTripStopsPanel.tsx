@@ -500,6 +500,35 @@ export const MergedTripStopsPanel = ({
     };
   }, [showMap, open, stopsWithCoords]);
 
+  // Reset focus whenever a fresh batch of routes is loaded.
+  useEffect(() => {
+    setFocusedRouteIdx(null);
+  }, [routesInfo.length]);
+
+  // Apply focus styling — boost the focused route, dim the others.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || routesInfo.length === 0) return;
+    routesInfo.forEach((_, i) => {
+      const layerId = `route-alt-layer-${i}`;
+      const casingId = `route-alt-casing-${i}`;
+      if (!map.getLayer(layerId)) return;
+      const isFocused = focusedRouteIdx === i;
+      const isBest = routesInfo[i].isBest;
+      const dimmed = focusedRouteIdx != null && !isFocused;
+      try {
+        map.setPaintProperty(layerId, "line-opacity", dimmed ? 0.2 : isFocused || isBest ? 1 : 0.7);
+        map.setPaintProperty(layerId, "line-width", isFocused ? 7 : isBest ? 6 : 3.5);
+        if (map.getLayer(casingId)) {
+          map.setPaintProperty(casingId, "line-opacity", dimmed ? 0.1 : isFocused ? 0.7 : isBest ? 0.55 : 0.3);
+          map.setPaintProperty(casingId, "line-width", isFocused ? 10 : isBest ? 9 : 5);
+        }
+      } catch {
+        /* layer may have been torn down */
+      }
+    });
+  }, [focusedRouteIdx, routesInfo]);
+
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
       {/* ── COMPACT SUMMARY ROW (always visible) ── */}
