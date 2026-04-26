@@ -520,6 +520,44 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     enabled: !!organizationId && open,
   });
 
+  // Vehicles that physically live in the chosen Specific Pool. Drives:
+  //  • the upper cap on "No. of Vehicles" (can't book more than exist)
+  //  • the eligibility filter on "Vehicle Type" (only types present in pool)
+  // Falls back gracefully when no pool is chosen yet (returns []).
+  const { data: poolVehicles = [] } = useQuery({
+    queryKey: ["pool-vehicles", organizationId, form.pool_name],
+    queryFn: async () => {
+      if (!form.pool_name) return [];
+      const { data, error } = await (supabase as any)
+        .from("vehicles")
+        .select("id, vehicle_type, status")
+        .eq("organization_id", organizationId!)
+        .eq("specific_pool", form.pool_name);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId && open && !!form.pool_name,
+    staleTime: 60_000,
+  });
+
+  // Normalise free-text vehicle_type strings ("Double Cab Pickup",
+  // "double_cab", "DoubleCab") into a stable comparison key so DB rows and
+  // VEHICLE_TYPES_OPTIONS values can be matched fuzzily.
+  const normalizeVT = (s: string | null | undefined) =>
+    String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  const poolVehicleTypeKeys = useMemo(() => {
+    const set = new Set<string>();
+    for (const v of poolVehicles as any[]) {
+      const k = normalizeVT(v.vehicle_type);
+      if (k) set.add(k);
+    }
+    return set;
+  }, [poolVehicles]);
+
+  const poolVehicleCount = (poolVehicles as any[]).length;
+
+
   // ── Working-hours policy (per-tenant, configurable) ───────────────────────
   // Loaded from organization_settings. Used to hard-block Project /
   // operational requests that fall outside the org's working window.
