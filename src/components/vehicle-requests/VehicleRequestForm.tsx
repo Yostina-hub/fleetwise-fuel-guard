@@ -2265,7 +2265,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               <VRField
                 id="vr-num-vehicles"
-                label="No. Of Vehicles"
+                label="No. of Vehicles"
                 icon={Car}
                 required
                 error={getError("num_vehicles")}
