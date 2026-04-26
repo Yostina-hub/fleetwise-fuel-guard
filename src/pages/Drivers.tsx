@@ -87,7 +87,7 @@ import { useDriversPaginated } from "@/hooks/useDriversPaginated";
 import { Driver } from "@/hooks/useDrivers";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
@@ -96,11 +96,16 @@ const Drivers = () => {
   const { organizationId } = useOrganization();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const initialAssignment = (searchParams.get("assignment") as "assigned" | "unassigned" | null) ?? "all";
+  const initialDriverType = searchParams.get("driverType") ?? "all";
+  const initialEmploymentType = searchParams.get("employmentType") ?? "all";
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [driverTypeFilter, setDriverTypeFilter] = useState("all");
-  const [employmentTypeFilter, setEmploymentTypeFilter] = useState("all");
-  const [assignmentFilter, setAssignmentFilter] = useState<"all" | "assigned" | "unassigned">("all");
+  const [driverTypeFilter, setDriverTypeFilter] = useState(initialDriverType);
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState(initialEmploymentType);
+  const [assignmentFilter, setAssignmentFilter] = useState<"all" | "assigned" | "unassigned">(initialAssignment);
   const [sortBy, setSortBy] = useState<"last_name" | "first_name" | "employee_id" | "hire_date" | "license_expiry" | "created_at" | "status">("last_name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [isExporting, setIsExporting] = useState(false);
