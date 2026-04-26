@@ -120,8 +120,9 @@ serve(async (req) => {
   }
 
   // Try OSRM (no key required, drives the actual road network)
+  const wantAlternatives = body?.alternatives === true;
   try {
-    const osrm = await tryOsrm(coords as Coord[]);
+    const osrm = await tryOsrm(coords as Coord[], wantAlternatives);
     if (osrm.ok) {
       return secureJsonResponse(
         {
@@ -131,6 +132,8 @@ serve(async (req) => {
           distance_m: osrm.distance_m,
           duration_s: osrm.duration_s,
           legs: osrm.legs,
+          // Real OSRM-computed driving alternatives (different roads, same stops).
+          alternatives: osrm.alternatives,
         },
         req,
       );
