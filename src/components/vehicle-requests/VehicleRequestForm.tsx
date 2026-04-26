@@ -2331,8 +2331,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
               {isUpgrade && (
                 <div className="sm:col-span-2 lg:col-span-3">
-                  <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1 block">
-                    Justification <span className="text-destructive">*</span>
+                  <Label className="text-amber-600 dark:text-amber-400 font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>Justification</span>
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
                     value={form.vehicle_type_justification}
