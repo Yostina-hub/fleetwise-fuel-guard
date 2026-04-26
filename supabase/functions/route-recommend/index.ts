@@ -36,13 +36,23 @@ import {
 const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
 
+interface FenceHit {
+  name: string;
+  policy?: "prefer" | "avoid" | "neutral";
+  priority?: number;
+}
+
 interface Candidate {
   label?: string;
   distance_km: number;
   duration_min: number;
   sample_coords?: [number, number][];
-  /** Names of org geofences this route's geometry passes through. */
-  geofences?: string[];
+  /**
+   * Geofences this route passes through. Each entry is either a bare name
+   * (legacy) or an object with the effective dispatch policy. The effective
+   * policy already reflects the per-trip override applied client-side.
+   */
+  geofences?: Array<string | FenceHit>;
 }
 
 const isCandidate = (c: unknown): c is Candidate =>
