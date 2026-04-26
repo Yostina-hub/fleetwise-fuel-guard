@@ -121,25 +121,45 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     enabled: request.status === "approved" && canManageAll,
   });
 
-  // Issue #41 — pull the requester's full profile so the detail view can show
-  // department, job title (used as section), employee code and contact info.
+  // Issue #41 — pull the requester's full org context so the detail view can
+  // show Division (business unit), Department, Section (job title), employee
+  // code and contact info. Business unit comes from `user_roles` (the
+  // organisational placement), not from the profile.
   const { data: requesterProfile } = useQuery({
-    queryKey: ["request-requester-profile", request.requester_id],
+    queryKey: ["request-requester-org", request.requester_id, request.organization_id],
     enabled: !!request.requester_id,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("department, job_title, employee_code, phone, email")
-        .eq("id", request.requester_id)
-        .maybeSingle();
-      return data as {
+      const [{ data: profile }, { data: roles }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("department, job_title, employee_code, phone, email")
+          .eq("id", request.requester_id)
+          .maybeSingle(),
+        supabase
+          .from("user_roles")
+          .select("business_unit_id, business_units(name)")
+          .eq("user_id", request.requester_id)
+          .eq("organization_id", request.organization_id)
+          .not("business_unit_id", "is", null)
+          .limit(1),
+      ]);
+      const role = (roles && roles.length > 0 ? roles[0] : null) as any;
+      return {
+        department: profile?.department ?? null,
+        job_title: profile?.job_title ?? null,
+        employee_code: profile?.employee_code ?? null,
+        phone: profile?.phone ?? null,
+        email: profile?.email ?? null,
+        business_unit_name: role?.business_units?.name ?? null,
+      } as {
         department: string | null;
         job_title: string | null;
         employee_code: string | null;
         phone: string | null;
         email: string | null;
-      } | null;
+        business_unit_name: string | null;
+      };
     },
   });
 
