@@ -2368,8 +2368,10 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
                 </VRField>
               </div>
               <div>
-                <Label className="text-primary font-medium text-sm mb-1 block">
-                  Business Purpose <span className="text-destructive">*</span>
+                <Label className="text-primary font-medium text-sm mb-1 flex items-center gap-1.5 leading-tight">
+                  <Sparkles className="w-4 h-4 shrink-0" />
+                  <span>Business Purpose</span>
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.purpose_category}
