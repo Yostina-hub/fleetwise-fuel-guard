@@ -864,7 +864,7 @@ export const MergedTripStopsPanel = ({
             source: "mtsp-geofence-centers",
             paint: {
               "circle-radius": 12,
-              "circle-color": "hsl(var(--card))",
+              "circle-color": "rgba(255, 255, 255, 0.96)",
               "circle-opacity": 0.92,
               "circle-stroke-width": 3,
               "circle-stroke-color": ["get", "color"],
