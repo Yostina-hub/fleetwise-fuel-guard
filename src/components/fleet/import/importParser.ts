@@ -153,7 +153,20 @@ function coerceValue(field: ImportField, raw: any): { value: any; error?: string
 
 /* ---------- Public entry point ---------- */
 
-export async function parseImportFile(file: File): Promise<ParseResult> {
+export interface ImportSchemaOptions {
+  /** Field definitions; defaults to the vehicle schema for backward compat */
+  fields?: ImportField[];
+  /** Custom resolver (e.g. driver schema lookup); defaults to vehicle resolver */
+  resolveField?: (header: string) => ImportField | undefined;
+}
+
+export async function parseImportFile(
+  file: File,
+  options: ImportSchemaOptions = {},
+): Promise<ParseResult> {
+  const fields = options.fields ?? VEHICLE_FIELDS;
+  const resolver = options.resolveField ?? resolveVehicleField;
+
   const ext = file.name.split(".").pop()?.toLowerCase();
   let matrix: any[][] = [];
 
@@ -174,12 +187,24 @@ export async function parseImportFile(file: File): Promise<ParseResult> {
   }
 
   const headerRow = matrix[0].map((h) => String(h ?? "").trim());
-  const fieldMap: (ImportField | undefined)[] = headerRow.map((h) => resolveField(h));
+  const fieldMap: (ImportField | undefined)[] = headerRow.map((h) => resolver(h));
   const unmappedHeaders = headerRow.filter((h, i) => h && !fieldMap[i]);
+
+  // Detect & skip a "hint" row (row 2) that the template ships with — it
+  // contains text like "REQUIRED — …" / "optional — …" that obviously isn't
+  // real data. Only treat as hint row if EVERY non-empty cell starts with one
+  // of those prefixes.
+  const isHintRow = (raw: any[]) => {
+    const cells = raw.map((c) => String(c ?? "").trim()).filter(Boolean);
+    if (cells.length === 0) return false;
+    return cells.every((c) => /^(required|optional)\b/i.test(c));
+  };
 
   const rows: ParsedRow[] = [];
   for (let i = 1; i < matrix.length; i++) {
-    const raw = matrix[i];
+    const raw = matrix[i] ?? [];
+    if (isHintRow(raw)) continue;
+
     const row: ParsedRow = { rowNumber: i + 1, data: {}, errors: [] };
 
     for (let c = 0; c < headerRow.length; c++) {
@@ -191,7 +216,7 @@ export async function parseImportFile(file: File): Promise<ParseResult> {
     }
 
     // Check missing required fields not present in headers at all
-    for (const f of IMPORTABLE_FIELDS) {
+    for (const f of fields) {
       if (f.required && row.data[f.dbKey] == null) {
         const alreadyReported = row.errors.some((e) => e.includes(`${f.header} is required`));
         if (!alreadyReported) row.errors.push(`Row ${i + 1}: ${f.header} is required`);
