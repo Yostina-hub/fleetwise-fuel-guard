@@ -997,7 +997,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     !!form.request_type &&
     systemClassifiedType !== form.request_type;
 
-  }, [form.start_time, form.end_time, form.request_type]);
 
   // Professional, descriptive validation (per-field, on blur + on submit).
   const validation = useVehicleRequestValidation();
