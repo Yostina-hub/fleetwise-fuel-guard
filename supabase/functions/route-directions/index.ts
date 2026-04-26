@@ -225,6 +225,22 @@ serve(async (req) => {
   try {
     const osrm = await tryOsrm(coords as Coord[], wantAlternatives);
     if (osrm.ok) {
+      // For multi-stop tours OSRM rarely returns more than 1 alternative for
+      // the whole path. If we asked for alternatives but only got the primary
+      // back, fall back to the per-leg stitched approach to give the
+      // dispatcher 2-3 genuinely different end-to-end variants.
+      let alternatives = osrm.alternatives;
+      if (
+        wantAlternatives &&
+        Array.isArray(alternatives) &&
+        alternatives.length < 2 &&
+        coords.length >= 3
+      ) {
+        const stitched = await tryOsrmStitched(coords as Coord[]);
+        if (stitched.ok && stitched.alternatives.length >= 1) {
+          alternatives = stitched.alternatives;
+        }
+      }
       return secureJsonResponse(
         {
           ok: true,
@@ -234,7 +250,7 @@ serve(async (req) => {
           duration_s: osrm.duration_s,
           legs: osrm.legs,
           // Real OSRM-computed driving alternatives (different roads, same stops).
-          alternatives: osrm.alternatives,
+          alternatives,
         },
         req,
       );
