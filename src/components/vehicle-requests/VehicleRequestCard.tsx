@@ -60,6 +60,16 @@ export const VehicleRequestCard = ({
   const pConfig = priorityConfig[priority] || priorityConfig.normal;
   const tMeta = TYPE_META[request.request_type] ?? { label: request.request_type ?? "Trip", icon: <Clock className="w-3 h-3" /> };
 
+  // Surface the requester-vs-system trip-type mismatch (when the requester
+  // selected one type but the start/end times point to another). Both values
+  // are persisted on the request; we only render the second badge when they
+  // differ to avoid noise on the card.
+  const requestedType: string | null = request.requested_request_type || null;
+  const systemType: string | null = request.system_classified_type || null;
+  const showMismatch = !!systemType && !!requestedType && systemType !== requestedType;
+  const reqMeta = requestedType ? TYPE_META[requestedType] : null;
+  const sysMeta = systemType ? TYPE_META[systemType] : null;
+
   const startAt = request.needed_from ?? request.created_at;
   const endAt   = request.needed_until;
 
