@@ -828,6 +828,64 @@ export const OpsMapView = ({ organizationId }: Props) => {
     }
   }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms, routeAlts, selectedAltIdx, parentStopSequence]);
 
+  // Sync geofence overlay (circles + polygons) from the active geofences list.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const src = map.getSource("ops-geofences") as maplibregl.GeoJSONSource | undefined;
+    if (!src) return;
+    if (!showGeofences) {
+      src.setData({ type: "FeatureCollection", features: [] });
+      return;
+    }
+    // Build a polygon ring from a centre + radius (8 segments — cheap & smooth
+    // enough at the zoom levels dispatchers use).
+    const circleRing = (lat: number, lng: number, radiusM: number): [number, number][] => {
+      const pts: [number, number][] = [];
+      const earthR = 6378137;
+      const segs = 48;
+      for (let i = 0; i <= segs; i++) {
+        const t = (i / segs) * Math.PI * 2;
+        const dx = (radiusM * Math.cos(t)) / (earthR * Math.cos((lat * Math.PI) / 180));
+        const dy = (radiusM * Math.sin(t)) / earthR;
+        pts.push([lng + (dx * 180) / Math.PI, lat + (dy * 180) / Math.PI]);
+      }
+      return pts;
+    };
+    const features = (geofences as any[])
+      .map((g) => {
+        const color = g.color || "hsl(160 70% 45%)";
+        const props = { id: g.id, name: g.name, category: g.category, color };
+        if (g.geometry_type === "polygon" && Array.isArray(g.polygon_points) && g.polygon_points.length >= 3) {
+          const ring = (g.polygon_points as any[])
+            .map((p: any) =>
+              Array.isArray(p)
+                ? [Number(p[0]), Number(p[1])]
+                : [Number(p?.lng ?? p?.longitude), Number(p?.lat ?? p?.latitude)],
+            )
+            .filter((p: any) => Number.isFinite(p[0]) && Number.isFinite(p[1])) as [number, number][];
+          if (ring.length < 3) return null;
+          const closed = [...ring, ring[0]];
+          return {
+            type: "Feature" as const,
+            properties: props,
+            geometry: { type: "Polygon" as const, coordinates: [closed] },
+          };
+        }
+        if (g.center_lat != null && g.center_lng != null && g.radius_meters) {
+          const ring = circleRing(Number(g.center_lat), Number(g.center_lng), Number(g.radius_meters));
+          return {
+            type: "Feature" as const,
+            properties: props,
+            geometry: { type: "Polygon" as const, coordinates: [ring] },
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+    src.setData({ type: "FeatureCollection", features: features as any });
+  }, [ready, geofences, showGeofences]);
+
   const handleSubmitBorrow = async () => {
     if (!borrowDialog) return;
     await createBorrow.mutateAsync({
