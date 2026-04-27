@@ -247,18 +247,33 @@ Deno.serve(async (req) => {
           if (Math.abs(da - db) > rules.time_window.window_minutes * 60_000) continue;
         }
 
-        // Proximity rule (drop-off radius)
+        // Proximity rule — both pickups AND drop-offs must be within the
+        // configured radius. Previously only the drop-off was checked, which
+        // grouped requests with very different pickup points just because they
+        // shared a destination area.
         if (rules.proximity.enabled) {
+          // Drop-off check
           if (a.destination_lat != null && b.destination_lat != null) {
-            const km = haversineKm(
+            const dropKm = haversineKm(
               Number(a.destination_lat),
               Number(a.destination_lng),
               Number(b.destination_lat),
               Number(b.destination_lng),
             );
-            if (km > rules.proximity.radius_km) continue;
+            if (dropKm > rules.proximity.radius_km) continue;
           } else if (norm(a.destination) !== norm(b.destination)) {
-            // No GPS to check radius and destinations differ — skip
+            continue;
+          }
+          // Pickup check
+          if (a.departure_lat != null && b.departure_lat != null) {
+            const pickKm = haversineKm(
+              Number(a.departure_lat),
+              Number(a.departure_lng),
+              Number(b.departure_lat),
+              Number(b.departure_lng),
+            );
+            if (pickKm > rules.proximity.radius_km) continue;
+          } else if (norm(a.departure_place) !== norm(b.departure_place)) {
             continue;
           }
         }
