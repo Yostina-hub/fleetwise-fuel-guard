@@ -594,7 +594,11 @@ export const OpsMapView = ({ organizationId }: Props) => {
         const merged = !!mergeGroupColorByRequestId[r.id];
         const isParent = !!r.is_consolidated_parent;
         const color = merged ? mergeGroupColorByRequestId[r.id] : poolColor(r.pool_name);
-        const realGeom = routeGeoms[r.id];
+        const alts = routeAlts[r.id];
+        const altIdx = selectedAltIdx[r.id] ?? 0;
+        const realGeom = alts && alts.length > 0
+          ? alts[Math.min(altIdx, alts.length - 1)].geometry
+          : routeGeoms[r.id];
         const usingFallback = !realGeom;
         const lineCoords: [number, number][] = realGeom ?? [
           [r.departure_lng, r.departure_lat],
