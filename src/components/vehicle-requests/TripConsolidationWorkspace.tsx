@@ -1340,6 +1340,11 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
               ) : (
                 <ScrollArea className="h-[420px]">
                   <div className="p-2 space-y-2">
+                    <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-2 py-1.5 text-[10px] text-amber-700 dark:text-amber-400 leading-snug">
+                      Suggestions are previews only — nothing is merged
+                      automatically. Pick a group, review the route on the map,
+                      then click <span className="font-semibold">Merge selected</span>.
+                    </div>
                     {loadingSuggestions && (
                       <div className="text-center py-6 text-xs text-muted-foreground">
                         <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> Scanning…
