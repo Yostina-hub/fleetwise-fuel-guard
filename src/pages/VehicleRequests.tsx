@@ -68,6 +68,7 @@ import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
 // redundancy and free space in the Assignments view.
 import { OpsMapView } from "@/components/vehicle-requests/OpsMapView";
 import { TripConsolidationWorkspace } from "@/components/vehicle-requests/TripConsolidationWorkspace";
+import { MergedTripsHistory } from "@/components/vehicle-requests/MergedTripsHistory";
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
 
 import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
@@ -161,12 +162,13 @@ const VehicleRequests = () => {
   // workspace with consolidation + per-request review/assign panels).
   // Synced to URL ?view=assignments so the legacy /pool-supervisors redirect
   // can deep-link straight into this mode.
-  const [viewMode, setViewMode] = useState<"requests" | "assignments" | "ops_map" | "consolidation">(() => {
+  const [viewMode, setViewMode] = useState<"requests" | "assignments" | "ops_map" | "consolidation" | "merged_history">(() => {
     if (typeof window === "undefined") return "requests";
     const v = new URLSearchParams(window.location.search).get("view");
     if (v === "assignments") return "assignments";
     if (v === "ops_map") return "ops_map";
     if (v === "consolidation") return "consolidation";
+    if (v === "merged_history") return "merged_history";
     return "requests";
   });
   useEffect(() => {
@@ -175,6 +177,7 @@ const VehicleRequests = () => {
     if (viewMode === "assignments") url.searchParams.set("view", "assignments");
     else if (viewMode === "ops_map") url.searchParams.set("view", "ops_map");
     else if (viewMode === "consolidation") url.searchParams.set("view", "consolidation");
+    else if (viewMode === "merged_history") url.searchParams.set("view", "merged_history");
     else url.searchParams.delete("view");
     window.history.replaceState({}, "", url.toString());
   }, [viewMode]);
