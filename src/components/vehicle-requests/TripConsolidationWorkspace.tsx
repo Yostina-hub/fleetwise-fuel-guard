@@ -438,7 +438,7 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   };
 
   const orderedStops = useMemo<Stop[]>(() => {
-    if (selectedRequestsRefSafe(selectedRequests).length < 2) return [];
+    if (selectedRequests.length < 2) return [];
     const reqs = selectedRequests.filter(
       (r) =>
         r.departure_lat != null &&
