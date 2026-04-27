@@ -191,6 +191,59 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     );
   }, [requests, poolFilter]);
 
+  // ---- Real driving routes (cached) --------------------------------------
+  // Fetch actual road geometry per request via the route-directions edge
+  // function. Cached by request id; falls back to a straight line if the
+  // upstream router is unreachable so the UI never breaks.
+  const [routeGeoms, setRouteGeoms] = useState<Record<string, [number, number][]>>({});
+  const inflightRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const eligible = requests.filter(
+      (r) =>
+        r.departure_lat != null &&
+        r.departure_lng != null &&
+        r.destination_lat != null &&
+        r.destination_lng != null &&
+        !routeGeoms[r.id] &&
+        !inflightRef.current.has(r.id),
+    );
+    if (eligible.length === 0) return;
+
+    let cancelled = false;
+    // Throttle: max 4 concurrent fetches so we don't hammer the edge function.
+    const queue = [...eligible];
+    const runOne = async () => {
+      while (queue.length > 0 && !cancelled) {
+        const r = queue.shift()!;
+        inflightRef.current.add(r.id);
+        try {
+          const { data, error } = await supabase.functions.invoke("route-directions", {
+            body: {
+              coordinates: [
+                [r.departure_lng, r.departure_lat],
+                [r.destination_lng, r.destination_lat],
+              ],
+            },
+          });
+          if (!cancelled && !error && data?.ok && Array.isArray(data.geometry)) {
+            setRouteGeoms((prev) => ({ ...prev, [r.id]: data.geometry as [number, number][] }));
+          }
+        } catch {
+          /* swallow — fallback to straight line */
+        } finally {
+          inflightRef.current.delete(r.id);
+        }
+      }
+    };
+    // Spin up 4 workers
+    Promise.all([runOne(), runOne(), runOne(), runOne()]);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requests]);
+
   // ---- Map lifecycle ------------------------------------------------------
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -207,16 +260,31 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
       });
+      // Soft halo behind selected/suggested routes for visibility.
+      map.addLayer({
+        id: "consol-routes-halo",
+        type: "line",
+        source: "consol-routes",
+        paint: {
+          "line-color": ["coalesce", ["get", "color"], "hsl(220 80% 55%)"],
+          "line-width": ["case", ["==", ["get", "selected"], true], 10, ["==", ["get", "suggested"], true], 7, 0],
+          "line-opacity": 0.18,
+          "line-blur": 1,
+        },
+        layout: { "line-cap": "round", "line-join": "round" },
+      });
       map.addLayer({
         id: "consol-routes-line",
         type: "line",
         source: "consol-routes",
         paint: {
           "line-color": ["coalesce", ["get", "color"], "hsl(220 80% 55%)"],
-          "line-width": ["case", ["==", ["get", "selected"], true], 5, 2.5],
-          "line-opacity": ["case", ["==", ["get", "selected"], true], 0.95, 0.65],
-          "line-dasharray": [2, 1],
+          "line-width": ["case", ["==", ["get", "selected"], true], 5, 3],
+          "line-opacity": ["case", ["==", ["get", "selected"], true], 0.95, 0.78],
+          // Dash only for straight-line fallbacks — solid for real road geometry.
+          "line-dasharray": ["case", ["==", ["get", "fallback"], true], ["literal", [2, 1.5]], ["literal", [1, 0]]],
         },
+        layout: { "line-cap": "round", "line-join": "round" },
       });
       map.resize();
       setReady(true);
