@@ -286,6 +286,37 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
         },
         layout: { "line-cap": "round", "line-join": "round" },
       });
+
+      // Combined merge route — single unified polyline through all stops.
+      map.addSource("consol-combined", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      // White outline / casing.
+      map.addLayer({
+        id: "consol-combined-casing",
+        type: "line",
+        source: "consol-combined",
+        paint: {
+          "line-color": "hsl(var(--background))",
+          "line-width": 11,
+          "line-opacity": 0.9,
+        },
+        layout: { "line-cap": "round", "line-join": "round" },
+      });
+      // Bright primary stroke on top.
+      map.addLayer({
+        id: "consol-combined-line",
+        type: "line",
+        source: "consol-combined",
+        paint: {
+          "line-color": "hsl(var(--primary))",
+          "line-width": 6,
+          "line-opacity": 0.95,
+          "line-dasharray": ["case", ["==", ["get", "fallback"], true], ["literal", [2, 1.5]], ["literal", [1, 0]]],
+        },
+        layout: { "line-cap": "round", "line-join": "round" },
+      });
       map.resize();
       setReady(true);
     });
