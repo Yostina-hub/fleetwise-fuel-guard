@@ -22,7 +22,10 @@ import {
   secureJsonResponse,
 } from "../_shared/cors.ts";
 
-const UPSTREAM_TIMEOUT_MS = 9000;
+// 4.5s upstream timeout — public OSRM is normally fast (<1s); anything past
+// this is a sign of throttling and we want to fail-fast so the caller can
+// either show the dispatcher a fallback line or move on to the next request.
+const UPSTREAM_TIMEOUT_MS = 4500;
 
 type Coord = [number, number]; // [lng, lat]
 
