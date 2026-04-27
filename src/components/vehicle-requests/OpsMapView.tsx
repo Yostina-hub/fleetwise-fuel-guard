@@ -67,6 +67,10 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Loader2,
+  ChevronUp,
+  ChevronDown,
+  Hexagon,
+  Settings2,
 } from "lucide-react";
 import { format } from "date-fns";
 
