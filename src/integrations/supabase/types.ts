@@ -27418,6 +27418,17 @@ export type Database = {
     Functions: {
       _approval_actor_name: { Args: { _uid: string }; Returns: string }
       _backfill_inspection_links: { Args: never; Returns: number }
+      _e2e_assign_and_feedback: {
+        Args: {
+          _dispatcher_id: string
+          _driver_id: string
+          _parent_id: string
+          _req_a_id: string
+          _req_b_id: string
+          _vehicle_id: string
+        }
+        Returns: Json
+      }
       _postgis_deprecate: {
         Args: { newname: string; oldname: string; version: string }
         Returns: undefined
