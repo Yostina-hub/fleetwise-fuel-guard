@@ -401,6 +401,11 @@ export const OpsMapView = ({ organizationId }: Props) => {
   // For consolidated parents we send the FULL multi-stop sequence so the
   // returned geometry traces every merged child stop in the correct order.
   const [routeGeoms, setRouteGeoms] = useState<Record<string, [number, number][]>>({});
+  // Per-request list of OSRM-computed alternatives so dispatchers can pick a
+  // different driving path between the same pickup/drop pair.
+  type RouteAlt = { geometry: [number, number][]; distance_m: number; duration_s: number };
+  const [routeAlts, setRouteAlts] = useState<Record<string, RouteAlt[]>>({});
+  const [selectedAltIdx, setSelectedAltIdx] = useState<Record<string, number>>({});
   // Re-key cache by sequence signature so adding/removing children re-fetches.
   const routeCacheKeyRef = useRef<Record<string, string>>({});
   const inflightRef = useRef<Set<string>>(new Set());
@@ -423,6 +428,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
       return true;
     });
     if (eligible.length === 0) return;
+    console.log("[OpsMap] route fetch eligible:", eligible.length, eligible.map((r) => r.request_number));
     let cancelled = false;
     const queue = [...eligible];
     const runOne = async () => {
@@ -438,15 +444,32 @@ export const OpsMapView = ({ organizationId }: Props) => {
           .join("|");
         inflightRef.current.add(r.id);
         try {
+          // Always ask for alternatives — backend has fallbacks (stitched +
+          // via-points) so even single-leg routes get 2-3 genuine variants.
           const { data, error } = await supabase.functions.invoke("route-directions", {
-            body: { coordinates },
+            body: { coordinates, alternatives: true },
           });
+          console.log("[OpsMap] route-directions", r.request_number, { error, ok: data?.ok, geomLen: data?.geometry?.length, alts: data?.alternatives?.length });
           if (!cancelled && !error && data?.ok && Array.isArray(data.geometry)) {
             routeCacheKeyRef.current[r.id] = sig;
-            setRouteGeoms((prev) => ({ ...prev, [r.id]: data.geometry as [number, number][] }));
+            const alts: RouteAlt[] = Array.isArray(data.alternatives) && data.alternatives.length > 0
+              ? data.alternatives.map((a: any) => ({
+                  geometry: a.geometry as [number, number][],
+                  distance_m: Number(a.distance_m) || 0,
+                  duration_s: Number(a.duration_s) || 0,
+                }))
+              : [{
+                  geometry: data.geometry as [number, number][],
+                  distance_m: Number(data.distance_m) || 0,
+                  duration_s: Number(data.duration_s) || 0,
+                }];
+            setRouteAlts((prev) => ({ ...prev, [r.id]: alts }));
+            setRouteGeoms((prev) => ({ ...prev, [r.id]: alts[0].geometry }));
+          } else if (error) {
+            console.error("[OpsMap] route-directions error", r.request_number, error);
           }
-        } catch {
-          /* swallow — fallback to straight line */
+        } catch (err) {
+          console.error("[OpsMap] route-directions threw", r.request_number, err);
         } finally {
           inflightRef.current.delete(r.id);
         }
@@ -571,7 +594,11 @@ export const OpsMapView = ({ organizationId }: Props) => {
         const merged = !!mergeGroupColorByRequestId[r.id];
         const isParent = !!r.is_consolidated_parent;
         const color = merged ? mergeGroupColorByRequestId[r.id] : poolColor(r.pool_name);
-        const realGeom = routeGeoms[r.id];
+        const alts = routeAlts[r.id];
+        const altIdx = selectedAltIdx[r.id] ?? 0;
+        const realGeom = alts && alts.length > 0
+          ? alts[Math.min(altIdx, alts.length - 1)].geometry
+          : routeGeoms[r.id];
         const usingFallback = !realGeom;
         const lineCoords: [number, number][] = realGeom ?? [
           [r.departure_lng, r.departure_lat],
@@ -732,7 +759,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
         /* ignore */
       }
     }
-  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms, parentStopSequence]);
+  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms, routeAlts, selectedAltIdx, parentStopSequence]);
 
   const handleSubmitBorrow = async () => {
     if (!borrowDialog) return;
@@ -848,7 +875,52 @@ export const OpsMapView = ({ organizationId }: Props) => {
         </CardHeader>
         <CardContent className="p-0 relative">
           <div ref={containerRef} className="w-full h-[60vh] min-h-[360px] sm:h-[520px] lg:h-[560px]" />
-          {/* Legend */}
+          {/* Route alternatives picker — appears whenever any visible request has >1 OSRM-computed driving option */}
+          {showRoutes && visibleRequests.some((r) => (routeAlts[r.id]?.length ?? 0) > 1) && (
+            <div className="absolute top-3 left-3 bg-background/95 backdrop-blur rounded-lg border shadow-md p-2 text-[11px] max-w-[280px] max-h-[260px] overflow-auto space-y-2">
+              <div className="font-semibold flex items-center gap-1">
+                <RouteIcon className="w-3 h-3" /> Route options
+              </div>
+              {visibleRequests
+                .filter((r) => (routeAlts[r.id]?.length ?? 0) > 1)
+                .slice(0, 6)
+                .map((r) => {
+                  const alts = routeAlts[r.id] ?? [];
+                  const sel = selectedAltIdx[r.id] ?? 0;
+                  return (
+                    <div key={r.id} className="border-t border-border/50 pt-1.5 first:border-0 first:pt-0">
+                      <div className="font-medium truncate" title={r.request_number}>
+                        {r.request_number}
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {alts.map((a, idx) => {
+                          const km = (a.distance_m / 1000).toFixed(1);
+                          const min = Math.round(a.duration_s / 60);
+                          const active = idx === sel;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() =>
+                                setSelectedAltIdx((p) => ({ ...p, [r.id]: idx }))
+                              }
+                              className={`px-2 py-0.5 rounded border text-[10px] transition-colors ${
+                                active
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background hover:bg-muted border-border"
+                              }`}
+                              title={`${km} km · ${min} min`}
+                            >
+                              #{idx + 1} · {km}km · {min}min
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
           <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md hidden sm:block">
             <div className="font-semibold flex items-center gap-1 mb-1">
               <Layers className="w-3 h-3" /> Legend
