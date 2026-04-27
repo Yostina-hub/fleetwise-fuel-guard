@@ -117,8 +117,9 @@ export const OpsMapView = ({ organizationId }: Props) => {
   const [showMerges, setShowMerges] = useState(true);
   const [showGeofences, setShowGeofences] = useState(true);
   // Top-of-map control panels can be minimized so the map gets full real estate.
-  const [routeOptionsOpen, setRouteOptionsOpen] = useState(true);
+  const [routeOptionsOpen, setRouteOptionsOpen] = useState(false);
   const [mapControlsOpen, setMapControlsOpen] = useState(true);
+  const [legendOpen, setLegendOpen] = useState(false);
   const [borrowDialog, setBorrowDialog] = useState<null | {
     sourcePool: string;
     targetPool: string;
@@ -1034,109 +1035,151 @@ export const OpsMapView = ({ organizationId }: Props) => {
         </CardHeader>
         <CardContent className="p-0 relative">
           <div ref={containerRef} className="w-full h-[60vh] min-h-[360px] sm:h-[520px] lg:h-[560px]" />
-          {/* Route alternatives picker — appears whenever any visible request has >1 OSRM-computed driving option. Minimizable so it doesn't cover the map. */}
+          {/* Route alternatives picker — collapsed to a floating button; click to pop open */}
           {showRoutes && visibleRequests.some((r) => (routeAlts[r.id]?.length ?? 0) > 1) && (
-            <div className="absolute top-3 left-3 bg-background/95 backdrop-blur rounded-lg border shadow-md text-[11px] max-w-[280px]">
-              <div className="flex items-center justify-between gap-2 px-2 py-1.5">
-                <div className="font-semibold flex items-center gap-1">
-                  <RouteIcon className="w-3 h-3" /> Route options
+            <div className="absolute top-3 left-3 z-10">
+              {!routeOptionsOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setRouteOptionsOpen(true)}
+                  className="h-8 px-2 inline-flex items-center gap-1 rounded-lg border bg-background/95 backdrop-blur shadow-md text-[11px] font-semibold hover:bg-muted"
+                  title="Show route options"
+                  aria-label="Show route options"
+                >
+                  <RouteIcon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Routes</span>
                   <Badge variant="outline" className="text-[9px] h-4 px-1">
                     {visibleRequests.filter((r) => (routeAlts[r.id]?.length ?? 0) > 1).length}
                   </Badge>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setRouteOptionsOpen((o) => !o)}
-                  className="h-5 w-5 inline-flex items-center justify-center rounded hover:bg-muted"
-                  title={routeOptionsOpen ? "Minimize" : "Expand"}
-                  aria-label={routeOptionsOpen ? "Minimize route options" : "Expand route options"}
-                >
-                  {routeOptionsOpen ? (
-                    <ChevronUp className="w-3 h-3" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3" />
-                  )}
                 </button>
-              </div>
-              {routeOptionsOpen && (
-                <div className="border-t border-border/60 p-2 max-h-[240px] overflow-auto space-y-2">
-                  {visibleRequests
-                    .filter((r) => (routeAlts[r.id]?.length ?? 0) > 1)
-                    .slice(0, 6)
-                    .map((r) => {
-                      const alts = routeAlts[r.id] ?? [];
-                      const sel = selectedAltIdx[r.id] ?? 0;
-                      return (
-                        <div key={r.id} className="border-t border-border/50 pt-1.5 first:border-0 first:pt-0">
-                          <div className="font-medium truncate" title={r.request_number}>
-                            {r.request_number}
+              ) : (
+                <div className="bg-background/95 backdrop-blur rounded-lg border shadow-md text-[11px] max-w-[280px]">
+                  <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+                    <div className="font-semibold flex items-center gap-1">
+                      <RouteIcon className="w-3 h-3" /> Route options
+                      <Badge variant="outline" className="text-[9px] h-4 px-1">
+                        {visibleRequests.filter((r) => (routeAlts[r.id]?.length ?? 0) > 1).length}
+                      </Badge>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setRouteOptionsOpen(false)}
+                      className="h-5 w-5 inline-flex items-center justify-center rounded hover:bg-muted"
+                      title="Close"
+                      aria-label="Close route options"
+                    >
+                      <ChevronUp className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="border-t border-border/60 p-2 max-h-[240px] overflow-auto space-y-2">
+                    {visibleRequests
+                      .filter((r) => (routeAlts[r.id]?.length ?? 0) > 1)
+                      .slice(0, 6)
+                      .map((r) => {
+                        const alts = routeAlts[r.id] ?? [];
+                        const sel = selectedAltIdx[r.id] ?? 0;
+                        return (
+                          <div key={r.id} className="border-t border-border/50 pt-1.5 first:border-0 first:pt-0">
+                            <div className="font-medium truncate" title={r.request_number}>
+                              {r.request_number}
+                            </div>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {alts.map((a, idx) => {
+                                const km = (a.distance_m / 1000).toFixed(1);
+                                const min = Math.round(a.duration_s / 60);
+                                const active = idx === sel;
+                                return (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() =>
+                                      setSelectedAltIdx((p) => ({ ...p, [r.id]: idx }))
+                                    }
+                                    className={`px-2 py-0.5 rounded border text-[10px] transition-colors ${
+                                      active
+                                        ? "bg-primary text-primary-foreground border-primary"
+                                        : "bg-background hover:bg-muted border-border"
+                                    }`}
+                                    title={`${km} km · ${min} min`}
+                                  >
+                                    #{idx + 1} · {km}km · {min}min
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {alts.map((a, idx) => {
-                              const km = (a.distance_m / 1000).toFixed(1);
-                              const min = Math.round(a.duration_s / 60);
-                              const active = idx === sel;
-                              return (
-                                <button
-                                  key={idx}
-                                  type="button"
-                                  onClick={() =>
-                                    setSelectedAltIdx((p) => ({ ...p, [r.id]: idx }))
-                                  }
-                                  className={`px-2 py-0.5 rounded border text-[10px] transition-colors ${
-                                    active
-                                      ? "bg-primary text-primary-foreground border-primary"
-                                      : "bg-background hover:bg-muted border-border"
-                                  }`}
-                                  title={`${km} km · ${min} min`}
-                                >
-                                  #{idx + 1} · {km}km · {min}min
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                  </div>
                 </div>
               )}
             </div>
           )}
-          <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md hidden sm:block">
-            <div className="font-semibold flex items-center gap-1 mb-1">
-              <Layers className="w-3 h-3" /> Legend
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-primary" /> Pickup
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 border-2 border-primary" /> Drop
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-md bg-primary/80 flex items-center justify-center text-[8px]">🚚</div>
-              Idle vehicle
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-amber-500" /> Merge candidate
-            </div>
-            <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-1">
-              <div className="w-6 h-0.5 bg-primary rounded" /> Real road
-            </div>
-            <div className="flex items-center gap-2">
-              <div
-                className="w-6 h-0.5 rounded"
-                style={{
-                  background:
-                    "repeating-linear-gradient(90deg, hsl(var(--muted-foreground)) 0 3px, transparent 3px 6px)",
-                }}
-              />
-              Direct (fallback)
-            </div>
-            <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-1">
-              <div className="w-3 h-3 rounded border border-emerald-500 bg-emerald-500/10" />
-              Geofence zone
-            </div>
+          {/* Legend — collapsed to a floating button; click to pop open */}
+          <div className="absolute bottom-3 left-3 z-10 hidden sm:block">
+            {!legendOpen ? (
+              <button
+                type="button"
+                onClick={() => setLegendOpen(true)}
+                className="h-8 px-2 inline-flex items-center gap-1 rounded-lg border bg-background/95 backdrop-blur shadow-md text-[11px] font-semibold hover:bg-muted"
+                title="Show legend"
+                aria-label="Show legend"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Legend</span>
+              </button>
+            ) : (
+              <div className="bg-background/95 backdrop-blur rounded-lg border shadow-md text-[11px]">
+                <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+                  <div className="font-semibold flex items-center gap-1">
+                    <Layers className="w-3 h-3" /> Legend
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLegendOpen(false)}
+                    className="h-5 w-5 inline-flex items-center justify-center rounded hover:bg-muted"
+                    title="Close"
+                    aria-label="Close legend"
+                  >
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                </div>
+                <div className="border-t border-border/60 p-2 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-primary" /> Pickup
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 border-2 border-primary" /> Drop
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-md bg-primary/80 flex items-center justify-center text-[8px]">🚚</div>
+                    Idle vehicle
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-0.5 bg-amber-500" /> Merge candidate
+                  </div>
+                  <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-1">
+                    <div className="w-6 h-0.5 bg-primary rounded" /> Real road
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-6 h-0.5 rounded"
+                      style={{
+                        background:
+                          "repeating-linear-gradient(90deg, hsl(var(--muted-foreground)) 0 3px, transparent 3px 6px)",
+                      }}
+                    />
+                    Direct (fallback)
+                  </div>
+                  <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-1">
+                    <div className="w-3 h-3 rounded border border-emerald-500 bg-emerald-500/10" />
+                    Geofence zone
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
         </CardContent>
       </Card>
 
