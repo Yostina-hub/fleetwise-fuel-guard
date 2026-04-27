@@ -747,6 +747,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
               </div>
             </ScrollArea>
           </CardContent>
+          )}
         </Card>
 
         {/* Borrow suggestions */}
@@ -860,6 +861,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Borrow dialog */}
       <Dialog open={!!borrowDialog} onOpenChange={(o) => !o && setBorrowDialog(null)}>
