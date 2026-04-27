@@ -823,15 +823,86 @@ export const OpsMapView = ({ organizationId }: Props) => {
 
     const src = map.getSource("ops-routes") as maplibregl.GeoJSONSource;
     src?.setData({ type: "FeatureCollection", features });
-
-    if (hasBounds) {
-      try {
-        map.fitBounds(bounds, { padding: 60, duration: 600, maxZoom: 13 });
-      } catch {
-        /* ignore */
-      }
-    }
+    // NOTE: fitBounds was moved to a dedicated effect below so it does NOT
+    // re-fire every time a per-request route geometry arrives. Re-fitting on
+    // every routeAlts/routeGeoms update was causing the map to pan/zoom
+    // repeatedly during routing, which pushed geofences off-screen and made
+    // them appear to "disappear" once routing finished.
   }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms, routeAlts, selectedAltIdx, parentStopSequence]);
+
+  // Dedicated auto-fit pass — runs only when the *set* of requests / vehicles /
+  // geofences changes (not when per-route geometry arrives). Bounds include
+  // geofence centres + radius edges so zones stay visible after auto-zoom.
+  const lastFitSigRef = useRef<string>("");
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const bounds = new maplibregl.LngLatBounds();
+    let hasBounds = false;
+    if (showRoutes) {
+      visibleRequests.forEach((r) => {
+        if (r.departure_lat != null && r.departure_lng != null) {
+          bounds.extend([r.departure_lng, r.departure_lat]);
+          hasBounds = true;
+        }
+        if (r.destination_lat != null && r.destination_lng != null) {
+          bounds.extend([r.destination_lng, r.destination_lat]);
+          hasBounds = true;
+        }
+      });
+    }
+    if (showVehicles) {
+      available.forEach((v: any) => {
+        const fullV = allVehicles.find((x: any) => x.id === v.id) as any;
+        const loc = fullV?.current_location;
+        if (loc?.lat && loc?.lng) {
+          bounds.extend([loc.lng, loc.lat]);
+          hasBounds = true;
+        }
+      });
+    }
+    if (showGeofences) {
+      (geofences as any[]).forEach((g) => {
+        if (g.center_lat != null && g.center_lng != null) {
+          bounds.extend([Number(g.center_lng), Number(g.center_lat)]);
+          if (g.radius_meters) {
+            // Approx degree offset for radius so the zone fits inside view.
+            const dLat = Number(g.radius_meters) / 111000;
+            const dLng = Number(g.radius_meters) / (111000 * Math.cos((Number(g.center_lat) * Math.PI) / 180));
+            bounds.extend([Number(g.center_lng) + dLng, Number(g.center_lat) + dLat]);
+            bounds.extend([Number(g.center_lng) - dLng, Number(g.center_lat) - dLat]);
+          }
+          hasBounds = true;
+        } else if (Array.isArray(g.polygon_points)) {
+          (g.polygon_points as any[]).forEach((p: any) => {
+            const lng = Number(Array.isArray(p) ? p[0] : p?.lng ?? p?.longitude);
+            const lat = Number(Array.isArray(p) ? p[1] : p?.lat ?? p?.latitude);
+            if (Number.isFinite(lng) && Number.isFinite(lat)) {
+              bounds.extend([lng, lat]);
+              hasBounds = true;
+            }
+          });
+        }
+      });
+    }
+    if (!hasBounds) return;
+    // Signature so we don't re-fit on identical set (prevents map jumps when
+    // realtime updates arrive but the visible set is unchanged).
+    const sig = [
+      visibleRequests.map((r) => r.id).sort().join(","),
+      available.map((v: any) => v.id).sort().join(","),
+      (geofences as any[]).map((g) => g.id).sort().join(","),
+      `${showRoutes}|${showVehicles}|${showGeofences}`,
+    ].join("#");
+    if (sig === lastFitSigRef.current) return;
+    lastFitSigRef.current = sig;
+    try {
+      map.fitBounds(bounds, { padding: 60, duration: 600, maxZoom: 13 });
+    } catch {
+      /* ignore */
+    }
+  }, [ready, visibleRequests, available, allVehicles, geofences, showRoutes, showVehicles, showGeofences]);
+
 
   // Sync geofence overlay (circles + polygons) from the active geofences list.
   useEffect(() => {
