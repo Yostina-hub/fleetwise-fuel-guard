@@ -654,8 +654,9 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
       combinedRoute!.geometry.forEach((c) => bounds.extend(c as [number, number]));
       hasBounds = true;
 
-      // Numbered sequential stop markers
-      orderedStops.forEach((stop, idx) => {
+      // Numbered sequential stop markers — uses the OSRM-optimised order when
+      // available so the numbers (1, 2, 3 …) match the actual driving sequence.
+      displayStops.forEach((stop, idx) => {
         const isPickup = stop.type === "pickup";
         const el = document.createElement("div");
         el.style.cssText = `
