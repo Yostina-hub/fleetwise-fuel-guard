@@ -194,6 +194,25 @@ export const OpsMapView = ({ organizationId }: Props) => {
     },
   });
 
+  // Active geofences (zones) so dispatchers can see depots, no-go areas, and
+  // service zones overlaid on the operations map.
+  const { data: geofences = [] } = useQuery({
+    queryKey: ["ops-map-geofences", organizationId],
+    enabled: !!organizationId && showGeofences,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("geofences")
+        .select(
+          "id, name, category, geometry_type, center_lat, center_lng, radius_meters, polygon_points, color",
+        )
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .limit(200);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
   const mergeGroupColorByRequestId = useMemo(() => {
     const map: Record<string, string> = {};
     if (!showMerges || !mergeData?.groups) return map;
