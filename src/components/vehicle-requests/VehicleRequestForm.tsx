@@ -695,6 +695,117 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveRequesterId]);
 
+  // ── Requester directory details (AD-style auto-fetch) ────────────────────
+  // Fetches the effective requester's identity record (name, employee code,
+  // department, job title) from `profiles` with a fallback to the linked
+  // `employees` row. Surfaces these as a read-only "Requester Information"
+  // card so the filer can verify the auto-populated identity before
+  // submitting. Also drives auto-selection of `department_id` when the
+  // requester's HR department matches one of the org's department records.
+  const { data: requesterDetails } = useQuery({
+    queryKey: ["vr-requester-details", effectiveRequesterId, onBehalfOf?.driverId ?? null],
+    queryFn: async () => {
+      if (!effectiveRequesterId) return null;
+      const empty = {
+        full_name: "" as string,
+        employee_code: "" as string,
+        department: "" as string,
+        job_title: "" as string,
+        email: "" as string,
+      };
+      // Driver-only on-behalf target (no profile row): pull from drivers table.
+      if (onBehalfOf?.type === "driver" && onBehalfOf?.driverId) {
+        const { data: drv } = await (supabase as any)
+          .from("drivers")
+          .select("first_name, last_name, email")
+          .eq("id", onBehalfOf.driverId)
+          .maybeSingle();
+        const { data: emp } = await (supabase as any)
+          .from("employees")
+          .select("employee_id, department, job_title, first_name, last_name, email")
+          .eq("driver_id", onBehalfOf.driverId)
+          .maybeSingle();
+        return {
+          ...empty,
+          full_name: drv ? `${drv.first_name ?? ""} ${drv.last_name ?? ""}`.trim() : (onBehalfOf.name || ""),
+          email: drv?.email || emp?.email || onBehalfOf.email || "",
+          employee_code: emp?.employee_id || "",
+          department: emp?.department || "",
+          job_title: emp?.job_title || "Driver",
+        };
+      }
+      // 1) Profile is canonical for system users.
+      const { data: prof } = await (supabase as any)
+        .from("profiles")
+        .select("full_name, first_name, middle_name, last_name, email, employee_code, department, job_title, linked_employee_id")
+        .eq("id", effectiveRequesterId)
+        .maybeSingle();
+      // 2) Fall back / fill gaps from linked employees row.
+      let emp: any = null;
+      if (prof?.linked_employee_id) {
+        const { data: e } = await (supabase as any)
+          .from("employees")
+          .select("employee_id, department, job_title, first_name, last_name, email")
+          .eq("id", prof.linked_employee_id)
+          .maybeSingle();
+        emp = e;
+      }
+      if (!emp) {
+        const { data: e } = await (supabase as any)
+          .from("employees")
+          .select("employee_id, department, job_title, first_name, last_name, email")
+          .eq("user_id", effectiveRequesterId)
+          .maybeSingle();
+        emp = e;
+      }
+      const composedName =
+        [prof?.first_name, prof?.middle_name, prof?.last_name].filter(Boolean).join(" ").trim() ||
+        prof?.full_name ||
+        (emp ? `${emp.first_name ?? ""} ${emp.last_name ?? ""}`.trim() : "") ||
+        "";
+      return {
+        ...empty,
+        full_name: composedName,
+        email: prof?.email || emp?.email || "",
+        employee_code: prof?.employee_code || emp?.employee_id || "",
+        department: prof?.department || emp?.department || "",
+        job_title: prof?.job_title || emp?.job_title || "",
+      };
+    },
+    enabled: !!effectiveRequesterId && open,
+    staleTime: 60_000,
+  });
+
+  // Auto-select the matching department in the form when we resolve the
+  // requester's HR department name. Only fires while the field is empty so
+  // an explicit user choice is never overwritten.
+  const userTouchedDepartmentRef = useRef(false);
+  useEffect(() => {
+    if (!open) return;
+    if (userTouchedDepartmentRef.current) return;
+    const deptName = requesterDetails?.department?.trim();
+    if (!deptName || !departments.length) return;
+    const match = departments.find(
+      (d) => d.name.trim().toLowerCase() === deptName.toLowerCase(),
+    );
+    if (!match) return;
+    setForm((prev) =>
+      prev.department_id === match.id ? prev : { ...prev, department_id: match.id },
+    );
+  }, [open, requesterDetails?.department, departments]);
+
+  // Reset department auto-fill flag when requester switches.
+  const prevDeptRequesterIdRef = useRef<string | null>(effectiveRequesterId);
+  useEffect(() => {
+    if (prevDeptRequesterIdRef.current === effectiveRequesterId) return;
+    prevDeptRequesterIdRef.current = effectiveRequesterId;
+    userTouchedDepartmentRef.current = false;
+    setForm((prev) =>
+      !prev.department_id ? prev : { ...prev, department_id: "" },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveRequesterId]);
+
   // Vehicles that physically live in the chosen Specific Pool. Drives:
   //  • the upper cap on "No. of Vehicles" (can't book more than exist)
   //  • the eligibility filter on "Vehicle Type" (only types present in pool)
@@ -1753,6 +1864,56 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             <span className="text-xs text-muted-foreground ml-auto">
               {onBehalfOf ? "Approval routing will use this person's role." : "Leave empty to file as yourself."}
             </span>
+          </div>
+        )}
+
+        {/* Requester Information — auto-populated from directory (AD/HR) */}
+        {effectiveRequesterId && (
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <UserCog className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-sm font-medium">Requester Information</span>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-1">
+                Auto-filled from directory
+              </Badge>
+              {!requesterDetails && (
+                <span className="text-xs text-muted-foreground ml-auto">Loading…</span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-xs">
+              <div>
+                <div className="text-muted-foreground">Name</div>
+                <div className="font-medium truncate">
+                  {requesterDetails?.full_name || onBehalfOf?.name || profile?.full_name || user?.email || "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Employee Code</div>
+                <div className="font-medium truncate">{requesterDetails?.employee_code || "—"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Position</div>
+                <div className="font-medium truncate">{requesterDetails?.job_title || "—"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Department</div>
+                <div className="font-medium truncate">{requesterDetails?.department || "—"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Division</div>
+                <div className="font-medium truncate text-muted-foreground/70">
+                  {/* Division not tracked in HR records yet */}
+                  Not on file
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Section</div>
+                <div className="font-medium truncate text-muted-foreground/70">
+                  {/* Section not tracked in HR records yet */}
+                  Not on file
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
