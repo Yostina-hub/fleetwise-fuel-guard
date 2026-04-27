@@ -941,6 +941,24 @@ const VehicleRequests = () => {
           </div>
         )}
 
+        {/* ============== MERGED TRIPS HISTORY ============== */}
+        {viewMode === "merged_history" && canManageAll && organizationId && (
+          <div className="space-y-4 animate-fade-in">
+            <MergedTripsHistory organizationId={organizationId} />
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => setViewMode("requests")}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Back to Requests
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* ============== MAIN PANEL ============== */}
         {/* Hide the full requests table when a workspace view is active so
             the same approved requests don't appear twice (workspace +
