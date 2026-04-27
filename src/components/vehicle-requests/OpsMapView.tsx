@@ -971,21 +971,51 @@ export const OpsMapView = ({ organizationId }: Props) => {
             )}
           </CardTitle>
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <Switch id="r" checked={showRoutes} onCheckedChange={setShowRoutes} />
-              <Label htmlFor="r" className="text-xs cursor-pointer">Routes</Label>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Switch id="v" checked={showVehicles} onCheckedChange={setShowVehicles} />
-              <Label htmlFor="v" className="text-xs cursor-pointer">Vehicles</Label>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Switch id="m" checked={showMerges} onCheckedChange={setShowMerges} />
-              <Label htmlFor="m" className="text-xs cursor-pointer">Merges</Label>
-            </div>
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={refetchAll} title="Refresh">
-              <RefreshCw className="w-3.5 h-3.5" />
-            </Button>
+            {mapControlsOpen ? (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <Switch id="r" checked={showRoutes} onCheckedChange={setShowRoutes} />
+                  <Label htmlFor="r" className="text-xs cursor-pointer">Routes</Label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Switch id="v" checked={showVehicles} onCheckedChange={setShowVehicles} />
+                  <Label htmlFor="v" className="text-xs cursor-pointer">Vehicles</Label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Switch id="m" checked={showMerges} onCheckedChange={setShowMerges} />
+                  <Label htmlFor="m" className="text-xs cursor-pointer">Merges</Label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Switch id="g" checked={showGeofences} onCheckedChange={setShowGeofences} />
+                  <Label htmlFor="g" className="text-xs cursor-pointer">Zones</Label>
+                </div>
+                <Button size="sm" variant="ghost" className="h-7 px-2" onClick={refetchAll} title="Refresh">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setMapControlsOpen(false)}
+                  title="Hide controls"
+                  aria-label="Hide controls"
+                >
+                  <ChevronUp className="w-3.5 h-3.5" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 gap-1.5 text-[11px]"
+                onClick={() => setMapControlsOpen(true)}
+                title="Show controls"
+              >
+                <Settings2 className="w-3 h-3" />
+                Controls
+                <ChevronDown className="w-3 h-3" />
+              </Button>
+            )}
             {/* Side panel toggle — visible on lg+ */}
             <Button
               size="sm"
