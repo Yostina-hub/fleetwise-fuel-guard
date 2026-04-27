@@ -357,6 +357,21 @@ export const OpsMapView = ({ organizationId }: Props) => {
     };
   }, []);
 
+  // Resize map whenever the side panel collapses/expands or the window changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const id = window.setTimeout(() => map.resize(), 220);
+    return () => window.clearTimeout(id);
+  }, [sidePanelOpen]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const onResize = () => map.resize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   // Sync route lines + markers
   useEffect(() => {
     const map = mapRef.current;
