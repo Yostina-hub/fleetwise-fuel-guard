@@ -530,7 +530,7 @@ serve(async (req) => {
     try {
       const recovered = await respondWithStitched();
       if (recovered) {
-        return secureJsonResponse(recovered, req);
+        return secureJsonResponse(adjustResponse(recovered), req);
       }
     } catch (innerErr) {
       console.error("stitched recovery also failed:", innerErr);
