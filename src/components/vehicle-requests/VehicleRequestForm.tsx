@@ -1867,6 +1867,56 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </div>
         )}
 
+        {/* Requester Information — auto-populated from directory (AD/HR) */}
+        {effectiveRequesterId && (
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <UserCog className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-sm font-medium">Requester Information</span>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-1">
+                Auto-filled from directory
+              </Badge>
+              {!requesterDetails && (
+                <span className="text-xs text-muted-foreground ml-auto">Loading…</span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-xs">
+              <div>
+                <div className="text-muted-foreground">Name</div>
+                <div className="font-medium truncate">
+                  {requesterDetails?.full_name || onBehalfOf?.name || profile?.full_name || user?.email || "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Employee Code</div>
+                <div className="font-medium truncate">{requesterDetails?.employee_code || "—"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Position</div>
+                <div className="font-medium truncate">{requesterDetails?.job_title || "—"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Department</div>
+                <div className="font-medium truncate">{requesterDetails?.department || "—"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Division</div>
+                <div className="font-medium truncate text-muted-foreground/70">
+                  {/* Division not tracked in HR records yet */}
+                  Not on file
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Section</div>
+                <div className="font-medium truncate text-muted-foreground/70">
+                  {/* Section not tracked in HR records yet */}
+                  Not on file
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mandatory rating gate */}
         {hasPendingRatings && <PendingRatingsBlocker className="mb-1" />}
 
