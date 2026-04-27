@@ -171,23 +171,57 @@ export function MapLocationPickerDialog({
     let cancelled = false;
     (async () => {
       setIsLocating(true);
-      const here = await requestCurrentLocation();
+      // Check Permissions API first — gives us a definitive answer for the
+      // banner without triggering the browser's native prompt (which is
+      // unreliable on dialog-open since there's no user gesture).
+      let permissionState: PermissionState | "unknown" = "unknown";
+      try {
+        if (typeof navigator !== "undefined" && (navigator as any).permissions?.query) {
+          const status = await (navigator as any).permissions.query({ name: "geolocation" });
+          permissionState = status.state as PermissionState;
+        }
+      } catch {
+        // Some browsers (older Safari) don't support permissions.query for
+        // geolocation — fall back to attempting the request directly.
+      }
       if (cancelled) return;
+
+      // Only auto-attempt geolocation when we're sure permission is already
+      // granted — otherwise the call after `await` fails silently because we
+      // no longer have user-gesture provenance, AND the preview iframe may
+      // not carry the `allow="geolocation"` attribute.
+      let here: { lat: number; lng: number } | { error: string } = { error: "skipped" };
+      if (permissionState === "granted") {
+        here = await requestCurrentLocation();
+      }
+      if (cancelled) return;
+
       const hasCoords = !("error" in here);
-      const startLat = hasCoords ? here.lat : initialLat;
-      const startLng = hasCoords ? here.lng : initialLng;
+      const startLat = hasCoords ? (here as any).lat : initialLat;
+      const startLng = hasCoords ? (here as any).lng : initialLng;
       setLat(startLat);
       setLng(startLng);
       setSearchQuery("");
       setSearchResults([]);
-      // Surface a hint when the auto-attempt was blocked so the user
-      // understands why the map opened on a default location and how to
-      // recover (click "My location" — that runs from a user gesture and
-      // typically triggers the browser's permission prompt).
-      if (!hasCoords && (here as any).error === "denied") {
-        setSearchError(
-          "Showing the default map view. Click 'My location' to allow this site to use your current location.",
-        );
+
+      // Surface a clear hint whenever we couldn't auto-locate, regardless of
+      // the reason. Pointing at the explicit "My location" button is the
+      // reliable recovery path because it runs from a user gesture (and the
+      // browser will then show its permission prompt if needed).
+      if (!hasCoords) {
+        if (permissionState === "denied") {
+          setSearchError(
+            "Location access is blocked for this site. Allow location in your browser's site settings, then click 'My location'.",
+          );
+        } else if (permissionState === "prompt" || permissionState === "unknown") {
+          setSearchError(
+            "Click 'My location' to center the map on your current position.",
+          );
+        } else {
+          setSearchError(
+            "Showing the default map view. Click 'My location' to use your current position.",
+          );
+        }
       } else {
         setSearchError(null);
       }
