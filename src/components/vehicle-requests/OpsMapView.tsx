@@ -1034,50 +1034,72 @@ export const OpsMapView = ({ organizationId }: Props) => {
         </CardHeader>
         <CardContent className="p-0 relative">
           <div ref={containerRef} className="w-full h-[60vh] min-h-[360px] sm:h-[520px] lg:h-[560px]" />
-          {/* Route alternatives picker — appears whenever any visible request has >1 OSRM-computed driving option */}
+          {/* Route alternatives picker — appears whenever any visible request has >1 OSRM-computed driving option. Minimizable so it doesn't cover the map. */}
           {showRoutes && visibleRequests.some((r) => (routeAlts[r.id]?.length ?? 0) > 1) && (
-            <div className="absolute top-3 left-3 bg-background/95 backdrop-blur rounded-lg border shadow-md p-2 text-[11px] max-w-[280px] max-h-[260px] overflow-auto space-y-2">
-              <div className="font-semibold flex items-center gap-1">
-                <RouteIcon className="w-3 h-3" /> Route options
+            <div className="absolute top-3 left-3 bg-background/95 backdrop-blur rounded-lg border shadow-md text-[11px] max-w-[280px]">
+              <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+                <div className="font-semibold flex items-center gap-1">
+                  <RouteIcon className="w-3 h-3" /> Route options
+                  <Badge variant="outline" className="text-[9px] h-4 px-1">
+                    {visibleRequests.filter((r) => (routeAlts[r.id]?.length ?? 0) > 1).length}
+                  </Badge>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRouteOptionsOpen((o) => !o)}
+                  className="h-5 w-5 inline-flex items-center justify-center rounded hover:bg-muted"
+                  title={routeOptionsOpen ? "Minimize" : "Expand"}
+                  aria-label={routeOptionsOpen ? "Minimize route options" : "Expand route options"}
+                >
+                  {routeOptionsOpen ? (
+                    <ChevronUp className="w-3 h-3" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3" />
+                  )}
+                </button>
               </div>
-              {visibleRequests
-                .filter((r) => (routeAlts[r.id]?.length ?? 0) > 1)
-                .slice(0, 6)
-                .map((r) => {
-                  const alts = routeAlts[r.id] ?? [];
-                  const sel = selectedAltIdx[r.id] ?? 0;
-                  return (
-                    <div key={r.id} className="border-t border-border/50 pt-1.5 first:border-0 first:pt-0">
-                      <div className="font-medium truncate" title={r.request_number}>
-                        {r.request_number}
-                      </div>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {alts.map((a, idx) => {
-                          const km = (a.distance_m / 1000).toFixed(1);
-                          const min = Math.round(a.duration_s / 60);
-                          const active = idx === sel;
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() =>
-                                setSelectedAltIdx((p) => ({ ...p, [r.id]: idx }))
-                              }
-                              className={`px-2 py-0.5 rounded border text-[10px] transition-colors ${
-                                active
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "bg-background hover:bg-muted border-border"
-                              }`}
-                              title={`${km} km · ${min} min`}
-                            >
-                              #{idx + 1} · {km}km · {min}min
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+              {routeOptionsOpen && (
+                <div className="border-t border-border/60 p-2 max-h-[240px] overflow-auto space-y-2">
+                  {visibleRequests
+                    .filter((r) => (routeAlts[r.id]?.length ?? 0) > 1)
+                    .slice(0, 6)
+                    .map((r) => {
+                      const alts = routeAlts[r.id] ?? [];
+                      const sel = selectedAltIdx[r.id] ?? 0;
+                      return (
+                        <div key={r.id} className="border-t border-border/50 pt-1.5 first:border-0 first:pt-0">
+                          <div className="font-medium truncate" title={r.request_number}>
+                            {r.request_number}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {alts.map((a, idx) => {
+                              const km = (a.distance_m / 1000).toFixed(1);
+                              const min = Math.round(a.duration_s / 60);
+                              const active = idx === sel;
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() =>
+                                    setSelectedAltIdx((p) => ({ ...p, [r.id]: idx }))
+                                  }
+                                  className={`px-2 py-0.5 rounded border text-[10px] transition-colors ${
+                                    active
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-background hover:bg-muted border-border"
+                                  }`}
+                                  title={`${km} km · ${min} min`}
+                                >
+                                  #{idx + 1} · {km}km · {min}min
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           )}
           <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md hidden sm:block">
