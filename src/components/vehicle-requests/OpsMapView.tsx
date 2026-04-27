@@ -444,17 +444,32 @@ export const OpsMapView = ({ organizationId }: Props) => {
           .join("|");
         inflightRef.current.add(r.id);
         try {
-          console.log("[OpsMap] invoking route-directions for", r.request_number, "coords:", coordinates.length);
+          // Always ask for alternatives — backend has fallbacks (stitched +
+          // via-points) so even single-leg routes get 2-3 genuine variants.
           const { data, error } = await supabase.functions.invoke("route-directions", {
-            body: { coordinates, alternatives: coordinates.length === 2 },
+            body: { coordinates, alternatives: true },
           });
-          console.log("[OpsMap] route-directions reply for", r.request_number, { error, ok: data?.ok, geomLen: data?.geometry?.length, alts: data?.alternatives?.length });
+          console.log("[OpsMap] route-directions", r.request_number, { error, ok: data?.ok, geomLen: data?.geometry?.length, alts: data?.alternatives?.length });
           if (!cancelled && !error && data?.ok && Array.isArray(data.geometry)) {
             routeCacheKeyRef.current[r.id] = sig;
-            setRouteGeoms((prev) => ({ ...prev, [r.id]: data.geometry as [number, number][] }));
+            const alts: RouteAlt[] = Array.isArray(data.alternatives) && data.alternatives.length > 0
+              ? data.alternatives.map((a: any) => ({
+                  geometry: a.geometry as [number, number][],
+                  distance_m: Number(a.distance_m) || 0,
+                  duration_s: Number(a.duration_s) || 0,
+                }))
+              : [{
+                  geometry: data.geometry as [number, number][],
+                  distance_m: Number(data.distance_m) || 0,
+                  duration_s: Number(data.duration_s) || 0,
+                }];
+            setRouteAlts((prev) => ({ ...prev, [r.id]: alts }));
+            setRouteGeoms((prev) => ({ ...prev, [r.id]: alts[0].geometry }));
+          } else if (error) {
+            console.error("[OpsMap] route-directions error", r.request_number, error);
           }
         } catch (err) {
-          console.error("[OpsMap] route-directions threw for", r.request_number, err);
+          console.error("[OpsMap] route-directions threw", r.request_number, err);
         } finally {
           inflightRef.current.delete(r.id);
         }
