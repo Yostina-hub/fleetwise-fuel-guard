@@ -334,15 +334,34 @@ export const OpsMapView = ({ organizationId }: Props) => {
     map.on("load", () => {
       // route lines source
       map.addSource("ops-routes", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      // Soft halo for selected/merged routes
       map.addLayer({
-        id: "ops-routes-line",
+        id: "ops-routes-halo",
         type: "line",
         source: "ops-routes",
         paint: {
           "line-color": ["coalesce", ["get", "color"], "hsl(220 80% 55%)"],
-          "line-width": ["case", ["==", ["get", "merged"], true], 5, 3],
-          "line-opacity": 0.85,
-          "line-dasharray": [2, 1],
+          "line-width": ["case", ["==", ["get", "merged"], true], 11, 7],
+          "line-opacity": ["case", ["==", ["get", "merged"], true], 0.25, 0.12],
+          "line-blur": 2,
+        },
+      });
+      map.addLayer({
+        id: "ops-routes-line",
+        type: "line",
+        source: "ops-routes",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ["coalesce", ["get", "color"], "hsl(220 80% 55%)"],
+          "line-width": ["case", ["==", ["get", "merged"], true], 5, 3.2],
+          "line-opacity": 0.95,
+          // Solid for real road geometry, dashed when we fall back to a straight line.
+          "line-dasharray": [
+            "case",
+            ["==", ["get", "fallback"], true],
+            ["literal", [2, 1.5]],
+            ["literal", [1, 0]],
+          ],
         },
       });
       map.resize();
