@@ -678,6 +678,18 @@ export const OpsMapView = ({ organizationId }: Props) => {
             <Badge variant="outline" className="text-[10px]">
               {totalDemand} routes · {totalIdle} idle
             </Badge>
+            {showRoutes && withCoordsCount > 0 && routeFetchedCount < withCoordsCount && (
+              <Badge variant="secondary" className="h-5 text-[10px] gap-1">
+                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                Routing {routeFetchedCount}/{withCoordsCount}
+              </Badge>
+            )}
+            {showRoutes && withCoordsCount > 0 && routeFetchedCount === withCoordsCount && (
+              <Badge variant="outline" className="h-5 text-[10px] gap-1">
+                <RouteIcon className="w-3 h-3" />
+                Real road geometry
+              </Badge>
+            )}
           </CardTitle>
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <div className="flex items-center gap-1.5">
@@ -730,6 +742,19 @@ export const OpsMapView = ({ organizationId }: Props) => {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-amber-500" /> Merge candidate
+            </div>
+            <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-1">
+              <div className="w-6 h-0.5 bg-primary rounded" /> Real road
+            </div>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-6 h-0.5 rounded"
+                style={{
+                  background:
+                    "repeating-linear-gradient(90deg, hsl(var(--muted-foreground)) 0 3px, transparent 3px 6px)",
+                }}
+              />
+              Direct (fallback)
             </div>
           </div>
         </CardContent>
