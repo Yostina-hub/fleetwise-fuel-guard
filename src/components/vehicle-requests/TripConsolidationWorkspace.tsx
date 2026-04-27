@@ -703,30 +703,42 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
           <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0 gap-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <MapPin className="w-4 h-4 text-primary" />
-              Active Requests Map
+              Live Routes Map
+              {routeFetchedCount < withCoords && (
+                <Badge variant="secondary" className="h-5 text-[10px] gap-1">
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                  Routing {routeFetchedCount}/{withCoords}
+                </Badge>
+              )}
             </CardTitle>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <Switch id="cw-routes" checked={showRoutes} onCheckedChange={setShowRoutes} />
-                <Label htmlFor="cw-routes" className="text-xs cursor-pointer">
-                  Routes
+            <Badge variant="outline" className="text-[10px] h-5 gap-1">
+              <RouteIcon className="w-3 h-3" />
+              Real road geometry
+            </Badge>
+          </CardHeader>
+          <CardContent className="p-0 relative">
+            <div ref={containerRef} className="w-full h-[560px]" />
+            {/* Compact controls overlay (top-left) */}
+            <div className="absolute top-3 left-3 bg-background/95 backdrop-blur rounded-lg border shadow-md p-2 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <Switch id="cw-routes" checked={showRoutes} onCheckedChange={setShowRoutes} className="scale-75" />
+                <Label htmlFor="cw-routes" className="text-[11px] cursor-pointer">
+                  Show routes
                 </Label>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Switch
                   id="cw-sugg"
                   checked={highlightSuggestions}
                   onCheckedChange={setHighlightSuggestions}
+                  className="scale-75"
                 />
-                <Label htmlFor="cw-sugg" className="text-xs cursor-pointer">
+                <Label htmlFor="cw-sugg" className="text-[11px] cursor-pointer">
                   Highlight suggestions
                 </Label>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="p-0 relative">
-            <div ref={containerRef} className="w-full h-[560px]" />
-            {/* Legend */}
+            {/* Legend (bottom-left) */}
             <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md">
               <div className="font-semibold flex items-center gap-1 mb-1">
                 <Layers className="w-3 h-3" /> Legend
@@ -743,6 +755,19 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
                   style={{ boxShadow: "0 0 0 2px hsl(var(--primary))", background: "hsl(var(--primary))" }}
                 />
                 Selected
+              </div>
+              <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-1">
+                <div className="w-6 h-0.5 bg-primary rounded" /> Real road
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-6 h-0.5 rounded"
+                  style={{
+                    background:
+                      "repeating-linear-gradient(90deg, hsl(var(--muted-foreground)) 0 3px, transparent 3px 6px)",
+                  }}
+                />
+                Direct (fallback)
               </div>
             </div>
           </CardContent>
