@@ -575,18 +575,22 @@ export const OpsMapView = ({ organizationId }: Props) => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-3">
+      <div
+        className={`grid grid-cols-1 gap-3 transition-[grid-template-columns] duration-300 ${
+          sidePanelOpen ? "lg:grid-cols-[minmax(0,1fr)_360px]" : "lg:grid-cols-[minmax(0,1fr)_44px]"
+        }`}
+      >
       {/* MAP */}
       <Card className="overflow-hidden">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Activity className="w-4 h-4 text-primary" />
-            Operations Map
+        <CardHeader className="pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 space-y-0">
+          <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
+            <Activity className="w-4 h-4 text-primary shrink-0" />
+            <span>Operations Map</span>
             <Badge variant="outline" className="text-[10px]">
               {totalDemand} routes · {totalIdle} idle
             </Badge>
           </CardTitle>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <div className="flex items-center gap-1.5">
               <Switch id="r" checked={showRoutes} onCheckedChange={setShowRoutes} />
               <Label htmlFor="r" className="text-xs cursor-pointer">Routes</Label>
@@ -599,15 +603,29 @@ export const OpsMapView = ({ organizationId }: Props) => {
               <Switch id="m" checked={showMerges} onCheckedChange={setShowMerges} />
               <Label htmlFor="m" className="text-xs cursor-pointer">Merges</Label>
             </div>
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={refetchAll}>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={refetchAll} title="Refresh">
               <RefreshCw className="w-3.5 h-3.5" />
+            </Button>
+            {/* Side panel toggle — visible on lg+ */}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 hidden lg:inline-flex"
+              onClick={() => setSidePanelOpen((o) => !o)}
+              title={sidePanelOpen ? "Hide side panel" : "Show side panel"}
+            >
+              {sidePanelOpen ? (
+                <PanelRightClose className="w-3.5 h-3.5" />
+              ) : (
+                <PanelRightOpen className="w-3.5 h-3.5" />
+              )}
             </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0 relative">
-          <div ref={containerRef} className="w-full h-[560px]" />
+          <div ref={containerRef} className="w-full h-[60vh] min-h-[360px] sm:h-[520px] lg:h-[560px]" />
           {/* Legend */}
-          <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md">
+          <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md hidden sm:block">
             <div className="font-semibold flex items-center gap-1 mb-1">
               <Layers className="w-3 h-3" /> Legend
             </div>
@@ -628,17 +646,49 @@ export const OpsMapView = ({ organizationId }: Props) => {
         </CardContent>
       </Card>
 
-      {/* SIDE PANEL */}
-      <div className="space-y-3">
+      {/* SIDE PANEL — collapsed rail on lg, full panel otherwise */}
+      {!sidePanelOpen ? (
+        <div className="hidden lg:flex flex-col items-center pt-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 w-9 p-0"
+            onClick={() => setSidePanelOpen(true)}
+            title="Show side panel"
+          >
+            <PanelRightOpen className="w-4 h-4" />
+          </Button>
+          <div className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground [writing-mode:vertical-rl] rotate-180">
+            Pool · Borrow
+          </div>
+        </div>
+      ) : (
+      <div className="space-y-3 min-w-0">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              Pool Demand & Supply
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm flex items-center gap-2 min-w-0">
+              <TrendingUp className="w-4 h-4 text-primary shrink-0" />
+              <span className="truncate">Pool Demand & Supply</span>
+              <Badge variant="outline" className="text-[10px] shrink-0">{poolStats.length}</Badge>
             </CardTitle>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 shrink-0"
+              onClick={() => setPoolDemandOpen((o) => !o)}
+              title={poolDemandOpen ? "Minimize" : "Expand"}
+              aria-expanded={poolDemandOpen}
+            >
+              {poolDemandOpen ? (
+                <ChevronRight className="w-3.5 h-3.5 rotate-90" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5 -rotate-90" />
+              )}
+            </Button>
           </CardHeader>
+          {poolDemandOpen && (
           <CardContent className="p-0">
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="h-[260px] sm:h-[300px]">
               <div className="p-3 space-y-2">
                 {poolStats.length === 0 && (
                   <div className="text-xs text-muted-foreground text-center py-6">
