@@ -324,20 +324,24 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
       const baseColor = suggested || poolColor(r.pool_name);
 
       if (showRoutes) {
+        const cached = routeGeoms[r.id];
+        const isFallback = !cached || cached.length < 2;
+        const coords: [number, number][] = isFallback
+          ? [
+              [r.departure_lng, r.departure_lat],
+              [r.destination_lng, r.destination_lat],
+            ]
+          : cached;
         features.push({
           type: "Feature",
           properties: {
             color: baseColor,
             selected: isSelected,
+            suggested: !!suggested,
+            fallback: isFallback,
             id: r.id,
           },
-          geometry: {
-            type: "LineString",
-            coordinates: [
-              [r.departure_lng, r.departure_lat],
-              [r.destination_lng, r.destination_lat],
-            ],
-          },
+          geometry: { type: "LineString", coordinates: coords },
         });
       }
 
