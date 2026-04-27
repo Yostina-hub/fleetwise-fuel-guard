@@ -325,6 +325,34 @@ serve(async (req) => {
 
   // Try OSRM (no key required, drives the actual road network)
   const wantAlternatives = body?.alternatives === true;
+  const wantOptimize = body?.optimize === true;
+
+  // Optimised multi-stop tour (OSRM /trip). Used by the Consolidate workspace
+  // so the merged trip follows the actual shortest road tour through every
+  // selected pickup/drop instead of the input order.
+  if (wantOptimize) {
+    try {
+      const trip = await tryOsrmTrip(coords as Coord[]);
+      if (trip.ok) {
+        return secureJsonResponse(
+          {
+            ok: true,
+            provider: "osrm-trip",
+            geometry: trip.geometry,
+            distance_m: trip.distance_m,
+            duration_s: trip.duration_s,
+            order: trip.order,
+          },
+          req,
+        );
+      }
+      // Trip API failed — fall through to ordinary route below using the
+      // caller-supplied order so the dispatcher still sees a usable line.
+      console.warn("OSRM trip optimisation failed, falling back to ordered route:", trip);
+    } catch (err) {
+      console.warn("OSRM trip optimisation threw, falling back:", err);
+    }
+  }
 
   // Helper that wraps tryOsrmStitched and shapes the response so the caller
   // gets the same fields as the full-path tryOsrm response.
