@@ -66,6 +66,7 @@ import {
   ChevronLeft,
   PanelRightClose,
   PanelRightOpen,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -319,6 +320,70 @@ export const OpsMapView = ({ organizationId }: Props) => {
     };
   }, [requests, mergeGroupColorByRequestId, available, idleDrivers, poolStats]);
 
+  // ---- Real driving routes (cached) --------------------------------------
+  // Fetch actual road geometry per request via the route-directions edge
+  // function. Cached by request id; falls back to a straight line if the
+  // upstream router is unreachable so the UI never breaks.
+  const [routeGeoms, setRouteGeoms] = useState<Record<string, [number, number][]>>({});
+  const inflightRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const eligible = requests.filter(
+      (r) =>
+        r.departure_lat != null &&
+        r.departure_lng != null &&
+        r.destination_lat != null &&
+        r.destination_lng != null &&
+        !routeGeoms[r.id] &&
+        !inflightRef.current.has(r.id),
+    );
+    if (eligible.length === 0) return;
+    let cancelled = false;
+    const queue = [...eligible];
+    const runOne = async () => {
+      while (queue.length > 0 && !cancelled) {
+        const r = queue.shift()!;
+        inflightRef.current.add(r.id);
+        try {
+          const { data, error } = await supabase.functions.invoke("route-directions", {
+            body: {
+              coordinates: [
+                [r.departure_lng, r.departure_lat],
+                [r.destination_lng, r.destination_lat],
+              ],
+            },
+          });
+          if (!cancelled && !error && data?.ok && Array.isArray(data.geometry)) {
+            setRouteGeoms((prev) => ({ ...prev, [r.id]: data.geometry as [number, number][] }));
+          }
+        } catch {
+          /* swallow — fallback to straight line */
+        } finally {
+          inflightRef.current.delete(r.id);
+        }
+      }
+    };
+    Promise.all([runOne(), runOne(), runOne(), runOne()]);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requests]);
+  const routeFetchedCount = useMemo(
+    () => requests.filter((r) => routeGeoms[r.id]).length,
+    [requests, routeGeoms],
+  );
+  const withCoordsCount = useMemo(
+    () =>
+      requests.filter(
+        (r) =>
+          r.departure_lat != null &&
+          r.departure_lng != null &&
+          r.destination_lat != null &&
+          r.destination_lng != null,
+      ).length,
+    [requests],
+  );
+
 
   // Init map
   useEffect(() => {
@@ -334,15 +399,34 @@ export const OpsMapView = ({ organizationId }: Props) => {
     map.on("load", () => {
       // route lines source
       map.addSource("ops-routes", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      // Soft halo for selected/merged routes
       map.addLayer({
-        id: "ops-routes-line",
+        id: "ops-routes-halo",
         type: "line",
         source: "ops-routes",
         paint: {
           "line-color": ["coalesce", ["get", "color"], "hsl(220 80% 55%)"],
-          "line-width": ["case", ["==", ["get", "merged"], true], 5, 3],
-          "line-opacity": 0.85,
-          "line-dasharray": [2, 1],
+          "line-width": ["case", ["==", ["get", "merged"], true], 11, 7],
+          "line-opacity": ["case", ["==", ["get", "merged"], true], 0.25, 0.12],
+          "line-blur": 2,
+        },
+      });
+      map.addLayer({
+        id: "ops-routes-line",
+        type: "line",
+        source: "ops-routes",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ["coalesce", ["get", "color"], "hsl(220 80% 55%)"],
+          "line-width": ["case", ["==", ["get", "merged"], true], 5, 3.2],
+          "line-opacity": 0.95,
+          // Solid for real road geometry, dashed when we fall back to a straight line.
+          "line-dasharray": [
+            "case",
+            ["==", ["get", "fallback"], true],
+            ["literal", [2, 1.5]],
+            ["literal", [1, 0]],
+          ],
         },
       });
       map.resize();
@@ -397,16 +481,22 @@ export const OpsMapView = ({ organizationId }: Props) => {
         const merged = !!mergeGroupColorByRequestId[r.id];
         const isParent = !!r.is_consolidated_parent;
         const color = merged ? mergeGroupColorByRequestId[r.id] : poolColor(r.pool_name);
+        const realGeom = routeGeoms[r.id];
+        const usingFallback = !realGeom;
+        const lineCoords: [number, number][] = realGeom ?? [
+          [r.departure_lng, r.departure_lat],
+          [r.destination_lng, r.destination_lat],
+        ];
         features.push({
           type: "Feature",
-          properties: { color, merged: merged || isParent, id: r.id, pool: r.pool_name || "Unassigned" },
-          geometry: {
-            type: "LineString",
-            coordinates: [
-              [r.departure_lng, r.departure_lat],
-              [r.destination_lng, r.destination_lat],
-            ],
+          properties: {
+            color,
+            merged: merged || isParent,
+            id: r.id,
+            pool: r.pool_name || "Unassigned",
+            fallback: usingFallback,
           },
+          geometry: { type: "LineString", coordinates: lineCoords },
         });
 
         // pickup marker — consolidated parents get a "merge" badge ring
@@ -520,7 +610,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
         /* ignore */
       }
     }
-  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId]);
+  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms]);
 
   const handleSubmitBorrow = async () => {
     if (!borrowDialog) return;
@@ -589,6 +679,18 @@ export const OpsMapView = ({ organizationId }: Props) => {
             <Badge variant="outline" className="text-[10px]">
               {totalDemand} routes · {totalIdle} idle
             </Badge>
+            {showRoutes && withCoordsCount > 0 && routeFetchedCount < withCoordsCount && (
+              <Badge variant="secondary" className="h-5 text-[10px] gap-1">
+                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                Routing {routeFetchedCount}/{withCoordsCount}
+              </Badge>
+            )}
+            {showRoutes && withCoordsCount > 0 && routeFetchedCount === withCoordsCount && (
+              <Badge variant="outline" className="h-5 text-[10px] gap-1">
+                <RouteIcon className="w-3 h-3" />
+                Real road geometry
+              </Badge>
+            )}
           </CardTitle>
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <div className="flex items-center gap-1.5">
@@ -641,6 +743,19 @@ export const OpsMapView = ({ organizationId }: Props) => {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-amber-500" /> Merge candidate
+            </div>
+            <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-1">
+              <div className="w-6 h-0.5 bg-primary rounded" /> Real road
+            </div>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-6 h-0.5 rounded"
+                style={{
+                  background:
+                    "repeating-linear-gradient(90deg, hsl(var(--muted-foreground)) 0 3px, transparent 3px 6px)",
+                }}
+              />
+              Direct (fallback)
             </div>
           </div>
         </CardContent>

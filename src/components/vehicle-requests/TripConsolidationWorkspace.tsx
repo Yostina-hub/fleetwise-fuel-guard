@@ -46,6 +46,9 @@ import {
   Sliders,
   Package,
   RotateCcw,
+  PanelRightClose,
+  PanelRightOpen,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -112,6 +115,11 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   const [showRoutes, setShowRoutes] = useState(true);
   const [highlightSuggestions, setHighlightSuggestions] = useState(true);
   const [tab, setTab] = useState<"manual" | "suggested">("manual");
+  // Side-panel collapsible state — matches Live Map look & feel.
+  const [sidePanelOpen, setSidePanelOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 1024px)").matches;
+  });
   const [rules, setRules] = useState<SmartRules>(() => {
     try {
       const raw = window.localStorage.getItem(RULES_STORAGE_KEY);
@@ -327,6 +335,21 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
       map.remove();
       mapRef.current = null;
     };
+  }, []);
+
+  // Resize map when side panel collapses/expands or window changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const id = window.setTimeout(() => map.resize(), 220);
+    return () => window.clearTimeout(id);
+  }, [sidePanelOpen]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const onResize = () => map.resize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   const selectedRequests = useMemo(
@@ -948,49 +971,63 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-3">
+      <div
+        className={`grid grid-cols-1 gap-3 transition-[grid-template-columns] duration-300 ${
+          sidePanelOpen ? "lg:grid-cols-[minmax(0,1fr)_400px]" : "lg:grid-cols-[minmax(0,1fr)_44px]"
+        }`}
+      >
         {/* MAP */}
         <Card className="overflow-hidden">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0 gap-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-primary" />
-              Live Routes Map
+          <CardHeader className="pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 space-y-0">
+            <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
+              <MapPin className="w-4 h-4 text-primary shrink-0" />
+              <span>Live Routes Map</span>
               {routeFetchedCount < withCoords && (
                 <Badge variant="secondary" className="h-5 text-[10px] gap-1">
                   <Loader2 className="w-2.5 h-2.5 animate-spin" />
                   Routing {routeFetchedCount}/{withCoords}
                 </Badge>
               )}
+              {withCoords > 0 && routeFetchedCount === withCoords && (
+                <Badge variant="outline" className="h-5 text-[10px] gap-1">
+                  <RouteIcon className="w-3 h-3" />
+                  Real road geometry
+                </Badge>
+              )}
             </CardTitle>
-            <Badge variant="outline" className="text-[10px] h-5 gap-1">
-              <RouteIcon className="w-3 h-3" />
-              Real road geometry
-            </Badge>
-          </CardHeader>
-          <CardContent className="p-0 relative">
-            <div ref={containerRef} className="w-full h-[560px]" />
-            {/* Compact controls overlay (top-left) */}
-            <div className="absolute top-3 left-3 bg-background/95 backdrop-blur rounded-lg border shadow-md p-2 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <Switch id="cw-routes" checked={showRoutes} onCheckedChange={setShowRoutes} className="scale-75" />
-                <Label htmlFor="cw-routes" className="text-[11px] cursor-pointer">
-                  Show routes
-                </Label>
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <Switch id="cw-routes" checked={showRoutes} onCheckedChange={setShowRoutes} />
+                <Label htmlFor="cw-routes" className="text-xs cursor-pointer">Routes</Label>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Switch
                   id="cw-sugg"
                   checked={highlightSuggestions}
                   onCheckedChange={setHighlightSuggestions}
-                  className="scale-75"
                 />
-                <Label htmlFor="cw-sugg" className="text-[11px] cursor-pointer">
-                  Highlight suggestions
-                </Label>
+                <Label htmlFor="cw-sugg" className="text-xs cursor-pointer">Suggestions</Label>
               </div>
+              {/* Side panel toggle — visible on lg+ */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 hidden lg:inline-flex"
+                onClick={() => setSidePanelOpen((o) => !o)}
+                title={sidePanelOpen ? "Hide side panel" : "Show side panel"}
+              >
+                {sidePanelOpen ? (
+                  <PanelRightClose className="w-3.5 h-3.5" />
+                ) : (
+                  <PanelRightOpen className="w-3.5 h-3.5" />
+                )}
+              </Button>
             </div>
+          </CardHeader>
+          <CardContent className="p-0 relative">
+            <div ref={containerRef} className="w-full h-[60vh] min-h-[360px] sm:h-[520px] lg:h-[560px]" />
             {/* Legend (bottom-left) */}
-            <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md">
+            <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md hidden sm:block">
               <div className="font-semibold flex items-center gap-1 mb-1">
                 <Layers className="w-3 h-3" /> Legend
               </div>
@@ -1024,8 +1061,24 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
           </CardContent>
         </Card>
 
-        {/* SIDE PANEL */}
-        <div className="space-y-3">
+        {/* SIDE PANEL — collapsed rail on lg, full panel otherwise */}
+        {!sidePanelOpen ? (
+          <div className="hidden lg:flex flex-col items-center pt-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 w-9 p-0"
+              onClick={() => setSidePanelOpen(true)}
+              title="Show side panel"
+            >
+              <PanelRightOpen className="w-4 h-4" />
+            </Button>
+            <div className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground [writing-mode:vertical-rl] rotate-180">
+              Preview · Requests
+            </div>
+          </div>
+        ) : (
+        <div className="space-y-3 min-w-0">
           {/* Merge preview */}
           <Card className={preview ? "border-primary/40" : ""}>
             <CardHeader className="pb-2">
@@ -1333,6 +1386,7 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
             </CardContent>
           </Card>
         </div>
+        )}
       </div>
     </div>
   );
