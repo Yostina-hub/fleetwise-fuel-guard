@@ -483,6 +483,9 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   const withCoords = requests.filter(
     (r) => r.departure_lat != null && r.destination_lat != null,
   ).length;
+  const routeFetchedCount = requests.filter(
+    (r) => routeGeoms[r.id] && routeGeoms[r.id].length >= 2,
+  ).length;
 
   const suggestionGroups = [
     ...(suggestionData?.groups?.smart_rules || []).map((g: any) => ({ ...g, label: "Smart match" })),
