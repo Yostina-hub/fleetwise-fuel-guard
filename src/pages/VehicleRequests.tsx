@@ -877,7 +877,7 @@ const VehicleRequests = () => {
           </div>
         )}
 
-        {/* ============== OPS MAP WORKSPACE ============== */}
+        {/* ============== OPS MAP WORKSPACE (Live Map · Consolidate · Merged History) ============== */}
         {viewMode === "ops_map" && canManageAll && organizationId && (
           <div className="space-y-4 animate-fade-in">
             <Card className="border-primary/30 bg-primary/5">
@@ -887,7 +887,7 @@ const VehicleRequests = () => {
                   <div>
                     <div className="font-medium">Operations Control Map</div>
                     <div className="text-xs text-muted-foreground">
-                      Live view of pending routes, idle vehicles by pool, merge candidates, and cross-pool borrow suggestions.
+                      Live routes, idle vehicles, trip consolidation and merged history — all in one place.
                     </div>
                   </div>
                 </div>
@@ -902,36 +902,26 @@ const VehicleRequests = () => {
                 </Button>
               </CardContent>
             </Card>
-            <OpsMapView organizationId={organizationId} />
-          </div>
-        )}
 
-        {/* ============== TRIP CONSOLIDATION WORKSPACE (with Merged History tab) ============== */}
-        {viewMode === "consolidation" && canManageAll && organizationId && (
-          <div className="space-y-4 animate-fade-in">
-            <Tabs value={consolidationTab} onValueChange={(v) => setConsolidationTab(v as "active" | "history")}>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <TabsList className="self-start">
-                  <TabsTrigger value="active" className="gap-1.5">
-                    <GitMerge className="w-3.5 h-3.5" />
-                    Active Consolidation
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="gap-1.5">
-                    <ClipboardList className="w-3.5 h-3.5" />
-                    Merged History
-                  </TabsTrigger>
-                </TabsList>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5 self-end sm:self-auto"
-                  onClick={() => setViewMode("requests")}
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                  Back to Requests
-                </Button>
-              </div>
-              <TabsContent value="active" className="mt-4">
+            <Tabs value={opsMapTab} onValueChange={(v) => setOpsMapTab(v as "map" | "consolidate" | "history")}>
+              <TabsList>
+                <TabsTrigger value="map" className="gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Live Map
+                </TabsTrigger>
+                <TabsTrigger value="consolidate" className="gap-1.5">
+                  <GitMerge className="w-3.5 h-3.5" />
+                  Consolidate
+                </TabsTrigger>
+                <TabsTrigger value="history" className="gap-1.5">
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  Merged History
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="map" className="mt-4">
+                <OpsMapView organizationId={organizationId} />
+              </TabsContent>
+              <TabsContent value="consolidate" className="mt-4">
                 <TripConsolidationWorkspace organizationId={organizationId} />
               </TabsContent>
               <TabsContent value="history" className="mt-4">
