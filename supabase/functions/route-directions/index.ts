@@ -252,6 +252,50 @@ const tryOsrmViaAlternatives = async (coords: Coord[]) => {
   return unique.length > 0 ? unique : null;
 };
 
+/**
+ * Optimize the visit order of N waypoints using OSRM's Trip service. The
+ * first coordinate is fixed as the source; the destination is left flexible
+ * so the optimizer can pick the natural finishing point. Returns the optimal
+ * coordinate order plus the routed geometry.
+ *
+ * This is what the Consolidate workspace uses to get the *actual* optimal
+ * road route through every merged pickup/drop instead of a naive nearest-
+ * neighbor heuristic, which often produced badly-shaped, longer routes.
+ */
+const tryOsrmTrip = async (coords: Coord[]) => {
+  if (coords.length < 2) return { ok: false as const, error: "trip_needs_2_points" };
+  const path = coords.map((c) => `${c[0]},${c[1]}`).join(";");
+  // source=first keeps the merged trip starting at the planned origin.
+  // roundtrip=false lets OSRM end at whichever waypoint minimises driving time.
+  const url = `https://router.project-osrm.org/trip/v1/driving/${path}?source=first&roundtrip=false&overview=full&geometries=geojson`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "fleetwise-route-preview/1.0" },
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+  });
+  if (!res.ok) return { ok: false as const, status: res.status, error: `osrm_trip_http_${res.status}` };
+  const json = await res.json();
+  const trip = Array.isArray(json?.trips) ? json.trips[0] : null;
+  const wps = Array.isArray(json?.waypoints) ? json.waypoints : [];
+  const geometry = trip?.geometry?.coordinates as [number, number][] | undefined;
+  if (!trip || !geometry || geometry.length < 2 || wps.length === 0) {
+    return { ok: false as const, error: "osrm_trip_no_geometry" };
+  }
+  // OSRM returns each input waypoint with its `waypoint_index` (its slot in
+  // the optimised tour). Sort the input coords by that index to recover the
+  // optimal visit order.
+  const ordered = wps
+    .map((w: any, i: number) => ({ idx: Number(w.waypoint_index ?? i), input: i }))
+    .sort((a: any, b: any) => a.idx - b.idx)
+    .map((w: any) => w.input);
+  return {
+    ok: true as const,
+    geometry,
+    distance_m: Number(trip.distance) || 0,
+    duration_s: Number(trip.duration) || 0,
+    order: ordered, // indices into the original `coordinates` array
+  };
+};
+
 serve(async (req) => {
   const preflight = handleCorsPreflightRequest(req);
   if (preflight) return preflight;
@@ -281,6 +325,34 @@ serve(async (req) => {
 
   // Try OSRM (no key required, drives the actual road network)
   const wantAlternatives = body?.alternatives === true;
+  const wantOptimize = body?.optimize === true;
+
+  // Optimised multi-stop tour (OSRM /trip). Used by the Consolidate workspace
+  // so the merged trip follows the actual shortest road tour through every
+  // selected pickup/drop instead of the input order.
+  if (wantOptimize) {
+    try {
+      const trip = await tryOsrmTrip(coords as Coord[]);
+      if (trip.ok) {
+        return secureJsonResponse(
+          {
+            ok: true,
+            provider: "osrm-trip",
+            geometry: trip.geometry,
+            distance_m: trip.distance_m,
+            duration_s: trip.duration_s,
+            order: trip.order,
+          },
+          req,
+        );
+      }
+      // Trip API failed — fall through to ordinary route below using the
+      // caller-supplied order so the dispatcher still sees a usable line.
+      console.warn("OSRM trip optimisation failed, falling back to ordered route:", trip);
+    } catch (err) {
+      console.warn("OSRM trip optimisation threw, falling back:", err);
+    }
+  }
 
   // Helper that wraps tryOsrmStitched and shapes the response so the caller
   // gets the same fields as the full-path tryOsrm response.

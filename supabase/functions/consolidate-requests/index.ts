@@ -144,9 +144,28 @@ Deno.serve(async (req) => {
       .filter(([, v]) => v.length > 1)
       .map(([k, v]) => ({ strategy: "exact_route", key: k, count: v.length, requests: v }));
 
-    // 2. dest_window
+    // 2. dest_window — same destination AND geographically close (≤1 km when
+    //    coords are present). Without the geographic check, any two requests
+    //    with the same coarse destination text (e.g. "Addis Ababa") got
+    //    bundled together even if their actual drop-off points were many km
+    //    apart, producing nonsense merge suggestions.
     const destWindow: any[] = [];
     const usedDest = new Set<string>();
+    const DEST_RADIUS_KM = 1;
+    const sameDestPlace = (a: any, b: any) => {
+      const sameText = norm(a.destination) === norm(b.destination);
+      if (a.destination_lat != null && b.destination_lat != null) {
+        const km = haversineKm(
+          Number(a.destination_lat),
+          Number(a.destination_lng),
+          Number(b.destination_lat),
+          Number(b.destination_lng),
+        );
+        // Require both same text AND within 1 km when coords exist.
+        return sameText && km <= DEST_RADIUS_KM;
+      }
+      return sameText;
+    };
     for (let i = 0; i < list.length; i++) {
       if (usedDest.has(list[i].id)) continue;
       const a = list[i];
@@ -154,7 +173,7 @@ Deno.serve(async (req) => {
       for (let j = i + 1; j < list.length; j++) {
         const b = list[j];
         if (usedDest.has(b.id)) continue;
-        if (norm(a.destination) !== norm(b.destination)) continue;
+        if (!sameDestPlace(a, b)) continue;
         const da = new Date(a.needed_from).getTime();
         const db = new Date(b.needed_from).getTime();
         if (Math.abs(da - db) <= 30 * 60_000) grp.push(b);
@@ -228,18 +247,33 @@ Deno.serve(async (req) => {
           if (Math.abs(da - db) > rules.time_window.window_minutes * 60_000) continue;
         }
 
-        // Proximity rule (drop-off radius)
+        // Proximity rule — both pickups AND drop-offs must be within the
+        // configured radius. Previously only the drop-off was checked, which
+        // grouped requests with very different pickup points just because they
+        // shared a destination area.
         if (rules.proximity.enabled) {
+          // Drop-off check
           if (a.destination_lat != null && b.destination_lat != null) {
-            const km = haversineKm(
+            const dropKm = haversineKm(
               Number(a.destination_lat),
               Number(a.destination_lng),
               Number(b.destination_lat),
               Number(b.destination_lng),
             );
-            if (km > rules.proximity.radius_km) continue;
+            if (dropKm > rules.proximity.radius_km) continue;
           } else if (norm(a.destination) !== norm(b.destination)) {
-            // No GPS to check radius and destinations differ — skip
+            continue;
+          }
+          // Pickup check
+          if (a.departure_lat != null && b.departure_lat != null) {
+            const pickKm = haversineKm(
+              Number(a.departure_lat),
+              Number(a.departure_lng),
+              Number(b.departure_lat),
+              Number(b.departure_lng),
+            );
+            if (pickKm > rules.proximity.radius_km) continue;
+          } else if (norm(a.departure_place) !== norm(b.departure_place)) {
             continue;
           }
         }
@@ -261,7 +295,7 @@ Deno.serve(async (req) => {
           ? Math.round((combinedPassengers / rules.capacity.reference_capacity) * 100)
           : null;
         if (rules.capacity.enabled) reasons.push(`Capacity ≤ ${rules.capacity.max_utilization_pct}%`);
-        if (rules.proximity.enabled) reasons.push(`Within ${rules.proximity.radius_km} km`);
+        if (rules.proximity.enabled) reasons.push(`Pickup & drop within ${rules.proximity.radius_km} km`);
         if (rules.time_window.enabled) reasons.push(`±${rules.time_window.window_minutes} min`);
         if (rules.compatibility.enabled) reasons.push(`Same cargo type (${profA})`);
 

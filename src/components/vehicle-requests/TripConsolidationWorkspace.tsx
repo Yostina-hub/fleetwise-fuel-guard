@@ -466,6 +466,8 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     distance_m: number;
     duration_s: number;
     fallback: boolean;
+    /** Order of indices into `orderedStops` chosen by OSRM (when available). */
+    order: number[] | null;
   } | null>(null);
   const [combinedLoading, setCombinedLoading] = useState(false);
 
@@ -479,23 +481,30 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     setCombinedLoading(true);
     (async () => {
       try {
+        // Ask the routing proxy for OSRM /trip optimisation so the merged
+        // tour follows the actual shortest road sequence through every
+        // pickup/drop, not the heuristic order produced on the client.
         const { data, error } = await supabase.functions.invoke("route-directions", {
-          body: { coordinates: coords.slice(0, 25) },
+          body: { coordinates: coords.slice(0, 25), optimize: true },
         });
         if (cancelled) return;
         if (!error && data?.ok && Array.isArray(data.geometry) && data.geometry.length >= 2) {
+          const order = Array.isArray(data.order)
+            ? (data.order as number[]).filter((i) => Number.isInteger(i) && i >= 0 && i < coords.length)
+            : null;
           setCombinedRoute({
             geometry: data.geometry,
             distance_m: Number(data.distance_m) || 0,
             duration_s: Number(data.duration_s) || 0,
             fallback: false,
+            order: order && order.length === coords.length ? order : null,
           });
         } else {
-          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true });
+          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true, order: null });
         }
       } catch {
         if (!cancelled) {
-          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true });
+          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true, order: null });
         }
       } finally {
         if (!cancelled) setCombinedLoading(false);
@@ -506,6 +515,15 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(orderedStops.map((s) => [s.requestId, s.type, s.lng, s.lat]))]);
+
+  // When OSRM returned an optimised order, reshuffle the visible stop list so
+  // the numbered markers (1, 2, 3 …) match the actual driving sequence.
+  const displayStops = useMemo(() => {
+    if (!combinedRoute?.order) return orderedStops;
+    return combinedRoute.order
+      .map((i) => orderedStops[i])
+      .filter((s): s is NonNullable<typeof s> => !!s);
+  }, [orderedStops, combinedRoute]);
 
   // Sync features when data / selection / toggles change
   useEffect(() => {
@@ -636,8 +654,9 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
       combinedRoute!.geometry.forEach((c) => bounds.extend(c as [number, number]));
       hasBounds = true;
 
-      // Numbered sequential stop markers
-      orderedStops.forEach((stop, idx) => {
+      // Numbered sequential stop markers — uses the OSRM-optimised order when
+      // available so the numbers (1, 2, 3 …) match the actual driving sequence.
+      displayStops.forEach((stop, idx) => {
         const isPickup = stop.type === "pickup";
         const el = document.createElement("div");
         el.style.cssText = `
@@ -678,7 +697,7 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, filteredRequests, selectedIds, suggestedColorById, showRoutes, highlightSuggestions, routeGeoms, combinedRoute, orderedStops]);
+  }, [ready, filteredRequests, selectedIds, suggestedColorById, showRoutes, highlightSuggestions, routeGeoms, combinedRoute, orderedStops, displayStops]);
 
   // ---- Selection helpers --------------------------------------------------
   const toggleSelect = (id: string) =>
@@ -1155,11 +1174,11 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
                         </div>
                       )}
                       <div className="text-[10px] text-muted-foreground leading-snug">
-                        {orderedStops.map((s, i) => (
+                        {displayStops.map((s, i) => (
                           <span key={`${s.requestId}-${s.type}-${i}`}>
                             <span className="font-semibold text-foreground">{i + 1}</span>{" "}
                             {s.type === "pickup" ? "📍" : "🏁"} {s.label}
-                            {i < orderedStops.length - 1 && " → "}
+                            {i < displayStops.length - 1 && " → "}
                           </span>
                         ))}
                       </div>
@@ -1321,6 +1340,11 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
               ) : (
                 <ScrollArea className="h-[420px]">
                   <div className="p-2 space-y-2">
+                    <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-2 py-1.5 text-[10px] text-amber-700 dark:text-amber-400 leading-snug">
+                      Suggestions are previews only — nothing is merged
+                      automatically. Pick a group, review the route on the map,
+                      then click <span className="font-semibold">Merge selected</span>.
+                    </div>
                     {loadingSuggestions && (
                       <div className="text-center py-6 text-xs text-muted-foreground">
                         <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> Scanning…
