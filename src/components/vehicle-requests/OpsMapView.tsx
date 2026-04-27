@@ -320,39 +320,129 @@ export const OpsMapView = ({ organizationId }: Props) => {
     };
   }, [requests, mergeGroupColorByRequestId, available, idleDrivers, poolStats]);
 
+  // ---- Merged children for consolidated parents --------------------------
+  // For every consolidated parent in view, pull its merged child requests so
+  // we can render the FULL multi-stop route (parent pickup → child pickups →
+  // child drops → parent drop) instead of a single straight pickup→drop leg.
+  const parentIds = useMemo(
+    () => requests.filter((r) => r.is_consolidated_parent).map((r) => r.id),
+    [requests],
+  );
+  const { data: mergedChildren = [] } = useQuery({
+    queryKey: ["ops-map-merged-children", organizationId, parentIds.join(",")],
+    enabled: !!organizationId && parentIds.length > 0,
+    refetchInterval: 60000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(
+          "id, merged_into_request_id, departure_lat, departure_lng, destination_lat, destination_lng, needed_from",
+        )
+        .eq("organization_id", organizationId)
+        .in("merged_into_request_id", parentIds)
+        .order("needed_from", { ascending: true });
+      if (error) throw error;
+      return (data || []) as Array<{
+        id: string;
+        merged_into_request_id: string;
+        departure_lat: number | null;
+        departure_lng: number | null;
+        destination_lat: number | null;
+        destination_lng: number | null;
+        needed_from: string;
+      }>;
+    },
+  });
+
+  // Build the ordered coordinate sequence per parent: parent pickup, then
+  // every child pickup (time-ordered), then every child drop (time-ordered),
+  // then parent drop. Duplicate adjacent points are de-duplicated so the
+  // routing engine doesn't reject the request.
+  const parentStopSequence = useMemo(() => {
+    const map: Record<string, [number, number][]> = {};
+    requests
+      .filter((r) => r.is_consolidated_parent)
+      .forEach((p) => {
+        if (
+          p.departure_lat == null ||
+          p.departure_lng == null ||
+          p.destination_lat == null ||
+          p.destination_lng == null
+        )
+          return;
+        const kids = mergedChildren
+          .filter((c) => c.merged_into_request_id === p.id)
+          .filter(
+            (c) =>
+              c.departure_lat != null &&
+              c.departure_lng != null &&
+              c.destination_lat != null &&
+              c.destination_lng != null,
+          );
+        const seq: [number, number][] = [
+          [p.departure_lng, p.departure_lat],
+          ...kids.map((c) => [c.departure_lng!, c.departure_lat!] as [number, number]),
+          ...kids.map((c) => [c.destination_lng!, c.destination_lat!] as [number, number]),
+          [p.destination_lng, p.destination_lat],
+        ];
+        // Drop adjacent duplicates
+        const dedup = seq.filter(
+          (pt, i) => i === 0 || pt[0] !== seq[i - 1][0] || pt[1] !== seq[i - 1][1],
+        );
+        if (dedup.length >= 2) map[p.id] = dedup;
+      });
+    return map;
+  }, [requests, mergedChildren]);
+
   // ---- Real driving routes (cached) --------------------------------------
   // Fetch actual road geometry per request via the route-directions edge
   // function. Cached by request id; falls back to a straight line if the
   // upstream router is unreachable so the UI never breaks.
+  // For consolidated parents we send the FULL multi-stop sequence so the
+  // returned geometry traces every merged child stop in the correct order.
   const [routeGeoms, setRouteGeoms] = useState<Record<string, [number, number][]>>({});
+  // Re-key cache by sequence signature so adding/removing children re-fetches.
+  const routeCacheKeyRef = useRef<Record<string, string>>({});
   const inflightRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    const eligible = requests.filter(
-      (r) =>
-        r.departure_lat != null &&
-        r.departure_lng != null &&
-        r.destination_lat != null &&
-        r.destination_lng != null &&
-        !routeGeoms[r.id] &&
-        !inflightRef.current.has(r.id),
-    );
+    const eligible = requests.filter((r) => {
+      if (
+        r.departure_lat == null ||
+        r.departure_lng == null ||
+        r.destination_lat == null ||
+        r.destination_lng == null
+      )
+        return false;
+      const seq = parentStopSequence[r.id];
+      const sig = seq
+        ? seq.map((c) => `${c[0].toFixed(5)},${c[1].toFixed(5)}`).join("|")
+        : `${r.departure_lng},${r.departure_lat}|${r.destination_lng},${r.destination_lat}`;
+      const cached = routeCacheKeyRef.current[r.id];
+      if (cached === sig) return false;
+      if (inflightRef.current.has(r.id)) return false;
+      return true;
+    });
     if (eligible.length === 0) return;
     let cancelled = false;
     const queue = [...eligible];
     const runOne = async () => {
       while (queue.length > 0 && !cancelled) {
         const r = queue.shift()!;
+        const coordinates: [number, number][] =
+          parentStopSequence[r.id] ?? [
+            [r.departure_lng!, r.departure_lat!],
+            [r.destination_lng!, r.destination_lat!],
+          ];
+        const sig = coordinates
+          .map((c) => `${c[0].toFixed(5)},${c[1].toFixed(5)}`)
+          .join("|");
         inflightRef.current.add(r.id);
         try {
           const { data, error } = await supabase.functions.invoke("route-directions", {
-            body: {
-              coordinates: [
-                [r.departure_lng, r.departure_lat],
-                [r.destination_lng, r.destination_lat],
-              ],
-            },
+            body: { coordinates },
           });
           if (!cancelled && !error && data?.ok && Array.isArray(data.geometry)) {
+            routeCacheKeyRef.current[r.id] = sig;
             setRouteGeoms((prev) => ({ ...prev, [r.id]: data.geometry as [number, number][] }));
           }
         } catch {
@@ -367,7 +457,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requests]);
+  }, [requests, parentStopSequence]);
   const routeFetchedCount = useMemo(
     () => requests.filter((r) => routeGeoms[r.id]).length,
     [requests, routeGeoms],
