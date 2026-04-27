@@ -63,7 +63,9 @@ import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPo
 // Pool-supervisor functionality is now embedded inline below the requests
 // table via the "Assignments" view-mode toggle (no separate page needed).
 import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
-import { ConsolidationPanel } from "@/components/vehicle-requests/ConsolidationPanel";
+// ConsolidationPanel removed — consolidation now lives exclusively in the
+// dedicated "Consolidate" workspace (TripConsolidationWorkspace) to avoid
+// redundancy and free space in the Assignments view.
 import { OpsMapView } from "@/components/vehicle-requests/OpsMapView";
 import { TripConsolidationWorkspace } from "@/components/vehicle-requests/TripConsolidationWorkspace";
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
@@ -873,7 +875,6 @@ const VehicleRequests = () => {
                 </Button>
               </CardContent>
             </Card>
-            <ConsolidationPanel organizationId={organizationId} />
             <PoolReviewPanel requests={requests} organizationId={organizationId} />
           </div>
         )}
