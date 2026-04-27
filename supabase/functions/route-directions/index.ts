@@ -494,7 +494,7 @@ serve(async (req) => {
         }
       }
       return secureJsonResponse(
-        {
+        adjustResponse({
           ok: true,
           provider: "osrm",
           geometry: osrm.geometry,
@@ -503,7 +503,7 @@ serve(async (req) => {
           legs: osrm.legs,
           // Real OSRM-computed driving alternatives (different roads, same stops).
           alternatives,
-        },
+        }),
         req,
       );
     }
