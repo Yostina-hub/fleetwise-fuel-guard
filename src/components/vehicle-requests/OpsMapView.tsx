@@ -423,6 +423,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
       return true;
     });
     if (eligible.length === 0) return;
+    console.log("[OpsMap] route fetch eligible:", eligible.length, eligible.map((r) => r.request_number));
     let cancelled = false;
     const queue = [...eligible];
     const runOne = async () => {
@@ -438,15 +439,17 @@ export const OpsMapView = ({ organizationId }: Props) => {
           .join("|");
         inflightRef.current.add(r.id);
         try {
+          console.log("[OpsMap] invoking route-directions for", r.request_number, "coords:", coordinates.length);
           const { data, error } = await supabase.functions.invoke("route-directions", {
-            body: { coordinates },
+            body: { coordinates, alternatives: coordinates.length === 2 },
           });
+          console.log("[OpsMap] route-directions reply for", r.request_number, { error, ok: data?.ok, geomLen: data?.geometry?.length, alts: data?.alternatives?.length });
           if (!cancelled && !error && data?.ok && Array.isArray(data.geometry)) {
             routeCacheKeyRef.current[r.id] = sig;
             setRouteGeoms((prev) => ({ ...prev, [r.id]: data.geometry as [number, number][] }));
           }
-        } catch {
-          /* swallow — fallback to straight line */
+        } catch (err) {
+          console.error("[OpsMap] route-directions threw for", r.request_number, err);
         } finally {
           inflightRef.current.delete(r.id);
         }
