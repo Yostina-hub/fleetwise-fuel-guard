@@ -401,6 +401,11 @@ export const OpsMapView = ({ organizationId }: Props) => {
   // For consolidated parents we send the FULL multi-stop sequence so the
   // returned geometry traces every merged child stop in the correct order.
   const [routeGeoms, setRouteGeoms] = useState<Record<string, [number, number][]>>({});
+  // Per-request list of OSRM-computed alternatives so dispatchers can pick a
+  // different driving path between the same pickup/drop pair.
+  type RouteAlt = { geometry: [number, number][]; distance_m: number; duration_s: number };
+  const [routeAlts, setRouteAlts] = useState<Record<string, RouteAlt[]>>({});
+  const [selectedAltIdx, setSelectedAltIdx] = useState<Record<string, number>>({});
   // Re-key cache by sequence signature so adding/removing children re-fetches.
   const routeCacheKeyRef = useRef<Record<string, string>>({});
   const inflightRef = useRef<Set<string>>(new Set());
