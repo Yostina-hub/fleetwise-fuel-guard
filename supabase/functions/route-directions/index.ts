@@ -516,7 +516,7 @@ serve(async (req) => {
     console.warn("OSRM full-path failed, attempting stitched recovery:", osrm);
     const recovered = await respondWithStitched();
     if (recovered) {
-      return secureJsonResponse(recovered, req);
+      return secureJsonResponse(adjustResponse(recovered), req);
     }
     return secureJsonResponse(
       { ok: false, provider: "osrm", error: osrm.error, status: osrm.status },
