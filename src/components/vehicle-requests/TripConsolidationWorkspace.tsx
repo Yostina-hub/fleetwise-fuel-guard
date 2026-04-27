@@ -329,6 +329,161 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     };
   }, []);
 
+  const selectedRequests = useMemo(
+    () => requests.filter((r) => selectedIds.has(r.id)),
+    [requests, selectedIds],
+  );
+
+  // ---- Combined merge route ----------------------------------------------
+  // When 2+ requests are selected, build an optimized waypoint order
+  // (nearest-neighbor starting from the earliest pickup), then fetch ONE
+  // routed geometry through every pickup & drop. Shown as a thick highlighted
+  // polyline with numbered stops so the dispatcher sees the actual unified
+  // trip — not multiple overlapping straight lines.
+  type Stop = {
+    type: "pickup" | "drop";
+    lng: number;
+    lat: number;
+    requestId: string;
+    requestNumber: string;
+    label: string;
+  };
+
+  const orderedStops = useMemo<Stop[]>(() => {
+    if (selectedRequests.length < 2) return [];
+    const reqs = selectedRequests.filter(
+      (r) =>
+        r.departure_lat != null &&
+        r.departure_lng != null &&
+        r.destination_lat != null &&
+        r.destination_lng != null,
+    );
+    if (reqs.length < 2) return [];
+
+    const sorted = [...reqs].sort(
+      (a, b) => new Date(a.needed_from).getTime() - new Date(b.needed_from).getTime(),
+    );
+    const remaining = new Set(sorted.map((r) => r.id));
+    const dropped = new Set<string>();
+    const stops: Stop[] = [];
+
+    const seed = sorted[0];
+    stops.push({
+      type: "pickup",
+      lng: seed.departure_lng!,
+      lat: seed.departure_lat!,
+      requestId: seed.id,
+      requestNumber: seed.request_number,
+      label: seed.departure_place || "Pickup",
+    });
+    remaining.delete(seed.id);
+
+    let cur: [number, number] = [seed.departure_lng!, seed.departure_lat!];
+
+    const dist = (a: [number, number], b: [number, number]) => {
+      const dx = a[0] - b[0];
+      const dy = a[1] - b[1];
+      return dx * dx + dy * dy;
+    };
+
+    const pickedUp = new Set<string>([seed.id]);
+    while (pickedUp.size > dropped.size) {
+      let bestIdx: { kind: "pickup" | "drop"; req: typeof sorted[number] } | null = null;
+      let bestDist = Number.POSITIVE_INFINITY;
+
+      for (const r of sorted) {
+        if (remaining.has(r.id)) {
+          const d = dist(cur, [r.departure_lng!, r.departure_lat!]);
+          if (d < bestDist) {
+            bestDist = d;
+            bestIdx = { kind: "pickup", req: r };
+          }
+        }
+        if (pickedUp.has(r.id) && !dropped.has(r.id)) {
+          const d = dist(cur, [r.destination_lng!, r.destination_lat!]);
+          if (d < bestDist) {
+            bestDist = d;
+            bestIdx = { kind: "drop", req: r };
+          }
+        }
+      }
+
+      if (!bestIdx) break;
+      const { kind, req } = bestIdx;
+      if (kind === "pickup") {
+        stops.push({
+          type: "pickup",
+          lng: req.departure_lng!,
+          lat: req.departure_lat!,
+          requestId: req.id,
+          requestNumber: req.request_number,
+          label: req.departure_place || "Pickup",
+        });
+        cur = [req.departure_lng!, req.departure_lat!];
+        remaining.delete(req.id);
+        pickedUp.add(req.id);
+      } else {
+        stops.push({
+          type: "drop",
+          lng: req.destination_lng!,
+          lat: req.destination_lat!,
+          requestId: req.id,
+          requestNumber: req.request_number,
+          label: req.destination || "Drop",
+        });
+        cur = [req.destination_lng!, req.destination_lat!];
+        dropped.add(req.id);
+      }
+    }
+    return stops;
+  }, [selectedRequests]);
+
+  const [combinedRoute, setCombinedRoute] = useState<{
+    geometry: [number, number][];
+    distance_m: number;
+    duration_s: number;
+    fallback: boolean;
+  } | null>(null);
+  const [combinedLoading, setCombinedLoading] = useState(false);
+
+  useEffect(() => {
+    if (orderedStops.length < 2) {
+      setCombinedRoute(null);
+      return;
+    }
+    const coords = orderedStops.map((s) => [s.lng, s.lat] as [number, number]);
+    let cancelled = false;
+    setCombinedLoading(true);
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("route-directions", {
+          body: { coordinates: coords.slice(0, 25) },
+        });
+        if (cancelled) return;
+        if (!error && data?.ok && Array.isArray(data.geometry) && data.geometry.length >= 2) {
+          setCombinedRoute({
+            geometry: data.geometry,
+            distance_m: Number(data.distance_m) || 0,
+            duration_s: Number(data.duration_s) || 0,
+            fallback: false,
+          });
+        } else {
+          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true });
+        }
+      } catch {
+        if (!cancelled) {
+          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true });
+        }
+      } finally {
+        if (!cancelled) setCombinedLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(orderedStops.map((s) => [s.requestId, s.type, s.lng, s.lat]))]);
+
   // Sync features when data / selection / toggles change
   useEffect(() => {
     const map = mapRef.current;
