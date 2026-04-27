@@ -818,6 +818,18 @@ const VehicleRequests = () => {
                       <GitMerge className="w-3.5 h-3.5" />
                       Consolidate
                     </Button>
+                    <Button
+                      variant={viewMode === "merged_history" ? "default" : "outline"}
+                      size="sm"
+                      className="gap-1.5 h-9"
+                      onClick={() =>
+                        setViewMode((m) => (m === "merged_history" ? "requests" : "merged_history"))
+                      }
+                      title="Merged Trips History — view every consolidated parent trip with its merged places"
+                    >
+                      <ClipboardList className="w-3.5 h-3.5" />
+                      Merged History
+                    </Button>
                   </div>
                 </>
               )}
