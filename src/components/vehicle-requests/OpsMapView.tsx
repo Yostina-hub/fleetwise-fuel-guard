@@ -480,16 +480,22 @@ export const OpsMapView = ({ organizationId }: Props) => {
         const merged = !!mergeGroupColorByRequestId[r.id];
         const isParent = !!r.is_consolidated_parent;
         const color = merged ? mergeGroupColorByRequestId[r.id] : poolColor(r.pool_name);
+        const realGeom = routeGeoms[r.id];
+        const usingFallback = !realGeom;
+        const lineCoords: [number, number][] = realGeom ?? [
+          [r.departure_lng, r.departure_lat],
+          [r.destination_lng, r.destination_lat],
+        ];
         features.push({
           type: "Feature",
-          properties: { color, merged: merged || isParent, id: r.id, pool: r.pool_name || "Unassigned" },
-          geometry: {
-            type: "LineString",
-            coordinates: [
-              [r.departure_lng, r.departure_lat],
-              [r.destination_lng, r.destination_lat],
-            ],
+          properties: {
+            color,
+            merged: merged || isParent,
+            id: r.id,
+            pool: r.pool_name || "Unassigned",
+            fallback: usingFallback,
           },
+          geometry: { type: "LineString", coordinates: lineCoords },
         });
 
         // pickup marker — consolidated parents get a "merge" badge ring
@@ -603,7 +609,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
         /* ignore */
       }
     }
-  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId]);
+  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms]);
 
   const handleSubmitBorrow = async () => {
     if (!borrowDialog) return;
