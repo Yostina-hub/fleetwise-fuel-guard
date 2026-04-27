@@ -134,6 +134,64 @@ export function LocationPickerField({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng, value, isRawCoords, geofences]);
 
+  // ── Forward auto-geocode ──────────────────────────────────────────────────
+  // When the user types a free-text address but never opened the map picker,
+  // coords stay null and downstream validation rejects the field with a
+  // misleading "Pick on the map" / "is required" error. Resolve typed text
+  // through the lemat search-geocode edge function (debounced) so a typed
+  // address gets companion coordinates without an extra click.
+  const forwardResolvedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!onCoordsChange) return;
+    // Already have coords for this field — nothing to resolve.
+    if (lat != null && lng != null) return;
+    const trimmed = (value || "").trim();
+    if (!trimmed || trimmed.length < 3) return;
+    if (isRawCoords) return;
+    if (PLACEHOLDER_NAME_RE.test(trimmed)) return;
+    // Skip if we already resolved this exact string (avoids loops on typos).
+    if (forwardResolvedRef.current === trimmed.toLowerCase()) return;
+    // If a saved geofence matches by name, prefer its coords.
+    const exact = geofences?.find(
+      (g) => g.name.trim().toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (exact?.center_lat != null && exact?.center_lng != null) {
+      forwardResolvedRef.current = trimmed.toLowerCase();
+      onCoordsChange(Number(exact.center_lat), Number(exact.center_lng));
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || cancelled) return;
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-search-geocode?q=${encodeURIComponent(trimmed)}&limit=1`;
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Accept-Language": "en",
+          },
+        });
+        if (!res.ok || cancelled) return;
+        const json = await res.json();
+        const top = Array.isArray(json?.results) ? json.results[0] : null;
+        const rLat = top ? Number(top.lat) : NaN;
+        const rLng = top ? Number(top.lon) : NaN;
+        if (!Number.isFinite(rLat) || !Number.isFinite(rLng)) return;
+        forwardResolvedRef.current = trimmed.toLowerCase();
+        onCoordsChange(rLat, rLng);
+      } catch {
+        // Silent — user can still click "Pick on Map" to set coords.
+      }
+    }, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, lat, lng, isRawCoords, geofences]);
+
   /**
    * Persist a freshly picked map point as a reusable "custom" geofence so it
    * shows up in the saved-locations dropdown next time. Failures are silent
