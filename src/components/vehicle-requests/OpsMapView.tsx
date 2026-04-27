@@ -67,6 +67,10 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Loader2,
+  ChevronUp,
+  ChevronDown,
+  Hexagon,
+  Settings2,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -111,6 +115,10 @@ export const OpsMapView = ({ organizationId }: Props) => {
   const [showRoutes, setShowRoutes] = useState(true);
   const [showVehicles, setShowVehicles] = useState(true);
   const [showMerges, setShowMerges] = useState(true);
+  const [showGeofences, setShowGeofences] = useState(true);
+  // Top-of-map control panels can be minimized so the map gets full real estate.
+  const [routeOptionsOpen, setRouteOptionsOpen] = useState(true);
+  const [mapControlsOpen, setMapControlsOpen] = useState(true);
   const [borrowDialog, setBorrowDialog] = useState<null | {
     sourcePool: string;
     targetPool: string;
@@ -187,6 +195,25 @@ export const OpsMapView = ({ organizationId }: Props) => {
       });
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Active geofences (zones) so dispatchers can see depots, no-go areas, and
+  // service zones overlaid on the operations map.
+  const { data: geofences = [] } = useQuery({
+    queryKey: ["ops-map-geofences", organizationId],
+    enabled: !!organizationId && showGeofences,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("geofences")
+        .select(
+          "id, name, category, geometry_type, center_lat, center_lng, radius_meters, polygon_points, color",
+        )
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .limit(200);
+      if (error) throw error;
+      return (data || []) as any[];
     },
   });
 
@@ -510,6 +537,50 @@ export const OpsMapView = ({ organizationId }: Props) => {
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.on("load", () => {
+      // Geofence source — drawn first so routes/markers stay on top.
+      map.addSource("ops-geofences", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: "ops-geofences-fill",
+        type: "fill",
+        source: "ops-geofences",
+        paint: {
+          "fill-color": ["coalesce", ["get", "color"], "hsl(160 70% 45%)"],
+          "fill-opacity": 0.12,
+        },
+      });
+      map.addLayer({
+        id: "ops-geofences-outline",
+        type: "line",
+        source: "ops-geofences",
+        paint: {
+          "line-color": ["coalesce", ["get", "color"], "hsl(160 70% 45%)"],
+          "line-width": 1.5,
+          "line-opacity": 0.7,
+          "line-dasharray": [2, 2],
+        },
+      });
+      // Geofence labels (centroid name) so dispatchers can identify zones.
+      map.addLayer({
+        id: "ops-geofences-label",
+        type: "symbol",
+        source: "ops-geofences",
+        layout: {
+          "text-field": ["get", "name"],
+          "text-size": 10,
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+          "text-offset": [0, 0.6],
+          "text-anchor": "top",
+        },
+        paint: {
+          "text-color": ["coalesce", ["get", "color"], "hsl(160 70% 35%)"],
+          "text-halo-color": "hsla(0,0%,100%,0.85)",
+          "text-halo-width": 1.2,
+        },
+      });
       // route lines source
       map.addSource("ops-routes", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       // Soft halo for selected/merged routes
@@ -761,6 +832,64 @@ export const OpsMapView = ({ organizationId }: Props) => {
     }
   }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms, routeAlts, selectedAltIdx, parentStopSequence]);
 
+  // Sync geofence overlay (circles + polygons) from the active geofences list.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const src = map.getSource("ops-geofences") as maplibregl.GeoJSONSource | undefined;
+    if (!src) return;
+    if (!showGeofences) {
+      src.setData({ type: "FeatureCollection", features: [] });
+      return;
+    }
+    // Build a polygon ring from a centre + radius (8 segments — cheap & smooth
+    // enough at the zoom levels dispatchers use).
+    const circleRing = (lat: number, lng: number, radiusM: number): [number, number][] => {
+      const pts: [number, number][] = [];
+      const earthR = 6378137;
+      const segs = 48;
+      for (let i = 0; i <= segs; i++) {
+        const t = (i / segs) * Math.PI * 2;
+        const dx = (radiusM * Math.cos(t)) / (earthR * Math.cos((lat * Math.PI) / 180));
+        const dy = (radiusM * Math.sin(t)) / earthR;
+        pts.push([lng + (dx * 180) / Math.PI, lat + (dy * 180) / Math.PI]);
+      }
+      return pts;
+    };
+    const features = (geofences as any[])
+      .map((g) => {
+        const color = g.color || "hsl(160 70% 45%)";
+        const props = { id: g.id, name: g.name, category: g.category, color };
+        if (g.geometry_type === "polygon" && Array.isArray(g.polygon_points) && g.polygon_points.length >= 3) {
+          const ring = (g.polygon_points as any[])
+            .map((p: any) =>
+              Array.isArray(p)
+                ? [Number(p[0]), Number(p[1])]
+                : [Number(p?.lng ?? p?.longitude), Number(p?.lat ?? p?.latitude)],
+            )
+            .filter((p: any) => Number.isFinite(p[0]) && Number.isFinite(p[1])) as [number, number][];
+          if (ring.length < 3) return null;
+          const closed = [...ring, ring[0]];
+          return {
+            type: "Feature" as const,
+            properties: props,
+            geometry: { type: "Polygon" as const, coordinates: [closed] },
+          };
+        }
+        if (g.center_lat != null && g.center_lng != null && g.radius_meters) {
+          const ring = circleRing(Number(g.center_lat), Number(g.center_lng), Number(g.radius_meters));
+          return {
+            type: "Feature" as const,
+            properties: props,
+            geometry: { type: "Polygon" as const, coordinates: [ring] },
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+    src.setData({ type: "FeatureCollection", features: features as any });
+  }, [ready, geofences, showGeofences]);
+
   const handleSubmitBorrow = async () => {
     if (!borrowDialog) return;
     await createBorrow.mutateAsync({
@@ -842,21 +971,51 @@ export const OpsMapView = ({ organizationId }: Props) => {
             )}
           </CardTitle>
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <Switch id="r" checked={showRoutes} onCheckedChange={setShowRoutes} />
-              <Label htmlFor="r" className="text-xs cursor-pointer">Routes</Label>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Switch id="v" checked={showVehicles} onCheckedChange={setShowVehicles} />
-              <Label htmlFor="v" className="text-xs cursor-pointer">Vehicles</Label>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Switch id="m" checked={showMerges} onCheckedChange={setShowMerges} />
-              <Label htmlFor="m" className="text-xs cursor-pointer">Merges</Label>
-            </div>
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={refetchAll} title="Refresh">
-              <RefreshCw className="w-3.5 h-3.5" />
-            </Button>
+            {mapControlsOpen ? (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <Switch id="r" checked={showRoutes} onCheckedChange={setShowRoutes} />
+                  <Label htmlFor="r" className="text-xs cursor-pointer">Routes</Label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Switch id="v" checked={showVehicles} onCheckedChange={setShowVehicles} />
+                  <Label htmlFor="v" className="text-xs cursor-pointer">Vehicles</Label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Switch id="m" checked={showMerges} onCheckedChange={setShowMerges} />
+                  <Label htmlFor="m" className="text-xs cursor-pointer">Merges</Label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Switch id="g" checked={showGeofences} onCheckedChange={setShowGeofences} />
+                  <Label htmlFor="g" className="text-xs cursor-pointer">Zones</Label>
+                </div>
+                <Button size="sm" variant="ghost" className="h-7 px-2" onClick={refetchAll} title="Refresh">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setMapControlsOpen(false)}
+                  title="Hide controls"
+                  aria-label="Hide controls"
+                >
+                  <ChevronUp className="w-3.5 h-3.5" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 gap-1.5 text-[11px]"
+                onClick={() => setMapControlsOpen(true)}
+                title="Show controls"
+              >
+                <Settings2 className="w-3 h-3" />
+                Controls
+                <ChevronDown className="w-3 h-3" />
+              </Button>
+            )}
             {/* Side panel toggle — visible on lg+ */}
             <Button
               size="sm"
@@ -875,50 +1034,72 @@ export const OpsMapView = ({ organizationId }: Props) => {
         </CardHeader>
         <CardContent className="p-0 relative">
           <div ref={containerRef} className="w-full h-[60vh] min-h-[360px] sm:h-[520px] lg:h-[560px]" />
-          {/* Route alternatives picker — appears whenever any visible request has >1 OSRM-computed driving option */}
+          {/* Route alternatives picker — appears whenever any visible request has >1 OSRM-computed driving option. Minimizable so it doesn't cover the map. */}
           {showRoutes && visibleRequests.some((r) => (routeAlts[r.id]?.length ?? 0) > 1) && (
-            <div className="absolute top-3 left-3 bg-background/95 backdrop-blur rounded-lg border shadow-md p-2 text-[11px] max-w-[280px] max-h-[260px] overflow-auto space-y-2">
-              <div className="font-semibold flex items-center gap-1">
-                <RouteIcon className="w-3 h-3" /> Route options
+            <div className="absolute top-3 left-3 bg-background/95 backdrop-blur rounded-lg border shadow-md text-[11px] max-w-[280px]">
+              <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+                <div className="font-semibold flex items-center gap-1">
+                  <RouteIcon className="w-3 h-3" /> Route options
+                  <Badge variant="outline" className="text-[9px] h-4 px-1">
+                    {visibleRequests.filter((r) => (routeAlts[r.id]?.length ?? 0) > 1).length}
+                  </Badge>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRouteOptionsOpen((o) => !o)}
+                  className="h-5 w-5 inline-flex items-center justify-center rounded hover:bg-muted"
+                  title={routeOptionsOpen ? "Minimize" : "Expand"}
+                  aria-label={routeOptionsOpen ? "Minimize route options" : "Expand route options"}
+                >
+                  {routeOptionsOpen ? (
+                    <ChevronUp className="w-3 h-3" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3" />
+                  )}
+                </button>
               </div>
-              {visibleRequests
-                .filter((r) => (routeAlts[r.id]?.length ?? 0) > 1)
-                .slice(0, 6)
-                .map((r) => {
-                  const alts = routeAlts[r.id] ?? [];
-                  const sel = selectedAltIdx[r.id] ?? 0;
-                  return (
-                    <div key={r.id} className="border-t border-border/50 pt-1.5 first:border-0 first:pt-0">
-                      <div className="font-medium truncate" title={r.request_number}>
-                        {r.request_number}
-                      </div>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {alts.map((a, idx) => {
-                          const km = (a.distance_m / 1000).toFixed(1);
-                          const min = Math.round(a.duration_s / 60);
-                          const active = idx === sel;
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() =>
-                                setSelectedAltIdx((p) => ({ ...p, [r.id]: idx }))
-                              }
-                              className={`px-2 py-0.5 rounded border text-[10px] transition-colors ${
-                                active
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "bg-background hover:bg-muted border-border"
-                              }`}
-                              title={`${km} km · ${min} min`}
-                            >
-                              #{idx + 1} · {km}km · {min}min
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+              {routeOptionsOpen && (
+                <div className="border-t border-border/60 p-2 max-h-[240px] overflow-auto space-y-2">
+                  {visibleRequests
+                    .filter((r) => (routeAlts[r.id]?.length ?? 0) > 1)
+                    .slice(0, 6)
+                    .map((r) => {
+                      const alts = routeAlts[r.id] ?? [];
+                      const sel = selectedAltIdx[r.id] ?? 0;
+                      return (
+                        <div key={r.id} className="border-t border-border/50 pt-1.5 first:border-0 first:pt-0">
+                          <div className="font-medium truncate" title={r.request_number}>
+                            {r.request_number}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {alts.map((a, idx) => {
+                              const km = (a.distance_m / 1000).toFixed(1);
+                              const min = Math.round(a.duration_s / 60);
+                              const active = idx === sel;
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() =>
+                                    setSelectedAltIdx((p) => ({ ...p, [r.id]: idx }))
+                                  }
+                                  className={`px-2 py-0.5 rounded border text-[10px] transition-colors ${
+                                    active
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-background hover:bg-muted border-border"
+                                  }`}
+                                  title={`${km} km · ${min} min`}
+                                >
+                                  #{idx + 1} · {km}km · {min}min
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           )}
           <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md hidden sm:block">
@@ -950,6 +1131,10 @@ export const OpsMapView = ({ organizationId }: Props) => {
                 }}
               />
               Direct (fallback)
+            </div>
+            <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-1">
+              <div className="w-3 h-3 rounded border border-emerald-500 bg-emerald-500/10" />
+              Geofence zone
             </div>
           </div>
         </CardContent>
