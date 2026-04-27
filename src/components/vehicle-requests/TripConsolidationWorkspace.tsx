@@ -1386,9 +1386,9 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
             </CardContent>
           </Card>
         </div>
-        </div>
         )}
       </div>
+    </div>
   );
 };
 
