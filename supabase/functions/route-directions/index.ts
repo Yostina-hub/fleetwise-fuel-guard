@@ -363,6 +363,54 @@ serve(async (req) => {
   const wantAlternatives = body?.alternatives === true;
   const wantOptimize = body?.optimize === true;
 
+  // Apply the urban-traffic adjustment to every duration_s field in a route
+  // response shape (top-level, alternatives[], legs[]) and add a
+  // raw_duration_s field so callers that need OSRM's free-flow value still
+  // have it. This is the LAST step before sending so internal routing logic
+  // keeps working with raw OSRM numbers.
+  const adjustResponse = <T extends Record<string, any>>(payload: T): T => {
+    const stopCount = (coords as Coord[]).length;
+    const adjustOne = (obj: any) => {
+      if (!obj || typeof obj.duration_s !== "number") return obj;
+      const raw = obj.duration_s;
+      const segStops = Array.isArray(obj.legs) && obj.legs.length > 0
+        ? obj.legs.length + 1
+        : stopCount;
+      return {
+        ...obj,
+        raw_duration_s: raw,
+        duration_s: realisticDuration(raw, segStops),
+      };
+    };
+    const out: any = adjustOne(payload);
+    if (Array.isArray(out.alternatives)) {
+      out.alternatives = out.alternatives.map((a: any) => {
+        const adjusted = adjustOne(a);
+        if (Array.isArray(adjusted.legs)) {
+          adjusted.legs = adjusted.legs.map((l: any) =>
+            l && typeof l.duration_s === "number"
+              ? { ...l, raw_duration_s: l.duration_s, duration_s: realisticDuration(l.duration_s, 2) }
+              : l,
+          );
+        }
+        return adjusted;
+      });
+    }
+    if (Array.isArray(out.legs)) {
+      out.legs = out.legs.map((l: any) =>
+        l && typeof l.duration_s === "number"
+          ? { ...l, raw_duration_s: l.duration_s, duration_s: realisticDuration(l.duration_s, 2) }
+          : l,
+      );
+    }
+    out.traffic_model = {
+      congestion_factor: URBAN_CONGESTION_FACTOR,
+      overhead_s: SHORT_TRIP_OVERHEAD_S,
+      stop_dwell_s: STOP_DWELL_S,
+    };
+    return out as T;
+  };
+
   // Optimised multi-stop tour (OSRM /trip). Used by the Consolidate workspace
   // so the merged trip follows the actual shortest road tour through every
   // selected pickup/drop instead of the input order.
