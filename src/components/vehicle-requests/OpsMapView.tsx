@@ -533,6 +533,50 @@ export const OpsMapView = ({ organizationId }: Props) => {
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.on("load", () => {
+      // Geofence source — drawn first so routes/markers stay on top.
+      map.addSource("ops-geofences", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: "ops-geofences-fill",
+        type: "fill",
+        source: "ops-geofences",
+        paint: {
+          "fill-color": ["coalesce", ["get", "color"], "hsl(160 70% 45%)"],
+          "fill-opacity": 0.12,
+        },
+      });
+      map.addLayer({
+        id: "ops-geofences-outline",
+        type: "line",
+        source: "ops-geofences",
+        paint: {
+          "line-color": ["coalesce", ["get", "color"], "hsl(160 70% 45%)"],
+          "line-width": 1.5,
+          "line-opacity": 0.7,
+          "line-dasharray": [2, 2],
+        },
+      });
+      // Geofence labels (centroid name) so dispatchers can identify zones.
+      map.addLayer({
+        id: "ops-geofences-label",
+        type: "symbol",
+        source: "ops-geofences",
+        layout: {
+          "text-field": ["get", "name"],
+          "text-size": 10,
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+          "text-offset": [0, 0.6],
+          "text-anchor": "top",
+        },
+        paint: {
+          "text-color": ["coalesce", ["get", "color"], "hsl(160 70% 35%)"],
+          "text-halo-color": "hsla(0,0%,100%,0.85)",
+          "text-halo-width": 1.2,
+        },
+      });
       // route lines source
       map.addSource("ops-routes", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       // Soft halo for selected/merged routes
