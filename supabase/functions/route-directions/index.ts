@@ -419,14 +419,14 @@ serve(async (req) => {
       const trip = await tryOsrmTrip(coords as Coord[]);
       if (trip.ok) {
         return secureJsonResponse(
-          {
+          adjustResponse({
             ok: true,
             provider: "osrm-trip",
             geometry: trip.geometry,
             distance_m: trip.distance_m,
             duration_s: trip.duration_s,
             order: trip.order,
-          },
+          }),
           req,
         );
       }
