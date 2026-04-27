@@ -260,11 +260,12 @@ const tryOsrmViaAlternatives = async (coords: Coord[]) => {
   const dy = end[1] - start[1];
   const len = Math.sqrt(dx * dx + dy * dy) || 0.01;
   const scale = Math.max(0.006, Math.min(0.025, len * 0.45));
+  // Only 2 candidates (perpendicular ± offsets) — the other two we used to try
+  // (parallel offset + axis-aligned offset) almost always produced near-
+  // duplicate routes that got de-duped anyway, so they were pure latency cost.
   const candidates = [
     [midLng - (dy / len) * scale, midLat + (dx / len) * scale],
     [midLng + (dy / len) * scale, midLat - (dx / len) * scale],
-    [midLng, midLat + scale],
-    [midLng + scale, midLat],
   ].filter(isValidCoord);
 
   const variants = await Promise.all(
