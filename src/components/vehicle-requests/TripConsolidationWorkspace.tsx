@@ -84,6 +84,22 @@ function poolColor(pool?: string | null): string {
   return `hsl(${h} 75% 50%)`;
 }
 
+interface SmartRules {
+  capacity: { enabled: boolean; max_utilization_pct: number; reference_capacity: number };
+  proximity: { enabled: boolean; radius_km: number };
+  time_window: { enabled: boolean; window_minutes: number };
+  compatibility: { enabled: boolean };
+}
+
+const DEFAULT_RULES: SmartRules = {
+  capacity: { enabled: true, max_utilization_pct: 80, reference_capacity: 14 },
+  proximity: { enabled: true, radius_km: 5 },
+  time_window: { enabled: true, window_minutes: 30 },
+  compatibility: { enabled: true },
+};
+
+const RULES_STORAGE_KEY = "vr_consolidation_smart_rules";
+
 export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -96,6 +112,17 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   const [showRoutes, setShowRoutes] = useState(true);
   const [highlightSuggestions, setHighlightSuggestions] = useState(true);
   const [tab, setTab] = useState<"manual" | "suggested">("manual");
+  const [rules, setRules] = useState<SmartRules>(() => {
+    try {
+      const raw = window.localStorage.getItem(RULES_STORAGE_KEY);
+      if (raw) return { ...DEFAULT_RULES, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_RULES;
+  });
+  const saveRules = (next: SmartRules) => {
+    setRules(next);
+    try { window.localStorage.setItem(RULES_STORAGE_KEY, JSON.stringify(next)); } catch {}
+  };
 
   // ---- Data ---------------------------------------------------------------
   const { data: requests = [], isLoading } = useQuery({
