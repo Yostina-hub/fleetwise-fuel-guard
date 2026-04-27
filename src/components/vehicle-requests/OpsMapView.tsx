@@ -62,6 +62,10 @@ import {
   Clock,
   Flame,
   CircleDot,
+  ChevronRight,
+  ChevronLeft,
+  PanelRightClose,
+  PanelRightOpen,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -119,6 +123,13 @@ export const OpsMapView = ({ organizationId }: Props) => {
     id: string;
     label: string;
   }>(null);
+  // Side panel collapsible state — default open on lg+, collapsed on smaller.
+  const [sidePanelOpen, setSidePanelOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 1024px)").matches;
+  });
+  // Pool Demand & Supply minimizable state inside the side panel.
+  const [poolDemandOpen, setPoolDemandOpen] = useState<boolean>(true);
 
   const { available, allVehicles } = useAvailableVehicles();
   const { data: borrowRows = [], refetch: refetchBorrow } = useCrossPoolBorrowRequests(organizationId);
