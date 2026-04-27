@@ -1063,6 +1063,56 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Combined unified trip route */}
+                  {orderedStops.length >= 2 && (
+                    <div className="rounded-md border border-primary/40 bg-primary/5 p-2 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-primary">
+                        <span className="flex items-center gap-1">
+                          <RouteIcon className="w-3.5 h-3.5" />
+                          Unified trip route
+                        </span>
+                        {combinedLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-[11px]">
+                        <div>
+                          <div className="text-muted-foreground">Stops</div>
+                          <div className="font-semibold">{orderedStops.length}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Distance</div>
+                          <div className="font-semibold">
+                            {combinedRoute && combinedRoute.distance_m > 0
+                              ? `${(combinedRoute.distance_m / 1000).toFixed(1)} km`
+                              : combinedLoading ? "…" : "—"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Drive time</div>
+                          <div className="font-semibold">
+                            {combinedRoute && combinedRoute.duration_s > 0
+                              ? `${Math.round(combinedRoute.duration_s / 60)} min`
+                              : combinedLoading ? "…" : "—"}
+                          </div>
+                        </div>
+                      </div>
+                      {combinedRoute?.fallback && (
+                        <div className="text-[10px] text-amber-500">
+                          Routing service unreachable — direct fallback path shown.
+                        </div>
+                      )}
+                      <div className="text-[10px] text-muted-foreground leading-snug">
+                        {orderedStops.map((s, i) => (
+                          <span key={`${s.requestId}-${s.type}-${i}`}>
+                            <span className="font-semibold text-foreground">{i + 1}</span>{" "}
+                            {s.type === "pickup" ? "📍" : "🏁"} {s.label}
+                            {i < orderedStops.length - 1 && " → "}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="text-xs">
                     <span className="text-muted-foreground">Pools: </span>
                     {preview.pools.map((p) => (
