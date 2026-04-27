@@ -30,6 +30,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Layers,
   MapPin,
@@ -41,6 +43,9 @@ import {
   Sparkles,
   Filter,
   X,
+  Sliders,
+  Package,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -79,6 +84,22 @@ function poolColor(pool?: string | null): string {
   return `hsl(${h} 75% 50%)`;
 }
 
+interface SmartRules {
+  capacity: { enabled: boolean; max_utilization_pct: number; reference_capacity: number };
+  proximity: { enabled: boolean; radius_km: number };
+  time_window: { enabled: boolean; window_minutes: number };
+  compatibility: { enabled: boolean };
+}
+
+const DEFAULT_RULES: SmartRules = {
+  capacity: { enabled: true, max_utilization_pct: 80, reference_capacity: 14 },
+  proximity: { enabled: true, radius_km: 5 },
+  time_window: { enabled: true, window_minutes: 30 },
+  compatibility: { enabled: true },
+};
+
+const RULES_STORAGE_KEY = "vr_consolidation_smart_rules";
+
 export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -91,6 +112,17 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   const [showRoutes, setShowRoutes] = useState(true);
   const [highlightSuggestions, setHighlightSuggestions] = useState(true);
   const [tab, setTab] = useState<"manual" | "suggested">("manual");
+  const [rules, setRules] = useState<SmartRules>(() => {
+    try {
+      const raw = window.localStorage.getItem(RULES_STORAGE_KEY);
+      if (raw) return { ...DEFAULT_RULES, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_RULES;
+  });
+  const saveRules = (next: SmartRules) => {
+    setRules(next);
+    try { window.localStorage.setItem(RULES_STORAGE_KEY, JSON.stringify(next)); } catch {}
+  };
 
   // ---- Data ---------------------------------------------------------------
   const { data: requests = [], isLoading } = useQuery({
@@ -115,12 +147,12 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   });
 
   const { data: suggestionData, isLoading: loadingSuggestions } = useQuery({
-    queryKey: ["consolidation-suggestions", organizationId],
+    queryKey: ["consolidation-suggestions", organizationId, rules],
     enabled: !!organizationId,
     refetchInterval: 60_000,
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("consolidate-requests", {
-        body: { organization_id: organizationId },
+        body: { organization_id: organizationId, rules },
       });
       if (error) throw error;
       return data;
@@ -381,10 +413,17 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   ).length;
 
   const suggestionGroups = [
+    ...(suggestionData?.groups?.smart_rules || []).map((g: any) => ({ ...g, label: "Smart match" })),
     ...(suggestionData?.groups?.exact_route || []).map((g: any) => ({ ...g, label: "Exact route" })),
     ...(suggestionData?.groups?.dest_window || []).map((g: any) => ({ ...g, label: "Same dest · ±30 min" })),
     ...(suggestionData?.groups?.geofence_pair || []).map((g: any) => ({ ...g, label: "Geofence pair" })),
   ];
+
+  const activeRulesCount =
+    (rules.capacity.enabled ? 1 : 0) +
+    (rules.proximity.enabled ? 1 : 0) +
+    (rules.time_window.enabled ? 1 : 0) +
+    (rules.compatibility.enabled ? 1 : 0);
 
   return (
     <div className="space-y-3">
@@ -404,6 +443,184 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
             <Badge variant="outline" className="text-[11px]">
               {totalActive} active · {withCoords} on map
             </Badge>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button size="sm" variant="outline" className="h-8 gap-1.5">
+                  <Sliders className="w-3.5 h-3.5" />
+                  Rules
+                  <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                    {activeRulesCount}/4
+                  </Badge>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[340px] p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold flex items-center gap-1.5 text-primary">
+                    <Sliders className="w-3.5 h-3.5" />
+                    Smart consolidation rules
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-[11px] gap-1"
+                    onClick={() => saveRules(DEFAULT_RULES)}
+                  >
+                    <RotateCcw className="w-3 h-3" /> Reset
+                  </Button>
+                </div>
+
+                {/* Capacity */}
+                <div className="rounded-md border p-2 space-y-1.5 bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-3.5 h-3.5 text-primary" />
+                    <Label className="text-xs font-semibold flex-1">Capacity utilization</Label>
+                    <Switch
+                      checked={rules.capacity.enabled}
+                      onCheckedChange={(v) =>
+                        saveRules({ ...rules, capacity: { ...rules.capacity, enabled: v } })
+                      }
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Stay under % of vehicle capacity.</p>
+                  {rules.capacity.enabled && (
+                    <div className="flex gap-2 pt-1">
+                      <div className="flex-1">
+                        <Label className="text-[10px] text-muted-foreground">Max %</Label>
+                        <Input
+                          type="number"
+                          min={10}
+                          max={100}
+                          className="h-7 text-xs"
+                          value={rules.capacity.max_utilization_pct}
+                          onChange={(e) =>
+                            saveRules({
+                              ...rules,
+                              capacity: {
+                                ...rules.capacity,
+                                max_utilization_pct: Number(e.target.value) || 80,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Label className="text-[10px] text-muted-foreground">Ref. seats</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={80}
+                          className="h-7 text-xs"
+                          value={rules.capacity.reference_capacity}
+                          onChange={(e) =>
+                            saveRules({
+                              ...rules,
+                              capacity: {
+                                ...rules.capacity,
+                                reference_capacity: Number(e.target.value) || 14,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Proximity */}
+                <div className="rounded-md border p-2 space-y-1.5 bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-primary" />
+                    <Label className="text-xs font-semibold flex-1">Geographic proximity</Label>
+                    <Switch
+                      checked={rules.proximity.enabled}
+                      onCheckedChange={(v) =>
+                        saveRules({ ...rules, proximity: { ...rules.proximity, enabled: v } })
+                      }
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Drop-offs within radius.</p>
+                  {rules.proximity.enabled && (
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Radius (km)</Label>
+                      <Input
+                        type="number"
+                        min={0.5}
+                        max={100}
+                        step={0.5}
+                        className="h-7 text-xs w-24"
+                        value={rules.proximity.radius_km}
+                        onChange={(e) =>
+                          saveRules({
+                            ...rules,
+                            proximity: {
+                              ...rules.proximity,
+                              radius_km: Number(e.target.value) || 5,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Time window */}
+                <div className="rounded-md border p-2 space-y-1.5 bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    <Label className="text-xs font-semibold flex-1">Time window</Label>
+                    <Switch
+                      checked={rules.time_window.enabled}
+                      onCheckedChange={(v) =>
+                        saveRules({ ...rules, time_window: { ...rules.time_window, enabled: v } })
+                      }
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Pickups within minutes of each other.</p>
+                  {rules.time_window.enabled && (
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Window (min)</Label>
+                      <Input
+                        type="number"
+                        min={5}
+                        max={240}
+                        className="h-7 text-xs w-24"
+                        value={rules.time_window.window_minutes}
+                        onChange={(e) =>
+                          saveRules({
+                            ...rules,
+                            time_window: {
+                              ...rules.time_window,
+                              window_minutes: Number(e.target.value) || 30,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Compatibility */}
+                <div className="rounded-md border p-2 space-y-1.5 bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-3.5 h-3.5 text-primary" />
+                    <Label className="text-xs font-semibold flex-1">Compatibility</Label>
+                    <Switch
+                      checked={rules.compatibility.enabled}
+                      onCheckedChange={(v) =>
+                        saveRules({ ...rules, compatibility: { enabled: v } })
+                      }
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Never mix passengers with cargo, or cold-chain with dry cargo.
+                  </p>
+                </div>
+
+                <p className="text-[10px] text-muted-foreground pt-1">
+                  Rules apply to the <strong>Suggestions</strong> tab and are saved on this device.
+                </p>
+              </PopoverContent>
+            </Popover>
           </div>
         </CardContent>
       </Card>
