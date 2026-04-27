@@ -270,24 +270,26 @@ export function validateVRField(
 
     case "departure_place": {
       const v = sanitizeShortText(value);
-      if (!v) return "Departure place is required. Pick a location from the map.";
-      if (v.length < 2) return "Departure place is too short. Pick a location from the map.";
+      if (!v) return "Departure place is required.";
+      if (v.length < 2) return "Departure place is too short.";
       if (v.length > 200) return "Departure place is too long (max 200 characters).";
       // Coordinates are required so the trip resolves to a real map location —
       // typed text alone is not enough for routing, distance, or dispatch.
+      // The location picker auto-geocodes typed text, so this only fires when
+      // the address can't be resolved automatically.
       if (!isFiniteCoord(ctx.departure_lat) || !isFiniteCoord(ctx.departure_lng)) {
-        return "Pick the departure on the map. Free-text addresses without coordinates are not allowed.";
+        return "We couldn't locate this address. Click \"Pick on Map\" to set the exact point.";
       }
       return;
     }
 
     case "destination": {
       const v = sanitizeShortText(value);
-      if (!v) return "Destination is required. Pick a location from the map.";
-      if (v.length < 2) return "Destination is too short. Pick a location from the map.";
+      if (!v) return "Destination is required.";
+      if (v.length < 2) return "Destination is too short.";
       if (v.length > 200) return "Destination is too long (max 200 characters).";
       if (!isFiniteCoord(ctx.destination_lat) || !isFiniteCoord(ctx.destination_lng)) {
-        return "Pick the destination on the map. Free-text addresses without coordinates are not allowed.";
+        return "We couldn't locate this address. Click \"Pick on Map\" to set the exact point.";
       }
       return;
     }
