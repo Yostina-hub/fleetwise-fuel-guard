@@ -112,6 +112,11 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   const [showRoutes, setShowRoutes] = useState(true);
   const [highlightSuggestions, setHighlightSuggestions] = useState(true);
   const [tab, setTab] = useState<"manual" | "suggested">("manual");
+  // Side-panel collapsible state — matches Live Map look & feel.
+  const [sidePanelOpen, setSidePanelOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 1024px)").matches;
+  });
   const [rules, setRules] = useState<SmartRules>(() => {
     try {
       const raw = window.localStorage.getItem(RULES_STORAGE_KEY);
