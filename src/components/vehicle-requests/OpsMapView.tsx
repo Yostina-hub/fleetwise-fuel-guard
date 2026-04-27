@@ -638,6 +638,38 @@ export const OpsMapView = ({ organizationId }: Props) => {
         bounds.extend([r.departure_lng, r.departure_lat]);
         bounds.extend([r.destination_lng, r.destination_lat]);
         hasBounds = true;
+
+        // Intermediate stop dots for consolidated parents — show every merged
+        // child pickup and drop along the route so dispatchers see the actual
+        // shape of the consolidated trip, not just the parent endpoints.
+        if (isParent) {
+          const seq = parentStopSequence[r.id];
+          if (seq && seq.length > 2) {
+            seq.slice(1, -1).forEach((coord, idx) => {
+              const isPickup = idx < (seq.length - 2) / 2;
+              const stopEl = document.createElement("div");
+              stopEl.style.cssText = `
+                width:10px;height:10px;border-radius:${isPickup ? "9999px" : "2px"};
+                background:${isPickup ? color : "hsl(var(--background))"};
+                border:2px solid ${color};
+                box-shadow:0 0 0 1px hsl(var(--background));
+              `;
+              const sm = new maplibregl.Marker({ element: stopEl })
+                .setLngLat(coord)
+                .setPopup(
+                  new maplibregl.Popup({ offset: 10 }).setHTML(
+                    `<div style="font:500 11px system-ui;padding:3px;">
+                       <div style="font-weight:700">${isPickup ? "Merged pickup" : "Merged drop"}</div>
+                       <div style="color:hsl(var(--muted-foreground));font-size:10px;">${r.request_number} · stop ${idx + 1}</div>
+                     </div>`,
+                  ),
+                )
+                .addTo(map);
+              markersRef.current.push(sm);
+              bounds.extend(coord);
+            });
+          }
+        }
       });
     }
 
