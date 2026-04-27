@@ -732,7 +732,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
         /* ignore */
       }
     }
-  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms]);
+  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms, parentStopSequence]);
 
   const handleSubmitBorrow = async () => {
     if (!borrowDialog) return;
