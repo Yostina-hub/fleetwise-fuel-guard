@@ -3,6 +3,7 @@ import Layout from "@/components/Layout";
 import { Can } from "@/components/auth/Can";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -162,25 +163,30 @@ const VehicleRequests = () => {
   // workspace with consolidation + per-request review/assign panels).
   // Synced to URL ?view=assignments so the legacy /pool-supervisors redirect
   // can deep-link straight into this mode.
-  const [viewMode, setViewMode] = useState<"requests" | "assignments" | "ops_map" | "consolidation" | "merged_history">(() => {
+  const [viewMode, setViewMode] = useState<"requests" | "assignments" | "ops_map" | "consolidation">(() => {
     if (typeof window === "undefined") return "requests";
     const v = new URLSearchParams(window.location.search).get("view");
     if (v === "assignments") return "assignments";
     if (v === "ops_map") return "ops_map";
-    if (v === "consolidation") return "consolidation";
-    if (v === "merged_history") return "merged_history";
+    if (v === "consolidation" || v === "merged_history") return "consolidation";
     return "requests";
+  });
+  // Sub-tab inside the Consolidation workspace: active workspace vs merged history.
+  const [consolidationTab, setConsolidationTab] = useState<"active" | "history">(() => {
+    if (typeof window === "undefined") return "active";
+    const v = new URLSearchParams(window.location.search).get("view");
+    return v === "merged_history" ? "history" : "active";
   });
   useEffect(() => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
     if (viewMode === "assignments") url.searchParams.set("view", "assignments");
     else if (viewMode === "ops_map") url.searchParams.set("view", "ops_map");
-    else if (viewMode === "consolidation") url.searchParams.set("view", "consolidation");
-    else if (viewMode === "merged_history") url.searchParams.set("view", "merged_history");
-    else url.searchParams.delete("view");
+    else if (viewMode === "consolidation") {
+      url.searchParams.set("view", consolidationTab === "history" ? "merged_history" : "consolidation");
+    } else url.searchParams.delete("view");
     window.history.replaceState({}, "", url.toString());
-  }, [viewMode]);
+  }, [viewMode, consolidationTab]);
 
   // filters / search / pagination
   const [activeStatus, setActiveStatus] = useState<StatusKey>("all");
@@ -818,18 +824,6 @@ const VehicleRequests = () => {
                       <GitMerge className="w-3.5 h-3.5" />
                       Consolidate
                     </Button>
-                    <Button
-                      variant={viewMode === "merged_history" ? "default" : "outline"}
-                      size="sm"
-                      className="gap-1.5 h-9"
-                      onClick={() =>
-                        setViewMode((m) => (m === "merged_history" ? "requests" : "merged_history"))
-                      }
-                      title="Merged Trips History — view every consolidated parent trip with its merged places"
-                    >
-                      <ClipboardList className="w-3.5 h-3.5" />
-                      Merged History
-                    </Button>
                   </div>
                 </>
               )}
@@ -923,39 +917,38 @@ const VehicleRequests = () => {
           </div>
         )}
 
-        {/* ============== TRIP CONSOLIDATION WORKSPACE ============== */}
+        {/* ============== TRIP CONSOLIDATION WORKSPACE (with Merged History tab) ============== */}
         {viewMode === "consolidation" && canManageAll && organizationId && (
           <div className="space-y-4 animate-fade-in">
-            <TripConsolidationWorkspace organizationId={organizationId} />
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5"
-                onClick={() => setViewMode("requests")}
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                Back to Requests
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* ============== MERGED TRIPS HISTORY ============== */}
-        {viewMode === "merged_history" && canManageAll && organizationId && (
-          <div className="space-y-4 animate-fade-in">
-            <MergedTripsHistory organizationId={organizationId} />
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5"
-                onClick={() => setViewMode("requests")}
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                Back to Requests
-              </Button>
-            </div>
+            <Tabs value={consolidationTab} onValueChange={(v) => setConsolidationTab(v as "active" | "history")}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <TabsList className="self-start">
+                  <TabsTrigger value="active" className="gap-1.5">
+                    <GitMerge className="w-3.5 h-3.5" />
+                    Active Consolidation
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="gap-1.5">
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    Merged History
+                  </TabsTrigger>
+                </TabsList>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 self-end sm:self-auto"
+                  onClick={() => setViewMode("requests")}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Back to Requests
+                </Button>
+              </div>
+              <TabsContent value="active" className="mt-4">
+                <TripConsolidationWorkspace organizationId={organizationId} />
+              </TabsContent>
+              <TabsContent value="history" className="mt-4">
+                <MergedTripsHistory organizationId={organizationId} />
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 
