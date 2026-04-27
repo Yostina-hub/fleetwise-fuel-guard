@@ -163,30 +163,31 @@ const VehicleRequests = () => {
   // workspace with consolidation + per-request review/assign panels).
   // Synced to URL ?view=assignments so the legacy /pool-supervisors redirect
   // can deep-link straight into this mode.
-  const [viewMode, setViewMode] = useState<"requests" | "assignments" | "ops_map" | "consolidation">(() => {
+  const [viewMode, setViewMode] = useState<"requests" | "assignments" | "ops_map">(() => {
     if (typeof window === "undefined") return "requests";
     const v = new URLSearchParams(window.location.search).get("view");
     if (v === "assignments") return "assignments";
-    if (v === "ops_map") return "ops_map";
-    if (v === "consolidation" || v === "merged_history") return "consolidation";
+    if (v === "ops_map" || v === "consolidation" || v === "merged_history") return "ops_map";
     return "requests";
   });
-  // Sub-tab inside the Consolidation workspace: active workspace vs merged history.
-  const [consolidationTab, setConsolidationTab] = useState<"active" | "history">(() => {
-    if (typeof window === "undefined") return "active";
+  // Sub-tab inside the Ops Map workspace: live map / consolidate / merged history.
+  const [opsMapTab, setOpsMapTab] = useState<"map" | "consolidate" | "history">(() => {
+    if (typeof window === "undefined") return "map";
     const v = new URLSearchParams(window.location.search).get("view");
-    return v === "merged_history" ? "history" : "active";
+    if (v === "merged_history") return "history";
+    if (v === "consolidation") return "consolidate";
+    return "map";
   });
   useEffect(() => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
     if (viewMode === "assignments") url.searchParams.set("view", "assignments");
-    else if (viewMode === "ops_map") url.searchParams.set("view", "ops_map");
-    else if (viewMode === "consolidation") {
-      url.searchParams.set("view", consolidationTab === "history" ? "merged_history" : "consolidation");
+    else if (viewMode === "ops_map") {
+      const map = { map: "ops_map", consolidate: "consolidation", history: "merged_history" } as const;
+      url.searchParams.set("view", map[opsMapTab]);
     } else url.searchParams.delete("view");
     window.history.replaceState({}, "", url.toString());
-  }, [viewMode, consolidationTab]);
+  }, [viewMode, opsMapTab]);
 
   // filters / search / pagination
   const [activeStatus, setActiveStatus] = useState<StatusKey>("all");
@@ -807,22 +808,10 @@ const VehicleRequests = () => {
                       onClick={() =>
                         setViewMode((m) => (m === "ops_map" ? "requests" : "ops_map"))
                       }
-                      title="Operations control map — pool demand, idle vehicles, merge suggestions, cross-pool borrow"
+                      title="Operations control map — live routes, idle vehicles, trip consolidation, and merged history"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       Ops Map
-                    </Button>
-                    <Button
-                      variant={viewMode === "consolidation" ? "default" : "outline"}
-                      size="sm"
-                      className="gap-1.5 h-9"
-                      onClick={() =>
-                        setViewMode((m) => (m === "consolidation" ? "requests" : "consolidation"))
-                      }
-                      title="Trip Consolidation — merge requests by pool, route, and time"
-                    >
-                      <GitMerge className="w-3.5 h-3.5" />
-                      Consolidate
                     </Button>
                   </div>
                 </>
