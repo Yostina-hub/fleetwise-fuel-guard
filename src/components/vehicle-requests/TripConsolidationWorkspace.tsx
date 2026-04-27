@@ -337,6 +337,21 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     };
   }, []);
 
+  // Resize map when side panel collapses/expands or window changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const id = window.setTimeout(() => map.resize(), 220);
+    return () => window.clearTimeout(id);
+  }, [sidePanelOpen]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const onResize = () => map.resize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   const selectedRequests = useMemo(
     () => requests.filter((r) => selectedIds.has(r.id)),
     [requests, selectedIds],
