@@ -147,12 +147,12 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   });
 
   const { data: suggestionData, isLoading: loadingSuggestions } = useQuery({
-    queryKey: ["consolidation-suggestions", organizationId],
+    queryKey: ["consolidation-suggestions", organizationId, rules],
     enabled: !!organizationId,
     refetchInterval: 60_000,
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("consolidate-requests", {
-        body: { organization_id: organizationId },
+        body: { organization_id: organizationId, rules },
       });
       if (error) throw error;
       return data;
