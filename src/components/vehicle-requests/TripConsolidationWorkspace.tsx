@@ -1174,11 +1174,11 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
                         </div>
                       )}
                       <div className="text-[10px] text-muted-foreground leading-snug">
-                        {orderedStops.map((s, i) => (
+                        {displayStops.map((s, i) => (
                           <span key={`${s.requestId}-${s.type}-${i}`}>
                             <span className="font-semibold text-foreground">{i + 1}</span>{" "}
                             {s.type === "pickup" ? "📍" : "🏁"} {s.label}
-                            {i < orderedStops.length - 1 && " → "}
+                            {i < displayStops.length - 1 && " → "}
                           </span>
                         ))}
                       </div>
