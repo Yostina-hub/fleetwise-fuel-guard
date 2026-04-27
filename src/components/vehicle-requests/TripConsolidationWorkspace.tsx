@@ -1026,28 +1026,8 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
           </CardHeader>
           <CardContent className="p-0 relative">
             <div ref={containerRef} className="w-full h-[60vh] min-h-[360px] sm:h-[520px] lg:h-[560px]" />
-            {/* Compact controls overlay (top-left) */}
-            <div className="absolute top-3 left-3 bg-background/95 backdrop-blur rounded-lg border shadow-md p-2 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <Switch id="cw-routes" checked={showRoutes} onCheckedChange={setShowRoutes} className="scale-75" />
-                <Label htmlFor="cw-routes" className="text-[11px] cursor-pointer">
-                  Show routes
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="cw-sugg"
-                  checked={highlightSuggestions}
-                  onCheckedChange={setHighlightSuggestions}
-                  className="scale-75"
-                />
-                <Label htmlFor="cw-sugg" className="text-[11px] cursor-pointer">
-                  Highlight suggestions
-                </Label>
-              </div>
-            </div>
             {/* Legend (bottom-left) */}
-            <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md">
+            <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md hidden sm:block">
               <div className="font-semibold flex items-center gap-1 mb-1">
                 <Layers className="w-3 h-3" /> Legend
               </div>
