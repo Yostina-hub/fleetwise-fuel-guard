@@ -697,7 +697,7 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, filteredRequests, selectedIds, suggestedColorById, showRoutes, highlightSuggestions, routeGeoms, combinedRoute, orderedStops]);
+  }, [ready, filteredRequests, selectedIds, suggestedColorById, showRoutes, highlightSuggestions, routeGeoms, combinedRoute, orderedStops, displayStops]);
 
   // ---- Selection helpers --------------------------------------------------
   const toggleSelect = (id: string) =>
