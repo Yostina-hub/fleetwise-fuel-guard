@@ -117,8 +117,9 @@ export const OpsMapView = ({ organizationId }: Props) => {
   const [showMerges, setShowMerges] = useState(true);
   const [showGeofences, setShowGeofences] = useState(true);
   // Top-of-map control panels can be minimized so the map gets full real estate.
-  const [routeOptionsOpen, setRouteOptionsOpen] = useState(true);
+  const [routeOptionsOpen, setRouteOptionsOpen] = useState(false);
   const [mapControlsOpen, setMapControlsOpen] = useState(true);
+  const [legendOpen, setLegendOpen] = useState(false);
   const [borrowDialog, setBorrowDialog] = useState<null | {
     sourcePool: string;
     targetPool: string;
