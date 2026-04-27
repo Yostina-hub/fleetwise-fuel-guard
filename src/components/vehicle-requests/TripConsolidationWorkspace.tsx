@@ -341,6 +341,8 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     const bounds = new maplibregl.LngLatBounds();
     let hasBounds = false;
 
+    const hasCombined = !!combinedRoute && orderedStops.length >= 2;
+
     filteredRequests.forEach((r) => {
       if (
         r.departure_lat == null ||
@@ -354,7 +356,12 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
       const suggested = highlightSuggestions ? suggestedColorById[r.id] : undefined;
       const baseColor = suggested || poolColor(r.pool_name);
 
-      if (showRoutes) {
+      // When a combined route is shown for the merge, hide the per-request
+      // straight/road lines for selected items so the map stays clean and the
+      // unified trip is the focal point.
+      const drawLine = showRoutes && !(hasCombined && isSelected);
+
+      if (drawLine) {
         const cached = routeGeoms[r.id];
         const isFallback = !cached || cached.length < 2;
         const coords: [number, number][] = isFallback
@@ -374,6 +381,15 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
           },
           geometry: { type: "LineString", coordinates: coords },
         });
+      }
+
+      // Skip the per-request markers for selected items when a combined route
+      // is active — numbered stop markers below take over.
+      if (hasCombined && isSelected) {
+        bounds.extend([r.departure_lng, r.departure_lat]);
+        bounds.extend([r.destination_lng, r.destination_lat]);
+        hasBounds = true;
+        return;
       }
 
       // Pickup marker — clickable to toggle selection
@@ -426,15 +442,65 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     const src = map.getSource("consol-routes") as maplibregl.GeoJSONSource | undefined;
     src?.setData({ type: "FeatureCollection", features });
 
+    // Combined merge route + numbered stop markers
+    const combinedSrc = map.getSource("consol-combined") as maplibregl.GeoJSONSource | undefined;
+    if (hasCombined) {
+      combinedSrc?.setData({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { fallback: combinedRoute!.fallback },
+            geometry: { type: "LineString", coordinates: combinedRoute!.geometry },
+          },
+        ],
+      });
+      combinedRoute!.geometry.forEach((c) => bounds.extend(c as [number, number]));
+      hasBounds = true;
+
+      // Numbered sequential stop markers
+      orderedStops.forEach((stop, idx) => {
+        const isPickup = stop.type === "pickup";
+        const el = document.createElement("div");
+        el.style.cssText = `
+          display:flex;align-items:center;justify-content:center;
+          width:26px;height:26px;border-radius:9999px;
+          background:${isPickup ? "hsl(var(--primary))" : "hsl(var(--background))"};
+          color:${isPickup ? "hsl(var(--primary-foreground))" : "hsl(var(--primary))"};
+          border:3px solid hsl(var(--primary));
+          box-shadow:0 2px 6px rgba(0,0,0,.35);
+          font:700 12px system-ui;
+          cursor:pointer;
+        `;
+        el.textContent = String(idx + 1);
+        el.title = `Stop ${idx + 1}: ${isPickup ? "Pickup" : "Drop"} · ${stop.requestNumber}`;
+        const m = new maplibregl.Marker({ element: el })
+          .setLngLat([stop.lng, stop.lat])
+          .setPopup(
+            new maplibregl.Popup({ offset: 16 }).setHTML(
+              `<div style="font:500 12px system-ui;padding:4px;min-width:170px;">
+                 <div style="font-weight:700">Stop ${idx + 1} · ${isPickup ? "Pickup" : "Drop"}</div>
+                 <div style="color:hsl(var(--muted-foreground));font-size:11px;">${stop.requestNumber}</div>
+                 <div style="margin-top:4px;font-size:11px;">${isPickup ? "📍" : "🏁"} ${stop.label}</div>
+               </div>`,
+            ),
+          )
+          .addTo(map);
+        markersRef.current.push(m);
+      });
+    } else {
+      combinedSrc?.setData({ type: "FeatureCollection", features: [] });
+    }
+
     if (hasBounds) {
       try {
-        map.fitBounds(bounds, { padding: 50, duration: 500, maxZoom: 13 });
+        map.fitBounds(bounds, { padding: 60, duration: 500, maxZoom: 14 });
       } catch {
         /* noop */
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, filteredRequests, selectedIds, suggestedColorById, showRoutes, highlightSuggestions, routeGeoms]);
+  }, [ready, filteredRequests, selectedIds, suggestedColorById, showRoutes, highlightSuggestions, routeGeoms, combinedRoute, orderedStops]);
 
   // ---- Selection helpers --------------------------------------------------
   const toggleSelect = (id: string) =>
