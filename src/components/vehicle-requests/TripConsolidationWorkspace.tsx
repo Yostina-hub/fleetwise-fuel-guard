@@ -1061,8 +1061,24 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
           </CardContent>
         </Card>
 
-        {/* SIDE PANEL */}
-        <div className="space-y-3">
+        {/* SIDE PANEL — collapsed rail on lg, full panel otherwise */}
+        {!sidePanelOpen ? (
+          <div className="hidden lg:flex flex-col items-center pt-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 w-9 p-0"
+              onClick={() => setSidePanelOpen(true)}
+              title="Show side panel"
+            >
+              <PanelRightOpen className="w-4 h-4" />
+            </Button>
+            <div className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground [writing-mode:vertical-rl] rotate-180">
+              Preview · Requests
+            </div>
+          </div>
+        ) : (
+        <div className="space-y-3 min-w-0">
           {/* Merge preview */}
           <Card className={preview ? "border-primary/40" : ""}>
             <CardHeader className="pb-2">
@@ -1370,8 +1386,9 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
             </CardContent>
           </Card>
         </div>
+        </div>
+        )}
       </div>
-    </div>
   );
 };
 
