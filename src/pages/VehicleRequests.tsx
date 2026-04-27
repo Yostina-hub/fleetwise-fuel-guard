@@ -875,7 +875,6 @@ const VehicleRequests = () => {
                 </Button>
               </CardContent>
             </Card>
-            <ConsolidationPanel organizationId={organizationId} />
             <PoolReviewPanel requests={requests} organizationId={organizationId} />
           </div>
         )}
