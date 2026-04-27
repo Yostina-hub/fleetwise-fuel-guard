@@ -1132,6 +1132,10 @@ export const OpsMapView = ({ organizationId }: Props) => {
               />
               Direct (fallback)
             </div>
+            <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-1">
+              <div className="w-3 h-3 rounded border border-emerald-500 bg-emerald-500/10" />
+              Geofence zone
+            </div>
           </div>
         </CardContent>
       </Card>
