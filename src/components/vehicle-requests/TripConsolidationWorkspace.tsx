@@ -286,6 +286,37 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
         },
         layout: { "line-cap": "round", "line-join": "round" },
       });
+
+      // Combined merge route — single unified polyline through all stops.
+      map.addSource("consol-combined", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      // White outline / casing.
+      map.addLayer({
+        id: "consol-combined-casing",
+        type: "line",
+        source: "consol-combined",
+        paint: {
+          "line-color": "hsl(var(--background))",
+          "line-width": 11,
+          "line-opacity": 0.9,
+        },
+        layout: { "line-cap": "round", "line-join": "round" },
+      });
+      // Bright primary stroke on top.
+      map.addLayer({
+        id: "consol-combined-line",
+        type: "line",
+        source: "consol-combined",
+        paint: {
+          "line-color": "hsl(var(--primary))",
+          "line-width": 6,
+          "line-opacity": 0.95,
+          "line-dasharray": ["case", ["==", ["get", "fallback"], true], ["literal", [2, 1.5]], ["literal", [1, 0]]],
+        },
+        layout: { "line-cap": "round", "line-join": "round" },
+      });
       map.resize();
       setReady(true);
     });
@@ -298,6 +329,161 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     };
   }, []);
 
+  const selectedRequests = useMemo(
+    () => requests.filter((r) => selectedIds.has(r.id)),
+    [requests, selectedIds],
+  );
+
+  // ---- Combined merge route ----------------------------------------------
+  // When 2+ requests are selected, build an optimized waypoint order
+  // (nearest-neighbor starting from the earliest pickup), then fetch ONE
+  // routed geometry through every pickup & drop. Shown as a thick highlighted
+  // polyline with numbered stops so the dispatcher sees the actual unified
+  // trip — not multiple overlapping straight lines.
+  type Stop = {
+    type: "pickup" | "drop";
+    lng: number;
+    lat: number;
+    requestId: string;
+    requestNumber: string;
+    label: string;
+  };
+
+  const orderedStops = useMemo<Stop[]>(() => {
+    if (selectedRequests.length < 2) return [];
+    const reqs = selectedRequests.filter(
+      (r) =>
+        r.departure_lat != null &&
+        r.departure_lng != null &&
+        r.destination_lat != null &&
+        r.destination_lng != null,
+    );
+    if (reqs.length < 2) return [];
+
+    const sorted = [...reqs].sort(
+      (a, b) => new Date(a.needed_from).getTime() - new Date(b.needed_from).getTime(),
+    );
+    const remaining = new Set(sorted.map((r) => r.id));
+    const dropped = new Set<string>();
+    const stops: Stop[] = [];
+
+    const seed = sorted[0];
+    stops.push({
+      type: "pickup",
+      lng: seed.departure_lng!,
+      lat: seed.departure_lat!,
+      requestId: seed.id,
+      requestNumber: seed.request_number,
+      label: seed.departure_place || "Pickup",
+    });
+    remaining.delete(seed.id);
+
+    let cur: [number, number] = [seed.departure_lng!, seed.departure_lat!];
+
+    const dist = (a: [number, number], b: [number, number]) => {
+      const dx = a[0] - b[0];
+      const dy = a[1] - b[1];
+      return dx * dx + dy * dy;
+    };
+
+    const pickedUp = new Set<string>([seed.id]);
+    while (pickedUp.size > dropped.size) {
+      let bestIdx: { kind: "pickup" | "drop"; req: typeof sorted[number] } | null = null;
+      let bestDist = Number.POSITIVE_INFINITY;
+
+      for (const r of sorted) {
+        if (remaining.has(r.id)) {
+          const d = dist(cur, [r.departure_lng!, r.departure_lat!]);
+          if (d < bestDist) {
+            bestDist = d;
+            bestIdx = { kind: "pickup", req: r };
+          }
+        }
+        if (pickedUp.has(r.id) && !dropped.has(r.id)) {
+          const d = dist(cur, [r.destination_lng!, r.destination_lat!]);
+          if (d < bestDist) {
+            bestDist = d;
+            bestIdx = { kind: "drop", req: r };
+          }
+        }
+      }
+
+      if (!bestIdx) break;
+      const { kind, req } = bestIdx;
+      if (kind === "pickup") {
+        stops.push({
+          type: "pickup",
+          lng: req.departure_lng!,
+          lat: req.departure_lat!,
+          requestId: req.id,
+          requestNumber: req.request_number,
+          label: req.departure_place || "Pickup",
+        });
+        cur = [req.departure_lng!, req.departure_lat!];
+        remaining.delete(req.id);
+        pickedUp.add(req.id);
+      } else {
+        stops.push({
+          type: "drop",
+          lng: req.destination_lng!,
+          lat: req.destination_lat!,
+          requestId: req.id,
+          requestNumber: req.request_number,
+          label: req.destination || "Drop",
+        });
+        cur = [req.destination_lng!, req.destination_lat!];
+        dropped.add(req.id);
+      }
+    }
+    return stops;
+  }, [selectedRequests]);
+
+  const [combinedRoute, setCombinedRoute] = useState<{
+    geometry: [number, number][];
+    distance_m: number;
+    duration_s: number;
+    fallback: boolean;
+  } | null>(null);
+  const [combinedLoading, setCombinedLoading] = useState(false);
+
+  useEffect(() => {
+    if (orderedStops.length < 2) {
+      setCombinedRoute(null);
+      return;
+    }
+    const coords = orderedStops.map((s) => [s.lng, s.lat] as [number, number]);
+    let cancelled = false;
+    setCombinedLoading(true);
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("route-directions", {
+          body: { coordinates: coords.slice(0, 25) },
+        });
+        if (cancelled) return;
+        if (!error && data?.ok && Array.isArray(data.geometry) && data.geometry.length >= 2) {
+          setCombinedRoute({
+            geometry: data.geometry,
+            distance_m: Number(data.distance_m) || 0,
+            duration_s: Number(data.duration_s) || 0,
+            fallback: false,
+          });
+        } else {
+          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true });
+        }
+      } catch {
+        if (!cancelled) {
+          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true });
+        }
+      } finally {
+        if (!cancelled) setCombinedLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(orderedStops.map((s) => [s.requestId, s.type, s.lng, s.lat]))]);
+
   // Sync features when data / selection / toggles change
   useEffect(() => {
     const map = mapRef.current;
@@ -309,6 +495,8 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     const features: any[] = [];
     const bounds = new maplibregl.LngLatBounds();
     let hasBounds = false;
+
+    const hasCombined = !!combinedRoute && orderedStops.length >= 2;
 
     filteredRequests.forEach((r) => {
       if (
@@ -323,7 +511,12 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
       const suggested = highlightSuggestions ? suggestedColorById[r.id] : undefined;
       const baseColor = suggested || poolColor(r.pool_name);
 
-      if (showRoutes) {
+      // When a combined route is shown for the merge, hide the per-request
+      // straight/road lines for selected items so the map stays clean and the
+      // unified trip is the focal point.
+      const drawLine = showRoutes && !(hasCombined && isSelected);
+
+      if (drawLine) {
         const cached = routeGeoms[r.id];
         const isFallback = !cached || cached.length < 2;
         const coords: [number, number][] = isFallback
@@ -343,6 +536,15 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
           },
           geometry: { type: "LineString", coordinates: coords },
         });
+      }
+
+      // Skip the per-request markers for selected items when a combined route
+      // is active — numbered stop markers below take over.
+      if (hasCombined && isSelected) {
+        bounds.extend([r.departure_lng, r.departure_lat]);
+        bounds.extend([r.destination_lng, r.destination_lat]);
+        hasBounds = true;
+        return;
       }
 
       // Pickup marker — clickable to toggle selection
@@ -395,15 +597,65 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     const src = map.getSource("consol-routes") as maplibregl.GeoJSONSource | undefined;
     src?.setData({ type: "FeatureCollection", features });
 
+    // Combined merge route + numbered stop markers
+    const combinedSrc = map.getSource("consol-combined") as maplibregl.GeoJSONSource | undefined;
+    if (hasCombined) {
+      combinedSrc?.setData({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { fallback: combinedRoute!.fallback },
+            geometry: { type: "LineString", coordinates: combinedRoute!.geometry },
+          },
+        ],
+      });
+      combinedRoute!.geometry.forEach((c) => bounds.extend(c as [number, number]));
+      hasBounds = true;
+
+      // Numbered sequential stop markers
+      orderedStops.forEach((stop, idx) => {
+        const isPickup = stop.type === "pickup";
+        const el = document.createElement("div");
+        el.style.cssText = `
+          display:flex;align-items:center;justify-content:center;
+          width:26px;height:26px;border-radius:9999px;
+          background:${isPickup ? "hsl(var(--primary))" : "hsl(var(--background))"};
+          color:${isPickup ? "hsl(var(--primary-foreground))" : "hsl(var(--primary))"};
+          border:3px solid hsl(var(--primary));
+          box-shadow:0 2px 6px rgba(0,0,0,.35);
+          font:700 12px system-ui;
+          cursor:pointer;
+        `;
+        el.textContent = String(idx + 1);
+        el.title = `Stop ${idx + 1}: ${isPickup ? "Pickup" : "Drop"} · ${stop.requestNumber}`;
+        const m = new maplibregl.Marker({ element: el })
+          .setLngLat([stop.lng, stop.lat])
+          .setPopup(
+            new maplibregl.Popup({ offset: 16 }).setHTML(
+              `<div style="font:500 12px system-ui;padding:4px;min-width:170px;">
+                 <div style="font-weight:700">Stop ${idx + 1} · ${isPickup ? "Pickup" : "Drop"}</div>
+                 <div style="color:hsl(var(--muted-foreground));font-size:11px;">${stop.requestNumber}</div>
+                 <div style="margin-top:4px;font-size:11px;">${isPickup ? "📍" : "🏁"} ${stop.label}</div>
+               </div>`,
+            ),
+          )
+          .addTo(map);
+        markersRef.current.push(m);
+      });
+    } else {
+      combinedSrc?.setData({ type: "FeatureCollection", features: [] });
+    }
+
     if (hasBounds) {
       try {
-        map.fitBounds(bounds, { padding: 50, duration: 500, maxZoom: 13 });
+        map.fitBounds(bounds, { padding: 60, duration: 500, maxZoom: 14 });
       } catch {
         /* noop */
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, filteredRequests, selectedIds, suggestedColorById, showRoutes, highlightSuggestions, routeGeoms]);
+  }, [ready, filteredRequests, selectedIds, suggestedColorById, showRoutes, highlightSuggestions, routeGeoms, combinedRoute, orderedStops]);
 
   // ---- Selection helpers --------------------------------------------------
   const toggleSelect = (id: string) =>
@@ -416,11 +668,6 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
 
   const selectGroup = (ids: string[]) => setSelectedIds(new Set(ids));
   const clearSelection = () => setSelectedIds(new Set());
-
-  const selectedRequests = useMemo(
-    () => requests.filter((r) => selectedIds.has(r.id)),
-    [requests, selectedIds],
-  );
 
   // ---- Merge preview ------------------------------------------------------
   const preview = useMemo(() => {
@@ -689,7 +936,8 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
                   <p className="text-[10px] text-muted-foreground">
                     Never mix passengers with cargo, or cold-chain with dry cargo.
                   </p>
-                </div>
+                  </div>
+
 
                 <p className="text-[10px] text-muted-foreground pt-1">
                   Rules apply to the <strong>Suggestions</strong> tab and are saved on this device.
@@ -815,6 +1063,56 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Combined unified trip route */}
+                  {orderedStops.length >= 2 && (
+                    <div className="rounded-md border border-primary/40 bg-primary/5 p-2 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-primary">
+                        <span className="flex items-center gap-1">
+                          <RouteIcon className="w-3.5 h-3.5" />
+                          Unified trip route
+                        </span>
+                        {combinedLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-[11px]">
+                        <div>
+                          <div className="text-muted-foreground">Stops</div>
+                          <div className="font-semibold">{orderedStops.length}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Distance</div>
+                          <div className="font-semibold">
+                            {combinedRoute && combinedRoute.distance_m > 0
+                              ? `${(combinedRoute.distance_m / 1000).toFixed(1)} km`
+                              : combinedLoading ? "…" : "—"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Drive time</div>
+                          <div className="font-semibold">
+                            {combinedRoute && combinedRoute.duration_s > 0
+                              ? `${Math.round(combinedRoute.duration_s / 60)} min`
+                              : combinedLoading ? "…" : "—"}
+                          </div>
+                        </div>
+                      </div>
+                      {combinedRoute?.fallback && (
+                        <div className="text-[10px] text-amber-500">
+                          Routing service unreachable — direct fallback path shown.
+                        </div>
+                      )}
+                      <div className="text-[10px] text-muted-foreground leading-snug">
+                        {orderedStops.map((s, i) => (
+                          <span key={`${s.requestId}-${s.type}-${i}`}>
+                            <span className="font-semibold text-foreground">{i + 1}</span>{" "}
+                            {s.type === "pickup" ? "📍" : "🏁"} {s.label}
+                            {i < orderedStops.length - 1 && " → "}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="text-xs">
                     <span className="text-muted-foreground">Pools: </span>
                     {preview.pools.map((p) => (
