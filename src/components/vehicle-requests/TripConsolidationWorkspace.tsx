@@ -466,6 +466,8 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     distance_m: number;
     duration_s: number;
     fallback: boolean;
+    /** Order of indices into `orderedStops` chosen by OSRM (when available). */
+    order: number[] | null;
   } | null>(null);
   const [combinedLoading, setCombinedLoading] = useState(false);
 
@@ -479,23 +481,30 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     setCombinedLoading(true);
     (async () => {
       try {
+        // Ask the routing proxy for OSRM /trip optimisation so the merged
+        // tour follows the actual shortest road sequence through every
+        // pickup/drop, not the heuristic order produced on the client.
         const { data, error } = await supabase.functions.invoke("route-directions", {
-          body: { coordinates: coords.slice(0, 25) },
+          body: { coordinates: coords.slice(0, 25), optimize: true },
         });
         if (cancelled) return;
         if (!error && data?.ok && Array.isArray(data.geometry) && data.geometry.length >= 2) {
+          const order = Array.isArray(data.order)
+            ? (data.order as number[]).filter((i) => Number.isInteger(i) && i >= 0 && i < coords.length)
+            : null;
           setCombinedRoute({
             geometry: data.geometry,
             distance_m: Number(data.distance_m) || 0,
             duration_s: Number(data.duration_s) || 0,
             fallback: false,
+            order: order && order.length === coords.length ? order : null,
           });
         } else {
-          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true });
+          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true, order: null });
         }
       } catch {
         if (!cancelled) {
-          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true });
+          setCombinedRoute({ geometry: coords, distance_m: 0, duration_s: 0, fallback: true, order: null });
         }
       } finally {
         if (!cancelled) setCombinedLoading(false);
@@ -506,6 +515,15 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(orderedStops.map((s) => [s.requestId, s.type, s.lng, s.lat]))]);
+
+  // When OSRM returned an optimised order, reshuffle the visible stop list so
+  // the numbered markers (1, 2, 3 …) match the actual driving sequence.
+  const displayStops = useMemo(() => {
+    if (!combinedRoute?.order) return orderedStops;
+    return combinedRoute.order
+      .map((i) => orderedStops[i])
+      .filter((s): s is NonNullable<typeof s> => !!s);
+  }, [orderedStops, combinedRoute]);
 
   // Sync features when data / selection / toggles change
   useEffect(() => {
