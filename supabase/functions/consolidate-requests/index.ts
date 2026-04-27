@@ -295,7 +295,7 @@ Deno.serve(async (req) => {
           ? Math.round((combinedPassengers / rules.capacity.reference_capacity) * 100)
           : null;
         if (rules.capacity.enabled) reasons.push(`Capacity ≤ ${rules.capacity.max_utilization_pct}%`);
-        if (rules.proximity.enabled) reasons.push(`Within ${rules.proximity.radius_km} km`);
+        if (rules.proximity.enabled) reasons.push(`Pickup & drop within ${rules.proximity.radius_km} km`);
         if (rules.time_window.enabled) reasons.push(`±${rules.time_window.window_minutes} min`);
         if (rules.compatibility.enabled) reasons.push(`Same cargo type (${profA})`);
 
