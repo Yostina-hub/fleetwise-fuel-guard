@@ -319,6 +319,70 @@ export const OpsMapView = ({ organizationId }: Props) => {
     };
   }, [requests, mergeGroupColorByRequestId, available, idleDrivers, poolStats]);
 
+  // ---- Real driving routes (cached) --------------------------------------
+  // Fetch actual road geometry per request via the route-directions edge
+  // function. Cached by request id; falls back to a straight line if the
+  // upstream router is unreachable so the UI never breaks.
+  const [routeGeoms, setRouteGeoms] = useState<Record<string, [number, number][]>>({});
+  const inflightRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const eligible = requests.filter(
+      (r) =>
+        r.departure_lat != null &&
+        r.departure_lng != null &&
+        r.destination_lat != null &&
+        r.destination_lng != null &&
+        !routeGeoms[r.id] &&
+        !inflightRef.current.has(r.id),
+    );
+    if (eligible.length === 0) return;
+    let cancelled = false;
+    const queue = [...eligible];
+    const runOne = async () => {
+      while (queue.length > 0 && !cancelled) {
+        const r = queue.shift()!;
+        inflightRef.current.add(r.id);
+        try {
+          const { data, error } = await supabase.functions.invoke("route-directions", {
+            body: {
+              coordinates: [
+                [r.departure_lng, r.departure_lat],
+                [r.destination_lng, r.destination_lat],
+              ],
+            },
+          });
+          if (!cancelled && !error && data?.ok && Array.isArray(data.geometry)) {
+            setRouteGeoms((prev) => ({ ...prev, [r.id]: data.geometry as [number, number][] }));
+          }
+        } catch {
+          /* swallow — fallback to straight line */
+        } finally {
+          inflightRef.current.delete(r.id);
+        }
+      }
+    };
+    Promise.all([runOne(), runOne(), runOne(), runOne()]);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requests]);
+  const routeFetchedCount = useMemo(
+    () => requests.filter((r) => routeGeoms[r.id]).length,
+    [requests, routeGeoms],
+  );
+  const withCoordsCount = useMemo(
+    () =>
+      requests.filter(
+        (r) =>
+          r.departure_lat != null &&
+          r.departure_lng != null &&
+          r.destination_lat != null &&
+          r.destination_lng != null,
+      ).length,
+    [requests],
+  );
+
 
   // Init map
   useEffect(() => {
