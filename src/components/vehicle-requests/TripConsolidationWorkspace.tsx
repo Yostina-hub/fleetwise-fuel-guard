@@ -191,6 +191,59 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
     );
   }, [requests, poolFilter]);
 
+  // ---- Real driving routes (cached) --------------------------------------
+  // Fetch actual road geometry per request via the route-directions edge
+  // function. Cached by request id; falls back to a straight line if the
+  // upstream router is unreachable so the UI never breaks.
+  const [routeGeoms, setRouteGeoms] = useState<Record<string, [number, number][]>>({});
+  const inflightRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const eligible = requests.filter(
+      (r) =>
+        r.departure_lat != null &&
+        r.departure_lng != null &&
+        r.destination_lat != null &&
+        r.destination_lng != null &&
+        !routeGeoms[r.id] &&
+        !inflightRef.current.has(r.id),
+    );
+    if (eligible.length === 0) return;
+
+    let cancelled = false;
+    // Throttle: max 4 concurrent fetches so we don't hammer the edge function.
+    const queue = [...eligible];
+    const runOne = async () => {
+      while (queue.length > 0 && !cancelled) {
+        const r = queue.shift()!;
+        inflightRef.current.add(r.id);
+        try {
+          const { data, error } = await supabase.functions.invoke("route-directions", {
+            body: {
+              coordinates: [
+                [r.departure_lng, r.departure_lat],
+                [r.destination_lng, r.destination_lat],
+              ],
+            },
+          });
+          if (!cancelled && !error && data?.ok && Array.isArray(data.geometry)) {
+            setRouteGeoms((prev) => ({ ...prev, [r.id]: data.geometry as [number, number][] }));
+          }
+        } catch {
+          /* swallow — fallback to straight line */
+        } finally {
+          inflightRef.current.delete(r.id);
+        }
+      }
+    };
+    // Spin up 4 workers
+    Promise.all([runOne(), runOne(), runOne(), runOne()]);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requests]);
+
   // ---- Map lifecycle ------------------------------------------------------
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -207,16 +260,31 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
       });
+      // Soft halo behind selected/suggested routes for visibility.
+      map.addLayer({
+        id: "consol-routes-halo",
+        type: "line",
+        source: "consol-routes",
+        paint: {
+          "line-color": ["coalesce", ["get", "color"], "hsl(220 80% 55%)"],
+          "line-width": ["case", ["==", ["get", "selected"], true], 10, ["==", ["get", "suggested"], true], 7, 0],
+          "line-opacity": 0.18,
+          "line-blur": 1,
+        },
+        layout: { "line-cap": "round", "line-join": "round" },
+      });
       map.addLayer({
         id: "consol-routes-line",
         type: "line",
         source: "consol-routes",
         paint: {
           "line-color": ["coalesce", ["get", "color"], "hsl(220 80% 55%)"],
-          "line-width": ["case", ["==", ["get", "selected"], true], 5, 2.5],
-          "line-opacity": ["case", ["==", ["get", "selected"], true], 0.95, 0.65],
-          "line-dasharray": [2, 1],
+          "line-width": ["case", ["==", ["get", "selected"], true], 5, 3],
+          "line-opacity": ["case", ["==", ["get", "selected"], true], 0.95, 0.78],
+          // Dash only for straight-line fallbacks — solid for real road geometry.
+          "line-dasharray": ["case", ["==", ["get", "fallback"], true], ["literal", [2, 1.5]], ["literal", [1, 0]]],
         },
+        layout: { "line-cap": "round", "line-join": "round" },
       });
       map.resize();
       setReady(true);
@@ -256,20 +324,24 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
       const baseColor = suggested || poolColor(r.pool_name);
 
       if (showRoutes) {
+        const cached = routeGeoms[r.id];
+        const isFallback = !cached || cached.length < 2;
+        const coords: [number, number][] = isFallback
+          ? [
+              [r.departure_lng, r.departure_lat],
+              [r.destination_lng, r.destination_lat],
+            ]
+          : cached;
         features.push({
           type: "Feature",
           properties: {
             color: baseColor,
             selected: isSelected,
+            suggested: !!suggested,
+            fallback: isFallback,
             id: r.id,
           },
-          geometry: {
-            type: "LineString",
-            coordinates: [
-              [r.departure_lng, r.departure_lat],
-              [r.destination_lng, r.destination_lat],
-            ],
-          },
+          geometry: { type: "LineString", coordinates: coords },
         });
       }
 
@@ -331,7 +403,7 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, filteredRequests, selectedIds, suggestedColorById, showRoutes, highlightSuggestions]);
+  }, [ready, filteredRequests, selectedIds, suggestedColorById, showRoutes, highlightSuggestions, routeGeoms]);
 
   // ---- Selection helpers --------------------------------------------------
   const toggleSelect = (id: string) =>
@@ -410,6 +482,9 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
   const totalActive = requests.length;
   const withCoords = requests.filter(
     (r) => r.departure_lat != null && r.destination_lat != null,
+  ).length;
+  const routeFetchedCount = requests.filter(
+    (r) => routeGeoms[r.id] && routeGeoms[r.id].length >= 2,
   ).length;
 
   const suggestionGroups = [
@@ -631,30 +706,42 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
           <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0 gap-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <MapPin className="w-4 h-4 text-primary" />
-              Active Requests Map
+              Live Routes Map
+              {routeFetchedCount < withCoords && (
+                <Badge variant="secondary" className="h-5 text-[10px] gap-1">
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                  Routing {routeFetchedCount}/{withCoords}
+                </Badge>
+              )}
             </CardTitle>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <Switch id="cw-routes" checked={showRoutes} onCheckedChange={setShowRoutes} />
-                <Label htmlFor="cw-routes" className="text-xs cursor-pointer">
-                  Routes
+            <Badge variant="outline" className="text-[10px] h-5 gap-1">
+              <RouteIcon className="w-3 h-3" />
+              Real road geometry
+            </Badge>
+          </CardHeader>
+          <CardContent className="p-0 relative">
+            <div ref={containerRef} className="w-full h-[560px]" />
+            {/* Compact controls overlay (top-left) */}
+            <div className="absolute top-3 left-3 bg-background/95 backdrop-blur rounded-lg border shadow-md p-2 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <Switch id="cw-routes" checked={showRoutes} onCheckedChange={setShowRoutes} className="scale-75" />
+                <Label htmlFor="cw-routes" className="text-[11px] cursor-pointer">
+                  Show routes
                 </Label>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Switch
                   id="cw-sugg"
                   checked={highlightSuggestions}
                   onCheckedChange={setHighlightSuggestions}
+                  className="scale-75"
                 />
-                <Label htmlFor="cw-sugg" className="text-xs cursor-pointer">
+                <Label htmlFor="cw-sugg" className="text-[11px] cursor-pointer">
                   Highlight suggestions
                 </Label>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="p-0 relative">
-            <div ref={containerRef} className="w-full h-[560px]" />
-            {/* Legend */}
+            {/* Legend (bottom-left) */}
             <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur rounded-lg border p-2 text-[11px] space-y-1 shadow-md">
               <div className="font-semibold flex items-center gap-1 mb-1">
                 <Layers className="w-3 h-3" /> Legend
@@ -671,6 +758,19 @@ export const TripConsolidationWorkspace = ({ organizationId }: Props) => {
                   style={{ boxShadow: "0 0 0 2px hsl(var(--primary))", background: "hsl(var(--primary))" }}
                 />
                 Selected
+              </div>
+              <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-1">
+                <div className="w-6 h-0.5 bg-primary rounded" /> Real road
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-6 h-0.5 rounded"
+                  style={{
+                    background:
+                      "repeating-linear-gradient(90deg, hsl(var(--muted-foreground)) 0 3px, transparent 3px 6px)",
+                  }}
+                />
+                Direct (fallback)
               </div>
             </div>
           </CardContent>
