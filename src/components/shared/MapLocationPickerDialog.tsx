@@ -141,29 +141,80 @@ export function MapLocationPickerDialog({
 
   /**
    * Explicit "Use my location" handler — fires from a user click so the
-   * browser will reliably show its permission prompt. Re-centers the map and
-   * refreshes the location-name field via reverse geocoding.
+   * browser will reliably show its permission prompt. Critically, we kick
+   * off `getCurrentPosition` *synchronously* (no awaits before it) so the
+   * browser preserves the user-gesture provenance that's required for the
+   * permission prompt to appear in many browsers (especially when the page
+   * is loaded inside an iframe).
    */
-  const useMyLocation = async () => {
-    setIsLocating(true);
-    const here = await requestCurrentLocation();
-    setIsLocating(false);
-    if ("error" in here) {
-      const message =
-        here.error === "denied"
-          ? "Location access is blocked for this site. Allow location in your browser's site settings, then click 'My location' again."
-          : here.error === "unsupported"
-            ? "Your browser doesn't support geolocation. Use search or click the map instead."
-            : here.error === "timeout"
-              ? "Location lookup timed out. Try again, or pick a place from the map."
-              : "Couldn't determine your location. Try again, or pick a place from the map.";
-      setSearchError(message);
+  const useMyLocation = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      console.warn("[MapPicker] geolocation API unavailable in this browser");
+      setSearchError("Your browser doesn't support geolocation. Use search or click the map instead.");
       return;
     }
-    setLat(parseFloat(here.lat.toFixed(6)));
-    setLng(parseFloat(here.lng.toFixed(6)));
-    const name = await reverseGeocode(here.lat, here.lng);
-    if (name) setLocationName(name);
+    setIsLocating(true);
+    setSearchError(null);
+    // Kick off the geolocation request synchronously inside the click handler
+    // so we don't lose user-gesture provenance.
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      setIsLocating(false);
+      console.warn("[MapPicker] geolocation request timed out");
+      setSearchError(
+        "Location lookup timed out. Make sure location is allowed for this site, then try again.",
+      );
+    }, 12000);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        console.info("[MapPicker] geolocation success", { lat, lng, accuracy: pos.coords.accuracy });
+        setLat(parseFloat(lat.toFixed(6)));
+        setLng(parseFloat(lng.toFixed(6)));
+        setIsLocating(false);
+        // Reverse-geocode after state updates — losing gesture context here
+        // is fine because we already have coordinates.
+        reverseGeocode(lat, lng).then((name) => {
+          if (name) setLocationName(name);
+        });
+      },
+      (err) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        setIsLocating(false);
+        console.warn("[MapPicker] geolocation error", {
+          code: err.code,
+          message: err.message,
+          inIframe: typeof window !== "undefined" && window.self !== window.top,
+        });
+        // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+        const inIframe = typeof window !== "undefined" && window.self !== window.top;
+        if (err.code === 1) {
+          setSearchError(
+            inIframe
+              ? "Location is blocked inside this preview iframe. Open the published site or your custom domain to use 'My location'."
+              : "Location access is blocked. Allow location for this site in your browser's address bar (lock icon → Site settings), then click 'My location' again.",
+          );
+        } else if (err.code === 3) {
+          setSearchError(
+            "Location lookup timed out. Try moving to an area with better signal, or pick a place from the map.",
+          );
+        } else {
+          setSearchError(
+            "Couldn't determine your location. Try again, or pick a place from the map.",
+          );
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30_000 },
+    );
   };
 
   useEffect(() => {
