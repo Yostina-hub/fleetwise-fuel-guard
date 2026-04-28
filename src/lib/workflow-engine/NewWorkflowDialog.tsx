@@ -195,10 +195,35 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
         <div className="mb-3">
           <DraftStatus restoredAt={restoredAt} savedAt={savedAt} onClear={clear} />
         </div>
+        {Object.keys(fieldErrors).length > 0 && (
+          <div className="mb-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium">
+                Please correct {Object.keys(fieldErrors).length} field
+                {Object.keys(fieldErrors).length > 1 ? "s" : ""} before filing
+              </p>
+              <ul className="list-disc list-inside text-xs mt-1 space-y-0.5">
+                {Object.values(fieldErrors).map((m, i) => (
+                  <li key={i}>{m}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
         <WorkflowFieldset
           fields={intakeFields}
           values={values}
-          onChange={(k, v) => setField(k, v)}
+          onChange={(k, v) => {
+            setField(k, v);
+            if (fieldErrors[k]) {
+              setFieldErrors((prev) => {
+                const next = { ...prev };
+                delete next[k];
+                return next;
+              });
+            }
+          }}
         />
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
