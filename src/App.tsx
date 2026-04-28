@@ -17,9 +17,10 @@ import { CommandPalette } from "./components/CommandPalette";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import CookieConsentBanner from "@/components/security/CookieConsentBanner"; // GDPR Art.7
 import LayoutShell from "@/components/LayoutShell";
+import Dashboard from "./pages/Dashboard";
 
-// Lazy-load all pages for code splitting
-const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
+// Keep the startup dashboard in the main module graph so the root route cannot fail on a dynamic import.
+// Secondary pages remain lazy-loaded for code splitting.
 const MapView = lazyWithRetry(() => import("./pages/MapView"), "MapView");
 const Fleet = lazyWithRetry(() => import("./pages/Fleet"), "Fleet");
 const Vehicles = lazyWithRetry(() => import("./pages/Vehicles"), "Vehicles");
