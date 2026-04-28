@@ -245,29 +245,53 @@ const InventoryTab = () => {
                 Add a new part to your inventory
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
               <div className="space-y-4">
+                {visibleErrorCount > 0 && (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+                  >
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-semibold">
+                        {visibleErrorCount} field{visibleErrorCount === 1 ? "" : "s"} need attention
+                      </div>
+                      <div className="text-xs opacity-90">
+                        Fix the highlighted fields before saving.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="part_number">Part Number *</Label>
+                    <Label htmlFor="part_number">Part Number <span className="text-destructive">*</span></Label>
                     <Input
                       id="part_number"
                       value={formData.part_number}
-                      onChange={(e) =>
-                        setFormData({ ...formData, part_number: e.target.value })
-                      }
-                      required
+                      onChange={(e) => {
+                        setFormData({ ...formData, part_number: e.target.value });
+                        v.handleChange("part_number", e.target.value);
+                      }}
+                      onBlur={(e) => v.handleBlur("part_number", e.target.value)}
+                      aria-invalid={!!v.getError("part_number")}
+                      className={cn(errCls("part_number"))}
                     />
+                    {v.getError("part_number") && (
+                      <p className="text-sm text-destructive mt-1">{v.getError("part_number")}</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="category">Category *</Label>
+                    <Label htmlFor="category">Category <span className="text-destructive">*</span></Label>
                     <Select
                       value={formData.category}
-                      onValueChange={(value: any) =>
-                        setFormData({ ...formData, category: value })
-                      }
+                      onValueChange={(value: any) => {
+                        setFormData({ ...formData, category: value });
+                        v.handleChange("category", value);
+                      }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={cn(errCls("category"))} aria-invalid={!!v.getError("category")}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -280,66 +304,110 @@ const InventoryTab = () => {
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
+                    {v.getError("category") && (
+                      <p className="text-sm text-destructive mt-1">{v.getError("category")}</p>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="part_name">Part Name *</Label>
+                  <Label htmlFor="part_name">Part Name <span className="text-destructive">*</span></Label>
                   <Input
                     id="part_name"
                     value={formData.part_name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, part_name: e.target.value })
-                    }
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, part_name: e.target.value });
+                      v.handleChange("part_name", e.target.value);
+                    }}
+                    onBlur={(e) => v.handleBlur("part_name", e.target.value)}
+                    aria-invalid={!!v.getError("part_name")}
+                    className={cn(errCls("part_name"))}
                   />
+                  {v.getError("part_name") && (
+                    <p className="text-sm text-destructive mt-1">{v.getError("part_name")}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="current_quantity">Current Qty *</Label>
+                    <Label htmlFor="current_quantity">Current Qty <span className="text-destructive">*</span></Label>
                     <Input
                       id="current_quantity"
                       type="number"
+                      min="0"
+                      step="0.01"
                       value={formData.current_quantity}
-                      onChange={(e) =>
-                        setFormData({ ...formData, current_quantity: parseFloat(e.target.value) || 0 })
-                      }
-                      required
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setFormData({ ...formData, current_quantity: val });
+                        v.handleChange("current_quantity", val);
+                      }}
+                      onBlur={(e) => v.handleBlur("current_quantity", parseFloat(e.target.value) || 0)}
+                      aria-invalid={!!v.getError("current_quantity")}
+                      className={cn(errCls("current_quantity"))}
                     />
+                    {v.getError("current_quantity") && (
+                      <p className="text-sm text-destructive mt-1">{v.getError("current_quantity")}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="minimum_quantity">Min Qty</Label>
                     <Input
                       id="minimum_quantity"
                       type="number"
+                      min="0"
+                      step="0.01"
                       value={formData.minimum_quantity}
-                      onChange={(e) =>
-                        setFormData({ ...formData, minimum_quantity: parseFloat(e.target.value) || 0 })
-                      }
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setFormData({ ...formData, minimum_quantity: val });
+                        v.handleChange("minimum_quantity", val);
+                      }}
+                      onBlur={(e) => v.handleBlur("minimum_quantity", parseFloat(e.target.value) || 0)}
+                      aria-invalid={!!v.getError("minimum_quantity")}
+                      className={cn(errCls("minimum_quantity"))}
                     />
+                    {v.getError("minimum_quantity") && (
+                      <p className="text-sm text-destructive mt-1">{v.getError("minimum_quantity")}</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="unit_of_measure">Unit</Label>
+                    <Label htmlFor="unit_of_measure">Unit <span className="text-destructive">*</span></Label>
                     <Input
                       id="unit_of_measure"
                       value={formData.unit_of_measure}
-                      onChange={(e) =>
-                        setFormData({ ...formData, unit_of_measure: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setFormData({ ...formData, unit_of_measure: e.target.value });
+                        v.handleChange("unit_of_measure", e.target.value);
+                      }}
+                      onBlur={(e) => v.handleBlur("unit_of_measure", e.target.value)}
                       placeholder="pcs"
+                      aria-invalid={!!v.getError("unit_of_measure")}
+                      className={cn(errCls("unit_of_measure"))}
                     />
+                    {v.getError("unit_of_measure") && (
+                      <p className="text-sm text-destructive mt-1">{v.getError("unit_of_measure")}</p>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="unit_cost">Unit Cost ($)</Label>
+                  <Label htmlFor="unit_cost">Unit Cost (Br)</Label>
                   <Input
                     id="unit_cost"
                     type="number"
                     step="0.01"
+                    min="0"
                     value={formData.unit_cost}
-                    onChange={(e) =>
-                      setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })
-                    }
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0;
+                      setFormData({ ...formData, unit_cost: val });
+                      v.handleChange("unit_cost", val);
+                    }}
+                    onBlur={(e) => v.handleBlur("unit_cost", parseFloat(e.target.value) || 0)}
+                    aria-invalid={!!v.getError("unit_cost")}
+                    className={cn(errCls("unit_cost"))}
                   />
+                  {v.getError("unit_cost") && (
+                    <p className="text-sm text-destructive mt-1">{v.getError("unit_cost")}</p>
+                  )}
                 </div>
               </div>
               <DialogFooter className="mt-6">
