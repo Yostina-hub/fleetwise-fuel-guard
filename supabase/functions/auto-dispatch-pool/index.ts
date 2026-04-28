@@ -295,10 +295,7 @@ Deno.serve(async (req) => {
       .in("pool_review_status", [
         "pending",
         "contract_signed",
-      ] as any)
-      // safety: ignore explicit rejections / change requests
-      .neq("pool_review_decision", "rejected")
-      .neq("pool_review_decision", "changes_requested");
+      ] as any);
 
     if (pool_name) query = query.eq("pool_name", pool_name);
 
@@ -321,7 +318,7 @@ Deno.serve(async (req) => {
     const allRequests = [
       ...(filtered || []),
       ...(nullStatus || []).filter((r) => !pool_name || r.pool_name === pool_name),
-    ];
+    ].filter((r) => r.pool_review_decision !== "rejected" && r.pool_review_decision !== "changes_requested");
 
     if (allRequests.length === 0) {
       return new Response(
