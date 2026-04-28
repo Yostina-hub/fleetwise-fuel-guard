@@ -538,7 +538,16 @@ const DispatchJobsTab = () => {
       />
 
       {/* Assign Dialog */}
-      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+      <Dialog
+        open={showAssignDialog}
+        onOpenChange={(v) => {
+          setShowAssignDialog(v);
+          if (!v) {
+            setSelectedJob(null);
+            setAssignData({ vehicle_id: '', driver_id: '' });
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Assign Vehicle & Driver</DialogTitle>
