@@ -337,7 +337,7 @@ function IncidentsInbox({ orgId }: { orgId: string | null | undefined }) {
       const { data, error } = await supabase
         .from("incidents")
         .select(
-          "id, incident_number, incident_type, severity, status, description, location, vehicle_id, driver_id, created_at, auto_work_order_id, vehicles:vehicle_id(plate_number, make, model), drivers:driver_id(name, phone)",
+          "id, incident_number, incident_type, severity, status, description, location, vehicle_id, driver_id, trip_id, created_at, auto_work_order_id, can_continue, requested_assistance, dispatch_decision, dispatch_decision_at, replacement_vehicle_id, replacement_driver_id, vehicles:vehicles!incidents_vehicle_id_fkey(plate_number, make, model), drivers:drivers!incidents_driver_id_fkey(first_name, last_name, phone)",
         )
         .eq("organization_id", orgId!)
         .in("status", ["open", "investigating"])
