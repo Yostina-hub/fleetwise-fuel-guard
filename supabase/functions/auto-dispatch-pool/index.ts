@@ -145,6 +145,11 @@ const makeDetailBase = (group: DispatchGroup) => ({
   passengers: group.reqs.reduce((s, r) => s + (r.passengers || 1), 0),
 });
 
+const realisticDuration = (osrmDurationS: number, stopCount: number): number => {
+  const intermediateStops = Math.max(0, stopCount - 2);
+  return Math.round(osrmDurationS * 1.9 + 180 + intermediateStops * 90);
+};
+
 const realisticRouteDurationMin = (rawDurationS: number, stopCount: number) =>
   Math.max(1, Math.round(realisticDuration(rawDurationS, stopCount) / 60));
 
