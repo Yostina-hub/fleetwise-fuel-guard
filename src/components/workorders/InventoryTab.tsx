@@ -473,7 +473,7 @@ const InventoryTab = () => {
             <TableHead>Category</TableHead>
             <TableHead>Current Qty</TableHead>
             <TableHead>Min Qty</TableHead>
-            <TableHead>Unit Cost</TableHead>
+            <TableHead>Unit Cost (Br)</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
@@ -495,7 +495,7 @@ const InventoryTab = () => {
                 {item.minimum_quantity ? `${item.minimum_quantity} ${item.unit_of_measure}` : "-"}
               </TableCell>
               <TableCell>
-                {item.unit_cost ? `$${Number(item.unit_cost).toFixed(2)}` : "-"}
+                {item.unit_cost ? `${Number(item.unit_cost).toFixed(2)} Br` : "-"}
               </TableCell>
               <TableCell>
                 {isLowStock(item) ? (
