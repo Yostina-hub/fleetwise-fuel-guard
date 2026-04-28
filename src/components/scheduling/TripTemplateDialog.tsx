@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { z } from "zod";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,27 +13,43 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Save, Loader2 } from "lucide-react";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { Save, Loader2, AlertCircle } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useToast } from "@/hooks/use-toast";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
 import { friendlyToastError } from "@/lib/errorMessages";
+import { cn } from "@/lib/utils";
 
 interface TripTemplateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   existingRequest?: any;
 }
+
+const templateSchema = z.object({
+  template_name: z
+    .string()
+    .trim()
+    .min(3, "Template name must be at least 3 characters")
+    .max(80, "Template name must be under 80 characters"),
+  description: z
+    .string()
+    .max(500, "Description must be under 500 characters")
+    .optional()
+    .or(z.literal("")),
+  is_recurring: z.boolean(),
+});
+
+type TemplateFormData = z.infer<typeof templateSchema>;
+
+const initialForm: TemplateFormData = {
+  template_name: "",
+  description: "",
+  is_recurring: false,
+};
 
 export const TripTemplateDialog = ({
   open,
@@ -40,79 +58,67 @@ export const TripTemplateDialog = ({
 }: TripTemplateDialogProps) => {
   const { user } = useAuth();
   const { organizationId } = useOrganization();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [templateName, setTemplateName] = useState("");
-  const [description, setDescription] = useState("");
-  const [isRecurring, setIsRecurring] = useState(false);
+  const [form, setForm] = useState<TemplateFormData>(initialForm);
+  const v = useFieldValidation(templateSchema);
 
-  const { data: geofences } = useQuery({
-    queryKey: ["geofences"],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("geofences")
-        .select("*")
-        .eq("is_active", true)
-        .order("name");
+  useEffect(() => {
+    if (!open) {
+      setForm(initialForm);
+      v.reset();
+    }
+  }, [open]);
 
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  const update = <K extends keyof TemplateFormData>(field: K, value: TemplateFormData[K]) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    v.handleChange(field as never, value);
+  };
+
+  const errCls = (field: keyof TemplateFormData) =>
+    v.getError(field) ? "border-destructive focus-visible:ring-destructive" : "";
 
   const createTemplate = useMutation({
     mutationFn: async (templateData: any) => {
-      const { error } = await (supabase as any)
-        .from("trip_templates")
-        .insert({
-          organization_id: organizationId,
-          created_by: user?.id,
-          ...templateData,
-        });
-
+      const { error } = await (supabase as any).from("trip_templates").insert({
+        organization_id: organizationId,
+        created_by: user?.id,
+        ...templateData,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trip-templates"] });
-      toast({
-        title: "Template created",
-        description: "Trip template has been saved successfully.",
-      });
+      toast.success("Trip template saved successfully");
       onOpenChange(false);
-      resetForm();
     },
-    onError: () => {
-      friendlyToastError(null, { title: "Failed to create template. Please try again." });
+    onError: (err: any) => {
+      friendlyToastError(err, { title: "Failed to create template. Please try again." });
     },
   });
 
-  const resetForm = () => {
-    setTemplateName("");
-    setDescription("");
-    setIsRecurring(false);
-  };
-
   const handleSubmit = () => {
-    if (!templateName || !existingRequest?.purpose) {
-      toast({
-        title: "Missing information",
-        description: "Please provide a template name.",
-        variant: "destructive",
-      });
+    if (!existingRequest?.purpose) {
+      toast.error("No source request found — cannot create template");
+      return;
+    }
+    const result = v.validateAll(form as unknown as Record<string, unknown>);
+    if (!result.success) {
+      const count = Object.keys(result.errors).length;
+      toast.error(`Please fix ${count} field${count > 1 ? "s" : ""} before saving`);
       return;
     }
 
     createTemplate.mutate({
-      template_name: templateName,
-      description,
+      template_name: form.template_name.trim(),
+      description: form.description?.trim() || null,
       purpose: existingRequest.purpose,
       required_class: existingRequest.required_class,
       passengers: existingRequest.passengers,
       pickup_geofence_id: existingRequest.pickup_geofence_id,
       drop_geofence_id: existingRequest.drop_geofence_id,
       notes: existingRequest.notes,
-      is_recurring: isRecurring,
+      is_recurring: form.is_recurring,
     });
   };
 
@@ -127,14 +133,36 @@ export const TripTemplateDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {v.hasVisibleErrors && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive">
+              <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">Please fix the highlighted fields</p>
+                <ul className="list-disc list-inside mt-1 space-y-0.5">
+                  {Object.entries(v.errors).map(([k, msg]) =>
+                    msg ? <li key={k}>{msg}</li> : null,
+                  )}
+                </ul>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label htmlFor="template-name">Template Name *</Label>
+            <Label htmlFor="template-name">
+              Template Name <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="template-name"
               placeholder="e.g., Weekly Office Commute"
-              value={templateName}
-              onChange={(e) => setTemplateName(e.target.value)}
+              value={form.template_name}
+              onChange={(e) => update("template_name", e.target.value)}
+              onBlur={() => v.handleBlur("template_name", form.template_name)}
+              className={cn(errCls("template_name"))}
+              maxLength={80}
             />
+            {v.getError("template_name") && (
+              <p className="text-xs text-destructive">{v.getError("template_name")}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -142,10 +170,16 @@ export const TripTemplateDialog = ({
             <Textarea
               id="description"
               placeholder="Optional description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={form.description}
+              onChange={(e) => update("description", e.target.value)}
+              onBlur={() => v.handleBlur("description", form.description)}
+              className={cn(errCls("description"))}
               rows={3}
+              maxLength={500}
             />
+            {v.getError("description") && (
+              <p className="text-xs text-destructive">{v.getError("description")}</p>
+            )}
           </div>
 
           <div className="flex items-center justify-between">
@@ -157,8 +191,8 @@ export const TripTemplateDialog = ({
             </div>
             <Switch
               id="recurring"
-              checked={isRecurring}
-              onCheckedChange={setIsRecurring}
+              checked={form.is_recurring}
+              onCheckedChange={(c) => update("is_recurring", c)}
             />
           </div>
 
@@ -183,7 +217,7 @@ export const TripTemplateDialog = ({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={createTemplate.isPending || !templateName}
+            disabled={createTemplate.isPending}
             className="gap-2"
           >
             {createTemplate.isPending ? (
