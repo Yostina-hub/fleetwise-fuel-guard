@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Loader2, Truck, Power, FileText, ClipboardCheck, Send, MapPin, History,
-  Fuel, User, Phone, Mail, Building2, Calendar, AlertTriangle, Hash, Gauge, Briefcase,
+  Fuel, User, Phone, Mail, Building2, Calendar, AlertTriangle, AlertCircle, Hash, Gauge, Briefcase,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
