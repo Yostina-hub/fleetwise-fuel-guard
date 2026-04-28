@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RealtimeQuerySync } from "@/components/realtime/RealtimeQuerySync";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -12,12 +13,10 @@ import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { ImpersonationProvider } from "./hooks/useImpersonation";
 import { PageLoader } from "@/components/PageLoader";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { CommandPalette } from "./components/CommandPalette";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
-
-const RealtimeQuerySync = lazyWithRetry(() => import("@/components/realtime/RealtimeQuerySync").then(m => ({ default: m.RealtimeQuerySync })), "RealtimeQuerySync");
-const CommandPalette = lazyWithRetry(() => import("./components/CommandPalette").then(m => ({ default: m.CommandPalette })), "CommandPalette");
-const CookieConsentBanner = lazyWithRetry(() => import("@/components/security/CookieConsentBanner"), "CookieConsentBanner");
-const LayoutShell = lazyWithRetry(() => import("@/components/LayoutShell"), "LayoutShell");
+import CookieConsentBanner from "@/components/security/CookieConsentBanner"; // GDPR Art.7
+import LayoutShell from "@/components/LayoutShell";
 
 // Lazy-load all pages for code splitting
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
