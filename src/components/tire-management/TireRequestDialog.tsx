@@ -94,6 +94,10 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
   });
 
   const [items, setItems] = useState<LineItem[]>([emptyItem()]);
+  const [itemErrors, setItemErrors] = useState<Record<number, string>>({});
+
+  const validation = useTireRequestValidation(header as any);
+  const { errors, markTouched, markAllTouched, validateAll, invalidCount, submitAttempted, reset: resetValidation } = validation;
 
   useEffect(() => {
     if (open && (profile?.email || user?.email)) {
