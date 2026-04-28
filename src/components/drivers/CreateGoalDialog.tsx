@@ -97,7 +97,7 @@ export const CreateGoalDialog = ({ onSubmit, driverId }: Props) => {
 
   const update = <K extends keyof GoalFormData>(field: K, value: GoalFormData[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    v.handleChange(field as string, value);
+    v.handleChange(field as never, value);
   };
 
   const reset = () => {
