@@ -10,7 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Truck, Power, FileText, ClipboardCheck, Send, MapPin, History } from "lucide-react";
+import {
+  Loader2, Truck, Power, FileText, ClipboardCheck, Send, MapPin, History,
+  Fuel, User, Phone, Mail, Building2, Calendar, AlertTriangle, Hash, Gauge, Briefcase,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -18,6 +21,12 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { ValidatedField } from "@/components/forms/ValidatedField";
+import { useFuelRequestValidation } from "./useFuelRequestValidation";
+import {
+  sanitizePhone, sanitizeEmail, sanitizeNumeric, sanitizeProjectNumber,
+  sanitizeText, sanitizeShortText,
+} from "./fuelRequestValidation";
 
 export interface FuelRequestPrefill {
   request_type?: "vehicle" | "generator";
