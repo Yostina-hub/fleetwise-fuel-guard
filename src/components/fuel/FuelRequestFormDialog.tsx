@@ -494,6 +494,22 @@ export const FuelRequestFormDialog = ({
       )}
       <ScrollArea className={embedded ? "max-h-[70vh] pr-2" : "max-h-[75vh] pr-2"}>
           <div className="space-y-4">
+            {(() => {
+              const visibleErrorCount = (Object.keys(v.errors) as Array<keyof typeof v.errors>).filter(
+                (k) => v.touched[k] && v.errors[k],
+              ).length;
+              if (visibleErrorCount === 0) return null;
+              return (
+                <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    {visibleErrorCount === 1
+                      ? "1 field needs your attention before you can submit this fuel request."
+                      : `${visibleErrorCount} fields need your attention before you can submit this fuel request.`}
+                  </span>
+                </div>
+              );
+            })()}
             {/* ─── Work Request Header ─────────────────────────── */}
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
               <div className="text-sm font-semibold flex items-center gap-2">
