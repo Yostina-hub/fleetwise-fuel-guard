@@ -478,6 +478,9 @@ const DriverPortal = () => {
           onOpenRequests={() => setActiveTab("requests")}
         />
 
+        {/* Operator's decision after a driver-reported incident */}
+        <IncidentDispatchDecisionBanner driverId={driverId} />
+
         {/* Pending post-trip inspection — hybrid enforcement */}
         <PendingPostTripBanner
           driverId={driverId}
