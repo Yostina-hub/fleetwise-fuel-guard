@@ -7,7 +7,7 @@ import { WorkflowFieldset } from "./WorkflowFieldset";
 import type { WorkflowConfig } from "./types";
 import { useWorkflow } from "./useWorkflow";
 import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
-import { FileText } from "lucide-react";
+import { FileText, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { DraftStatus } from "@/components/inbox/DraftStatus";
@@ -21,6 +21,7 @@ interface Props {
 export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
   const { createInstance } = useWorkflow(config);
   const [chosenFormKey, setChosenFormKey] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Per-SOP intake draft — restores when re-opening the same "New X" dialog.
   const draftKey = open ? `sop-intake:${config.type}` : null;
@@ -63,14 +64,29 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
   }, [chosenFormKey, activeChoice, activeChoiceForm]);
 
   const submit = async () => {
-    const missing = intakeFields
-      .filter((f) => f.required)
-      .filter((f) => !values[f.key] && values[f.key] !== false);
-    if (missing.length) {
+    const errs: Record<string, string> = {};
+    for (const f of intakeFields) {
+      const val = values[f.key];
+      if (f.required) {
+        const empty =
+          val === undefined ||
+          val === null ||
+          (typeof val === "string" && val.trim() === "");
+        if (empty) {
+          errs[f.key] = `${f.label} is required`;
+          continue;
+        }
+      }
+      if (typeof val === "string" && val.length > 5000) {
+        errs[f.key] = `${f.label} must be under 5000 characters`;
+      }
+    }
+    setFieldErrors(errs);
+
+    if (Object.keys(errs).length) {
+      const count = Object.keys(errs).length;
       toast.error(
-        `Missing required field${missing.length > 1 ? "s" : ""}: ${missing
-          .map((f) => f.label)
-          .join(", ")}`,
+        `Please fix ${count} field${count > 1 ? "s" : ""} before filing this request`,
       );
       return;
     }
@@ -86,7 +102,9 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
         driverId,
         data: { ...(activeChoice?.prefill ?? {}), ...values },
       });
+      toast.success(`${config.title} filed successfully`);
       setValues({});
+      setFieldErrors({});
       clear();
       setChosenFormKey(null);
       onOpenChange(false);
@@ -177,10 +195,35 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
         <div className="mb-3">
           <DraftStatus restoredAt={restoredAt} savedAt={savedAt} onClear={clear} />
         </div>
+        {Object.keys(fieldErrors).length > 0 && (
+          <div className="mb-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium">
+                Please correct {Object.keys(fieldErrors).length} field
+                {Object.keys(fieldErrors).length > 1 ? "s" : ""} before filing
+              </p>
+              <ul className="list-disc list-inside text-xs mt-1 space-y-0.5">
+                {Object.values(fieldErrors).map((m, i) => (
+                  <li key={i}>{m}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
         <WorkflowFieldset
           fields={intakeFields}
           values={values}
-          onChange={(k, v) => setField(k, v)}
+          onChange={(k, v) => {
+            setField(k, v);
+            if (fieldErrors[k]) {
+              setFieldErrors((prev) => {
+                const next = { ...prev };
+                delete next[k];
+                return next;
+              });
+            }
+          }}
         />
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
