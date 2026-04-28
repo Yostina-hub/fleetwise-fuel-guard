@@ -15,18 +15,24 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Loader2,
   Upload,
   FileSpreadsheet,
   Download,
   AlertTriangle,
+  AlertCircle,
   CheckCircle2,
   FileText,
   X,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+
+// Hard cap on uploaded spreadsheet size to keep parsing snappy and stop
+// runaway memory use on accidental huge files. 10 MB easily covers 200 rows.
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_ROWS = 200;
 
 interface Props {
   open: boolean;
@@ -190,7 +196,6 @@ async function readFile(file: File): Promise<any[]> {
 export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: Props) {
   const { organizationId } = useOrganization();
   const { user, profile } = useAuthContext();
-  const { toast } = useToast();
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -198,6 +203,7 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
   const [parsed, setParsed] = useState<ParsedRequest[]>([]);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
 
   const valid = useMemo(() => parsed.filter((r) => !r.__error), [parsed]);
   const invalid = useMemo(() => parsed.filter((r) => r.__error), [parsed]);
@@ -206,15 +212,34 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    setFile(f);
     setResult(null);
     setProgress(0);
+    setParseError(null);
+
+    if (f.size > MAX_FILE_BYTES) {
+      const msg = `File is too large (${(f.size / 1024 / 1024).toFixed(1)} MB). Max ${MAX_FILE_BYTES / 1024 / 1024} MB.`;
+      setParseError(msg);
+      toast.error(msg);
+      setFile(null);
+      setParsed([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setFile(f);
     try {
       const rows = await readFile(f);
-      const items = parseSheet(rows);
+      if (rows.length > MAX_ROWS) {
+        toast.warning(
+          `File has ${rows.length} rows — only the first ${MAX_ROWS} will be considered.`,
+        );
+      }
+      const items = parseSheet(rows.slice(0, MAX_ROWS));
       setParsed(items);
     } catch (err: any) {
-      toast({ title: "Parse error", description: err.message, variant: "destructive" });
+      const msg = err?.message ?? "Failed to parse file";
+      setParseError(msg);
+      toast.error(`Parse error: ${msg}`);
       setParsed([]);
     }
   };
@@ -246,7 +271,7 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
       if (!organizationId) throw new Error("No organization context");
       if (!user?.id) throw new Error("Not authenticated");
       if (valid.length === 0) throw new Error("No valid rows to import");
-      if (valid.length > 200) throw new Error("Maximum 200 requests per import");
+      if (valid.length > MAX_ROWS) throw new Error(`Maximum ${MAX_ROWS} requests per import`);
 
       const requesterName =
         (profile as any)?.full_name ||
@@ -308,13 +333,12 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
     onSuccess: (out) => {
       setResult(out);
       qc.invalidateQueries({ queryKey: ["vehicle-requests"] });
-      toast({
-        title: "Import complete",
-        description: `${out.success} created, ${out.failed} failed`,
-      });
+      const msg = `${out.success} created, ${out.failed} failed`;
+      if (out.failed === 0) toast.success(`Import complete — ${msg}`);
+      else if (out.success === 0) toast.error(`Import failed — ${msg}`);
+      else toast.warning(`Import complete with errors — ${msg}`);
     },
-    onError: (e: any) =>
-      toast({ title: "Import failed", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast.error(e?.message ?? "Import failed"),
   });
 
   const reset = () => {
@@ -322,6 +346,7 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
     setParsed([]);
     setProgress(0);
     setResult(null);
+    setParseError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -344,6 +369,21 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
           </DialogDescription>
         </DialogHeader>
 
+        {/* Top-of-dialog error summary: parse failures or row issues */}
+        {(parseError || (invalid.length > 0 && !result)) && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {parseError
+                ? parseError
+                : `${invalid.length} row${invalid.length === 1 ? "" : "s"} have validation issues and will be skipped — see details below.`}
+            </span>
+          </div>
+        )}
+
         <div className="space-y-4">
           {/* Template downloads */}
           <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-3">
@@ -356,7 +396,7 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
               <Download className="w-3.5 h-3.5 mr-1.5" /> XLSX
             </Button>
             <span className="ml-auto text-xs text-muted-foreground">
-              Max 200 rows per import
+              Max {MAX_ROWS} rows · {MAX_FILE_BYTES / 1024 / 1024} MB per import
             </span>
           </div>
 
