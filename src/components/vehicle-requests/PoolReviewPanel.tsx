@@ -173,6 +173,21 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     (r: any) => r.status === "approved" && r.pool_review_status !== "reviewed"
   );
 
+  const autoDispatchEligibleRequests = approvedRequests.filter((r: any) => {
+    const reviewStatus = r.pool_review_status ?? null;
+    const reviewDecision = r.pool_review_decision ?? null;
+    return (
+      !r.assigned_vehicle_id &&
+      (reviewStatus == null || reviewStatus === "pending" || reviewStatus === "contract_signed") &&
+      reviewDecision !== "rejected" &&
+      reviewDecision !== "changes_requested" &&
+      typeof r.departure_lat === "number" &&
+      typeof r.departure_lng === "number" &&
+      typeof r.destination_lat === "number" &&
+      typeof r.destination_lng === "number"
+    );
+  });
+
   const { groups, ungrouped } = useMemo(
     () => consolidateRequests(approvedRequests),
     [approvedRequests]
@@ -442,7 +457,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     onError: (err: any) => toast.error(err?.message || "Auto-dispatch failed"),
   });
 
-  const eligibleCount = approvedRequests.length;
+  const eligibleCount = autoDispatchEligibleRequests.length;
 
   const AutoDispatchBar = (
     <Card className="border-primary/30 bg-primary/5">
@@ -457,7 +472,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
               </Badge>
             </div>
             <div className="text-xs text-muted-foreground">
-              Merges same-route requests and assigns the closest available pool vehicle by live GPS.
+              Groups nearby pickup/drop-off coordinates, checks pool capacity, then assigns the closest available vehicle.
             </div>
           </div>
         </div>
