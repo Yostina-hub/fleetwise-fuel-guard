@@ -116,7 +116,7 @@ export const MergedTripsHistory = ({ organizationId }: Props) => {
         needed_until: p.needed_until,
         passengers: p.passengers,
         status: p.status,
-        consolidation_strategy: p.consolidation_strategy,
+        consolidation_strategy: null,
         child_count: grouped.get(p.id)?.length ?? 0,
         child_places: grouped.get(p.id) ?? [],
       }));
