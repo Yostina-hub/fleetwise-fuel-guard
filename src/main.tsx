@@ -1,7 +1,6 @@
 import { createRoot } from "react-dom/client";
 import "./index.css";
 
-const STARTUP_RETRY_KEY = "fleettrack-startup-retry";
 const rootElement = document.getElementById("root");
 const root = createRoot(rootElement!);
 
@@ -28,12 +27,6 @@ const StartupError = ({ error }: { error: unknown }) => (
   </div>
 );
 
-if (typeof window !== "undefined") {
-  window.addEventListener("vite:preloadError", () => {
-    window.location.reload();
-  });
-}
-
 declare global {
   interface Window {
     __fleettrackBooted?: boolean;
@@ -50,21 +43,12 @@ const boot = async () => {
       import("./services/storeAndForwardService"),
     ]);
 
-    sessionStorage.removeItem(STARTUP_RETRY_KEY);
     storeAndForwardService.initialize().catch((err) =>
       console.warn("[StoreForward] Init failed:", err),
     );
     window.__fleettrackBooted = true;
     root.render(<App />);
   } catch (error) {
-    const retries = Number(sessionStorage.getItem(STARTUP_RETRY_KEY) ?? "0");
-    if (retries < 3) {
-      sessionStorage.setItem(STARTUP_RETRY_KEY, String(retries + 1));
-      window.location.reload();
-      return;
-    }
-
-    sessionStorage.removeItem(STARTUP_RETRY_KEY);
     root.render(<StartupError error={error} />);
   }
 };
