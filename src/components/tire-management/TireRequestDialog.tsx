@@ -534,17 +534,14 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                   </div>
                 </div>
               </div>
-              <div>
-                <Label className="text-primary font-medium text-sm">Phone Number</Label>
-                <Input value={header.contact_phone} onChange={e => setHeader(h => ({ ...h, contact_phone: e.target.value }))} />
-              </div>
-              <div>
-                <Label className="text-primary font-medium text-sm">E-mail</Label>
-                <Input type="email" value={header.contact_email} onChange={e => setHeader(h => ({ ...h, contact_email: e.target.value }))} />
-              </div>
-              <div>
-                <Label className="text-primary font-medium text-sm">Contact Preference</Label>
-                <Select value={header.contact_preference} onValueChange={v => setHeader(h => ({ ...h, contact_preference: v }))}>
+              <ValidatedField id="tr-contact-phone" label="Phone Number" icon={Phone} error={errors.contact_phone} filled={!!header.contact_phone} hint="Optional · Ethiopian format">
+                <Input id="tr-contact-phone" inputMode="tel" value={header.contact_phone} onChange={e => setHeader(h => ({ ...h, contact_phone: sanitizePhone(e.target.value) }))} onBlur={() => markTouched("contact_phone")} />
+              </ValidatedField>
+              <ValidatedField id="tr-contact-email" label="E-mail" icon={Mail} error={errors.contact_email} filled={!!header.contact_email}>
+                <Input id="tr-contact-email" type="email" value={header.contact_email} onChange={e => setHeader(h => ({ ...h, contact_email: e.target.value }))} onBlur={() => markTouched("contact_email")} />
+              </ValidatedField>
+              <ValidatedField id="tr-contact-pref" label="Contact Preference" icon={MessageSquare} error={errors.contact_preference} filled={!!header.contact_preference}>
+                <Select value={header.contact_preference} onValueChange={v => { setHeader(h => ({ ...h, contact_preference: v })); markTouched("contact_preference"); }}>
                   <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="phone">Phone</SelectItem>
@@ -553,7 +550,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                     <SelectItem value="any">Any</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </ValidatedField>
             </div>
           </section>
 
