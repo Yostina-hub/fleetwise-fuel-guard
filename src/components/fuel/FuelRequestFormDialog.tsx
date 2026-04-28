@@ -10,7 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Truck, Power, FileText, ClipboardCheck, Send, MapPin, History } from "lucide-react";
+import {
+  Loader2, Truck, Power, FileText, ClipboardCheck, Send, MapPin, History,
+  Fuel, User, Phone, Mail, Building2, Calendar, AlertTriangle, Hash, Gauge, Briefcase,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -18,6 +21,12 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { ValidatedField } from "@/components/forms/ValidatedField";
+import { useFuelRequestValidation } from "./useFuelRequestValidation";
+import {
+  sanitizePhone, sanitizeEmail, sanitizeNumeric, sanitizeProjectNumber,
+  sanitizeText, sanitizeShortText,
+} from "./fuelRequestValidation";
 
 export interface FuelRequestPrefill {
   request_type?: "vehicle" | "generator";
@@ -245,13 +254,15 @@ export const FuelRequestFormDialog = ({
 
   const [form, setForm] = useState<FormData>(() => buildInitial(prefill));
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
+  const v = useFuelRequestValidation();
 
-  // Reset on open/prefill change
   useEffect(() => {
     if (open) {
       setForm(buildInitial(prefill));
       setSelectedStation(null);
+      v.reset();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, prefill?.vehicle_id, prefill?.driver_id, prefill?.request_type]);
 
   // Auto-fill driver phone/employee from drivers list when driver_id present (driver portal)
@@ -412,7 +423,62 @@ export const FuelRequestFormDialog = ({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const set = <K extends keyof FormData>(k: K, v: FormData[K]) => setForm(f => ({ ...f, [k]: v }));
+  const set = <K extends keyof FormData>(k: K, value: FormData[K]) => setForm(f => ({ ...f, [k]: value }));
+
+  /** Build the FRFormValues snapshot consumed by the validation hook. */
+  const validationSnapshot = () => ({
+    request_type: form.request_type,
+    vehicle_id: form.vehicle_id,
+    generator_id: form.generator_id,
+    driver_id: form.driver_id,
+    driver_type: form.driver_type,
+    driver_phone: form.driver_phone,
+    phone_number: form.phone_number,
+    email: form.email,
+    current_odometer: form.current_odometer,
+    running_hours: form.running_hours,
+    liters_requested: form.liters_requested,
+    estimated_cost: form.estimated_cost,
+    fuel_in_telebirr: form.fuel_in_telebirr,
+    fuel_by_cash_coupon: form.fuel_by_cash_coupon,
+    fuel_type: form.fuel_type,
+    fuel_request_type: form.fuel_request_type,
+    assigned_department: form.assigned_department,
+    requestor_department: form.requestor_department,
+    request_by_start_date: form.request_by_start_date,
+    request_by_completion_date: form.request_by_completion_date,
+    priority: form.priority,
+    context_value: form.context_value,
+    technician_name: form.technician_name,
+    project_number: form.project_number,
+    purpose: form.purpose,
+    remark: form.remark,
+    additional_description: form.additional_description,
+    notes: form.notes,
+  });
+
+  const handleSubmit = () => {
+    const result = v.validateAll(validationSnapshot());
+    if (!result.ok) {
+      const firstMsg = Object.values(result.errors)[0];
+      toast.error(firstMsg ?? "Please fix the highlighted fields and try again.");
+      return;
+    }
+    // Apply sanitized values back into the form before submitting.
+    setForm((f) => ({
+      ...f,
+      driver_phone: result.sanitized.driver_phone ?? "",
+      phone_number: result.sanitized.phone_number ?? "",
+      email: result.sanitized.email ?? "",
+      project_number: result.sanitized.project_number ?? "",
+      purpose: result.sanitized.purpose ?? "",
+      remark: result.sanitized.remark ?? "",
+      additional_description: result.sanitized.additional_description ?? "",
+      notes: result.sanitized.notes ?? "",
+      technician_name: result.sanitized.technician_name ?? "",
+    }));
+    createMutation.mutate();
+  };
 
   const lockVehicle = !!prefill?.lockVehicle;
   const lockDriver = !!prefill?.lockDriver;
@@ -428,29 +494,42 @@ export const FuelRequestFormDialog = ({
       )}
       <ScrollArea className={embedded ? "max-h-[70vh] pr-2" : "max-h-[75vh] pr-2"}>
           <div className="space-y-4">
-            {/* Work Request Header */}
+            {/* ─── Work Request Header ─────────────────────────── */}
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
               <div className="text-sm font-semibold flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" /> Work Request Information
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Asset Number *</Label>
+                <ValidatedField
+                  id="fr-asset"
+                  label="Asset Number"
+                  icon={form.request_type === "vehicle" ? Truck : Power}
+                  required
+                  error={form.request_type === "vehicle" ? v.getError("vehicle_id") : v.getError("generator_id")}
+                  filled={!!(form.request_type === "vehicle" ? form.vehicle_id : form.generator_id)}
+                >
                   {form.request_type === "vehicle" ? (
-                    <Select value={form.vehicle_id} onValueChange={v => set("vehicle_id", v)} disabled={lockVehicle}>
+                    <Select
+                      value={form.vehicle_id}
+                      onValueChange={(val) => { set("vehicle_id", val); v.validateField("vehicle_id", val, validationSnapshot()); }}
+                      disabled={lockVehicle}
+                    >
                       <SelectTrigger><SelectValue placeholder="Select asset" /></SelectTrigger>
-                      <SelectContent>{vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.plate_number} — {v.make} {v.model}</SelectItem>)}</SelectContent>
+                      <SelectContent>{vehicles.map(vh => <SelectItem key={vh.id} value={vh.id}>{vh.plate_number} — {vh.make} {vh.model}</SelectItem>)}</SelectContent>
                     </Select>
                   ) : (
-                    <Select value={form.generator_id} onValueChange={v => set("generator_id", v)}>
+                    <Select
+                      value={form.generator_id}
+                      onValueChange={(val) => { set("generator_id", val); v.validateField("generator_id", val, validationSnapshot()); }}
+                    >
                       <SelectTrigger><SelectValue placeholder="Select generator" /></SelectTrigger>
                       <SelectContent>{generators.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                     </Select>
                   )}
-                </div>
-                <div>
-                  <Label>Work Request Type</Label>
-                  <Select value={form.work_request_type} onValueChange={v => set("work_request_type", v)}>
+                </ValidatedField>
+
+                <ValidatedField id="fr-wrt" label="Work Request Type" icon={Briefcase}>
+                  <Select value={form.work_request_type} onValueChange={val => set("work_request_type", val)}>
                     <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="fuel_request">Fuel Request</SelectItem>
@@ -458,22 +537,40 @@ export const FuelRequestFormDialog = ({
                       <SelectItem value="emergency">Emergency</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </ValidatedField>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Assigned Department *</Label>
-                  <Select value={form.assigned_department} onValueChange={v => set("assigned_department", v)}>
+                <ValidatedField
+                  id="fr-dept-assigned"
+                  label="Assigned Department"
+                  icon={Building2}
+                  required
+                  error={v.getError("assigned_department")}
+                >
+                  <Select
+                    value={form.assigned_department}
+                    onValueChange={(val) => { set("assigned_department", val); v.validateField("assigned_department", val); }}
+                  >
                     <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                     <SelectContent>
                       {departments.map((d: any) => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
                       {departments.length === 0 && <SelectItem value="default">Default Department</SelectItem>}
                     </SelectContent>
                   </Select>
-                </div>
-                <div>
-                  <Label>Priority *</Label>
-                  <Select value={form.priority} onValueChange={v => set("priority", v)}>
+                </ValidatedField>
+
+                <ValidatedField
+                  id="fr-priority"
+                  label="Priority"
+                  icon={AlertTriangle}
+                  required
+                  error={v.getError("priority")}
+                >
+                  <Select
+                    value={form.priority}
+                    onValueChange={(val) => { set("priority", val); v.validateField("priority", val); }}
+                  >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="critical">Critical</SelectItem>
@@ -482,53 +579,94 @@ export const FuelRequestFormDialog = ({
                       <SelectItem value="low">Low</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </ValidatedField>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Request By Start Date *</Label>
-                  <Input type="datetime-local" value={form.request_by_start_date} onChange={e => set("request_by_start_date", e.target.value)} />
-                </div>
-                <div>
-                  <Label>Request By Completion Date *</Label>
-                  <Input type="datetime-local" value={form.request_by_completion_date} onChange={e => set("request_by_completion_date", e.target.value)} />
-                </div>
+                <ValidatedField
+                  id="fr-start"
+                  label="Request By Start Date"
+                  icon={Calendar}
+                  required
+                  error={v.getError("request_by_start_date")}
+                >
+                  <Input
+                    type="datetime-local"
+                    value={form.request_by_start_date}
+                    onChange={(e) => { set("request_by_start_date", e.target.value); v.validateField("request_by_start_date", e.target.value, validationSnapshot()); }}
+                    onBlur={(e) => v.handleBlur("request_by_start_date", e.target.value, validationSnapshot())}
+                  />
+                </ValidatedField>
+
+                <ValidatedField
+                  id="fr-end"
+                  label="Request By Completion Date"
+                  icon={Calendar}
+                  required
+                  error={v.getError("request_by_completion_date")}
+                >
+                  <Input
+                    type="datetime-local"
+                    value={form.request_by_completion_date}
+                    onChange={(e) => { set("request_by_completion_date", e.target.value); v.validateField("request_by_completion_date", e.target.value, validationSnapshot()); }}
+                    onBlur={(e) => v.handleBlur("request_by_completion_date", e.target.value, validationSnapshot())}
+                  />
+                </ValidatedField>
               </div>
-              <div>
-                <Label>Requested For</Label>
-                <Input value={form.requested_for} onChange={e => set("requested_for", e.target.value)} placeholder="e.g. ETHIO7146" />
-              </div>
+
+              <ValidatedField id="fr-requested-for" label="Requested For" icon={User}>
+                <Input
+                  value={form.requested_for}
+                  onChange={(e) => set("requested_for", sanitizeShortText(e.target.value))}
+                  placeholder="e.g. ETHIO7146"
+                />
+              </ValidatedField>
             </div>
 
-            {/* Creation Information */}
+            {/* ─── Creation / Contact ──────────────────────────── */}
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
               <div className="text-sm font-semibold flex items-center gap-2">
                 <Send className="h-4 w-4 text-primary" /> Creation Information
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Phone Number</Label>
-                  <Input value={form.phone_number} onChange={e => set("phone_number", e.target.value)} placeholder="+251..." />
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <Input type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="user@example.com" />
-                </div>
+                <ValidatedField
+                  id="fr-phone"
+                  label="Phone Number"
+                  icon={Phone}
+                  error={v.getError("phone_number")}
+                  hint="Ethiopian numbers only — e.g. 0911234567 or +251911234567"
+                >
+                  <Input
+                    inputMode="tel"
+                    value={form.phone_number}
+                    onChange={(e) => { const s = sanitizePhone(e.target.value); set("phone_number", s); v.validateField("phone_number", s, validationSnapshot()); }}
+                    onBlur={(e) => v.handleBlur("phone_number", sanitizePhone(e.target.value), validationSnapshot())}
+                    placeholder="+251..."
+                  />
+                </ValidatedField>
+
+                <ValidatedField id="fr-email" label="Email" icon={Mail} error={v.getError("email")}>
+                  <Input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => { const s = sanitizeEmail(e.target.value); set("email", s); v.validateField("email", s); }}
+                    onBlur={(e) => v.handleBlur("email", sanitizeEmail(e.target.value))}
+                    placeholder="user@example.com"
+                  />
+                </ValidatedField>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Notify User</Label>
-                  <Select value={form.notify_user ? "yes" : "no"} onValueChange={v => set("notify_user", v === "yes")}>
+                <ValidatedField id="fr-notify" label="Notify User">
+                  <Select value={form.notify_user ? "yes" : "no"} onValueChange={val => set("notify_user", val === "yes")}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="yes">Yes</SelectItem>
                       <SelectItem value="no">No</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div>
-                  <Label>Contact Preference</Label>
-                  <Select value={form.contact_preference} onValueChange={v => set("contact_preference", v)}>
+                </ValidatedField>
+                <ValidatedField id="fr-contact-pref" label="Contact Preference">
+                  <Select value={form.contact_preference} onValueChange={val => set("contact_preference", val)}>
                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="email">Email</SelectItem>
@@ -536,7 +674,7 @@ export const FuelRequestFormDialog = ({
                       <SelectItem value="sms">SMS</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </ValidatedField>
               </div>
             </div>
 
@@ -547,7 +685,20 @@ export const FuelRequestFormDialog = ({
             </div>
 
             {/* Type Tabs */}
-            <Tabs value={form.request_type} onValueChange={v => !lockType && setForm(f => ({ ...f, request_type: v, vehicle_id: "", generator_id: "", context_value: v === "vehicle" ? "Fuel request for vehicle" : "Fuel request for generator" }))}>
+            <Tabs
+              value={form.request_type}
+              onValueChange={(val) => {
+                if (lockType) return;
+                setForm(f => ({
+                  ...f,
+                  request_type: val,
+                  vehicle_id: "",
+                  generator_id: "",
+                  context_value: val === "vehicle" ? "Fuel request for vehicle" : "Fuel request for generator",
+                }));
+                v.reset();
+              }}
+            >
               <TabsList className="w-full">
                 <TabsTrigger value="vehicle" className="flex-1 gap-2" disabled={lockType && form.request_type !== "vehicle"}>
                   <Truck className="h-4 w-4" /> Vehicle Fuel Request
@@ -558,36 +709,48 @@ export const FuelRequestFormDialog = ({
               </TabsList>
             </Tabs>
 
-            <div>
-              <Label>Context Value *</Label>
-              <Select value={form.context_value} onValueChange={v => set("context_value", v)}>
+            <ValidatedField id="fr-context" label="Context Value" required error={v.getError("context_value")}>
+              <Select value={form.context_value} onValueChange={(val) => { set("context_value", val); v.validateField("context_value", val); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Fuel request for vehicle">Fuel request for vehicle</SelectItem>
                   <SelectItem value="Fuel request for generator">Fuel request for generator</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </ValidatedField>
 
             {form.request_type === "vehicle" ? (
               <>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Vehicle (Asset) *</Label>
-                    <Select value={form.vehicle_id} onValueChange={v => set("vehicle_id", v)} disabled={lockVehicle}>
+                  <ValidatedField id="fr-vehicle" label="Vehicle (Asset)" icon={Truck} required error={v.getError("vehicle_id")}>
+                    <Select
+                      value={form.vehicle_id}
+                      onValueChange={(val) => { set("vehicle_id", val); v.validateField("vehicle_id", val, validationSnapshot()); }}
+                      disabled={lockVehicle}
+                    >
                       <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
-                      <SelectContent>{vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.plate_number} — {v.make} {v.model}</SelectItem>)}</SelectContent>
+                      <SelectContent>{vehicles.map(vh => <SelectItem key={vh.id} value={vh.id}>{vh.plate_number} — {vh.make} {vh.model}</SelectItem>)}</SelectContent>
                     </Select>
-                  </div>
-                  <div>
-                    <Label>KM Reading *</Label>
-                    <Input type="number" value={form.current_odometer} onChange={e => set("current_odometer", e.target.value)} placeholder="Current odometer" />
-                  </div>
+                  </ValidatedField>
+
+                  <ValidatedField id="fr-odo" label="KM Reading" icon={Gauge} required error={v.getError("current_odometer")}>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={form.current_odometer}
+                      onChange={(e) => { const s = sanitizeNumeric(e.target.value); set("current_odometer", s); v.validateField("current_odometer", s, validationSnapshot()); }}
+                      onBlur={(e) => v.handleBlur("current_odometer", sanitizeNumeric(e.target.value), validationSnapshot())}
+                      placeholder="Current odometer"
+                    />
+                  </ValidatedField>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Driver Type *</Label>
-                    <Select value={form.driver_type} onValueChange={v => set("driver_type", v)}>
+                  <ValidatedField id="fr-driver-type" label="Driver Type" required error={v.getError("driver_type")}>
+                    <Select
+                      value={form.driver_type}
+                      onValueChange={(val) => { set("driver_type", val); v.validateField("driver_type", val, validationSnapshot()); }}
+                    >
                       <SelectTrigger><SelectValue placeholder="Select driver type" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="internal">Internal</SelectItem>
@@ -595,72 +758,112 @@ export const FuelRequestFormDialog = ({
                         <SelectItem value="temporary">Temporary</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div>
-                    <Label>Driver *</Label>
-                    <Select value={form.driver_id} onValueChange={handleDriverSelect} disabled={lockDriver}>
+                  </ValidatedField>
+
+                  <ValidatedField id="fr-driver" label="Driver" icon={User} required error={v.getError("driver_id")}>
+                    <Select
+                      value={form.driver_id}
+                      onValueChange={(val) => { handleDriverSelect(val); v.validateField("driver_id", val, validationSnapshot()); }}
+                      disabled={lockDriver}
+                    >
                       <SelectTrigger><SelectValue placeholder="Select driver" /></SelectTrigger>
                       <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.first_name} {d.last_name}</SelectItem>)}</SelectContent>
                     </Select>
-                  </div>
+                  </ValidatedField>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Driver Name</Label>
-                    <Input value={form.driver_name} onChange={e => set("driver_name", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Employee ID No.</Label>
-                    <Input value={form.employee_id_no} onChange={e => set("employee_id_no", e.target.value)} />
-                  </div>
+                  <ValidatedField id="fr-driver-name" label="Driver Name" icon={User}>
+                    <Input
+                      value={form.driver_name}
+                      onChange={(e) => set("driver_name", sanitizeShortText(e.target.value))}
+                    />
+                  </ValidatedField>
+                  <ValidatedField id="fr-emp" label="Employee ID No." icon={Hash}>
+                    <Input
+                      value={form.employee_id_no}
+                      onChange={(e) => set("employee_id_no", sanitizeShortText(e.target.value))}
+                    />
+                  </ValidatedField>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Vehicle Driver Name</Label>
-                    <Input value={form.vehicle_driver_name} onChange={e => set("vehicle_driver_name", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Driver Phone *</Label>
-                    <Input value={form.driver_phone} onChange={e => set("driver_phone", e.target.value)} placeholder="+251..." />
-                  </div>
+                  <ValidatedField id="fr-vdrv" label="Vehicle Driver Name" icon={User}>
+                    <Input
+                      value={form.vehicle_driver_name}
+                      onChange={(e) => set("vehicle_driver_name", sanitizeShortText(e.target.value))}
+                    />
+                  </ValidatedField>
+                  <ValidatedField
+                    id="fr-driver-phone"
+                    label="Driver Phone"
+                    icon={Phone}
+                    required
+                    error={v.getError("driver_phone")}
+                    hint="Ethiopian numbers only — e.g. 0911234567 or +251911234567"
+                  >
+                    <Input
+                      inputMode="tel"
+                      value={form.driver_phone}
+                      onChange={(e) => { const s = sanitizePhone(e.target.value); set("driver_phone", s); v.validateField("driver_phone", s, validationSnapshot()); }}
+                      onBlur={(e) => v.handleBlur("driver_phone", sanitizePhone(e.target.value), validationSnapshot())}
+                      placeholder="+251..."
+                    />
+                  </ValidatedField>
                 </div>
+
                 <PreviousClearanceReport vehicleId={form.vehicle_id} organizationId={organizationId} formatFuel={formatFuel} formatCurrency={formatCurrency} />
               </>
             ) : (
               <>
-                <div>
-                  <Label>Generator (Asset) *</Label>
-                  <Select value={form.generator_id} onValueChange={v => set("generator_id", v)}>
+                <ValidatedField id="fr-gen" label="Generator (Asset)" icon={Power} required error={v.getError("generator_id")}>
+                  <Select
+                    value={form.generator_id}
+                    onValueChange={(val) => { set("generator_id", val); v.validateField("generator_id", val, validationSnapshot()); }}
+                  >
                     <SelectTrigger><SelectValue placeholder="Select generator" /></SelectTrigger>
                     <SelectContent>
                       {generators.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name} — {g.location || g.model || ""}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                </div>
+                </ValidatedField>
+
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Technician Name *</Label>
-                    <Input value={form.technician_name} onChange={e => set("technician_name", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Technician Employee ID</Label>
-                    <Input value={form.technician_employee_id} onChange={e => set("technician_employee_id", e.target.value)} />
-                  </div>
+                  <ValidatedField id="fr-tech" label="Technician Name" icon={User} required error={v.getError("technician_name")}>
+                    <Input
+                      value={form.technician_name}
+                      onChange={(e) => { const s = sanitizeShortText(e.target.value); set("technician_name", s); v.validateField("technician_name", s, validationSnapshot()); }}
+                      onBlur={(e) => v.handleBlur("technician_name", sanitizeShortText(e.target.value), validationSnapshot())}
+                    />
+                  </ValidatedField>
+                  <ValidatedField id="fr-tech-emp" label="Technician Employee ID" icon={Hash}>
+                    <Input
+                      value={form.technician_employee_id}
+                      onChange={(e) => set("technician_employee_id", sanitizeShortText(e.target.value))}
+                    />
+                  </ValidatedField>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Security Name</Label>
-                    <Input value={form.security_name} onChange={e => set("security_name", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Route / Site</Label>
-                    <Input value={form.route} onChange={e => set("route", e.target.value)} />
-                  </div>
+                  <ValidatedField id="fr-sec" label="Security Name" icon={User}>
+                    <Input value={form.security_name} onChange={(e) => set("security_name", sanitizeShortText(e.target.value))} />
+                  </ValidatedField>
+                  <ValidatedField id="fr-route" label="Route / Site" icon={MapPin}>
+                    <Input value={form.route} onChange={(e) => set("route", sanitizeText(e.target.value))} />
+                  </ValidatedField>
                 </div>
-                <div>
-                  <Label>Running Hours</Label>
-                  <Input type="number" step="0.1" value={form.running_hours} onChange={e => set("running_hours", e.target.value)} />
-                </div>
+
+                <ValidatedField id="fr-rh" label="Running Hours" icon={Gauge} error={v.getError("running_hours")}>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    inputMode="decimal"
+                    value={form.running_hours}
+                    onChange={(e) => { const s = sanitizeNumeric(e.target.value); set("running_hours", s); v.validateField("running_hours", s); }}
+                    onBlur={(e) => v.handleBlur("running_hours", sanitizeNumeric(e.target.value))}
+                  />
+                </ValidatedField>
+
                 <PreviousClearanceReport generatorId={form.generator_id} organizationId={organizationId} formatFuel={formatFuel} formatCurrency={formatCurrency} />
               </>
             )}
@@ -668,19 +871,24 @@ export const FuelRequestFormDialog = ({
             <Separator />
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Requestor Department *</Label>
-                <Select value={form.requestor_department} onValueChange={v => set("requestor_department", v)}>
+              <ValidatedField id="fr-req-dept" label="Requestor Department" icon={Building2} required error={v.getError("requestor_department")}>
+                <Select
+                  value={form.requestor_department}
+                  onValueChange={(val) => { set("requestor_department", val); v.validateField("requestor_department", val); }}
+                >
                   <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                   <SelectContent>
                     {departments.map((d: any) => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
                     {departments.length === 0 && <SelectItem value="default">Default Department</SelectItem>}
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <Label>Fuel Request Type *</Label>
-                <Select value={form.fuel_request_type} onValueChange={v => set("fuel_request_type", v)}>
+              </ValidatedField>
+
+              <ValidatedField id="fr-frtype" label="Fuel Request Type" icon={Fuel} required error={v.getError("fuel_request_type")}>
+                <Select
+                  value={form.fuel_request_type}
+                  onValueChange={(val) => { set("fuel_request_type", val); v.validateField("fuel_request_type", val); }}
+                >
                   <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="regular">Regular</SelectItem>
@@ -689,13 +897,12 @@ export const FuelRequestFormDialog = ({
                     <SelectItem value="full_tank">Full Tank</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </ValidatedField>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Fuel Type</Label>
-                <Select value={form.fuel_type} onValueChange={v => set("fuel_type", v)}>
+              <ValidatedField id="fr-ftype" label="Fuel Type" icon={Fuel} required error={v.getError("fuel_type")}>
+                <Select value={form.fuel_type} onValueChange={(val) => { set("fuel_type", val); v.validateField("fuel_type", val); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="diesel">Diesel</SelectItem>
@@ -703,32 +910,58 @@ export const FuelRequestFormDialog = ({
                     <SelectItem value="premium">Premium</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <Label>Fuel in Liter *</Label>
-                <Input type="number" step="0.1" value={form.liters_requested} onChange={e => set("liters_requested", e.target.value)} placeholder="0.0" />
-              </div>
+              </ValidatedField>
+
+              <ValidatedField id="fr-liters" label="Fuel in Liter" icon={Fuel} required error={v.getError("liters_requested")}>
+                <Input
+                  type="number"
+                  step="0.1"
+                  inputMode="decimal"
+                  value={form.liters_requested}
+                  onChange={(e) => { const s = sanitizeNumeric(e.target.value); set("liters_requested", s); v.validateField("liters_requested", s); }}
+                  onBlur={(e) => v.handleBlur("liters_requested", sanitizeNumeric(e.target.value))}
+                  placeholder="0.0"
+                />
+              </ValidatedField>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Fuel in Telebirr</Label>
-                <Input type="number" step="0.01" value={form.fuel_in_telebirr} onChange={e => set("fuel_in_telebirr", e.target.value)} placeholder="Amount in ETB" />
-              </div>
-              <div>
-                <Label>Fuel by Cash Coupon</Label>
-                <Input type="number" step="0.01" value={form.fuel_by_cash_coupon} onChange={e => set("fuel_by_cash_coupon", e.target.value)} />
-              </div>
+              <ValidatedField id="fr-tb" label="Fuel in Telebirr" error={v.getError("fuel_in_telebirr")}>
+                <Input
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={form.fuel_in_telebirr}
+                  onChange={(e) => { const s = sanitizeNumeric(e.target.value); set("fuel_in_telebirr", s); v.validateField("fuel_in_telebirr", s); }}
+                  onBlur={(e) => v.handleBlur("fuel_in_telebirr", sanitizeNumeric(e.target.value))}
+                  placeholder="Amount in ETB"
+                />
+              </ValidatedField>
+              <ValidatedField id="fr-coupon" label="Fuel by Cash Coupon" error={v.getError("fuel_by_cash_coupon")}>
+                <Input
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={form.fuel_by_cash_coupon}
+                  onChange={(e) => { const s = sanitizeNumeric(e.target.value); set("fuel_by_cash_coupon", s); v.validateField("fuel_by_cash_coupon", s); }}
+                  onBlur={(e) => v.handleBlur("fuel_by_cash_coupon", sanitizeNumeric(e.target.value))}
+                />
+              </ValidatedField>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Estimated Cost ({settings?.currency || "ETB"})</Label>
-                <Input type="number" step="0.01" value={form.estimated_cost} onChange={e => set("estimated_cost", e.target.value)} />
-              </div>
-              <div>
-                <Label>Asset Criticality</Label>
-                <Select value={form.asset_criticality} onValueChange={v => set("asset_criticality", v)}>
+              <ValidatedField id="fr-cost" label={`Estimated Cost (${settings?.currency || "ETB"})`} error={v.getError("estimated_cost")}>
+                <Input
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={form.estimated_cost}
+                  onChange={(e) => { const s = sanitizeNumeric(e.target.value); set("estimated_cost", s); v.validateField("estimated_cost", s); }}
+                  onBlur={(e) => v.handleBlur("estimated_cost", sanitizeNumeric(e.target.value))}
+                />
+              </ValidatedField>
+              <ValidatedField id="fr-crit" label="Asset Criticality">
+                <Select value={form.asset_criticality} onValueChange={val => set("asset_criticality", val)}>
                   <SelectTrigger><SelectValue placeholder="Select criticality" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="high">High</SelectItem>
@@ -736,31 +969,47 @@ export const FuelRequestFormDialog = ({
                     <SelectItem value="low">Low</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </ValidatedField>
             </div>
 
             <Separator />
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Adjustment WO No.</Label>
-                <Input value={form.adjustment_wo_number} onChange={e => set("adjustment_wo_number", e.target.value)} />
-              </div>
-              <div>
-                <Label>Project No.</Label>
-                <Input value={form.project_number} onChange={e => set("project_number", e.target.value)} />
-              </div>
+              <ValidatedField id="fr-adj" label="Adjustment WO No." icon={Hash}>
+                <Input
+                  value={form.adjustment_wo_number}
+                  onChange={(e) => set("adjustment_wo_number", sanitizeShortText(e.target.value))}
+                />
+              </ValidatedField>
+              <ValidatedField
+                id="fr-proj"
+                label="Project No."
+                icon={Hash}
+                error={v.getError("project_number")}
+                hint="2–30 chars: letters, digits, '-', '_' or '/'"
+              >
+                <Input
+                  value={form.project_number}
+                  onChange={(e) => { const s = sanitizeProjectNumber(e.target.value); set("project_number", s); v.validateField("project_number", s); }}
+                  onBlur={(e) => v.handleBlur("project_number", sanitizeProjectNumber(e.target.value))}
+                />
+              </ValidatedField>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Task No.</Label>
-                <Input value={form.task_number} onChange={e => set("task_number", e.target.value)} />
-              </div>
-              <div>
-                <Label>Purpose</Label>
-                <Input value={form.purpose} onChange={e => set("purpose", e.target.value)} />
-              </div>
+              <ValidatedField id="fr-task" label="Task No." icon={Hash}>
+                <Input
+                  value={form.task_number}
+                  onChange={(e) => set("task_number", sanitizeShortText(e.target.value))}
+                />
+              </ValidatedField>
+              <ValidatedField id="fr-purpose" label="Purpose" error={v.getError("purpose")}>
+                <Input
+                  value={form.purpose}
+                  onChange={(e) => { const s = sanitizeText(e.target.value); set("purpose", s); v.validateField("purpose", s); }}
+                  onBlur={(e) => v.handleBlur("purpose", sanitizeText(e.target.value))}
+                />
+              </ValidatedField>
             </div>
 
             <ApprovedStationsPanel organizationId={organizationId} onSelectStation={setSelectedStation} />
@@ -768,24 +1017,45 @@ export const FuelRequestFormDialog = ({
               <p className="text-xs text-success flex items-center gap-1"><MapPin className="h-3 w-3" /> Station selected</p>
             )}
 
-            <div>
-              <Label>Additional Description</Label>
-              <Textarea value={form.additional_description} onChange={e => set("additional_description", e.target.value)} rows={2} />
-            </div>
-            <div>
-              <Label>Remark</Label>
-              <Textarea value={form.remark} onChange={e => set("remark", e.target.value)} rows={2} />
-            </div>
-            <div>
-              <Label>Notes</Label>
-              <Textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={2} />
-            </div>
+            <ValidatedField id="fr-addl" label="Additional Description" error={v.getError("additional_description")}>
+              <Textarea
+                value={form.additional_description}
+                onChange={(e) => { const s = sanitizeText(e.target.value); set("additional_description", s); v.validateField("additional_description", s); }}
+                onBlur={(e) => v.handleBlur("additional_description", sanitizeText(e.target.value))}
+                rows={2}
+              />
+            </ValidatedField>
+            <ValidatedField id="fr-remark" label="Remark" error={v.getError("remark")}>
+              <Textarea
+                value={form.remark}
+                onChange={(e) => { const s = sanitizeText(e.target.value); set("remark", s); v.validateField("remark", s); }}
+                onBlur={(e) => v.handleBlur("remark", sanitizeText(e.target.value))}
+                rows={2}
+              />
+            </ValidatedField>
+            <ValidatedField id="fr-notes" label="Notes" error={v.getError("notes")}>
+              <Textarea
+                value={form.notes}
+                onChange={(e) => { const s = sanitizeText(e.target.value); set("notes", s); v.validateField("notes", s); }}
+                onBlur={(e) => v.handleBlur("notes", sanitizeText(e.target.value))}
+                rows={2}
+              />
+            </ValidatedField>
+
+            {v.errorCount > 0 && v.showAllErrors && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>
+                  {v.errorCount} field{v.errorCount === 1 ? "" : "s"} need attention. Scroll up to review the highlighted entries.
+                </span>
+              </div>
+            )}
           </div>
       </ScrollArea>
       {embedded ? (
         <div className="flex justify-end gap-2 pt-4 border-t mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+          <Button onClick={handleSubmit} disabled={createMutation.isPending}>
             {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Submit Request
           </Button>
@@ -793,7 +1063,7 @@ export const FuelRequestFormDialog = ({
       ) : (
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+          <Button onClick={handleSubmit} disabled={createMutation.isPending}>
             {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Submit Request
           </Button>
