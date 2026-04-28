@@ -4,9 +4,18 @@ import "./index.css";
 import "./i18n"; // Initialize i18n
 import { storeAndForwardService } from "./services/storeAndForwardService";
 
-// In dev, kill any previously-registered service worker that may be serving
-// stale cached JS chunks (causes blank screen + 404s on hashed deps).
-if (import.meta.env.DEV && "serviceWorker" in navigator) {
+const isLovablePreview = window.location.hostname.includes("lovableproject.com")
+  || window.location.hostname.includes("lovable.app");
+const isInIframe = (() => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+})();
+
+// Kill stale PWA workers/caches before the app boots in preview contexts.
+if ((import.meta.env.DEV || isLovablePreview || isInIframe) && "serviceWorker" in navigator) {
   navigator.serviceWorker.getRegistrations().then((regs) => {
     regs.forEach((r) => r.unregister());
   }).catch(() => {});
