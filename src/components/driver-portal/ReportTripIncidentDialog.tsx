@@ -128,7 +128,6 @@ export const ReportTripIncidentDialog = ({
 }: ReportTripIncidentDialogProps) => {
   const { organizationId } = useOrganization();
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [reason, setReason] = useState<ReasonValue>("vehicle_technical");
@@ -137,12 +136,15 @@ export const ReportTripIncidentDialog = ({
   const [kmReading, setKmReading] = useState("");
   const [files, setFiles] = useState<File[]>([]);
 
+  const v = useFieldValidation(formSchema);
+
   useEffect(() => {
     if (!open) {
       setReason("vehicle_technical");
       setDescription("");
       setKmReading("");
       setFiles([]);
+      v.reset();
     }
   }, [open]);
 
