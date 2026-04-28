@@ -322,10 +322,17 @@ interface IncidentRow {
   location: string | null;
   vehicle_id: string | null;
   driver_id: string | null;
+  trip_id: string | null;
   created_at: string;
   auto_work_order_id: string | null;
+  can_continue: string | null;
+  requested_assistance: string[] | null;
+  dispatch_decision: string | null;
+  dispatch_decision_at: string | null;
+  replacement_vehicle_id: string | null;
+  replacement_driver_id: string | null;
   vehicles?: { plate_number: string | null; make: string | null; model: string | null } | null;
-  drivers?: { name: string | null; phone: string | null } | null;
+  drivers?: { first_name: string | null; last_name: string | null; phone: string | null } | null;
 }
 
 function IncidentsInbox({ orgId }: { orgId: string | null | undefined }) {
