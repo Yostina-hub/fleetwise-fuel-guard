@@ -332,8 +332,9 @@ export default function IncidentDispatchDecisionDialog({
               </Select>
             </div>
             <p className="md:col-span-2 text-[11px] text-muted-foreground">
-              At least one of vehicle or driver is required. The active trip
-              will be re-assigned and both drivers will be notified instantly.
+              Both a replacement vehicle and driver are required. The active
+              trip will be re-assigned and both drivers will be notified
+              instantly.
             </p>
           </div>
         )}
