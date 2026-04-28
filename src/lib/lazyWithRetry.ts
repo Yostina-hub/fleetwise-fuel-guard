@@ -8,6 +8,30 @@ const RETRY_STORAGE_KEY = "lazy-route-retry";
 const MAX_RETRIES = 4;
 const MODULE_FETCH_ERROR_PATTERN = /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i;
 
+const bustUrl = (url: string) => {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}v=${Date.now()}`;
+};
+
+const importWithCacheBust = async <T extends ComponentType<any>>(
+  importer: () => Promise<ComponentModule<T>>,
+) => {
+  try {
+    return await importer();
+  } catch (error) {
+    if (!isRecoverableImportError(error)) {
+      throw error;
+    }
+
+    const match = error.message.match(/https?:\/\/\S+|\/[\w@./-]+\.tsx?(?:\?\S*)?/);
+    if (!match || typeof window === "undefined") {
+      throw error;
+    }
+
+    return import(/* @vite-ignore */ bustUrl(match[0])) as Promise<ComponentModule<T>>;
+  }
+};
+
 const getLocationKey = () => {
   if (typeof window === "undefined") {
     return "server";
@@ -26,7 +50,7 @@ export const lazyWithRetry = <T extends ComponentType<any>>(
 ): LazyExoticComponent<T> => {
   return lazy(async () => {
     try {
-      const importedModule = await importer();
+      const importedModule = await importWithCacheBust(importer);
 
       if (typeof window !== "undefined") {
         const existingRetry = sessionStorage.getItem(RETRY_STORAGE_KEY);
