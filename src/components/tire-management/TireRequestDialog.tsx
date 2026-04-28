@@ -654,7 +654,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                         </Button>
                       )}
                     </div>
-                    <ItemFields item={it} onChange={(p) => updateItem(idx, p)} />
+                    <ItemFields item={it} onChange={(p) => updateItem(idx, p)} error={itemErrors[idx]} />
                   </div>
                 ))}
                 <Button variant="outline" size="sm" className="gap-2" onClick={addItem}>
