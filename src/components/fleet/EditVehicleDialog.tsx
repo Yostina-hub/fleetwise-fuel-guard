@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Loader2, Truck, User, FileText, Shield, Settings, MapPin, Paperclip } from "lucide-react";
+import { Loader2, Truck, User, FileText, Shield, Settings, MapPin, Paperclip, AlertCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   PLATE_CODES, PLATE_REGIONS, VEHICLE_TYPES_OPTIONS, VEHICLE_GROUPS, DRIVE_TYPES,
@@ -301,6 +301,25 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
         ) : (
           <ScrollArea className="max-h-[calc(95vh-180px)]">
             <div className="p-6 space-y-6">
+              {(() => {
+                const visibleErrorCount = (Object.keys(fv.errors) as Array<keyof typeof fv.errors>).filter(
+                  (k) => fv.touched[k] && fv.errors[k]
+                ).length;
+                if (visibleErrorCount === 0) return null;
+                return (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+                  >
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span>
+                      {visibleErrorCount === 1
+                        ? "1 field needs your attention before saving."
+                        : `${visibleErrorCount} fields need your attention before saving.`}
+                    </span>
+                  </div>
+                );
+              })()}
 
               {/* Basic Vehicle Information */}
               <Section icon={<Truck className="w-5 h-5 text-primary" />} title="Basic Vehicle Information">
