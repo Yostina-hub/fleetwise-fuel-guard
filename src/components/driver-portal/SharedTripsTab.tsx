@@ -3,11 +3,22 @@
  * -------------------------------
  * Shows the driver their active shared rides + per-passenger pickup/dropoff
  * status with check-in / check-out actions. Real-time refresh every 30 s.
+ *
+ * Also surfaces a real-time passenger-added alert: when a dispatcher joins
+ * a passenger to one of the driver's rides, the trigger
+ * `notify_driver_on_passenger_added` inserts a `passenger_added` row into
+ * `driver_notifications`. This tab listens to that channel, pops a Sonner
+ * toast, and lets the driver open the pickup map with one click.
  */
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import {
   useDriverSharedRides,
   useUpdatePassengerStatus,
 } from "@/hooks/useSharedRides";
+import { useCurrentDriverId } from "@/hooks/useCurrentDriverId";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,11 +27,14 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
+  Map as MapIcon,
   MapPin,
   Users,
   UserCheck,
+  UserPlus,
   UserX,
 } from "lucide-react";
+import PassengerPickupMapDialog from "./PassengerPickupMapDialog";
 
 interface Passenger {
   id: string;
