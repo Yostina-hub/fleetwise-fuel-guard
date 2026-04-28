@@ -262,35 +262,58 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
                     <Input
                       value={form.work_order_number}
                       onChange={(e) => setForm((f) => ({ ...f, work_order_number: e.target.value }))}
-                      className="font-mono"
+                      onBlur={() => markTouched("work_order_number")}
+                      aria-invalid={!!errors.work_order_number || undefined}
+                      className={cn("font-mono", errorRing(!!errors.work_order_number))}
                     />
+                    <FieldError msg={errors.work_order_number} />
                   </div>
                   <div>
                     <Label>Asset Number</Label>
                     <Input
                       value={form.asset_number}
                       onChange={(e) => setForm((f) => ({ ...f, asset_number: e.target.value }))}
+                      onBlur={() => markTouched("asset_number")}
                       placeholder="e.g. ETHIO7146"
+                      aria-invalid={!!errors.asset_number || undefined}
+                      className={cn(errorRing(!!errors.asset_number))}
                     />
-                    <p className="text-[10px] text-primary mt-0.5">Asset Number is mandatory for Assets and Serialized Rebuilds</p>
+                    {errors.asset_number ? (
+                      <FieldError msg={errors.asset_number} />
+                    ) : (
+                      <p className="text-[10px] text-primary mt-0.5">Asset Number is mandatory for Assets and Serialized Rebuilds</p>
+                    )}
                   </div>
                   <div>
                     <Label><span className="text-destructive">*</span> Asset Group</Label>
-                    <Select value={form.asset_group} onValueChange={(v) => setForm((f) => ({ ...f, asset_group: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
+                    <Select
+                      value={form.asset_group}
+                      onValueChange={(v) => {
+                        setForm((f) => ({ ...f, asset_group: v }));
+                        markTouched("asset_group");
+                      }}
+                    >
+                      <SelectTrigger className={cn(errorRing(!!errors.asset_group))}>
+                        <SelectValue placeholder="Select group" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="vehicle">Vehicle</SelectItem>
                         <SelectItem value="generator">Generator</SelectItem>
                         <SelectItem value="equipment">Equipment</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FieldError msg={errors.asset_group} />
                   </div>
                   <div>
                     <Label><span className="text-destructive">*</span> WIP Accounting Class</Label>
                     <Input
                       value={form.wip_accounting_class}
                       onChange={(e) => setForm((f) => ({ ...f, wip_accounting_class: e.target.value }))}
+                      onBlur={() => markTouched("wip_accounting_class")}
+                      aria-invalid={!!errors.wip_accounting_class || undefined}
+                      className={cn(errorRing(!!errors.wip_accounting_class))}
                     />
+                    <FieldError msg={errors.wip_accounting_class} />
                   </div>
                   <div>
                     <Label>Scheduled Start Date</Label>
@@ -298,7 +321,11 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
                       type="datetime-local"
                       value={form.scheduled_start_date}
                       onChange={(e) => setForm((f) => ({ ...f, scheduled_start_date: e.target.value }))}
+                      onBlur={() => markTouched("scheduled_start_date")}
+                      aria-invalid={!!errors.scheduled_start_date || undefined}
+                      className={cn(errorRing(!!errors.scheduled_start_date))}
                     />
+                    <FieldError msg={errors.scheduled_start_date} />
                   </div>
                   <div>
                     <Label>Scheduled Completion Date</Label>
@@ -306,7 +333,11 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
                       type="datetime-local"
                       value={form.scheduled_completion_date}
                       onChange={(e) => setForm((f) => ({ ...f, scheduled_completion_date: e.target.value }))}
+                      onBlur={() => markTouched("scheduled_completion_date")}
+                      aria-invalid={!!errors.scheduled_completion_date || undefined}
+                      className={cn(errorRing(!!errors.scheduled_completion_date))}
                     />
+                    <FieldError msg={errors.scheduled_completion_date} />
                   </div>
                   <div>
                     <Label>Duration (hours)</Label>
@@ -314,8 +345,15 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
                       type="number"
                       step="0.5"
                       value={form.duration}
-                      onChange={(e) => setForm((f) => ({ ...f, duration: Number(e.target.value) }))}
+                      onChange={(e) => {
+                        const cleaned = sanitizeDecimal(e.target.value);
+                        setForm((f) => ({ ...f, duration: cleaned === "" ? 0 : Number(cleaned) }));
+                      }}
+                      onBlur={() => markTouched("duration")}
+                      aria-invalid={!!errors.duration || undefined}
+                      className={cn(errorRing(!!errors.duration))}
                     />
+                    <FieldError msg={errors.duration} />
                   </div>
                   <div>
                     <Label>Request Number</Label>
