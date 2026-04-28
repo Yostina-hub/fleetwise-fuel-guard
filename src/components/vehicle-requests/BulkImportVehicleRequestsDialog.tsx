@@ -333,13 +333,12 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
     onSuccess: (out) => {
       setResult(out);
       qc.invalidateQueries({ queryKey: ["vehicle-requests"] });
-      toast({
-        title: "Import complete",
-        description: `${out.success} created, ${out.failed} failed`,
-      });
+      const msg = `${out.success} created, ${out.failed} failed`;
+      if (out.failed === 0) toast.success(`Import complete — ${msg}`);
+      else if (out.success === 0) toast.error(`Import failed — ${msg}`);
+      else toast.warning(`Import complete with errors — ${msg}`);
     },
-    onError: (e: any) =>
-      toast({ title: "Import failed", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast.error(e?.message ?? "Import failed"),
   });
 
   const reset = () => {
