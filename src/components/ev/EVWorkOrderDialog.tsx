@@ -265,6 +265,7 @@ export const EVWorkOrderDialog = ({ open, onOpenChange, workOrderId, vehicleId, 
       queryClient.invalidateQueries({ queryKey: ["ev-work-orders"] });
       queryClient.invalidateQueries({ queryKey: ["ev-work-order-edit"] });
       toast.success(workOrderId ? "EV work order updated" : "EV work order created");
+      validation.reset();
       onOpenChange(false);
     },
     onError: (e: Error) => toast.error(e.message),
