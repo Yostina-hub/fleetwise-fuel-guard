@@ -698,6 +698,8 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
             <p className="text-sm">No requests pending pool review</p>
           </CardContent>
         </Card>
+        {PreviewDialog}
+        {ConfirmRunDialog}
       </div>
     );
   }
