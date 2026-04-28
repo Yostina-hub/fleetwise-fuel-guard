@@ -23,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Power, MapPin, ShieldAlert, FileText, Hash } from "lucide-react";
+import { AlertCircle, FileText, Hash, Loader2, MapPin, Power, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
 import {
   defaultGeneratorValues,
   generatorSchema,
