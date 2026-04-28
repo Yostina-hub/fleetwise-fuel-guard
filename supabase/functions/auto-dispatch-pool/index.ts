@@ -401,9 +401,9 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           ok: true,
-          groups: groups.size,
+          groups: groups.length,
           assigned: 0,
-          skipped: groups.size,
+          skipped: allRequests.length,
           message: "No active pool vehicles available",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -451,17 +451,25 @@ Deno.serve(async (req) => {
     const runLocked = new Set<string>(lockedIds);
 
     let assignedCount = 0;
-    let skippedCount = 0;
-    const details: any[] = [];
+    let skippedCount = missingRouteRows.length;
+    const details: any[] = missingRouteRows.map((r) => ({
+      key: `missing-route|${r.id}`,
+      pool_name: r.pool_name || "Unassigned",
+      day: localDayKey(r.needed_from),
+      route_label: `${r.departure_place || "Pickup"} → ${r.destination || "Drop-off"}`,
+      requests: [r.request_number],
+      request_ids: [r.id],
+      request_count: 1,
+      passengers: r.passengers || 1,
+      reason: "Missing pickup or drop-off coordinates",
+    }));
 
-    for (const [key, reqs] of groups.entries()) {
-      // Pickup coords: use first request that has them.
-      const withCoords = reqs.find(
-        (r) => typeof r.departure_lat === "number" && typeof r.departure_lng === "number",
-      );
-      const pickupLat = withCoords?.departure_lat ?? null;
-      const pickupLng = withCoords?.departure_lng ?? null;
+    for (const group of groups) {
+      const { reqs } = group;
+      const pickupLat = group.pickupLat;
+      const pickupLng = group.pickupLng;
       const totalPassengers = reqs.reduce((s, r) => s + (r.passengers || 1), 0);
+      const baseDetail = makeDetailBase(group);
 
       // Find the geofence that contains the pickup (if any) — used to boost
       // vehicles whose live position is inside the same fence.
@@ -477,6 +485,7 @@ Deno.serve(async (req) => {
 
       // Candidate vehicles: not already locked, fits passenger count if known.
       const candidates = poolVehicles
+        .filter((v) => poolMatchesVehicle(v, group.poolName))
         .filter((v) => !runLocked.has(v.id))
         .filter((v) =>
           v.seating_capacity == null ? true : v.seating_capacity >= totalPassengers,
@@ -484,7 +493,7 @@ Deno.serve(async (req) => {
 
       if (candidates.length === 0) {
         skippedCount += reqs.length;
-        details.push({ key, reason: "No free vehicle in pool", requests: reqs.length });
+        details.push({ ...baseDetail, reason: "No free vehicle in this pool with enough seats" });
         continue;
       }
 
@@ -517,16 +526,24 @@ Deno.serve(async (req) => {
 
       const picked = ranked[0];
       const vehicle = picked.v;
+      const routeSummary = await summarizeRoute([
+        [pickupLng, pickupLat],
+        ...reqs.slice(1).map((r) => [r.departure_lng!, r.departure_lat!] as [number, number]),
+        ...reqs.map((r) => [r.destination_lng!, r.destination_lat!] as [number, number]),
+      ]);
 
       if (dry_run) {
         details.push({
-          key,
-          requests: reqs.map((r) => r.request_number),
+          ...baseDetail,
           chosen_vehicle: vehicle.plate_number,
-          distance_km: Math.round(picked.distance * 10) / 10,
+          vehicle_id: vehicle.id,
+          vehicle_label: `${vehicle.plate_number}${vehicle.make ? ` · ${vehicle.make} ${vehicle.model ?? ""}` : ""}`,
+          pickup_distance_km: picked.distance < 9999 ? Math.round(picked.distance * 10) / 10 : null,
+          route_distance_km: routeSummary.distance_km,
+          route_duration_min: routeSummary.duration_min,
+          route_provider: routeSummary.provider,
           in_pickup_geofence: picked.inGeofence,
           pickup_geofence: pickupFence?.name || null,
-          passengers: totalPassengers,
         });
         continue;
       }
@@ -551,8 +568,9 @@ Deno.serve(async (req) => {
             pool_review_status: "reviewed",
             pool_reviewed_at: now,
             dispatcher_notes:
-              `Auto-dispatched: ${reqs.length} request(s) consolidated; ` +
-              `closest vehicle ${vehicle.plate_number} (${
+              `Auto-dispatched by coordinate routing: ${reqs.length} request(s), ` +
+              `${routeSummary.distance_km} km / ${routeSummary.duration_min} min route; ` +
+              `closest pickup vehicle ${vehicle.plate_number} (${
                 picked.distance < 9999
                   ? Math.round(picked.distance * 10) / 10 + " km"
                   : "no GPS"
@@ -565,7 +583,7 @@ Deno.serve(async (req) => {
       if (updateErrors.length === reqs.length) {
         // Nothing landed — don't lock the vehicle.
         skippedCount += reqs.length;
-        details.push({ key, errors: updateErrors });
+        details.push({ ...baseDetail, errors: updateErrors });
         continue;
       }
 
@@ -600,11 +618,14 @@ Deno.serve(async (req) => {
 
       assignedCount += reqs.length - updateErrors.length;
       details.push({
-        key,
+        ...baseDetail,
         consolidated: reqs.length,
         chosen_vehicle: vehicle.plate_number,
-        distance_km:
+        vehicle_id: vehicle.id,
+        pickup_distance_km:
           picked.distance < 9999 ? Math.round(picked.distance * 10) / 10 : null,
+        route_distance_km: routeSummary.distance_km,
+        route_duration_min: routeSummary.duration_min,
         driver_id: driverId,
         errors: updateErrors.length ? updateErrors : undefined,
       });
@@ -613,7 +634,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         ok: true,
-        groups: groups.size,
+          groups: groups.length,
         assigned: assignedCount,
         skipped: skippedCount,
         dry_run,
