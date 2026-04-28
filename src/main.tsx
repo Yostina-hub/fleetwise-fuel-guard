@@ -37,7 +37,7 @@ const importAppWithRetry = async () => {
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      return await import("./App.tsx");
+      return await import(/* @vite-ignore */ `/src/App.tsx?t=${Date.now()}-${attempt}`) as typeof import("./App");
     } catch (error) {
       lastError = error;
       if (!isModuleFetchError(error)) break;
