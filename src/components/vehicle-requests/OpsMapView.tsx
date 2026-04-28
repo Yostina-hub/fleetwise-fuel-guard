@@ -107,6 +107,44 @@ function poolColor(pool?: string | null): string {
 
 const ADDIS_CENTER: [number, number] = [38.7525, 9.0192];
 
+type RouteAlt = { geometry: [number, number][]; distance_m: number; duration_s: number };
+type RouteStatus = "loading" | "road" | "estimated" | "error";
+
+const isFiniteCoord = (coord: [number, number] | null | undefined): coord is [number, number] =>
+  Array.isArray(coord) &&
+  coord.length === 2 &&
+  Number.isFinite(coord[0]) &&
+  Number.isFinite(coord[1]) &&
+  coord[0] >= -180 &&
+  coord[0] <= 180 &&
+  coord[1] >= -90 &&
+  coord[1] <= 90;
+
+const routeSignature = (coordinates: [number, number][]) =>
+  coordinates.map((c) => `${c[0].toFixed(5)},${c[1].toFixed(5)}`).join("|");
+
+const haversineMeters = (a: [number, number], b: [number, number]) => {
+  const R = 6371000;
+  const dLat = ((b[1] - a[1]) * Math.PI) / 180;
+  const dLng = ((b[0] - a[0]) * Math.PI) / 180;
+  const lat1 = (a[1] * Math.PI) / 180;
+  const lat2 = (b[1] * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+};
+
+const makeEstimatedRoute = (coordinates: [number, number][]): RouteAlt => {
+  const geometry = coordinates.filter(isFiniteCoord);
+  let meters = 0;
+  for (let i = 1; i < geometry.length; i += 1) meters += haversineMeters(geometry[i - 1], geometry[i]);
+  const roadMeters = Math.round(meters * 1.28);
+  return {
+    geometry,
+    distance_m: roadMeters,
+    duration_s: Math.max(60, Math.round((roadMeters / 11.5) * 1.9 + 180)),
+  };
+};
+
 export const OpsMapView = ({ organizationId }: Props) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
