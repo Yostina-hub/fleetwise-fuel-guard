@@ -112,6 +112,33 @@ export default function CreateWorkRequestForm({
 
   const [submitting, setSubmitting] = useState(false);
 
+  // Per-field validation (mirrors fuel/vehicle request standard)
+  const validation = useMaintenanceRequestValidation();
+  const buildValues = (): MRFormValues => ({
+    asset_number: assetNumber,
+    assigned_dept: assignedDept,
+    request_start_date: requestStartDate ? requestStartDate.toISOString() : "",
+    completion_date: completionDate ? completionDate.toISOString() : "",
+    work_request_type: workRequestType,
+    priority,
+    context_value: contextValue,
+    additional_description: additionalDescription,
+    phone_number: phoneNumber,
+    email: emailAddr,
+    requestor_department: requestorDepartment,
+    requestor_pool: requestorPool,
+    requestor_employee_id: requestorEmployeeId,
+    driver_type: driverType,
+    driver_name: selectedDriverName,
+    driver_phone: driverPhone,
+    maintenance_type_req: maintenanceTypeReq,
+    inspection_sub_type: inspectionSubType,
+    km_reading: kmReading,
+    fuel_level: fuelLevel,
+    requested_quantity: requestedQuantity,
+    remark,
+  });
+
   // Auto-fill creator info
   useEffect(() => {
     (async () => {
