@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Loader2, Truck, User, FileText, Shield, Settings, MapPin, Paperclip } from "lucide-react";
+import { Loader2, Truck, User, FileText, Shield, Settings, MapPin, Paperclip, AlertCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   PLATE_CODES, PLATE_REGIONS, VEHICLE_TYPES_OPTIONS, VEHICLE_GROUPS, DRIVE_TYPES,
