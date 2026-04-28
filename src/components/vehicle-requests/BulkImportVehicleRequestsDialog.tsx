@@ -196,7 +196,6 @@ async function readFile(file: File): Promise<any[]> {
 export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: Props) {
   const { organizationId } = useOrganization();
   const { user, profile } = useAuthContext();
-  const { toast } = useToast();
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -204,6 +203,7 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
   const [parsed, setParsed] = useState<ParsedRequest[]>([]);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
 
   const valid = useMemo(() => parsed.filter((r) => !r.__error), [parsed]);
   const invalid = useMemo(() => parsed.filter((r) => r.__error), [parsed]);
@@ -212,15 +212,34 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    setFile(f);
     setResult(null);
     setProgress(0);
+    setParseError(null);
+
+    if (f.size > MAX_FILE_BYTES) {
+      const msg = `File is too large (${(f.size / 1024 / 1024).toFixed(1)} MB). Max ${MAX_FILE_BYTES / 1024 / 1024} MB.`;
+      setParseError(msg);
+      toast.error(msg);
+      setFile(null);
+      setParsed([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setFile(f);
     try {
       const rows = await readFile(f);
-      const items = parseSheet(rows);
+      if (rows.length > MAX_ROWS) {
+        toast.warning(
+          `File has ${rows.length} rows — only the first ${MAX_ROWS} will be considered.`,
+        );
+      }
+      const items = parseSheet(rows.slice(0, MAX_ROWS));
       setParsed(items);
     } catch (err: any) {
-      toast({ title: "Parse error", description: err.message, variant: "destructive" });
+      const msg = err?.message ?? "Failed to parse file";
+      setParseError(msg);
+      toast.error(`Parse error: ${msg}`);
       setParsed([]);
     }
   };
