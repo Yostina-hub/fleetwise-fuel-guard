@@ -1,8 +1,5 @@
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
 import "./index.css";
-import "./i18n"; // Initialize i18n
-import { storeAndForwardService } from "./services/storeAndForwardService";
 
 const isLovablePreview = window.location.hostname.includes("lovableproject.com")
   || window.location.hostname.includes("lovable.app");
@@ -14,19 +11,43 @@ const isInIframe = (() => {
   }
 })();
 
-// Kill stale PWA workers/caches before the app boots in preview contexts (v3).
-if ((import.meta.env.DEV || isLovablePreview || isInIframe) && "serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then((regs) => {
-    regs.forEach((r) => r.unregister());
-  }).catch(() => {});
-  if (window.caches) {
-    caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => {});
-  }
-}
+const preparePreviewRuntime = async () => {
+  // Kill stale PWA workers/caches before importing the app in preview contexts.
+  // Static imports run before top-level code, so App/i18n are loaded dynamically
+  // after cleanup to prevent old service workers from serving missing modules.
+  if (!(import.meta.env.DEV || isLovablePreview || isInIframe)) return;
 
-// Initialize Store & Forward for offline telemetry buffering (RFP Item 46)
-storeAndForwardService.initialize().catch((err) =>
-  console.warn("[StoreForward] Init failed:", err)
-);
+  await Promise.allSettled([
+    "serviceWorker" in navigator
+      ? navigator.serviceWorker.getRegistrations().then((regs) => Promise.all(regs.map((r) => r.unregister())))
+      : Promise.resolve(),
+    window.caches
+      ? caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      : Promise.resolve(),
+  ]);
+};
 
-createRoot(document.getElementById("root")!).render(<App />);
+const boot = async () => {
+  const rootEl = document.getElementById("root");
+  if (!rootEl) throw new Error("Root element not found");
+
+  await preparePreviewRuntime();
+
+  const [{ default: App }, { storeAndForwardService }] = await Promise.all([
+    import("./App.tsx"),
+    import("./services/storeAndForwardService"),
+    import("./i18n"),
+  ]);
+
+  storeAndForwardService.initialize().catch((err) =>
+    console.warn("[StoreForward] Init failed:", err)
+  );
+
+  createRoot(rootEl).render(<App />);
+};
+
+boot().catch((error) => {
+  console.error("[Boot] Failed to start app:", error);
+  document.getElementById("root")!.innerHTML =
+    '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:hsl(var(--background));color:hsl(var(--foreground));font-family:system-ui,sans-serif">App failed to load. Please refresh the preview.</div>';
+});
