@@ -64,14 +64,29 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
   }, [chosenFormKey, activeChoice, activeChoiceForm]);
 
   const submit = async () => {
-    const missing = intakeFields
-      .filter((f) => f.required)
-      .filter((f) => !values[f.key] && values[f.key] !== false);
-    if (missing.length) {
+    const errs: Record<string, string> = {};
+    for (const f of intakeFields) {
+      const val = values[f.key];
+      if (f.required) {
+        const empty =
+          val === undefined ||
+          val === null ||
+          (typeof val === "string" && val.trim() === "");
+        if (empty) {
+          errs[f.key] = `${f.label} is required`;
+          continue;
+        }
+      }
+      if (typeof val === "string" && val.length > 5000) {
+        errs[f.key] = `${f.label} must be under 5000 characters`;
+      }
+    }
+    setFieldErrors(errs);
+
+    if (Object.keys(errs).length) {
+      const count = Object.keys(errs).length;
       toast.error(
-        `Missing required field${missing.length > 1 ? "s" : ""}: ${missing
-          .map((f) => f.label)
-          .join(", ")}`,
+        `Please fix ${count} field${count > 1 ? "s" : ""} before filing this request`,
       );
       return;
     }
@@ -87,7 +102,9 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
         driverId,
         data: { ...(activeChoice?.prefill ?? {}), ...values },
       });
+      toast.success(`${config.title} filed successfully`);
       setValues({});
+      setFieldErrors({});
       clear();
       setChosenFormKey(null);
       onOpenChange(false);
