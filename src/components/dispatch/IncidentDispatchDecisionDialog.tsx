@@ -140,8 +140,8 @@ export default function IncidentDispatchDecisionDialog({
   const submit = useMutation({
     mutationFn: async () => {
       if (!incident) throw new Error("No incident");
-      if (decision === "replacement" && !vehicleId && !driverId) {
-        throw new Error("Pick a replacement vehicle or driver");
+      if (decision === "replacement" && (!vehicleId || !driverId)) {
+        throw new Error("Pick both a replacement vehicle and driver");
       }
       const { data, error } = await (supabase as any).rpc(
         "dispatch_incident_decision",
@@ -332,8 +332,9 @@ export default function IncidentDispatchDecisionDialog({
               </Select>
             </div>
             <p className="md:col-span-2 text-[11px] text-muted-foreground">
-              At least one of vehicle or driver is required. The active trip
-              will be re-assigned and both drivers will be notified instantly.
+              Both a replacement vehicle and driver are required. The active
+              trip will be re-assigned and both drivers will be notified
+              instantly.
             </p>
           </div>
         )}
@@ -370,7 +371,7 @@ export default function IncidentDispatchDecisionDialog({
             variant={decision === "emergency" ? "destructive" : "default"}
             disabled={
               submit.isPending ||
-              (decision === "replacement" && !vehicleId && !driverId) ||
+              (decision === "replacement" && (!vehicleId || !driverId)) ||
               (decision === "emergency" && notes.trim().length < 5)
             }
             onClick={() => submit.mutate()}
