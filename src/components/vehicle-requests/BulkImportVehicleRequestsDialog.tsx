@@ -396,7 +396,7 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
               <Download className="w-3.5 h-3.5 mr-1.5" /> XLSX
             </Button>
             <span className="ml-auto text-xs text-muted-foreground">
-              Max 200 rows per import
+              Max {MAX_ROWS} rows · {MAX_FILE_BYTES / 1024 / 1024} MB per import
             </span>
           </div>
 
