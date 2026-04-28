@@ -75,6 +75,38 @@ const isValidCoord = (c: unknown): c is Coord =>
   c[0] >= -180 && c[0] <= 180 &&
   c[1] >= -90 && c[1] <= 90;
 
+const haversineKm = (a: Coord, b: Coord): number => {
+  const R = 6371;
+  const dLat = ((b[1] - a[1]) * Math.PI) / 180;
+  const dLng = ((b[0] - a[0]) * Math.PI) / 180;
+  const lat1 = (a[1] * Math.PI) / 180;
+  const lat2 = (b[1] * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+};
+
+const fallbackRoute = (coords: Coord[], reason: string) => {
+  let km = 0;
+  for (let i = 1; i < coords.length; i++) km += haversineKm(coords[i - 1], coords[i]);
+  const estimatedMeters = Math.round(km * 1.28 * 1000);
+  const rawDurationS = Math.max(60, Math.round(estimatedMeters / 11.5));
+  return {
+    ok: true,
+    provider: "estimated-straight-line",
+    fallback: true,
+    warning: reason,
+    geometry: coords,
+    distance_m: estimatedMeters,
+    duration_s: rawDurationS,
+    legs: coords.slice(1).map((_, idx) => {
+      const legKm = haversineKm(coords[idx], coords[idx + 1]);
+      const legMeters = Math.round(legKm * 1.28 * 1000);
+      return { distance_m: legMeters, duration_s: Math.max(30, Math.round(legMeters / 11.5)) };
+    }),
+    alternatives: [{ geometry: coords, distance_m: estimatedMeters, duration_s: rawDurationS }],
+  };
+};
+
 const tryOsrm = async (coords: Coord[], wantAlternatives: boolean) => {
   const path = coords.map((c) => `${c[0]},${c[1]}`).join(";");
   // `alternatives=2` asks OSRM for up to 2 driving alternatives in addition to
@@ -522,11 +554,7 @@ serve(async (req) => {
     if (recovered) {
       return secureJsonResponse(adjustResponse(recovered), req);
     }
-    return secureJsonResponse(
-      { ok: false, provider: "osrm", error: osrm.error, status: osrm.status },
-      req,
-      502,
-    );
+    return secureJsonResponse(adjustResponse(fallbackRoute(coords as Coord[], osrm.error || "osrm_unavailable")), req);
   } catch (err) {
     console.error("route-directions upstream error:", err);
     // Network exception (timeout, DNS, etc.). Try stitched as a last resort
@@ -539,10 +567,6 @@ serve(async (req) => {
     } catch (innerErr) {
       console.error("stitched recovery also failed:", innerErr);
     }
-    return secureJsonResponse(
-      { ok: false, provider: "osrm", error: "upstream_unavailable" },
-      req,
-      502,
-    );
+    return secureJsonResponse(adjustResponse(fallbackRoute(coords as Coord[], "upstream_unavailable")), req);
   }
 });

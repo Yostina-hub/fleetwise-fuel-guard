@@ -62,6 +62,136 @@ const dayKey = (iso: string) => {
 const norm = (s: string | null | undefined) =>
   (s || "").toLowerCase().trim().replace(/\s+/g, " ");
 
+const ADDIS_TIME_ZONE = "Africa/Addis_Ababa";
+const ROUTE_PICKUP_CLUSTER_KM = 1.0;
+const ROUTE_DESTINATION_CLUSTER_KM = 1.5;
+const ROUTE_TIME_WINDOW_MIN = 90;
+
+type DispatchRow = {
+  id: string;
+  request_number: string;
+  requester_id: string | null;
+  organization_id: string;
+  pool_name: string | null;
+  departure_place: string | null;
+  destination: string | null;
+  departure_lat: number | null;
+  departure_lng: number | null;
+  destination_lat: number | null;
+  destination_lng: number | null;
+  needed_from: string;
+  passengers: number | null;
+  created_at: string;
+  status: string;
+  assigned_vehicle_id: string | null;
+  pool_review_status: string | null;
+  pool_review_decision: string | null;
+};
+
+type DispatchGroup = {
+  key: string;
+  poolName: string | null;
+  poolKey: string;
+  day: string;
+  departure: string;
+  destination: string;
+  pickupLat: number;
+  pickupLng: number;
+  destinationLat: number;
+  destinationLng: number;
+  startMs: number;
+  reqs: DispatchRow[];
+};
+
+const localDayKey = (iso: string) => {
+  try {
+    const parts = new Intl.DateTimeFormat("en", {
+      timeZone: ADDIS_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date(iso));
+    const get = (type: string) => parts.find((p) => p.type === type)?.value;
+    return `${get("year")}-${get("month")}-${get("day")}`;
+  } catch {
+    return dayKey(iso);
+  }
+};
+
+const hasRouteCoordinates = (r: DispatchRow) =>
+  typeof r.departure_lat === "number" &&
+  typeof r.departure_lng === "number" &&
+  typeof r.destination_lat === "number" &&
+  typeof r.destination_lng === "number";
+
+const poolMatchesVehicle = (v: any, poolName: string | null) => {
+  const target = norm(poolName);
+  if (!target || target === "unassigned") return true;
+  return norm(v.specific_pool) === target || norm(v.assigned_location) === target;
+};
+
+const routeRequestNumbers = (reqs: DispatchRow[]) => reqs.map((r) => r.request_number);
+
+const makeDetailBase = (group: DispatchGroup) => ({
+  key: group.key,
+  pool_name: group.poolName || "Unassigned",
+  day: group.day,
+  route_label: `${group.departure || "Pickup"} → ${group.destination || "Drop-off"}`,
+  departure: group.departure,
+  destination: group.destination,
+  request_count: group.reqs.length,
+  requests: routeRequestNumbers(group.reqs),
+  request_ids: group.reqs.map((r) => r.id),
+  passengers: group.reqs.reduce((s, r) => s + (r.passengers || 1), 0),
+});
+
+const realisticDuration = (osrmDurationS: number, stopCount: number): number => {
+  const intermediateStops = Math.max(0, stopCount - 2);
+  return Math.round(osrmDurationS * 1.9 + 180 + intermediateStops * 90);
+};
+
+const realisticRouteDurationMin = (rawDurationS: number, stopCount: number) =>
+  Math.max(1, Math.round(realisticDuration(rawDurationS, stopCount) / 60));
+
+const summarizeRoute = async (coords: Array<[number, number]>) => {
+  const unique = coords.filter(
+    (c, i) => i === 0 || c[0] !== coords[i - 1][0] || c[1] !== coords[i - 1][1],
+  );
+  if (unique.length < 2) return { distance_km: 0, duration_min: 0, provider: "same-point" };
+
+  try {
+    const path = unique.slice(0, 25).map((c) => `${c[0]},${c[1]}`).join(";");
+    const res = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${path}?overview=false&geometries=geojson`,
+      { headers: { "User-Agent": "fleetwise-auto-dispatch/1.0" }, signal: AbortSignal.timeout(3000) },
+    );
+    if (res.ok) {
+      const json = await res.json();
+      const route = Array.isArray(json?.routes) ? json.routes[0] : null;
+      if (route) {
+        return {
+          distance_km: Math.round((Number(route.distance) || 0) / 100) / 10,
+          duration_min: realisticRouteDurationMin(Number(route.duration) || 0, unique.length),
+          provider: "osrm",
+        };
+      }
+    }
+  } catch (_) {
+    // Fallback below keeps dispatch usable if the public router is throttled.
+  }
+
+  let haversineTotal = 0;
+  for (let i = 1; i < unique.length; i++) {
+    haversineTotal += haversineKm(unique[i - 1][1], unique[i - 1][0], unique[i][1], unique[i][0]);
+  }
+  const roadEstimateKm = haversineTotal * 1.28;
+  return {
+    distance_km: Math.round(roadEstimateKm * 10) / 10,
+    duration_min: Math.max(1, Math.round((roadEstimateKm / 24) * 60 + 3 + Math.max(0, unique.length - 2) * 1.5)),
+    provider: "estimated",
+  };
+};
+
 interface Geofence {
   id: string;
   name: string;
@@ -156,7 +286,7 @@ Deno.serve(async (req) => {
     let query = supabase
       .from("vehicle_requests")
       .select(
-        "id, request_number, requester_id, organization_id, pool_name, departure_place, destination, departure_lat, departure_lng, needed_from, passengers, created_at, status, assigned_vehicle_id, pool_review_status, pool_review_decision",
+        "id, request_number, requester_id, organization_id, pool_name, departure_place, destination, departure_lat, departure_lng, destination_lat, destination_lng, needed_from, passengers, created_at, status, assigned_vehicle_id, pool_review_status, pool_review_decision",
       )
       .eq("organization_id", organization_id)
       .eq("status", "approved")
@@ -165,10 +295,7 @@ Deno.serve(async (req) => {
       .in("pool_review_status", [
         "pending",
         "contract_signed",
-      ] as any)
-      // safety: ignore explicit rejections / change requests
-      .neq("pool_review_decision", "rejected")
-      .neq("pool_review_decision", "changes_requested");
+      ] as any);
 
     if (pool_name) query = query.eq("pool_name", pool_name);
 
@@ -179,7 +306,7 @@ Deno.serve(async (req) => {
     const { data: nullStatus, error: nErr } = await supabase
       .from("vehicle_requests")
       .select(
-        "id, request_number, requester_id, organization_id, pool_name, departure_place, destination, departure_lat, departure_lng, needed_from, passengers, created_at, status, assigned_vehicle_id, pool_review_status, pool_review_decision",
+        "id, request_number, requester_id, organization_id, pool_name, departure_place, destination, departure_lat, departure_lng, destination_lat, destination_lng, needed_from, passengers, created_at, status, assigned_vehicle_id, pool_review_status, pool_review_decision",
       )
       .eq("organization_id", organization_id)
       .eq("status", "approved")
@@ -191,7 +318,7 @@ Deno.serve(async (req) => {
     const allRequests = [
       ...(filtered || []),
       ...(nullStatus || []).filter((r) => !pool_name || r.pool_name === pool_name),
-    ];
+    ].filter((r) => r.pool_review_decision !== "rejected" && r.pool_review_decision !== "changes_requested");
 
     if (allRequests.length === 0) {
       return new Response(
@@ -206,18 +333,48 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Group by exact route + day + pool.
-    const groups = new Map<string, typeof allRequests>();
-    for (const r of allRequests) {
-      const key = [
-        norm(r.pool_name),
-        norm(r.departure_place),
-        norm(r.destination),
-        dayKey(r.needed_from),
-      ].join("|");
-      const arr = groups.get(key) || [];
-      arr.push(r);
-      groups.set(key, arr);
+    // 2. Group by dispatchable route: same pool + local trip day + nearby pickup/drop-off
+    // + compatible time window. Exact address-text matching was too brittle and created
+    // illogical groups; coordinates are the routing source of truth.
+    const routeReady = (allRequests as DispatchRow[]).filter(hasRouteCoordinates);
+    const missingRouteRows = (allRequests as DispatchRow[]).filter((r) => !hasRouteCoordinates(r));
+    const groups: DispatchGroup[] = [];
+    for (const r of routeReady) {
+      const poolKey = norm(r.pool_name) || "unassigned";
+      const day = localDayKey(r.needed_from);
+      const startMs = new Date(r.needed_from).getTime();
+      const match = groups.find((g) =>
+        g.poolKey === poolKey &&
+        g.day === day &&
+        Math.abs(startMs - g.startMs) <= ROUTE_TIME_WINDOW_MIN * 60_000 &&
+        haversineKm(r.departure_lat!, r.departure_lng!, g.pickupLat, g.pickupLng) <= ROUTE_PICKUP_CLUSTER_KM &&
+        haversineKm(r.destination_lat!, r.destination_lng!, g.destinationLat, g.destinationLng) <= ROUTE_DESTINATION_CLUSTER_KM
+      );
+      if (match) {
+        match.reqs.push(r);
+        const n = match.reqs.length;
+        match.pickupLat = (match.pickupLat * (n - 1) + r.departure_lat!) / n;
+        match.pickupLng = (match.pickupLng * (n - 1) + r.departure_lng!) / n;
+        match.destinationLat = (match.destinationLat * (n - 1) + r.destination_lat!) / n;
+        match.destinationLng = (match.destinationLng * (n - 1) + r.destination_lng!) / n;
+        continue;
+      }
+      const departure = r.departure_place || `${r.departure_lat!.toFixed(5)}, ${r.departure_lng!.toFixed(5)}`;
+      const destination = r.destination || `${r.destination_lat!.toFixed(5)}, ${r.destination_lng!.toFixed(5)}`;
+      groups.push({
+        key: [poolKey, departure, destination, day, groups.length + 1].join("|"),
+        poolName: r.pool_name,
+        poolKey,
+        day,
+        departure,
+        destination,
+        pickupLat: r.departure_lat!,
+        pickupLng: r.departure_lng!,
+        destinationLat: r.destination_lat!,
+        destinationLng: r.destination_lng!,
+        startMs,
+        reqs: [r],
+      });
     }
 
     // 3. Pull pool vehicles + telemetry once.
@@ -241,9 +398,9 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           ok: true,
-          groups: groups.size,
+          groups: groups.length,
           assigned: 0,
-          skipped: groups.size,
+          skipped: allRequests.length,
           message: "No active pool vehicles available",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -291,17 +448,25 @@ Deno.serve(async (req) => {
     const runLocked = new Set<string>(lockedIds);
 
     let assignedCount = 0;
-    let skippedCount = 0;
-    const details: any[] = [];
+    let skippedCount = missingRouteRows.length;
+    const details: any[] = missingRouteRows.map((r) => ({
+      key: `missing-route|${r.id}`,
+      pool_name: r.pool_name || "Unassigned",
+      day: localDayKey(r.needed_from),
+      route_label: `${r.departure_place || "Pickup"} → ${r.destination || "Drop-off"}`,
+      requests: [r.request_number],
+      request_ids: [r.id],
+      request_count: 1,
+      passengers: r.passengers || 1,
+      reason: "Missing pickup or drop-off coordinates",
+    }));
 
-    for (const [key, reqs] of groups.entries()) {
-      // Pickup coords: use first request that has them.
-      const withCoords = reqs.find(
-        (r) => typeof r.departure_lat === "number" && typeof r.departure_lng === "number",
-      );
-      const pickupLat = withCoords?.departure_lat ?? null;
-      const pickupLng = withCoords?.departure_lng ?? null;
+    for (const group of groups) {
+      const { reqs } = group;
+      const pickupLat = group.pickupLat;
+      const pickupLng = group.pickupLng;
       const totalPassengers = reqs.reduce((s, r) => s + (r.passengers || 1), 0);
+      const baseDetail = makeDetailBase(group);
 
       // Find the geofence that contains the pickup (if any) — used to boost
       // vehicles whose live position is inside the same fence.
@@ -317,6 +482,7 @@ Deno.serve(async (req) => {
 
       // Candidate vehicles: not already locked, fits passenger count if known.
       const candidates = poolVehicles
+        .filter((v) => poolMatchesVehicle(v, group.poolName))
         .filter((v) => !runLocked.has(v.id))
         .filter((v) =>
           v.seating_capacity == null ? true : v.seating_capacity >= totalPassengers,
@@ -324,7 +490,7 @@ Deno.serve(async (req) => {
 
       if (candidates.length === 0) {
         skippedCount += reqs.length;
-        details.push({ key, reason: "No free vehicle in pool", requests: reqs.length });
+        details.push({ ...baseDetail, reason: "No free vehicle in this pool with enough seats" });
         continue;
       }
 
@@ -357,16 +523,24 @@ Deno.serve(async (req) => {
 
       const picked = ranked[0];
       const vehicle = picked.v;
+      const routeSummary = await summarizeRoute([
+        [pickupLng, pickupLat],
+        ...reqs.slice(1).map((r) => [r.departure_lng!, r.departure_lat!] as [number, number]),
+        ...reqs.map((r) => [r.destination_lng!, r.destination_lat!] as [number, number]),
+      ]);
 
       if (dry_run) {
         details.push({
-          key,
-          requests: reqs.map((r) => r.request_number),
+          ...baseDetail,
           chosen_vehicle: vehicle.plate_number,
-          distance_km: Math.round(picked.distance * 10) / 10,
+          vehicle_id: vehicle.id,
+          vehicle_label: `${vehicle.plate_number}${vehicle.make ? ` · ${vehicle.make} ${vehicle.model ?? ""}` : ""}`,
+          pickup_distance_km: picked.distance < 9999 ? Math.round(picked.distance * 10) / 10 : null,
+          route_distance_km: routeSummary.distance_km,
+          route_duration_min: routeSummary.duration_min,
+          route_provider: routeSummary.provider,
           in_pickup_geofence: picked.inGeofence,
           pickup_geofence: pickupFence?.name || null,
-          passengers: totalPassengers,
         });
         continue;
       }
@@ -391,8 +565,9 @@ Deno.serve(async (req) => {
             pool_review_status: "reviewed",
             pool_reviewed_at: now,
             dispatcher_notes:
-              `Auto-dispatched: ${reqs.length} request(s) consolidated; ` +
-              `closest vehicle ${vehicle.plate_number} (${
+              `Auto-dispatched by coordinate routing: ${reqs.length} request(s), ` +
+              `${routeSummary.distance_km} km / ${routeSummary.duration_min} min route; ` +
+              `closest pickup vehicle ${vehicle.plate_number} (${
                 picked.distance < 9999
                   ? Math.round(picked.distance * 10) / 10 + " km"
                   : "no GPS"
@@ -405,7 +580,7 @@ Deno.serve(async (req) => {
       if (updateErrors.length === reqs.length) {
         // Nothing landed — don't lock the vehicle.
         skippedCount += reqs.length;
-        details.push({ key, errors: updateErrors });
+        details.push({ ...baseDetail, errors: updateErrors });
         continue;
       }
 
@@ -440,11 +615,14 @@ Deno.serve(async (req) => {
 
       assignedCount += reqs.length - updateErrors.length;
       details.push({
-        key,
+        ...baseDetail,
         consolidated: reqs.length,
         chosen_vehicle: vehicle.plate_number,
-        distance_km:
+        vehicle_id: vehicle.id,
+        pickup_distance_km:
           picked.distance < 9999 ? Math.round(picked.distance * 10) / 10 : null,
+        route_distance_km: routeSummary.distance_km,
+        route_duration_min: routeSummary.duration_min,
         driver_id: driverId,
         errors: updateErrors.length ? updateErrors : undefined,
       });
@@ -453,7 +631,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         ok: true,
-        groups: groups.size,
+          groups: groups.length,
         assigned: assignedCount,
         skipped: skippedCount,
         dry_run,

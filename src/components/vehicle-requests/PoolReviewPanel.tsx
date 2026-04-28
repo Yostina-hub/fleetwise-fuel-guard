@@ -173,6 +173,21 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     (r: any) => r.status === "approved" && r.pool_review_status !== "reviewed"
   );
 
+  const autoDispatchEligibleRequests = approvedRequests.filter((r: any) => {
+    const reviewStatus = r.pool_review_status ?? null;
+    const reviewDecision = r.pool_review_decision ?? null;
+    return (
+      !r.assigned_vehicle_id &&
+      (reviewStatus == null || reviewStatus === "pending" || reviewStatus === "contract_signed") &&
+      reviewDecision !== "rejected" &&
+      reviewDecision !== "changes_requested" &&
+      typeof r.departure_lat === "number" &&
+      typeof r.departure_lng === "number" &&
+      typeof r.destination_lat === "number" &&
+      typeof r.destination_lng === "number"
+    );
+  });
+
   const { groups, ungrouped } = useMemo(
     () => consolidateRequests(approvedRequests),
     [approvedRequests]
@@ -442,7 +457,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     onError: (err: any) => toast.error(err?.message || "Auto-dispatch failed"),
   });
 
-  const eligibleCount = approvedRequests.length;
+  const eligibleCount = autoDispatchEligibleRequests.length;
 
   const AutoDispatchBar = (
     <Card className="border-primary/30 bg-primary/5">
@@ -457,7 +472,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
               </Badge>
             </div>
             <div className="text-xs text-muted-foreground">
-              Merges same-route requests and assigns the closest available pool vehicle by live GPS.
+              Groups nearby pickup/drop-off coordinates, checks pool capacity, then assigns the closest available vehicle.
             </div>
           </div>
         </div>
@@ -521,7 +536,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                 <CardContent className="p-3">
                   <div className="text-2xl font-semibold text-emerald-500">
                     {previewData.details.filter((d: any) => d.chosen_vehicle).reduce(
-                      (s: number, d: any) => s + ((d.requests?.length) || 1),
+                      (s: number, d: any) => s + (Number(d.request_count) || d.requests?.length || 1),
                       0,
                     )}
                   </div>
@@ -535,7 +550,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                   <div className="text-2xl font-semibold text-amber-500">
                     {previewData.details
                       .filter((d: any) => !d.chosen_vehicle)
-                      .reduce((s: number, d: any) => s + (typeof d.requests === "number" ? d.requests : 0), 0)}
+                      .reduce((s: number, d: any) => s + (Number(d.request_count) || d.requests?.length || 1), 0)}
                   </div>
                   <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
                     Will skip
@@ -552,7 +567,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                     <TableHead>Requests</TableHead>
                     <TableHead>Pax</TableHead>
                     <TableHead>Vehicle</TableHead>
-                    <TableHead>Distance</TableHead>
+                    <TableHead>Route</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -565,8 +580,8 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                   )}
                   {previewData.details.map((d: any, i: number) => {
                     const parts = String(d.key || "").split("|");
-                    const route = `${parts[1] || "—"} → ${parts[2] || "—"}`;
-                    const day = parts[3] || "";
+                    const route = d.route_label || `${parts[1] || "—"} → ${parts[2] || "—"}`;
+                    const day = d.day || parts[3] || "";
                     const reqList = Array.isArray(d.requests) ? d.requests : [];
                     return (
                       <TableRow key={i}>
@@ -589,7 +604,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                               )}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">{d.requests || 0}</span>
+                            <span className="text-muted-foreground">{d.request_count || d.requests || 0}</span>
                           )}
                         </TableCell>
                         <TableCell className="text-xs">{d.passengers ?? "—"}</TableCell>
@@ -611,8 +626,10 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                         </TableCell>
                         <TableCell className="text-xs">
                           {d.chosen_vehicle
-                            ? d.distance_km != null
-                              ? `${d.distance_km} km`
+                            ? d.route_distance_km != null
+                              ? `${d.route_distance_km} km · ${d.route_duration_min ?? "—"} min`
+                              : d.pickup_distance_km != null
+                              ? `${d.pickup_distance_km} km pickup`
                               : "no GPS"
                             : "—"}
                         </TableCell>
@@ -656,9 +673,9 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         <DialogHeader>
           <DialogTitle>Run Auto-Dispatch?</DialogTitle>
           <DialogDescription>
-            This will immediately assign vehicles and drivers to{" "}
+            This will group coordinate-ready requests by nearby pickup/drop-off, then assign vehicles and drivers to{" "}
             <span className="font-semibold text-foreground">{eligibleCount}</span> approved
-            request(s) based on closest live GPS. Requesters will be notified.
+            request(s) based on pool capacity and closest live GPS. Requesters will be notified.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
