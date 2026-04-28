@@ -567,7 +567,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                     <TableHead>Requests</TableHead>
                     <TableHead>Pax</TableHead>
                     <TableHead>Vehicle</TableHead>
-                    <TableHead>Distance</TableHead>
+                    <TableHead>Route</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -673,9 +673,9 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         <DialogHeader>
           <DialogTitle>Run Auto-Dispatch?</DialogTitle>
           <DialogDescription>
-            This will immediately assign vehicles and drivers to{" "}
+            This will group coordinate-ready requests by nearby pickup/drop-off, then assign vehicles and drivers to{" "}
             <span className="font-semibold text-foreground">{eligibleCount}</span> approved
-            request(s) based on closest live GPS. Requesters will be notified.
+            request(s) based on pool capacity and closest live GPS. Requesters will be notified.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
