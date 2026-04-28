@@ -346,6 +346,7 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
     setParsed([]);
     setProgress(0);
     setResult(null);
+    setParseError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -367,6 +368,21 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
             Upload a CSV or XLSX file. Download the template below for the correct column format.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Top-of-dialog error summary: parse failures or row issues */}
+        {(parseError || (invalid.length > 0 && !result)) && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {parseError
+                ? parseError
+                : `${invalid.length} row${invalid.length === 1 ? "" : "s"} have validation issues and will be skipped — see details below.`}
+            </span>
+          </div>
+        )}
 
         <div className="space-y-4">
           {/* Template downloads */}
