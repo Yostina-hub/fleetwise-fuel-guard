@@ -851,7 +851,7 @@ export const FuelRequestFormDialog = ({
       {embedded ? (
         <div className="flex justify-end gap-2 pt-4 border-t mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+          <Button onClick={handleSubmit} disabled={createMutation.isPending}>
             {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Submit Request
           </Button>
@@ -859,7 +859,7 @@ export const FuelRequestFormDialog = ({
       ) : (
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+          <Button onClick={handleSubmit} disabled={createMutation.isPending}>
             {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Submit Request
           </Button>
