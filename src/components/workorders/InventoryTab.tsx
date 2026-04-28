@@ -188,7 +188,7 @@ const InventoryTab = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
-      toast({ title: "Inventory item added successfully" });
+      toast.success("Inventory item added successfully");
       setIsDialogOpen(false);
       resetForm();
     },
@@ -207,12 +207,23 @@ const InventoryTab = () => {
       unit_cost: 0,
       unit_of_measure: "pcs",
     });
+    v.reset();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const result = v.validateAll(formData);
+    if (!result.success) {
+      const count = Object.keys(result.errors).length;
+      toast.error(`Please fix ${count} invalid field${count === 1 ? "" : "s"} before saving`);
+      return;
+    }
     createMutation.mutate(formData);
   };
+
+  const errCls = (field: keyof typeof formData) =>
+    v.getError(field) ? "border-destructive focus-visible:ring-destructive" : "";
+  const visibleErrorCount = Object.keys(v.errors).length;
 
   if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading inventory">Loading...</div>;
 
