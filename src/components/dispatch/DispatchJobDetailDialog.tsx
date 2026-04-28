@@ -101,6 +101,9 @@ export const DispatchJobDetailDialog = ({
           </>
         )}
 
+        <Separator />
+        <DispatchJobAuditTrail jobId={job.id} open={open} />
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
