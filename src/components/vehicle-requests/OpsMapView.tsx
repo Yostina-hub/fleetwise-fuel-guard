@@ -1097,10 +1097,16 @@ export const OpsMapView = ({ organizationId }: Props) => {
                 Routing {routeFetchedCount}/{withCoordsCount}
               </Badge>
             )}
-            {showRoutes && withCoordsCount > 0 && routeFetchedCount === withCoordsCount && (
+            {showRoutes && withCoordsCount > 0 && routeFetchedCount === withCoordsCount && estimatedRouteCount === 0 && (
               <Badge variant="outline" className="h-5 text-[10px] gap-1">
                 <RouteIcon className="w-3 h-3" />
                 Real road geometry
+              </Badge>
+            )}
+            {showRoutes && withCoordsCount > 0 && routeFetchedCount === withCoordsCount && estimatedRouteCount > 0 && (
+              <Badge variant="outline" className="h-5 text-[10px] gap-1">
+                <RouteIcon className="w-3 h-3" />
+                {withCoordsCount - estimatedRouteCount}/{withCoordsCount} road · {estimatedRouteCount} estimated
               </Badge>
             )}
           </CardTitle>
