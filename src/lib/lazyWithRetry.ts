@@ -4,40 +4,22 @@ type ComponentModule<T extends ComponentType<any>> = {
   default: T;
 };
 
-const RETRY_STORAGE_KEY = "lazy-route-retry";
 const MAX_RETRIES = 4;
 const MODULE_FETCH_ERROR_PATTERN = /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i;
 
-const bustUrl = (url: string) => {
-  const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}v=${Date.now()}`;
+const retryDelayMs = (attempt: number) => Math.min(250 * 2 ** attempt, 3000);
+
+const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+const failedModuleUrl = (error: Error) => {
+  const match = error.message.match(/https?:\/\/\S+|\/[\w@./-]+\.(?:t|j)sx?(?:\?\S*)?/);
+  return match?.[0];
 };
 
-const importWithCacheBust = async <T extends ComponentType<any>>(
-  importer: () => Promise<ComponentModule<T>>,
-) => {
-  try {
-    return await importer();
-  } catch (error) {
-    if (!isRecoverableImportError(error)) {
-      throw error;
-    }
-
-    const match = error.message.match(/https?:\/\/\S+|\/[\w@./-]+\.tsx?(?:\?\S*)?/);
-    if (!match || typeof window === "undefined") {
-      throw error;
-    }
-
-    return import(/* @vite-ignore */ bustUrl(match[0])) as Promise<ComponentModule<T>>;
-  }
-};
-
-const getLocationKey = () => {
-  if (typeof window === "undefined") {
-    return "server";
-  }
-
-  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+const withRetryParam = (url: string, attempt: number) => {
+  const parsed = new URL(url, window.location.origin);
+  parsed.searchParams.set("retry", `${Date.now()}-${attempt}`);
+  return parsed.pathname + parsed.search + parsed.hash;
 };
 
 const isRecoverableImportError = (error: unknown): error is Error => {
@@ -49,38 +31,28 @@ export const lazyWithRetry = <T extends ComponentType<any>>(
   key: string,
 ): LazyExoticComponent<T> => {
   return lazy(async () => {
-    try {
-      const importedModule = await importWithCacheBust(importer);
-
-      if (typeof window !== "undefined") {
-        const existingRetry = sessionStorage.getItem(RETRY_STORAGE_KEY);
-        if (existingRetry?.startsWith(`${key}:`)) {
-          sessionStorage.removeItem(RETRY_STORAGE_KEY);
-        }
-      }
-
-      return importedModule;
-    } catch (error) {
-      if (typeof window !== "undefined" && isRecoverableImportError(error)) {
-        const retryToken = `${key}:${getLocationKey()}`;
-        const existingRetry = sessionStorage.getItem(RETRY_STORAGE_KEY);
-        const retryCount = existingRetry?.startsWith(`${retryToken}:`)
-          ? Number(existingRetry.split(":").pop() ?? "0")
-          : 0;
-
-        if (retryCount < MAX_RETRIES) {
-          sessionStorage.setItem(RETRY_STORAGE_KEY, `${retryToken}:${retryCount + 1}`);
-          window.location.reload();
-
-          return new Promise<ComponentModule<T>>(() => {
-            // Intentionally unresolved while the page reloads.
-          });
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+      try {
+        return await importer();
+      } catch (error) {
+        if (!isRecoverableImportError(error) || attempt === MAX_RETRIES) {
+          throw error;
         }
 
-        sessionStorage.removeItem(RETRY_STORAGE_KEY);
-      }
+        console.warn(`[lazyWithRetry] Retrying ${key} route chunk (${attempt + 1}/${MAX_RETRIES})`, error);
+        await wait(retryDelayMs(attempt));
 
-      throw error;
+        const retryUrl = failedModuleUrl(error);
+        if (retryUrl) {
+          try {
+            return await import(/* @vite-ignore */ withRetryParam(retryUrl, attempt));
+          } catch (retryError) {
+            console.warn(`[lazyWithRetry] Cache-busted retry failed for ${key}`, retryError);
+          }
+        }
+      }
     }
+
+    return importer();
   });
 };
