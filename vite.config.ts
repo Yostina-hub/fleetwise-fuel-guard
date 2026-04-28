@@ -33,8 +33,6 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: [
-      "@vite/client",
-      "@react-refresh",
       "react",
       "react/jsx-dev-runtime",
       "react-dom/client",
