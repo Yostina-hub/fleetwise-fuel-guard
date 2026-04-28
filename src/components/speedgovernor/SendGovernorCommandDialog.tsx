@@ -1,18 +1,54 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+/**
+ * SendGovernorCommandDialog
+ * -------------------------
+ * Issues a remote command to a vehicle's speed governor (set limit, enable,
+ * disable, or emergency stop). Validation follows the project standard:
+ * Zod schema + `useFieldValidation`, Sonner toasts, error-summary banner,
+ * inline messages with destructive borders, and a Loader2 spinner.
+ *
+ * Safety guards:
+ *   - Speed limit constrained to 20–180 km/h (matches governor firmware).
+ *   - Phone number normalized to digits + optional leading '+'.
+ *   - Dangerous commands (`disable_governor`, `emergency_stop`) require an
+ *     explicit confirm switch before submit.
+ */
+import { useState, useEffect, useMemo } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { Send, AlertTriangle, Gauge, Power, StopCircle, Phone } from "lucide-react";
+import {
+  Send,
+  AlertTriangle,
+  AlertCircle,
+  Gauge,
+  Power,
+  StopCircle,
+  Phone,
+  Loader2,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { friendlyToastError } from "@/lib/errorMessages";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
 
 interface Vehicle {
   id: string;
@@ -29,55 +65,121 @@ interface SendGovernorCommandDialogProps {
   selectedVehicleId?: string;
 }
 
-type CommandType = "set_speed_limit" | "enable_governor" | "disable_governor" | "emergency_stop";
+type CommandType =
+  | "set_speed_limit"
+  | "enable_governor"
+  | "disable_governor"
+  | "emergency_stop";
 
 const MIN_SPEED_LIMIT = 20;
 const MAX_SPEED_LIMIT = 180;
+const PHONE_MAX = 13;
 
-const commandTypes: { value: CommandType; label: string; icon: React.ReactNode; description: string }[] = [
-  { 
-    value: "set_speed_limit", 
-    label: "Set Speed Limit", 
+const commandTypes: {
+  value: CommandType;
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+}[] = [
+  {
+    value: "set_speed_limit",
+    label: "Set Speed Limit",
     icon: <Gauge className="h-4 w-4" />,
-    description: "Send new speed limit to the governor device"
+    description: "Send new speed limit to the governor device",
   },
-  { 
-    value: "enable_governor", 
-    label: "Enable Governor", 
+  {
+    value: "enable_governor",
+    label: "Enable Governor",
     icon: <Power className="h-4 w-4" />,
-    description: "Activate speed limiting on the vehicle"
+    description: "Activate speed limiting on the vehicle",
   },
-  { 
-    value: "disable_governor", 
-    label: "Disable Governor", 
+  {
+    value: "disable_governor",
+    label: "Disable Governor",
     icon: <Power className="h-4 w-4" />,
-    description: "Deactivate speed limiting (use with caution)"
+    description: "Deactivate speed limiting (use with caution)",
   },
-  { 
-    value: "emergency_stop", 
-    label: "Emergency Stop", 
+  {
+    value: "emergency_stop",
+    label: "Emergency Stop",
     icon: <StopCircle className="h-4 w-4" />,
-    description: "Send emergency stop command to vehicle"
+    description: "Send emergency stop command to vehicle",
   },
 ];
 
-export function SendGovernorCommandDialog({ 
-  open, 
-  onOpenChange, 
+// Schema is built once per render; cross-field rules guard the speed limit
+// range only when the relevant command is active, and require a non-empty
+// phone string that looks like a real MSISDN.
+const buildSchema = () =>
+  z
+    .object({
+      vehicleId: z.string().min(1, "Select a target vehicle"),
+      commandType: z.enum([
+        "set_speed_limit",
+        "enable_governor",
+        "disable_governor",
+        "emergency_stop",
+      ]),
+      speedLimit: z.number().int(),
+      phoneNumber: z
+        .string()
+        .trim()
+        .max(PHONE_MAX, `Keep phone under ${PHONE_MAX} characters`)
+        .optional()
+        .or(z.literal("")),
+    })
+    .superRefine((data, ctx) => {
+      if (data.commandType === "set_speed_limit") {
+        if (
+          !Number.isFinite(data.speedLimit) ||
+          data.speedLimit < MIN_SPEED_LIMIT ||
+          data.speedLimit > MAX_SPEED_LIMIT
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["speedLimit"],
+            message: `Speed must be between ${MIN_SPEED_LIMIT} and ${MAX_SPEED_LIMIT} km/h`,
+          });
+        }
+      }
+      if (data.phoneNumber && data.phoneNumber.trim() !== "") {
+        // Accept either '+<digits>' or pure digits; min 7 to catch typos.
+        const ok = /^\+?\d{7,12}$/.test(data.phoneNumber.trim());
+        if (!ok) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["phoneNumber"],
+            message: "Enter 7–12 digits, optional leading +",
+          });
+        }
+      }
+    });
+
+export function SendGovernorCommandDialog({
+  open,
+  onOpenChange,
   vehicles,
-  selectedVehicleId 
+  selectedVehicleId,
 }: SendGovernorCommandDialogProps) {
   const { user } = useAuth();
   const { organizationId } = useOrganization();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [vehicleId, setVehicleId] = useState(selectedVehicleId || "");
-  const [commandType, setCommandType] = useState<CommandType>("set_speed_limit");
+  const [commandType, setCommandType] =
+    useState<CommandType>("set_speed_limit");
   const [speedLimit, setSpeedLimit] = useState(80);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [confirmDangerous, setConfirmDangerous] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  const schema = useMemo(() => buildSchema(), []);
+  const v = useFieldValidation(schema, () => ({
+    vehicleId,
+    commandType,
+    speedLimit,
+    phoneNumber,
+  }));
 
   // Fetch device info when vehicle is selected
   const { data: deviceInfo } = useQuery({
@@ -100,85 +202,101 @@ export function SendGovernorCommandDialog({
     if (deviceInfo?.sim_msisdn && !phoneNumber) {
       setPhoneNumber(deviceInfo.sim_msisdn);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceInfo?.sim_msisdn]);
 
-  // Reset phone when vehicle changes
+  // Reset phone + validation when vehicle changes
   useEffect(() => {
     setPhoneNumber("");
   }, [vehicleId]);
 
-  const selectedVehicle = vehicles.find(v => v.id === vehicleId);
-  const isDangerousCommand = commandType === "disable_governor" || commandType === "emergency_stop";
+  // Reset everything when dialog closes
+  useEffect(() => {
+    if (!open) {
+      v.reset();
+      setConfirmDangerous(false);
+      setIsSending(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  // Validate speed limit
-  const isSpeedLimitValid = commandType !== "set_speed_limit" || 
-    (speedLimit >= MIN_SPEED_LIMIT && speedLimit <= MAX_SPEED_LIMIT);
+  const selectedVehicle = vehicles.find((v) => v.id === vehicleId);
+  const isDangerousCommand =
+    commandType === "disable_governor" || commandType === "emergency_stop";
+
+  const errCls = (field: "vehicleId" | "speedLimit" | "phoneNumber") =>
+    v.getError(field) ? "border-destructive focus-visible:ring-destructive" : "";
 
   const handleSend = async () => {
-    if (!vehicleId || !organizationId || !user) {
-      friendlyToastError(null, { title: "Please select a vehicle" });
+    if (!organizationId || !user) {
+      toast.error("Missing organization context");
       return;
     }
 
-    if (commandType === "set_speed_limit" && !isSpeedLimitValid) {
-      toast({
-        title: "Invalid Speed Limit",
-        description: `Speed limit must be between ${MIN_SPEED_LIMIT} and ${MAX_SPEED_LIMIT} km/h`,
-        variant: "destructive",
-      });
+    const result = v.validateAll({
+      vehicleId,
+      commandType,
+      speedLimit,
+      phoneNumber,
+    });
+    if (!result.success) {
+      const count = Object.keys(result.errors).length;
+      toast.error(
+        `Please fix ${count} field${count > 1 ? "s" : ""} before sending`,
+      );
       return;
     }
 
     if (isDangerousCommand && !confirmDangerous) {
-      toast({
-        title: "Confirmation Required",
-        description: "Please confirm this dangerous command",
-        variant: "destructive",
-      });
+      toast.error("Please confirm this dangerous command");
       return;
     }
 
     setIsSending(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("send-governor-command", {
-        body: {
-          vehicleId,
-          commandType,
-          speedLimit: commandType === "set_speed_limit" ? speedLimit : undefined,
-          phoneNumber: phoneNumber || undefined,
-          organizationId,
-          userId: user.id,
+      const { error } = await supabase.functions.invoke(
+        "send-governor-command",
+        {
+          body: {
+            vehicleId,
+            commandType,
+            speedLimit:
+              commandType === "set_speed_limit" ? speedLimit : undefined,
+            phoneNumber: phoneNumber || undefined,
+            organizationId,
+            userId: user.id,
+          },
         },
-      });
+      );
 
       if (error) throw error;
 
-      toast({
-        title: "Command Sent",
-        description: `${commandTypes.find(c => c.value === commandType)?.label} command sent to ${selectedVehicle?.plate}`,
-      });
+      toast.success(
+        `${commandTypes.find((c) => c.value === commandType)?.label} command sent to ${selectedVehicle?.plate ?? "vehicle"}`,
+      );
 
-      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["governor-command-logs"] });
       queryClient.invalidateQueries({ queryKey: ["speed-governor-configs"] });
 
-      // Reset and close
       setConfirmDangerous(false);
       setPhoneNumber("");
       onOpenChange(false);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to send governor command";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to send governor command";
       console.error("Error sending command:", error);
-      toast({
-        title: "Command Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error(errorMessage);
     } finally {
       setIsSending(false);
     }
   };
+
+  const errorCount = Object.keys(v.errors).filter(
+    (k) => (v.touched as any)[k],
+  ).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -190,28 +308,62 @@ export function SendGovernorCommandDialog({
           </DialogTitle>
         </DialogHeader>
 
+        {errorCount > 0 && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              Please fix {errorCount} field{errorCount > 1 ? "s" : ""} below
+              before sending.
+            </span>
+          </div>
+        )}
+
         <div className="space-y-4 py-4">
           {/* Vehicle Selection */}
           <div className="space-y-2">
             <Label htmlFor="vehicle">Target Vehicle</Label>
-            <Select value={vehicleId} onValueChange={setVehicleId}>
-              <SelectTrigger>
+            <Select
+              value={vehicleId}
+              onValueChange={(val) => {
+                setVehicleId(val);
+                v.handleChange("vehicleId", val);
+              }}
+            >
+              <SelectTrigger
+                aria-invalid={!!v.getError("vehicleId")}
+                className={errCls("vehicleId")}
+                onBlur={() => v.handleBlur("vehicleId", vehicleId)}
+              >
                 <SelectValue placeholder="Select vehicle" />
               </SelectTrigger>
               <SelectContent>
-                {vehicles.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.plate} {v.hasConfig ? `(${v.maxSpeed} km/h)` : "(Not configured)"}
+                {vehicles.map((veh) => (
+                  <SelectItem key={veh.id} value={veh.id}>
+                    {veh.plate}{" "}
+                    {veh.hasConfig
+                      ? `(${veh.maxSpeed} km/h)`
+                      : "(Not configured)"}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {v.getError("vehicleId") && (
+              <p className="text-sm text-destructive">
+                {v.getError("vehicleId")}
+              </p>
+            )}
           </div>
 
           {/* Command Type */}
           <div className="space-y-2">
             <Label htmlFor="command-type">Command Type</Label>
-            <Select value={commandType} onValueChange={(v) => setCommandType(v as CommandType)}>
+            <Select
+              value={commandType}
+              onValueChange={(val) => setCommandType(val as CommandType)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -227,7 +379,7 @@ export function SendGovernorCommandDialog({
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
-              {commandTypes.find(c => c.value === commandType)?.description}
+              {commandTypes.find((c) => c.value === commandType)?.description}
             </p>
           </div>
 
@@ -241,12 +393,18 @@ export function SendGovernorCommandDialog({
                 min={MIN_SPEED_LIMIT}
                 max={MAX_SPEED_LIMIT}
                 value={speedLimit}
-                onChange={(e) => setSpeedLimit(Number(e.target.value))}
-                className={!isSpeedLimitValid ? "border-destructive" : ""}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  setSpeedLimit(n);
+                  v.handleChange("speedLimit", n);
+                }}
+                onBlur={() => v.handleBlur("speedLimit", speedLimit)}
+                aria-invalid={!!v.getError("speedLimit")}
+                className={errCls("speedLimit")}
               />
-              {!isSpeedLimitValid && (
+              {v.getError("speedLimit") && (
                 <p className="text-sm text-destructive">
-                  Speed must be between {MIN_SPEED_LIMIT} and {MAX_SPEED_LIMIT} km/h
+                  {v.getError("speedLimit")}
                 </p>
               )}
             </div>
@@ -261,15 +419,42 @@ export function SendGovernorCommandDialog({
             <Input
               id="phone"
               type="tel"
-              placeholder={deviceInfo?.sim_msisdn ? `Device: ${deviceInfo.sim_msisdn}` : "No device phone registered"}
+              inputMode="tel"
+              maxLength={PHONE_MAX}
+              placeholder={
+                deviceInfo?.sim_msisdn
+                  ? `Device: ${deviceInfo.sim_msisdn}`
+                  : "No device phone registered"
+              }
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              onChange={(e) => {
+                // Live-strip everything except digits and a single leading +.
+                const raw = e.target.value;
+                const hasPlus = raw.trimStart().startsWith("+");
+                const digits = raw.replace(/\D/g, "").slice(0, 12);
+                const next = hasPlus ? `+${digits}` : digits;
+                setPhoneNumber(next);
+                v.handleChange("phoneNumber", next);
+              }}
+              onBlur={() => v.handleBlur("phoneNumber", phoneNumber)}
+              aria-invalid={!!v.getError("phoneNumber")}
+              className={errCls("phoneNumber")}
             />
-            <p className="text-sm text-muted-foreground">
-              {deviceInfo?.sim_msisdn 
-                ? `Pre-filled from device. Override if needed.`
-                : "No device phone found. Enter manually."}
-            </p>
+            <div className="flex items-center justify-between text-sm">
+              <p className="text-muted-foreground">
+                {deviceInfo?.sim_msisdn
+                  ? `Pre-filled from device. Override if needed.`
+                  : "No device phone found. Enter manually."}
+              </p>
+              <span className="text-[11px] text-muted-foreground">
+                {phoneNumber.length}/{PHONE_MAX}
+              </span>
+            </div>
+            {v.getError("phoneNumber") && (
+              <p className="text-sm text-destructive">
+                {v.getError("phoneNumber")}
+              </p>
+            )}
           </div>
 
           {/* Dangerous Command Warning */}
@@ -279,7 +464,7 @@ export function SendGovernorCommandDialog({
               <AlertDescription>
                 <div className="space-y-2">
                   <p className="font-medium">
-                    {commandType === "emergency_stop" 
+                    {commandType === "emergency_stop"
                       ? "This will send an emergency stop command to the vehicle!"
                       : "Disabling the governor removes speed limiting protection!"}
                   </p>
@@ -303,11 +488,16 @@ export function SendGovernorCommandDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleSend} 
-            disabled={!vehicleId || isSending || (isDangerousCommand && !confirmDangerous) || !isSpeedLimitValid}
+          <Button
+            onClick={handleSend}
+            disabled={
+              isSending || (isDangerousCommand && !confirmDangerous)
+            }
             variant={isDangerousCommand ? "destructive" : "default"}
           >
+            {isSending && (
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            )}
             {isSending ? "Sending..." : "Send Command"}
           </Button>
         </DialogFooter>
