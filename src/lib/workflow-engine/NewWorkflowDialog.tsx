@@ -21,6 +21,7 @@ interface Props {
 export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
   const { createInstance } = useWorkflow(config);
   const [chosenFormKey, setChosenFormKey] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Per-SOP intake draft — restores when re-opening the same "New X" dialog.
   const draftKey = open ? `sop-intake:${config.type}` : null;
