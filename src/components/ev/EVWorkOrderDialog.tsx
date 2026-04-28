@@ -12,6 +12,24 @@ import { Loader2, Zap, Settings, AlertCircle, BatteryCharging, Boxes, ShieldChec
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { useEVWorkOrderValidation } from "./useEVWorkOrderValidation";
+import { sanitizeDecimal, type EVWorkOrderFieldKey } from "./evWorkOrderValidation";
+
+/** Inline destructive error chip used next to gated header fields. */
+const FieldError = ({ msg }: { msg?: string }) =>
+  msg ? (
+    <p
+      role="alert"
+      className="mt-1 flex items-start gap-1 text-[11px] font-medium text-destructive animate-fade-in"
+    >
+      <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" aria-hidden="true" />
+      <span>{msg}</span>
+    </p>
+  ) : null;
+
+const errorRing = (hasError?: string) =>
+  hasError ? "border-destructive ring-1 ring-destructive/30 focus-visible:ring-destructive/40" : "";
 
 interface Props {
   open: boolean;
