@@ -349,6 +349,9 @@ const RequesterPortalInner = () => {
           </div>
         </div>
 
+        {/* Realtime banner: surfaces shared-trip events for this passenger */}
+        <SharedTripPassengerBanner />
+
         {/* Page-level date range filter — drives the requests table & history */}
         <PageDateRangeFilter hint="filters requests by needed-from date" />
 
