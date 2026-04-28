@@ -478,15 +478,26 @@ export const ReportTripIncidentDialog = ({
             <Textarea
               id="incident-description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                v.handleChange("description", e.target.value);
+              }}
+              onBlur={() => v.handleBlur("description", description)}
               placeholder="Describe the situation briefly so the fleet team can help…"
               rows={4}
               maxLength={1000}
-              required
+              className={cn(errCls("description"))}
             />
-            <p className="text-xs text-muted-foreground text-right">
-              {description.length}/1000
-            </p>
+            <div className="flex justify-between">
+              {v.getError("description") ? (
+                <p className="text-xs text-destructive">{v.getError("description")}</p>
+              ) : (
+                <span />
+              )}
+              <p className="text-xs text-muted-foreground tabular-nums">
+                {description.length}/1000
+              </p>
+            </div>
           </div>
 
           {/* Attachments */}
