@@ -180,6 +180,23 @@ export const OnRoadFuelRequestDialog = ({
 
   const [form, setForm] = useState<FormState>(() => initialState(lastOdometerKm));
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const v = useFieldValidation(schema, () => ({
+    current_location: form.current_location,
+    current_odometer: Number(form.current_odometer),
+    current_fuel_percent:
+      form.current_fuel_percent.trim() === "" ? undefined : Number(form.current_fuel_percent),
+    liters_requested: Number(form.liters_requested),
+    urgency: form.urgency,
+    reason: form.reason,
+    remaining_distance_km:
+      form.remaining_distance_km.trim() === "" ? undefined : Number(form.remaining_distance_km),
+    notes: form.notes.trim() || undefined,
+  }));
+
+  useEffect(() => {
+    if (open) v.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Resolve effective vehicle: prefer the active trip's assigned vehicle,
   // otherwise fall back to the driver's permanently assigned vehicle.
