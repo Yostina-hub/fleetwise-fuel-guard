@@ -41,11 +41,16 @@ interface Passenger {
   vehicle_request_id: string;
   passenger_user_id: string | null;
   pickup_label: string | null;
+  pickup_lat: number | null;
+  pickup_lng: number | null;
   dropoff_label: string | null;
+  dropoff_lat: number | null;
+  dropoff_lng: number | null;
   seats: number;
   status: "reserved" | "boarded" | "dropped_off" | "no_show" | "cancelled";
   boarded_at: string | null;
   dropped_off_at: string | null;
+  created_at?: string | null;
 }
 
 const statusBadge = (status: Passenger["status"]) => {
@@ -63,9 +68,134 @@ const statusBadge = (status: Passenger["status"]) => {
   }
 };
 
+interface MapState {
+  ride: any | null;
+  highlightPassengerId: string | null;
+  fallbackPickup: { lat: number | null; lng: number | null; label: string | null } | null;
+  fallbackDropoff: { lat: number | null; lng: number | null; label: string | null } | null;
+}
+
 export const SharedTripsTab = () => {
-  const { data: rides = [], isLoading } = useDriverSharedRides();
+  const { data: rides = [], isLoading, refetch } = useDriverSharedRides();
   const updateStatus = useUpdatePassengerStatus();
+  const driverId = useCurrentDriverId();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [mapState, setMapState] = useState<MapState>({
+    ride: null,
+    highlightPassengerId: null,
+    fallbackPickup: null,
+    fallbackDropoff: null,
+  });
+
+  // Track which passenger ids we've already alerted about so a re-render
+  // (or a reconnect) doesn't spam toasts. Persists in-memory per session.
+  const alertedRef = useRef<Set<string>>(new Set());
+
+  /**
+   * Realtime subscription on driver_notifications scoped to this driver.
+   * Only `passenger_added` rows trigger the alert + map shortcut here; the
+   * notification bell still handles the general inbox.
+   */
+  useEffect(() => {
+    if (!driverId) return;
+    const channel = supabase
+      .channel(`driver-passenger-alerts:${driverId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "driver_notifications",
+          filter: `driver_id=eq.${driverId}`,
+        },
+        (payload) => {
+          const n: any = payload.new;
+          if (n?.kind !== "passenger_added") return;
+          const pid = n.payload?.passenger_id;
+          if (pid && alertedRef.current.has(pid)) return;
+          if (pid) alertedRef.current.add(pid);
+
+          // Refresh ride list so the new passenger row appears.
+          refetch();
+
+          toast(
+            n.payload?.passenger_name
+              ? `New passenger: ${n.payload.passenger_name}`
+              : "New passenger added to your shared trip",
+            {
+              description: n.payload?.pickup_label
+                ? `Pickup: ${n.payload.pickup_label}`
+                : "Tap to view pickup location.",
+              duration: 12_000,
+              action: {
+                label: "View map",
+                onClick: () => {
+                  const ride = (rides as any[]).find(
+                    (r) => r.id === n.payload?.shared_ride_id,
+                  );
+                  setMapState({
+                    ride: ride ?? {
+                      id: n.payload?.shared_ride_id,
+                      origin_label: n.payload?.origin_label || "Trip start",
+                      destination_label: n.payload?.destination_label || "Trip end",
+                      shared_ride_passengers: [],
+                    },
+                    highlightPassengerId: pid ?? null,
+                    fallbackPickup: {
+                      lat: n.payload?.pickup_lat ?? null,
+                      lng: n.payload?.pickup_lng ?? null,
+                      label: n.payload?.pickup_label ?? null,
+                    },
+                    fallbackDropoff: {
+                      lat: n.payload?.dropoff_lat ?? null,
+                      lng: n.payload?.dropoff_lng ?? null,
+                      label: n.payload?.dropoff_label ?? null,
+                    },
+                  });
+                },
+              },
+            },
+          );
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [driverId, rides]);
+
+  /**
+   * Deep-link support: the notification bell links to
+   * `/driver-portal?tab=shared&ride=<id>`. Auto-open the map when that param
+   * is present and matches a loaded ride.
+   */
+  useEffect(() => {
+    const rideParam = searchParams.get("ride");
+    if (!rideParam) return;
+    const ride = (rides as any[]).find((r) => r.id === rideParam);
+    if (ride) {
+      setMapState({
+        ride,
+        highlightPassengerId: null,
+        fallbackPickup: null,
+        fallbackDropoff: null,
+      });
+      // Strip the param so we don't re-open on every render.
+      const next = new URLSearchParams(searchParams);
+      next.delete("ride");
+      setSearchParams(next, { replace: true });
+    }
+  }, [rides, searchParams, setSearchParams]);
+
+  const openRideMap = (ride: any, highlightPassengerId: string | null = null) =>
+    setMapState({
+      ride,
+      highlightPassengerId,
+      fallbackPickup: null,
+      fallbackDropoff: null,
+    });
 
   if (isLoading) {
     return (
