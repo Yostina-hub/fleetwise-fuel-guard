@@ -467,10 +467,10 @@ export const OpsMapView = ({ organizationId }: Props) => {
   // For consolidated parents we send the FULL multi-stop sequence so the
   // returned geometry traces every merged child stop in the correct order.
   const [routeGeoms, setRouteGeoms] = useState<Record<string, [number, number][]>>({});
-  // Per-request list of OSRM-computed alternatives so dispatchers can pick a
+  // Per-request list of computed alternatives so dispatchers can pick a
   // different driving path between the same pickup/drop pair.
-  type RouteAlt = { geometry: [number, number][]; distance_m: number; duration_s: number };
   const [routeAlts, setRouteAlts] = useState<Record<string, RouteAlt[]>>({});
+  const [routeStatus, setRouteStatus] = useState<Record<string, RouteStatus>>({});
   const [selectedAltIdx, setSelectedAltIdx] = useState<Record<string, number>>({});
   // Re-key cache by sequence signature so adding/removing children re-fetches.
   const routeCacheKeyRef = useRef<Record<string, string>>({});
@@ -485,9 +485,11 @@ export const OpsMapView = ({ organizationId }: Props) => {
       )
         return false;
       const seq = parentStopSequence[r.id];
-      const sig = seq
-        ? seq.map((c) => `${c[0].toFixed(5)},${c[1].toFixed(5)}`).join("|")
-        : `${r.departure_lng},${r.departure_lat}|${r.destination_lng},${r.destination_lat}`;
+      const coordinates = seq ?? [
+        [r.departure_lng, r.departure_lat] as [number, number],
+        [r.destination_lng, r.destination_lat] as [number, number],
+      ];
+      const sig = routeSignature(coordinates);
       const cached = routeCacheKeyRef.current[r.id];
       if (cached === sig) return false;
       if (inflightRef.current.has(r.id)) return false;
@@ -505,10 +507,9 @@ export const OpsMapView = ({ organizationId }: Props) => {
             [r.departure_lng!, r.departure_lat!],
             [r.destination_lng!, r.destination_lat!],
           ];
-        const sig = coordinates
-          .map((c) => `${c[0].toFixed(5)},${c[1].toFixed(5)}`)
-          .join("|");
+        const sig = routeSignature(coordinates);
         inflightRef.current.add(r.id);
+        setRouteStatus((prev) => ({ ...prev, [r.id]: "loading" }));
         try {
           // Always ask for alternatives — backend has fallbacks (stitched +
           // via-points) so even single-leg routes get 2-3 genuine variants.
@@ -531,11 +532,28 @@ export const OpsMapView = ({ organizationId }: Props) => {
                 }];
             setRouteAlts((prev) => ({ ...prev, [r.id]: alts }));
             setRouteGeoms((prev) => ({ ...prev, [r.id]: alts[0].geometry }));
-          } else if (error) {
-            console.error("[OpsMap] route-directions error", r.request_number, error);
+            setRouteStatus((prev) => ({ ...prev, [r.id]: data.fallback ? "estimated" : "road" }));
+          } else {
+            if (error) console.error("[OpsMap] route-directions error", r.request_number, error);
+            const fallback = makeEstimatedRoute(coordinates);
+            if (!cancelled && fallback.geometry.length >= 2) {
+              routeCacheKeyRef.current[r.id] = sig;
+              setRouteAlts((prev) => ({ ...prev, [r.id]: [fallback] }));
+              setRouteGeoms((prev) => ({ ...prev, [r.id]: fallback.geometry }));
+              setRouteStatus((prev) => ({ ...prev, [r.id]: "estimated" }));
+            }
           }
         } catch (err) {
           console.error("[OpsMap] route-directions threw", r.request_number, err);
+          const fallback = makeEstimatedRoute(coordinates);
+          if (!cancelled && fallback.geometry.length >= 2) {
+            routeCacheKeyRef.current[r.id] = sig;
+            setRouteAlts((prev) => ({ ...prev, [r.id]: [fallback] }));
+            setRouteGeoms((prev) => ({ ...prev, [r.id]: fallback.geometry }));
+            setRouteStatus((prev) => ({ ...prev, [r.id]: "estimated" }));
+          } else if (!cancelled) {
+            setRouteStatus((prev) => ({ ...prev, [r.id]: "error" }));
+          }
         } finally {
           inflightRef.current.delete(r.id);
         }
