@@ -46,6 +46,20 @@
     <style>@keyframes fleettrack-spin{to{transform:rotate(360deg)}}</style>
     <script>
       (function () {
+        var reloadKey = "fleettrack-module-reload";
+        window.addEventListener("error", function (event) {
+          var target = event && event.target;
+          var failedUrl = target && (target.src || target.href || "");
+          if (!failedUrl || !/\/node_modules\/\.vite\/deps\/|\/src\//.test(failedUrl)) return;
+          if (sessionStorage.getItem(reloadKey) === failedUrl) return;
+          sessionStorage.setItem(reloadKey, failedUrl);
+          window.location.replace(window.location.pathname + window.location.search + window.location.hash);
+        }, true);
+        window.addEventListener("load", function () {
+          window.setTimeout(function () {
+            if (window.__fleettrackBooted) sessionStorage.removeItem(reloadKey);
+          }, 1200);
+        });
         if (!("serviceWorker" in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (registrations) {
           registrations.forEach(function (registration) {
