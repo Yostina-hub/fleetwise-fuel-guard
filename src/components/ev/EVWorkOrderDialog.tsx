@@ -288,18 +288,38 @@ export const EVWorkOrderDialog = ({ open, onOpenChange, workOrderId, vehicleId, 
 
         <ScrollArea className="max-h-[72vh] pr-3">
           <div className="space-y-4">
+            {submitAttempted && invalidCount > 0 && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div>
+                  <div className="font-semibold">
+                    {invalidCount} field{invalidCount === 1 ? "" : "s"} need attention
+                  </div>
+                  <div className="text-xs opacity-90">
+                    Fix the highlighted required and EV-safety fields before saving.
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="rounded-lg border border-border bg-muted/20 p-4">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="space-y-3">
                   <div>
                     <Label><span className="text-destructive">*</span> Work Order</Label>
-                    <Input className="font-mono" value={form.work_order_number}
+                    <Input className={cn("font-mono", errorRing(vErrors.work_order_number))} value={form.work_order_number}
+                      onBlur={onBlur("work_order_number")}
+                      aria-invalid={!!vErrors.work_order_number || undefined}
                       onChange={(e) => setForm((f) => ({ ...f, work_order_number: e.target.value }))} />
+                    <FieldError msg={vErrors.work_order_number} />
                   </div>
                   <div>
                     <Label><span className="text-destructive">*</span> EV Vehicle</Label>
                     <Select value={form.vehicle_id} onValueChange={(v) => {
                       const ev = evVehicles.find((x: any) => x.vehicle_id === v);
+                      markTouched("vehicle_id");
                       setForm((f) => ({
                         ...f,
                         vehicle_id: v,
@@ -308,7 +328,9 @@ export const EVWorkOrderDialog = ({ open, onOpenChange, workOrderId, vehicleId, 
                         connector_type: ev?.charging_connector_type || "",
                       }));
                     }}>
-                      <SelectTrigger><SelectValue placeholder="Select EV" /></SelectTrigger>
+                      <SelectTrigger className={errorRing(vErrors.vehicle_id)} aria-invalid={!!vErrors.vehicle_id || undefined}>
+                        <SelectValue placeholder="Select EV" />
+                      </SelectTrigger>
                       <SelectContent>
                         {evVehicles.map((v: any) => (
                           <SelectItem key={v.vehicle_id} value={v.vehicle_id}>
@@ -317,42 +339,55 @@ export const EVWorkOrderDialog = ({ open, onOpenChange, workOrderId, vehicleId, 
                         ))}
                       </SelectContent>
                     </Select>
+                    <FieldError msg={vErrors.vehicle_id} />
                   </div>
                   <div>
                     <Label>Asset Number</Label>
-                    <Input value={form.asset_number}
+                    <Input className={errorRing(vErrors.asset_number)} value={form.asset_number}
+                      onBlur={onBlur("asset_number")}
+                      aria-invalid={!!vErrors.asset_number || undefined}
                       onChange={(e) => setForm((f) => ({ ...f, asset_number: e.target.value }))} />
+                    <FieldError msg={vErrors.asset_number} />
                   </div>
                   <div>
                     <Label><span className="text-destructive">*</span> Asset Group</Label>
-                    <Select value={form.asset_group} onValueChange={(v) => setForm((f) => ({ ...f, asset_group: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select value={form.asset_group} onValueChange={(v) => { markTouched("asset_group"); setForm((f) => ({ ...f, asset_group: v })); }}>
+                      <SelectTrigger className={errorRing(vErrors.asset_group)}><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="vehicle">EV Vehicle</SelectItem>
                         <SelectItem value="battery">Battery Pack</SelectItem>
                         <SelectItem value="charger">Charger</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FieldError msg={vErrors.asset_group} />
                   </div>
                   <div>
-                    <Label>WIP Accounting Class</Label>
-                    <Input value={form.wip_accounting_class}
+                    <Label><span className="text-destructive">*</span> WIP Accounting Class</Label>
+                    <Input className={errorRing(vErrors.wip_accounting_class)} value={form.wip_accounting_class}
+                      onBlur={onBlur("wip_accounting_class")}
                       onChange={(e) => setForm((f) => ({ ...f, wip_accounting_class: e.target.value }))} />
+                    <FieldError msg={vErrors.wip_accounting_class} />
                   </div>
                   <div>
                     <Label>Scheduled Start</Label>
-                    <Input type="datetime-local" value={form.scheduled_start_date}
+                    <Input type="datetime-local" className={errorRing(vErrors.scheduled_start_date)} value={form.scheduled_start_date}
+                      onBlur={onBlur("scheduled_start_date")}
                       onChange={(e) => setForm((f) => ({ ...f, scheduled_start_date: e.target.value }))} />
+                    <FieldError msg={vErrors.scheduled_start_date} />
                   </div>
                   <div>
                     <Label>Scheduled Completion</Label>
-                    <Input type="datetime-local" value={form.scheduled_completion_date}
+                    <Input type="datetime-local" className={errorRing(vErrors.scheduled_completion_date)} value={form.scheduled_completion_date}
+                      onBlur={onBlur("scheduled_completion_date")}
                       onChange={(e) => setForm((f) => ({ ...f, scheduled_completion_date: e.target.value }))} />
+                    <FieldError msg={vErrors.scheduled_completion_date} />
                   </div>
                   <div>
                     <Label>Duration (hours)</Label>
-                    <Input type="number" step="0.5" value={form.duration}
-                      onChange={(e) => setForm((f) => ({ ...f, duration: Number(e.target.value) }))} />
+                    <Input type="number" step="0.5" min="0" className={errorRing(vErrors.duration)} value={form.duration}
+                      onBlur={onBlur("duration")}
+                      onChange={(e) => setForm((f) => ({ ...f, duration: Number(sanitizeDecimal(e.target.value)) || 0 }))} />
+                    <FieldError msg={vErrors.duration} />
                   </div>
                 </div>
 
