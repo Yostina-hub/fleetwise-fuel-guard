@@ -286,7 +286,7 @@ Deno.serve(async (req) => {
     let query = supabase
       .from("vehicle_requests")
       .select(
-        "id, request_number, requester_id, organization_id, pool_name, departure_place, destination, departure_lat, departure_lng, needed_from, passengers, created_at, status, assigned_vehicle_id, pool_review_status, pool_review_decision",
+        "id, request_number, requester_id, organization_id, pool_name, departure_place, destination, departure_lat, departure_lng, destination_lat, destination_lng, needed_from, passengers, created_at, status, assigned_vehicle_id, pool_review_status, pool_review_decision",
       )
       .eq("organization_id", organization_id)
       .eq("status", "approved")
@@ -309,7 +309,7 @@ Deno.serve(async (req) => {
     const { data: nullStatus, error: nErr } = await supabase
       .from("vehicle_requests")
       .select(
-        "id, request_number, requester_id, organization_id, pool_name, departure_place, destination, departure_lat, departure_lng, needed_from, passengers, created_at, status, assigned_vehicle_id, pool_review_status, pool_review_decision",
+        "id, request_number, requester_id, organization_id, pool_name, departure_place, destination, departure_lat, departure_lng, destination_lat, destination_lng, needed_from, passengers, created_at, status, assigned_vehicle_id, pool_review_status, pool_review_decision",
       )
       .eq("organization_id", organization_id)
       .eq("status", "approved")
