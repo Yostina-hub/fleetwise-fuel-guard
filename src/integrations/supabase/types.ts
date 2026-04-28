@@ -3233,7 +3233,7 @@ export type Database = {
           event_type: string
           from_value: string | null
           id: string
-          job_id: string
+          job_id: string | null
           job_number: string | null
           metadata: Json
           notes: string | null
@@ -3248,7 +3248,7 @@ export type Database = {
           event_type: string
           from_value?: string | null
           id?: string
-          job_id: string
+          job_id?: string | null
           job_number?: string | null
           metadata?: Json
           notes?: string | null
@@ -3263,7 +3263,7 @@ export type Database = {
           event_type?: string
           from_value?: string | null
           id?: string
-          job_id?: string
+          job_id?: string | null
           job_number?: string | null
           metadata?: Json
           notes?: string | null
