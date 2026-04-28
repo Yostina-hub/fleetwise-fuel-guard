@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     noDiscovery: mode === "development",
     include: mode === "development" ? [] : undefined,
+    exclude: mode === "development"
+      ? ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime"]
+      : undefined,
   },
   plugins: [
     react(), 
