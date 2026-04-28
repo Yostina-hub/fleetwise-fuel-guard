@@ -481,7 +481,14 @@ export const OpsMapView = ({ organizationId }: Props) => {
   const [selectedAltIdx, setSelectedAltIdx] = useState<Record<string, number>>({});
   // Re-key cache by sequence signature so adding/removing children re-fetches.
   const routeCacheKeyRef = useRef<Record<string, string>>({});
+  const routeDesiredSigRef = useRef<Record<string, string>>({});
   const inflightRef = useRef<Set<string>>(new Set());
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   useEffect(() => {
     const eligible = requests.filter((r) => {
       if (
@@ -504,10 +511,9 @@ export const OpsMapView = ({ organizationId }: Props) => {
     });
     if (eligible.length === 0) return;
     console.log("[OpsMap] route fetch eligible:", eligible.length, eligible.map((r) => r.request_number));
-    let cancelled = false;
     const queue = [...eligible];
     const runOne = async () => {
-      while (queue.length > 0 && !cancelled) {
+      while (queue.length > 0 && mountedRef.current) {
         const r = queue.shift()!;
         const coordinates: [number, number][] =
           parentStopSequence[r.id] ?? [
@@ -515,6 +521,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
             [r.destination_lng!, r.destination_lat!],
           ];
         const sig = routeSignature(coordinates);
+        routeDesiredSigRef.current[r.id] = sig;
         inflightRef.current.add(r.id);
         setRouteStatus((prev) => ({ ...prev, [r.id]: "loading" }));
         try {
