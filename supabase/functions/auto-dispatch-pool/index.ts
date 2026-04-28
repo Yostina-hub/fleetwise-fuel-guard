@@ -336,18 +336,48 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Group by exact route + day + pool.
-    const groups = new Map<string, typeof allRequests>();
-    for (const r of allRequests) {
-      const key = [
-        norm(r.pool_name),
-        norm(r.departure_place),
-        norm(r.destination),
-        dayKey(r.needed_from),
-      ].join("|");
-      const arr = groups.get(key) || [];
-      arr.push(r);
-      groups.set(key, arr);
+    // 2. Group by dispatchable route: same pool + local trip day + nearby pickup/drop-off
+    // + compatible time window. Exact address-text matching was too brittle and created
+    // illogical groups; coordinates are the routing source of truth.
+    const routeReady = (allRequests as DispatchRow[]).filter(hasRouteCoordinates);
+    const missingRouteRows = (allRequests as DispatchRow[]).filter((r) => !hasRouteCoordinates(r));
+    const groups: DispatchGroup[] = [];
+    for (const r of routeReady) {
+      const poolKey = norm(r.pool_name) || "unassigned";
+      const day = localDayKey(r.needed_from);
+      const startMs = new Date(r.needed_from).getTime();
+      const match = groups.find((g) =>
+        g.poolKey === poolKey &&
+        g.day === day &&
+        Math.abs(startMs - g.startMs) <= ROUTE_TIME_WINDOW_MIN * 60_000 &&
+        haversineKm(r.departure_lat!, r.departure_lng!, g.pickupLat, g.pickupLng) <= ROUTE_PICKUP_CLUSTER_KM &&
+        haversineKm(r.destination_lat!, r.destination_lng!, g.destinationLat, g.destinationLng) <= ROUTE_DESTINATION_CLUSTER_KM
+      );
+      if (match) {
+        match.reqs.push(r);
+        const n = match.reqs.length;
+        match.pickupLat = (match.pickupLat * (n - 1) + r.departure_lat!) / n;
+        match.pickupLng = (match.pickupLng * (n - 1) + r.departure_lng!) / n;
+        match.destinationLat = (match.destinationLat * (n - 1) + r.destination_lat!) / n;
+        match.destinationLng = (match.destinationLng * (n - 1) + r.destination_lng!) / n;
+        continue;
+      }
+      const departure = r.departure_place || `${r.departure_lat!.toFixed(5)}, ${r.departure_lng!.toFixed(5)}`;
+      const destination = r.destination || `${r.destination_lat!.toFixed(5)}, ${r.destination_lng!.toFixed(5)}`;
+      groups.push({
+        key: [poolKey, departure, destination, day, groups.length + 1].join("|"),
+        poolName: r.pool_name,
+        poolKey,
+        day,
+        departure,
+        destination,
+        pickupLat: r.departure_lat!,
+        pickupLng: r.departure_lng!,
+        destinationLat: r.destination_lat!,
+        destinationLng: r.destination_lng!,
+        startMs,
+        reqs: [r],
+      });
     }
 
     // 3. Pull pool vehicles + telemetry once.
