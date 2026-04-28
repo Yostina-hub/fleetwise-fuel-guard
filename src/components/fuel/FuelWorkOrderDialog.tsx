@@ -12,6 +12,26 @@ import { Loader2, FileText, Settings, AlertCircle, Wrench, Boxes, ShieldCheck } 
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { useFuelWorkOrderValidation } from "./useFuelWorkOrderValidation";
+import { sanitizeDecimal, type FuelWorkOrderValues } from "./fuelWorkOrderValidation";
+
+/** Tiny inline error chip — reused per field below. */
+const FieldError = ({ msg }: { msg?: string }) =>
+  msg ? (
+    <p
+      role="alert"
+      className="mt-1 flex items-start gap-1.5 text-xs font-medium text-destructive animate-fade-in"
+    >
+      <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+      <span>{msg}</span>
+    </p>
+  ) : null;
+
+const errorRing = (hasError?: boolean) =>
+  hasError
+    ? "border-destructive ring-1 ring-destructive/30 focus-visible:ring-destructive/40"
+    : "";
 
 interface Props {
   open: boolean;
