@@ -536,7 +536,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                 <CardContent className="p-3">
                   <div className="text-2xl font-semibold text-emerald-500">
                     {previewData.details.filter((d: any) => d.chosen_vehicle).reduce(
-                      (s: number, d: any) => s + ((d.requests?.length) || 1),
+                      (s: number, d: any) => s + (Number(d.request_count) || d.requests?.length || 1),
                       0,
                     )}
                   </div>
@@ -550,7 +550,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                   <div className="text-2xl font-semibold text-amber-500">
                     {previewData.details
                       .filter((d: any) => !d.chosen_vehicle)
-                      .reduce((s: number, d: any) => s + (typeof d.requests === "number" ? d.requests : 0), 0)}
+                      .reduce((s: number, d: any) => s + (Number(d.request_count) || d.requests?.length || 1), 0)}
                   </div>
                   <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
                     Will skip
@@ -580,8 +580,8 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                   )}
                   {previewData.details.map((d: any, i: number) => {
                     const parts = String(d.key || "").split("|");
-                    const route = `${parts[1] || "—"} → ${parts[2] || "—"}`;
-                    const day = parts[3] || "";
+                    const route = d.route_label || `${parts[1] || "—"} → ${parts[2] || "—"}`;
+                    const day = d.day || parts[3] || "";
                     const reqList = Array.isArray(d.requests) ? d.requests : [];
                     return (
                       <TableRow key={i}>
@@ -604,7 +604,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                               )}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">{d.requests || 0}</span>
+                            <span className="text-muted-foreground">{d.request_count || d.requests || 0}</span>
                           )}
                         </TableCell>
                         <TableCell className="text-xs">{d.passengers ?? "—"}</TableCell>
@@ -626,8 +626,10 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                         </TableCell>
                         <TableCell className="text-xs">
                           {d.chosen_vehicle
-                            ? d.distance_km != null
-                              ? `${d.distance_km} km`
+                            ? d.route_distance_km != null
+                              ? `${d.route_distance_km} km · ${d.route_duration_min ?? "—"} min`
+                              : d.pickup_distance_km != null
+                              ? `${d.pickup_distance_km} km pickup`
                               : "no GPS"
                             : "—"}
                         </TableCell>
