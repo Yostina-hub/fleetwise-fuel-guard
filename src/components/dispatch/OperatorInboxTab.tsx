@@ -54,6 +54,7 @@ import {
   ShieldAlert,
   Car,
 } from "lucide-react";
+import IncidentDispatchDecisionDialog from "./IncidentDispatchDecisionDialog";
 
 /* ────────────────────────────── helpers ─────────────────────────────── */
 
@@ -322,14 +323,23 @@ interface IncidentRow {
   location: string | null;
   vehicle_id: string | null;
   driver_id: string | null;
+  trip_id: string | null;
   created_at: string;
   auto_work_order_id: string | null;
+  can_continue: string | null;
+  requested_assistance: string[] | null;
+  dispatch_decision: string | null;
+  dispatch_decision_at: string | null;
+  replacement_vehicle_id: string | null;
+  replacement_driver_id: string | null;
   vehicles?: { plate_number: string | null; make: string | null; model: string | null } | null;
-  drivers?: { name: string | null; phone: string | null } | null;
+  drivers?: { first_name: string | null; last_name: string | null; phone: string | null } | null;
 }
 
 function IncidentsInbox({ orgId }: { orgId: string | null | undefined }) {
   const qc = useQueryClient();
+  const [decisionFor, setDecisionFor] = useState<IncidentRow | null>(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ["operator-inbox-incidents", orgId],
     enabled: !!orgId,
@@ -337,7 +347,7 @@ function IncidentsInbox({ orgId }: { orgId: string | null | undefined }) {
       const { data, error } = await supabase
         .from("incidents")
         .select(
-          "id, incident_number, incident_type, severity, status, description, location, vehicle_id, driver_id, created_at, auto_work_order_id, vehicles:vehicle_id(plate_number, make, model), drivers:driver_id(name, phone)",
+          "id, incident_number, incident_type, severity, status, description, location, vehicle_id, driver_id, trip_id, created_at, auto_work_order_id, can_continue, requested_assistance, dispatch_decision, dispatch_decision_at, replacement_vehicle_id, replacement_driver_id, vehicles:vehicles!incidents_vehicle_id_fkey(plate_number, make, model), drivers:drivers!incidents_driver_id_fkey(first_name, last_name, phone)",
         )
         .eq("organization_id", orgId!)
         .in("status", ["open", "investigating"])
@@ -398,88 +408,164 @@ function IncidentsInbox({ orgId }: { orgId: string | null | undefined }) {
   }
 
   return (
-    <div className="space-y-3">
-      {data.map((row) => {
-        const isAccident = row.incident_type === "accident";
-        const Icon = isAccident ? Car : row.incident_type === "breakdown" ? Wrench : ShieldAlert;
-        return (
-          <Card key={row.id} className="glass-strong">
-            <CardContent className="p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <Icon className="w-4 h-4 text-primary" aria-hidden="true" />
-                    <span className="font-mono text-sm font-semibold">{row.incident_number}</span>
-                    <Badge variant="outline" className="text-[10px] uppercase">{row.incident_type}</Badge>
-                    {priorityBadge(row.severity)}
-                    <Badge variant="outline" className="text-[10px]">{row.status}</Badge>
-                    {row.auto_work_order_id && (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] bg-success/10 text-success border-success/30"
-                      >
-                        WO created
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm line-clamp-2">{row.description || "No description"}</p>
-                  <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-1">
-                    {row.vehicles?.plate_number && (
-                      <span>
-                        Vehicle:{" "}
-                        <span className="font-medium text-foreground">
-                          {row.vehicles.plate_number}
-                          {row.vehicles.make ? ` · ${row.vehicles.make} ${row.vehicles.model ?? ""}` : ""}
+    <>
+      <div className="space-y-3">
+        {data.map((row) => {
+          const isAccident = row.incident_type === "accident";
+          const Icon = isAccident ? Car : row.incident_type === "breakdown" ? Wrench : ShieldAlert;
+          const driverName = row.drivers
+            ? `${row.drivers.first_name ?? ""} ${row.drivers.last_name ?? ""}`.trim()
+            : "";
+          const needsDecision = !row.dispatch_decision;
+          const isEmergency = row.can_continue === "emergency";
+          return (
+            <Card
+              key={row.id}
+              className={`glass-strong ${
+                isEmergency ? "border-destructive/50 ring-1 ring-destructive/30" : ""
+              }`}
+            >
+              <CardContent className="p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <Icon className="w-4 h-4 text-primary" aria-hidden="true" />
+                      <span className="font-mono text-sm font-semibold">{row.incident_number}</span>
+                      <Badge variant="outline" className="text-[10px] uppercase">{row.incident_type}</Badge>
+                      {priorityBadge(row.severity)}
+                      <Badge variant="outline" className="text-[10px]">{row.status}</Badge>
+                      {row.can_continue === "yes" && (
+                        <Badge className="text-[10px] bg-success/15 text-success border-success/30">
+                          Driver can continue
+                        </Badge>
+                      )}
+                      {row.can_continue === "no" && (
+                        <Badge className="text-[10px] bg-warning/15 text-warning border-warning/30">
+                          Cannot continue
+                        </Badge>
+                      )}
+                      {isEmergency && (
+                        <Badge className="text-[10px] bg-destructive/15 text-destructive border-destructive/30 animate-pulse">
+                          🚨 Emergency
+                        </Badge>
+                      )}
+                      {row.dispatch_decision === "continue" && (
+                        <Badge className="text-[10px] bg-success/10 text-success border-success/30">
+                          Cleared to continue
+                        </Badge>
+                      )}
+                      {row.dispatch_decision === "replacement_assigned" && (
+                        <Badge className="text-[10px] bg-primary/10 text-primary border-primary/30">
+                          Replacement dispatched
+                        </Badge>
+                      )}
+                      {row.dispatch_decision === "emergency" && (
+                        <Badge className="text-[10px] bg-destructive/10 text-destructive border-destructive/30">
+                          Emergency activated
+                        </Badge>
+                      )}
+                      {row.auto_work_order_id && (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] bg-success/10 text-success border-success/30"
+                        >
+                          WO created
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm line-clamp-2">{row.description || "No description"}</p>
+                    {(row.requested_assistance ?? []).length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          Asks:
                         </span>
-                      </span>
+                        {(row.requested_assistance ?? []).map((a) => (
+                          <Badge key={a} variant="outline" className="text-[10px]">
+                            {a.replace(/_/g, " ")}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
-                    {row.drivers?.name && (
-                      <span>
-                        Driver: <span className="font-medium text-foreground">{row.drivers.name}</span>
-                        {row.drivers.phone && <span className="text-muted-foreground"> · {row.drivers.phone}</span>}
-                      </span>
+                    <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                      {row.vehicles?.plate_number && (
+                        <span>
+                          Vehicle:{" "}
+                          <span className="font-medium text-foreground">
+                            {row.vehicles.plate_number}
+                            {row.vehicles.make ? ` · ${row.vehicles.make} ${row.vehicles.model ?? ""}` : ""}
+                          </span>
+                        </span>
+                      )}
+                      {driverName && (
+                        <span>
+                          Driver: <span className="font-medium text-foreground">{driverName}</span>
+                          {row.drivers?.phone && (
+                            <a
+                              href={`tel:${row.drivers.phone}`}
+                              className="ml-1 text-primary hover:underline"
+                            >
+                              {row.drivers.phone}
+                            </a>
+                          )}
+                        </span>
+                      )}
+                      {row.location && <span>📍 {row.location}</span>}
+                      <span>{formatDistanceToNow(new Date(row.created_at))} ago</span>
+                    </div>
+                    <div className="mt-1.5">
+                      <SlaTimer createdAt={row.created_at} priority={row.severity} />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                    {row.auto_work_order_id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => window.open(`/work-orders?id=${row.auto_work_order_id}`, "_blank")}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-1" aria-hidden="true" /> Open WO
+                      </Button>
                     )}
-                    {row.location && <span>📍 {row.location}</span>}
-                    <span>{formatDistanceToNow(new Date(row.created_at))} ago</span>
-                  </div>
-                  <div className="mt-1.5">
-                    <SlaTimer createdAt={row.created_at} priority={row.severity} />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {row.auto_work_order_id && (
+                    {needsDecision ? (
+                      <Button
+                        size="sm"
+                        variant={isEmergency ? "destructive" : "default"}
+                        onClick={() => setDecisionFor(row)}
+                      >
+                        <ShieldAlert className="w-4 h-4 mr-1" aria-hidden="true" />
+                        Decide
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setDecisionFor(row)}
+                      >
+                        Update decision
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => window.open(`/work-orders?id=${row.auto_work_order_id}`, "_blank")}
-                    >
-                      <ExternalLink className="w-4 h-4 mr-1" aria-hidden="true" /> Open WO
-                    </Button>
-                  )}
-                  {row.status === "open" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateStatus.mutate({ id: row.id, status: "investigating" })}
+                      onClick={() => updateStatus.mutate({ id: row.id, status: "resolved" })}
                       disabled={updateStatus.isPending}
                     >
-                      Acknowledge
+                      <CheckCircle2 className="w-4 h-4 mr-1" aria-hidden="true" /> Resolve
                     </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    onClick={() => updateStatus.mutate({ id: row.id, status: "resolved" })}
-                    disabled={updateStatus.isPending}
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-1" aria-hidden="true" /> Resolve
-                  </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <IncidentDispatchDecisionDialog
+        open={!!decisionFor}
+        onOpenChange={(o) => !o && setDecisionFor(null)}
+        incident={decisionFor}
+      />
+    </>
   );
 }
 

@@ -135,6 +135,8 @@ export const ReportTripIncidentDialog = ({
   const [description, setDescription] = useState("");
   const [kmReading, setKmReading] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [canContinue, setCanContinue] = useState<"yes" | "no" | "emergency">("yes");
+  const [assistance, setAssistance] = useState<string[]>([]);
 
   const v = useFieldValidation(formSchema);
 
@@ -144,6 +146,8 @@ export const ReportTripIncidentDialog = ({
       setDescription("");
       setKmReading("");
       setFiles([]);
+      setCanContinue("yes");
+      setAssistance([]);
       v.reset();
     }
   }, [open]);
@@ -238,7 +242,7 @@ export const ReportTripIncidentDialog = ({
           trip_id: tripId || null,
           incident_number: incidentNumber,
           incident_type: meta.incidentType,
-          severity: meta.severity,
+          severity: canContinue === "emergency" ? "critical" : meta.severity,
           reason: parsed.reason,
           description: parsed.description,
           km_reading: parsed.km_reading ?? null,
@@ -246,6 +250,8 @@ export const ReportTripIncidentDialog = ({
           incident_time: new Date().toISOString(),
           status: "open",
           reported_via: "driver-portal",
+          can_continue: canContinue,
+          requested_assistance: assistance,
         })
         .select("id")
         .single();
@@ -498,6 +504,62 @@ export const ReportTripIncidentDialog = ({
                 {description.length}/1000
               </p>
             </div>
+          </div>
+
+          {/* Can the driver continue? */}
+          <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+            <Label className="text-sm font-medium">Can you continue this trip?</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {([
+                { v: "yes", label: "Yes, I can continue", tone: "border-success/40 bg-success/5 text-success" },
+                { v: "no", label: "No, I need a replacement", tone: "border-warning/40 bg-warning/5 text-warning" },
+                { v: "emergency", label: "🚨 Emergency — need help", tone: "border-destructive/40 bg-destructive/5 text-destructive" },
+              ] as const).map((o) => {
+                const active = canContinue === o.v;
+                return (
+                  <button
+                    type="button"
+                    key={o.v}
+                    onClick={() => setCanContinue(o.v)}
+                    className={`rounded-md border p-2.5 text-xs text-left transition ${
+                      active ? o.tone : "border-border hover:bg-muted/50"
+                    }`}
+                    aria-pressed={active}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {canContinue !== "yes" && (
+              <div className="space-y-1.5 pt-2">
+                <Label className="text-xs text-muted-foreground">What do you need? (optional)</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {["replacement_vehicle", "tow_truck", "medical", "police", "fuel", "tire_change"].map((a) => {
+                    const active = assistance.includes(a);
+                    return (
+                      <button
+                        type="button"
+                        key={a}
+                        onClick={() =>
+                          setAssistance((prev) =>
+                            prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a],
+                          )
+                        }
+                        className={`text-[11px] px-2 py-1 rounded-full border transition ${
+                          active
+                            ? "bg-primary/15 border-primary/40 text-primary"
+                            : "border-border hover:bg-muted/50"
+                        }`}
+                      >
+                        {a.replace(/_/g, " ")}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Attachments */}

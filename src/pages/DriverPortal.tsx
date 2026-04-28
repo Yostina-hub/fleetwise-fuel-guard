@@ -33,6 +33,7 @@ import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
 import SharedTripsTab from "@/components/driver-portal/SharedTripsTab";
 import PendingPostTripBanner from "@/components/driver-portal/PendingPostTripBanner";
 import DriverNotificationBanner from "@/components/driver-portal/DriverNotificationBanner";
+import IncidentDispatchDecisionBanner from "@/components/driver-portal/IncidentDispatchDecisionBanner";
 import MyRequestsPanel from "@/components/driver-portal/MyRequestsPanel";
 import RequestLicenseRenewalDialog from "@/components/driver-portal/RequestLicenseRenewalDialog";
 import { AssignmentCheckInDialog } from "@/components/vehicle-requests/AssignmentCheckInDialog";
@@ -476,6 +477,9 @@ const DriverPortal = () => {
           driverId={driverId}
           onOpenRequests={() => setActiveTab("requests")}
         />
+
+        {/* Operator's decision after a driver-reported incident */}
+        <IncidentDispatchDecisionBanner driverId={driverId} />
 
         {/* Pending post-trip inspection — hybrid enforcement */}
         <PendingPostTripBanner

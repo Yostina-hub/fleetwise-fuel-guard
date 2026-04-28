@@ -47,7 +47,7 @@ const IncidentsTab = () => {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("incidents")
-        .select("*, vehicles(plate_number, make, model), drivers(first_name, last_name)")
+        .select("*, vehicles:vehicles!incidents_vehicle_id_fkey(plate_number, make, model), drivers:drivers!incidents_driver_id_fkey(first_name, last_name)")
         .eq("organization_id", organizationId!)
         .order("incident_time", { ascending: false })
         .limit(50);
