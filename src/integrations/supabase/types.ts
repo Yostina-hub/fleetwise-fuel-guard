@@ -11868,8 +11868,13 @@ export type Database = {
           assigned_to_name: string | null
           attachments: string[] | null
           auto_work_order_id: string | null
+          can_continue: string | null
           created_at: string
           description: string
+          dispatch_decision: string | null
+          dispatch_decision_at: string | null
+          dispatch_decision_by: string | null
+          dispatch_decision_notes: string | null
           driver_id: string | null
           estimated_cost: number | null
           fault_party: string | null
@@ -11881,7 +11886,10 @@ export type Database = {
           location: string | null
           organization_id: string
           reason: string | null
+          replacement_driver_id: string | null
+          replacement_vehicle_id: string | null
           reported_via: string | null
+          requested_assistance: string[]
           resolution_notes: string | null
           resolved_at: string | null
           resolved_by: string | null
@@ -11900,8 +11908,13 @@ export type Database = {
           assigned_to_name?: string | null
           attachments?: string[] | null
           auto_work_order_id?: string | null
+          can_continue?: string | null
           created_at?: string
           description: string
+          dispatch_decision?: string | null
+          dispatch_decision_at?: string | null
+          dispatch_decision_by?: string | null
+          dispatch_decision_notes?: string | null
           driver_id?: string | null
           estimated_cost?: number | null
           fault_party?: string | null
@@ -11913,7 +11926,10 @@ export type Database = {
           location?: string | null
           organization_id: string
           reason?: string | null
+          replacement_driver_id?: string | null
+          replacement_vehicle_id?: string | null
           reported_via?: string | null
+          requested_assistance?: string[]
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -11932,8 +11948,13 @@ export type Database = {
           assigned_to_name?: string | null
           attachments?: string[] | null
           auto_work_order_id?: string | null
+          can_continue?: string | null
           created_at?: string
           description?: string
+          dispatch_decision?: string | null
+          dispatch_decision_at?: string | null
+          dispatch_decision_by?: string | null
+          dispatch_decision_notes?: string | null
           driver_id?: string | null
           estimated_cost?: number | null
           fault_party?: string | null
@@ -11945,7 +11966,10 @@ export type Database = {
           location?: string | null
           organization_id?: string
           reason?: string | null
+          replacement_driver_id?: string | null
+          replacement_vehicle_id?: string | null
           reported_via?: string | null
+          requested_assistance?: string[]
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -11971,6 +11995,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_replacement_driver_id_fkey"
+            columns: ["replacement_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_replacement_vehicle_id_fkey"
+            columns: ["replacement_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
           {
@@ -27802,6 +27840,16 @@ export type Database = {
         Returns: undefined
       }
       disablelongtransactions: { Args: never; Returns: string }
+      dispatch_incident_decision: {
+        Args: {
+          p_decision: string
+          p_incident_id: string
+          p_notes?: string
+          p_replacement_driver?: string
+          p_replacement_vehicle?: string
+        }
+        Returns: Json
+      }
       driver_confirm_vehicle_delivered: {
         Args: { p_notes?: string; p_request_id: string }
         Returns: Json
