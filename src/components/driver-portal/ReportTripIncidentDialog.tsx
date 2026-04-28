@@ -403,9 +403,23 @@ export const ReportTripIncidentDialog = ({
                   min={0}
                   step="1"
                   value={kmReading}
-                  onChange={(e) => setKmReading(e.target.value)}
+                  onChange={(e) => {
+                    setKmReading(e.target.value);
+                    const n = e.target.value.trim() === "" ? undefined : Number(e.target.value);
+                    v.handleChange("km_reading", n);
+                  }}
+                  onBlur={() => {
+                    const n = kmReading.trim() === "" ? undefined : Number(kmReading);
+                    v.handleBlur("km_reading", n);
+                  }}
                   placeholder="Current odometer (km)"
+                  className={cn(errCls("km_reading"))}
                 />
+                {v.getError("km_reading") && (
+                  <p className="text-[10px] text-destructive mt-1">
+                    {v.getError("km_reading")}
+                  </p>
+                )}
               </div>
             </div>
           </div>
