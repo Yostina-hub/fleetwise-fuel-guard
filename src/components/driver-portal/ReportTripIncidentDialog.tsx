@@ -135,6 +135,8 @@ export const ReportTripIncidentDialog = ({
   const [description, setDescription] = useState("");
   const [kmReading, setKmReading] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [canContinue, setCanContinue] = useState<"yes" | "no" | "emergency">("yes");
+  const [assistance, setAssistance] = useState<string[]>([]);
 
   const v = useFieldValidation(formSchema);
 
@@ -144,6 +146,8 @@ export const ReportTripIncidentDialog = ({
       setDescription("");
       setKmReading("");
       setFiles([]);
+      setCanContinue("yes");
+      setAssistance([]);
       v.reset();
     }
   }, [open]);
