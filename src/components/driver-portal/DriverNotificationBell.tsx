@@ -36,6 +36,7 @@ const KIND_ICON: Record<string, JSX.Element> = {
   workflow_stage:     <Bell className="w-4 h-4 text-primary" aria-hidden="true" />,
   workflow_rejected:  <Info className="w-4 h-4 text-destructive" aria-hidden="true" />,
   workflow_cancelled: <Info className="w-4 h-4 text-muted-foreground" aria-hidden="true" />,
+  passenger_added:    <UserPlus className="w-4 h-4 text-amber-600" aria-hidden="true" />,
 };
 
 export default function DriverNotificationBell({ driverId }: Props) {
