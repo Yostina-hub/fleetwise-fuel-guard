@@ -356,6 +356,20 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
 
       <div className={`${embedded ? "px-1" : "px-3 sm:px-5 md:px-6"} pt-2 pb-1 space-y-3`}>
         <div className="space-y-5">
+          {showSummary && (
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive animate-fade-in"
+            >
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium">
+                  {invalidCount + Object.keys(itemErrors).length} field{(invalidCount + Object.keys(itemErrors).length) === 1 ? "" : "s"} need attention
+                </p>
+                <p className="text-xs opacity-90">Resolve the highlighted fields below to submit the request.</p>
+              </div>
+            </div>
+          )}
           {/* ===== Header / Request meta ===== */}
           <section className="space-y-3">
             <SectionTitle icon={Layers} title="Request Details" />
