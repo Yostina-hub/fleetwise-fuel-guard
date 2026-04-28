@@ -714,16 +714,25 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
   );
 };
 
-function ItemFields({ item, onChange }: { item: LineItem; onChange: (p: Partial<LineItem>) => void }) {
+function ItemFields({ item, onChange, error }: { item: LineItem; onChange: (p: Partial<LineItem>) => void; error?: string }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-primary font-medium text-xs"><span className="text-destructive">*</span> Position</Label>
+          <Label className="text-primary font-medium text-xs flex items-center gap-1">
+            <span className="text-destructive">*</span> Position
+          </Label>
           <Select value={item.position} onValueChange={v => onChange({ position: v })}>
-            <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
+            <SelectTrigger className={error ? "border-destructive ring-1 ring-destructive/30" : ""}>
+              <SelectValue placeholder="Select position" />
+            </SelectTrigger>
             <SelectContent>{POSITIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
           </Select>
+          {error && (
+            <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-destructive">
+              <AlertCircle className="h-3 w-3" /> {error}
+            </p>
+          )}
         </div>
         <div>
           <Label className="text-primary font-medium text-xs">Tire Size</Label>
