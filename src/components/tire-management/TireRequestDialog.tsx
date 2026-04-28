@@ -16,7 +16,10 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useDepartments } from "@/hooks/useDepartments";
 import { toast } from "sonner";
-import { Plus, Trash2, Upload, FileText, X, Paperclip, CircleDot, CheckCircle2, Layers, User, Info, Wrench } from "lucide-react";
+import { Plus, Trash2, Upload, FileText, X, Paperclip, CircleDot, CheckCircle2, Layers, User, Info, Wrench, AlertCircle, Truck, Calendar, Gauge, Phone, Mail, Building2, Fuel, Hash, ClipboardList, Coins, MessageSquare } from "lucide-react";
+import { ValidatedField } from "@/components/forms/ValidatedField";
+import { useTireRequestValidation } from "./useTireRequestValidation";
+import { sanitizeNumeric, sanitizeDecimal, sanitizePhone } from "./tireRequestValidation";
 
 const POSITIONS = ["Front Left", "Front Right", "Rear Left Outer", "Rear Left Inner", "Rear Right Outer", "Rear Right Inner", "Spare"];
 
