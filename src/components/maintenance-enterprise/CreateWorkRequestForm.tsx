@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CalendarIcon, Upload, X, Paperclip, Star, Loader2, Search } from "lucide-react";
+import { AlertCircle, CalendarIcon, CheckCircle2, Upload, X, Paperclip, Star, Loader2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useMaintenanceRequests } from "@/hooks/useMaintenanceRequests";
@@ -16,6 +16,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useMaintenanceRequestValidation } from "./useMaintenanceRequestValidation";
+import {
+  sanitizeNumeric,
+  sanitizePhone,
+  sanitizeShortText,
+  type MRFormValues,
+} from "./maintenanceRequestValidation";
 
 interface Props {
   vehicleId?: string;
@@ -104,6 +111,33 @@ export default function CreateWorkRequestForm({
   const [remark, setRemark] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Per-field validation (mirrors fuel/vehicle request standard)
+  const validation = useMaintenanceRequestValidation();
+  const buildValues = (): MRFormValues => ({
+    asset_number: assetNumber,
+    assigned_dept: assignedDept,
+    request_start_date: requestStartDate ? requestStartDate.toISOString() : "",
+    completion_date: completionDate ? completionDate.toISOString() : "",
+    work_request_type: workRequestType,
+    priority,
+    context_value: contextValue,
+    additional_description: additionalDescription,
+    phone_number: phoneNumber,
+    email: emailAddr,
+    requestor_department: requestorDepartment,
+    requestor_pool: requestorPool,
+    requestor_employee_id: requestorEmployeeId,
+    driver_type: driverType,
+    driver_name: selectedDriverName,
+    driver_phone: driverPhone,
+    maintenance_type_req: maintenanceTypeReq,
+    inspection_sub_type: inspectionSubType,
+    km_reading: kmReading,
+    fuel_level: fuelLevel,
+    requested_quantity: requestedQuantity,
+    remark,
+  });
 
   // Auto-fill creator info
   useEffect(() => {
@@ -221,26 +255,13 @@ export default function CreateWorkRequestForm({
 
   const isSafetyComfortCtx = contextValue === "V Safety & Comfort Request";
 
-  const validate = (): string | null => {
-    if (!assetNumber.trim()) return "Asset Number is required";
-    if (!assignedDept.trim()) return "Assigned Department is required";
-    if (!requestStartDate) return "Request By Start Date is required";
-    if (!additionalDescription.trim()) return "Additional Description is required";
-    if (!isTripInspection && !isSafetyComfortCtx && !requestorDepartment.trim()) return "Requestor Department is required";
-    if ((isTripInspection || isSafetyComfortCtx) && !requestorPool.trim()) return "Requestor Pool is required";
-    if ((isTripInspection || isSafetyComfortCtx) && !driverType.trim()) return "Driver type is required";
-    if (!isTripInspection && !isSafetyComfortCtx && !maintenanceTypeReq.trim()) return "Type of maintenance request is required";
-    if (isSafetyComfortCtx && !maintenanceTypeReq.trim()) return "Type of Request is required";
-    if ((workRequestType === "inspection" || isTripInspection) && !inspectionSubType) return "Type of Request is required";
-    if (!kmReading.trim()) return "KM reading is required";
-    if (!driverPhone.trim()) return "Driver Phone No. is required";
-    if (!isTripInspection && !isSafetyComfortCtx && !fuelLevel.trim()) return "Fuel level in the tank is required";
-    return null;
-  };
-
   const handleSubmit = async () => {
-    const err = validate();
-    if (err) { toast.error(err); return; }
+    const result = validation.validateAll(buildValues());
+    if (!result.ok) {
+      const first = Object.values(result.errors)[0];
+      toast.error(first || "Please fix the highlighted fields before submitting.");
+      return;
+    }
 
     // Resolve vehicle id from asset number if needed
     let resolvedVehicleId = vehicleId;
@@ -333,6 +354,7 @@ export default function CreateWorkRequestForm({
         ? ` — routed to ${insertedReq.approver_role.replace(/_/g, " ")}`
         : "";
       toast.success(`Work Request ${reqNumber} created${approverInfo}`);
+      validation.reset();
       onSubmitted?.({
         maintenance_request_id: insertedReq?.id ?? null,
         inspection_id: createdInspectionId,
@@ -356,12 +378,32 @@ export default function CreateWorkRequestForm({
     <h3 className="text-base font-semibold border-b pb-2 mb-4 text-foreground">{children}</h3>
   );
 
-  const FieldRow = ({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) => (
-    <div className="grid grid-cols-12 items-center gap-2 mb-3">
-      <Label className="col-span-4 text-right text-sm">
+  const FieldRow = ({
+    label,
+    required,
+    error,
+    children,
+  }: {
+    label: string;
+    required?: boolean;
+    error?: string;
+    children: React.ReactNode;
+  }) => (
+    <div className="grid grid-cols-12 items-start gap-2 mb-3">
+      <Label className={cn("col-span-4 text-right text-sm pt-2", error && "text-destructive")}>
         {required && REQUIRED_MARK} {label}
       </Label>
-      <div className="col-span-8">{children}</div>
+      <div className="col-span-8">
+        <div className={cn(error && "[&_input]:border-destructive [&_textarea]:border-destructive [&_button[role=combobox]]:border-destructive")}>
+          {children}
+        </div>
+        {error && (
+          <p role="alert" className="mt-1 flex items-center gap-1 text-[11px] font-medium text-destructive">
+            <AlertCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   );
 
@@ -402,32 +444,78 @@ export default function CreateWorkRequestForm({
         </div>
       </div>
 
+      {validation.showAllErrors && validation.errorCount > 0 && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <div>
+            <p className="font-medium">
+              Please fix {validation.errorCount} field{validation.errorCount === 1 ? "" : "s"} before submitting.
+            </p>
+            <p className="text-xs opacity-80">Highlighted in red below.</p>
+          </div>
+        </div>
+      )}
+
       {/* Header grid: 2 columns */}
       <Card className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
           <div>
-            <FieldRow label="Asset Number" required>
+            <FieldRow label="Asset Number" required error={validation.getError("asset_number")}>
               <div className="relative">
-                <Input value={assetNumber} onChange={e => setAssetNumber(e.target.value)} list="asset-list" className="pr-8" />
+                <Input
+                  value={assetNumber}
+                  onChange={e => {
+                    setAssetNumber(e.target.value);
+                    validation.validateField("asset_number", e.target.value, buildValues());
+                  }}
+                  onBlur={e => validation.handleBlur("asset_number", e.target.value, buildValues())}
+                  list="asset-list"
+                  className="pr-8"
+                />
                 <datalist id="asset-list">
                   {vehicles.map(v => <option key={v.id} value={v.plate_number}>{v.make} {v.model}</option>)}
                 </datalist>
                 <Search className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
               </div>
             </FieldRow>
-            <FieldRow label="Assigned Department" required>
-              <Input value={assignedDept} onChange={e => setAssignedDept(e.target.value)} placeholder="Department" />
+            <FieldRow label="Assigned Department" required error={validation.getError("assigned_dept")}>
+              <Input
+                value={assignedDept}
+                onChange={e => {
+                  setAssignedDept(e.target.value);
+                  validation.validateField("assigned_dept", e.target.value, buildValues());
+                }}
+                onBlur={e => validation.handleBlur("assigned_dept", e.target.value, buildValues())}
+                placeholder="Department"
+              />
             </FieldRow>
-            <FieldRow label="Request By Start Date" required>
-              <DatePickerInline value={requestStartDate} onChange={d => d && setRequestStartDate(d)} />
+            <FieldRow label="Request By Start Date" required error={validation.getError("request_start_date")}>
+              <DatePickerInline
+                value={requestStartDate}
+                onChange={d => {
+                  if (d) setRequestStartDate(d);
+                  validation.validateField("request_start_date", d?.toISOString() ?? "", buildValues());
+                }}
+              />
             </FieldRow>
             <FieldRow label="Requested For">
               <Input value={requestedFor} onChange={e => setRequestedFor(e.target.value)} placeholder="Employee code" />
             </FieldRow>
           </div>
           <div>
-            <FieldRow label="Work Request Type">
-              <Select value={workRequestType} onValueChange={setWorkRequestType}>
+            <FieldRow label="Work Request Type" error={validation.getError("work_request_type")}>
+              <Select
+                value={workRequestType}
+                onValueChange={(v) => {
+                  setWorkRequestType(v);
+                  validation.validateField("work_request_type", v, { ...buildValues(), work_request_type: v });
+                  // Inspection sub-type becomes required/optional depending on this
+                  validation.validateField("inspection_sub_type", inspectionSubType, { ...buildValues(), work_request_type: v });
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="corrective">Corrective</SelectItem>
@@ -437,8 +525,14 @@ export default function CreateWorkRequestForm({
                 </SelectContent>
               </Select>
             </FieldRow>
-            <FieldRow label="Priority" required>
-              <Select value={priority} onValueChange={setPriority}>
+            <FieldRow label="Priority" required error={validation.getError("priority")}>
+              <Select
+                value={priority}
+                onValueChange={(v) => {
+                  setPriority(v);
+                  validation.validateField("priority", v, buildValues());
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
@@ -448,9 +542,15 @@ export default function CreateWorkRequestForm({
                 </SelectContent>
               </Select>
             </FieldRow>
-            <FieldRow label="Request By Completion Date">
+            <FieldRow label="Request By Completion Date" error={validation.getError("completion_date")}>
               <div>
-                <DatePickerInline value={completionDate} onChange={setCompletionDate} />
+                <DatePickerInline
+                  value={completionDate}
+                  onChange={(d) => {
+                    setCompletionDate(d);
+                    validation.validateField("completion_date", d?.toISOString() ?? "", buildValues());
+                  }}
+                />
                 <p className="text-xs text-muted-foreground mt-1">(example {format(new Date(Date.now() + 86400000), "dd-MMM-yyyy HH:mm:ss")})</p>
               </div>
             </FieldRow>
@@ -472,8 +572,17 @@ export default function CreateWorkRequestForm({
       {/* Request Description */}
       <Card className="p-6">
         <SectionTitle>Request Description</SectionTitle>
-        <FieldRow label="Additional Description" required>
-          <Textarea value={additionalDescription} onChange={e => setAdditionalDescription(e.target.value)} rows={3} />
+        <FieldRow label="Additional Description" required error={validation.getError("additional_description")}>
+          <Textarea
+            value={additionalDescription}
+            onChange={e => {
+              setAdditionalDescription(e.target.value);
+              validation.validateField("additional_description", e.target.value, buildValues());
+            }}
+            onBlur={e => validation.handleBlur("additional_description", e.target.value, buildValues())}
+            rows={3}
+            maxLength={2000}
+          />
         </FieldRow>
       </Card>
 
@@ -515,8 +624,18 @@ export default function CreateWorkRequestForm({
             <FieldRow label="Created By">
               <Input value={createdBy} disabled className="bg-muted/30" />
             </FieldRow>
-            <FieldRow label="Phone Number">
-              <Input value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} />
+            <FieldRow label="Phone Number" error={validation.getError("phone_number")}>
+              <Input
+                value={phoneNumber}
+                onChange={e => {
+                  const v = sanitizePhone(e.target.value);
+                  setPhoneNumber(v);
+                  validation.validateField("phone_number", v, buildValues());
+                }}
+                onBlur={e => validation.handleBlur("phone_number", e.target.value, buildValues())}
+                placeholder="0911234567 or +251911234567"
+                inputMode="tel"
+              />
             </FieldRow>
             <FieldRow label="Contact Preference">
               <Select value={contactPreference} onValueChange={setContactPreference}>
@@ -539,8 +658,17 @@ export default function CreateWorkRequestForm({
                 </SelectContent>
               </Select>
             </FieldRow>
-            <FieldRow label="E-mail">
-              <Input value={emailAddr} onChange={e => setEmailAddr(e.target.value)} type="email" />
+            <FieldRow label="E-mail" error={validation.getError("email")}>
+              <Input
+                value={emailAddr}
+                onChange={e => {
+                  setEmailAddr(e.target.value);
+                  validation.validateField("email", e.target.value, buildValues());
+                }}
+                onBlur={e => validation.handleBlur("email", e.target.value, buildValues())}
+                type="email"
+                inputMode="email"
+              />
             </FieldRow>
           </div>
         </div>
@@ -550,9 +678,22 @@ export default function CreateWorkRequestForm({
       <Card className="p-6">
         <SectionTitle>Descriptive Information</SectionTitle>
         <div className="max-w-3xl">
-          <FieldRow label="Context Value" required>
+          <FieldRow label="Context Value" required error={validation.getError("context_value")}>
             <div>
-              <Select value={contextValue} onValueChange={setContextValue}>
+              <Select
+                value={contextValue}
+                onValueChange={(v) => {
+                  setContextValue(v);
+                  const next = { ...buildValues(), context_value: v };
+                  validation.validateField("context_value", v, next);
+                  // Conditional fields depend on this:
+                  validation.validateField("requestor_department", requestorDepartment, next);
+                  validation.validateField("requestor_pool", requestorPool, next);
+                  validation.validateField("driver_type", driverType, next);
+                  validation.validateField("maintenance_type_req", maintenanceTypeReq, next);
+                  validation.validateField("fuel_level", fuelLevel, next);
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Veh. Trip Inspection request">Veh. Trip Inspection request</SelectItem>
@@ -572,8 +713,14 @@ export default function CreateWorkRequestForm({
             </div>
           </FieldRow>
 
-          <FieldRow label="Driver type" required={isTripInspection || isSafetyComfortCtx}>
-            <Select value={driverType} onValueChange={setDriverType}>
+          <FieldRow label="Driver type" required={isTripInspection || isSafetyComfortCtx} error={validation.getError("driver_type")}>
+            <Select
+              value={driverType}
+              onValueChange={(v) => {
+                setDriverType(v);
+                validation.validateField("driver_type", v, buildValues());
+              }}
+            >
               <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="staff">Staff Driver</SelectItem>
@@ -583,16 +730,35 @@ export default function CreateWorkRequestForm({
             </Select>
           </FieldRow>
 
-          <FieldRow label="Driver Name">
-            <Input value={selectedDriverName} onChange={e => setSelectedDriverName(e.target.value)} />
+          <FieldRow label="Driver Name" error={validation.getError("driver_name")}>
+            <Input
+              value={selectedDriverName}
+              onChange={e => {
+                setSelectedDriverName(e.target.value);
+                validation.validateField("driver_name", e.target.value, buildValues());
+              }}
+            />
           </FieldRow>
 
-          <FieldRow label="Employee ID">
-            <Input value={requestorEmployeeId} onChange={e => setRequestorEmployeeId(e.target.value)} placeholder="Employee number" />
+          <FieldRow label="Employee ID" error={validation.getError("requestor_employee_id")}>
+            <Input
+              value={requestorEmployeeId}
+              onChange={e => {
+                setRequestorEmployeeId(e.target.value);
+                validation.validateField("requestor_employee_id", e.target.value, buildValues());
+              }}
+              placeholder="Employee number"
+            />
           </FieldRow>
 
-          <FieldRow label="Requestor Pool" required={isTripInspection || isSafetyComfortCtx}>
-            <Select value={requestorPool} onValueChange={setRequestorPool}>
+          <FieldRow label="Requestor Pool" required={isTripInspection || isSafetyComfortCtx} error={validation.getError("requestor_pool")}>
+            <Select
+              value={requestorPool}
+              onValueChange={(v) => {
+                setRequestorPool(v);
+                validation.validateField("requestor_pool", v, buildValues());
+              }}
+            >
               <SelectTrigger><SelectValue placeholder="Select pool" /></SelectTrigger>
               <SelectContent>
                 {pools.length === 0 && <SelectItem value="__none__" disabled>No pools configured</SelectItem>}
@@ -601,7 +767,11 @@ export default function CreateWorkRequestForm({
             </Select>
           </FieldRow>
 
-          <FieldRow label="Type of Request" required={isTripInspection || isSafetyComfortCtx || workRequestType === "inspection"}>
+          <FieldRow
+            label="Type of Request"
+            required={isTripInspection || isSafetyComfortCtx || workRequestType === "inspection"}
+            error={validation.getError(isTripInspection ? "inspection_sub_type" : "maintenance_type_req")}
+          >
             {isTripInspection ? (
               <div className="space-y-2 rounded-md border p-3">
                 {[
@@ -615,7 +785,10 @@ export default function CreateWorkRequestForm({
                       name="trip-inspection-subtype"
                       value={opt.value}
                       checked={inspectionSubType === opt.value}
-                      onChange={() => setInspectionSubType(opt.value)}
+                      onChange={() => {
+                        setInspectionSubType(opt.value);
+                        validation.validateField("inspection_sub_type", opt.value, buildValues());
+                      }}
                       className="mt-1 accent-primary"
                     />
                     <span>
@@ -626,7 +799,13 @@ export default function CreateWorkRequestForm({
                 ))}
               </div>
             ) : (
-              <Select value={maintenanceTypeReq} onValueChange={setMaintenanceTypeReq}>
+              <Select
+                value={maintenanceTypeReq}
+                onValueChange={(v) => {
+                  setMaintenanceTypeReq(v);
+                  validation.validateField("maintenance_type_req", v, buildValues());
+                }}
+              >
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Oil Change">Oil Change</SelectItem>
@@ -658,8 +837,14 @@ export default function CreateWorkRequestForm({
           )}
 
           {!isTripInspection && workRequestType === "inspection" && (
-            <FieldRow label="Inspection sub-type" required>
-              <Select value={inspectionSubType} onValueChange={setInspectionSubType}>
+            <FieldRow label="Inspection sub-type" required error={validation.getError("inspection_sub_type")}>
+              <Select
+                value={inspectionSubType}
+                onValueChange={(v) => {
+                  setInspectionSubType(v);
+                  validation.validateField("inspection_sub_type", v, buildValues());
+                }}
+              >
                 <SelectTrigger><SelectValue placeholder="Select sub-type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="annual">Annual</SelectItem>
@@ -671,41 +856,93 @@ export default function CreateWorkRequestForm({
           )}
 
           {!isTripInspection && !isSafetyComfortCtx && (
-            <FieldRow label="Requestor Department" required>
-              <Input value={requestorDepartment} onChange={e => setRequestorDepartment(e.target.value)} />
+            <FieldRow label="Requestor Department" required error={validation.getError("requestor_department")}>
+              <Input
+                value={requestorDepartment}
+                onChange={e => {
+                  setRequestorDepartment(e.target.value);
+                  validation.validateField("requestor_department", e.target.value, buildValues());
+                }}
+                onBlur={e => validation.handleBlur("requestor_department", e.target.value, buildValues())}
+              />
             </FieldRow>
           )}
 
-          <FieldRow label="KM reading" required>
-            <Input type="number" value={kmReading} onChange={e => setKmReading(e.target.value)} />
+          <FieldRow label="KM reading" required error={validation.getError("km_reading")}>
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={kmReading}
+              onChange={e => {
+                const v = sanitizeNumeric(e.target.value, { integer: true });
+                setKmReading(v);
+                validation.validateField("km_reading", v, buildValues());
+              }}
+              onBlur={e => validation.handleBlur("km_reading", e.target.value, buildValues())}
+              placeholder="e.g. 125000"
+            />
           </FieldRow>
 
-          <FieldRow label="Driver Phone No." required>
-            <Input value={driverPhone} onChange={e => setDriverPhone(e.target.value)} />
+          <FieldRow label="Driver Phone No." required error={validation.getError("driver_phone")}>
+            <Input
+              value={driverPhone}
+              onChange={e => {
+                const v = sanitizePhone(e.target.value);
+                setDriverPhone(v);
+                validation.validateField("driver_phone", v, buildValues());
+              }}
+              onBlur={e => validation.handleBlur("driver_phone", e.target.value, buildValues())}
+              placeholder="0911234567 or +251911234567"
+              inputMode="tel"
+            />
           </FieldRow>
 
           {!isTripInspection && !isSafetyComfortCtx && (
-            <FieldRow label="Fuel level in the tank" required>
+            <FieldRow label="Fuel level in the tank" required error={validation.getError("fuel_level")}>
               <div className="flex items-center gap-2">
-                <Input type="number" min={0} max={100} value={fuelLevel} onChange={e => setFuelLevel(e.target.value)} className="max-w-[160px]" />
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={fuelLevel}
+                  onChange={e => {
+                    const v = sanitizeNumeric(e.target.value);
+                    setFuelLevel(v);
+                    validation.validateField("fuel_level", v, buildValues());
+                  }}
+                  onBlur={e => validation.handleBlur("fuel_level", e.target.value, buildValues())}
+                  className="max-w-[160px]"
+                  placeholder="0–100"
+                />
                 <span className="text-sm text-muted-foreground">%</span>
               </div>
             </FieldRow>
           )}
 
-          <FieldRow label="Requested Quantity">
+          <FieldRow label="Requested Quantity" error={validation.getError("requested_quantity")}>
             <Input
-              type="number"
-              min={0}
+              type="text"
+              inputMode="numeric"
               value={requestedQuantity}
-              onChange={e => setRequestedQuantity(e.target.value)}
+              onChange={e => {
+                const v = sanitizeNumeric(e.target.value, { integer: true });
+                setRequestedQuantity(v);
+                validation.validateField("requested_quantity", v, buildValues());
+              }}
               className="max-w-[200px]"
               placeholder="e.g. 1"
             />
           </FieldRow>
 
-          <FieldRow label="Remark">
-            <Textarea value={remark} onChange={e => setRemark(e.target.value)} rows={2} />
+          <FieldRow label="Remark" error={validation.getError("remark")}>
+            <Textarea
+              value={remark}
+              onChange={e => {
+                setRemark(e.target.value);
+                validation.validateField("remark", e.target.value, buildValues());
+              }}
+              rows={2}
+              maxLength={1000}
+            />
           </FieldRow>
         </div>
       </Card>
