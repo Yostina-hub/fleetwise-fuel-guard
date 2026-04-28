@@ -723,10 +723,18 @@ export const OnRoadFuelRequestDialog = ({
                   min={1}
                   step="0.5"
                   value={form.liters_requested}
-                  onChange={(e) => set("liters_requested", e.target.value)}
+                  onChange={(e) => {
+                    set("liters_requested", e.target.value);
+                    v.handleChange("liters_requested", Number(e.target.value));
+                  }}
+                  onBlur={() => v.handleBlur("liters_requested", Number(form.liters_requested))}
+                  aria-invalid={!!v.getError("liters_requested")}
                   placeholder="e.g. 25"
                   required
                 />
+                {v.getError("liters_requested") && (
+                  <p className="text-xs text-destructive">{v.getError("liters_requested")}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Urgency *</Label>
