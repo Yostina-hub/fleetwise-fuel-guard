@@ -79,7 +79,7 @@ export const MergedTripsHistory = ({ organizationId }: Props) => {
       const { data: parents, error: parentErr } = await (supabase as any)
         .from("vehicle_requests")
         .select(
-          "id, request_number, pool_name, needed_from, needed_until, passengers, status, consolidation_strategy",
+          "id, request_number, pool_name, needed_from, needed_until, passengers, status, consolidated_request_count",
         )
         .eq("organization_id", organizationId)
         .eq("is_consolidated_parent", true)
@@ -116,7 +116,7 @@ export const MergedTripsHistory = ({ organizationId }: Props) => {
         needed_until: p.needed_until,
         passengers: p.passengers,
         status: p.status,
-        consolidation_strategy: p.consolidation_strategy,
+        consolidation_strategy: null,
         child_count: grouped.get(p.id)?.length ?? 0,
         child_places: grouped.get(p.id) ?? [],
       }));
