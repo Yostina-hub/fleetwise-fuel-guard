@@ -255,26 +255,13 @@ export default function CreateWorkRequestForm({
 
   const isSafetyComfortCtx = contextValue === "V Safety & Comfort Request";
 
-  const validate = (): string | null => {
-    if (!assetNumber.trim()) return "Asset Number is required";
-    if (!assignedDept.trim()) return "Assigned Department is required";
-    if (!requestStartDate) return "Request By Start Date is required";
-    if (!additionalDescription.trim()) return "Additional Description is required";
-    if (!isTripInspection && !isSafetyComfortCtx && !requestorDepartment.trim()) return "Requestor Department is required";
-    if ((isTripInspection || isSafetyComfortCtx) && !requestorPool.trim()) return "Requestor Pool is required";
-    if ((isTripInspection || isSafetyComfortCtx) && !driverType.trim()) return "Driver type is required";
-    if (!isTripInspection && !isSafetyComfortCtx && !maintenanceTypeReq.trim()) return "Type of maintenance request is required";
-    if (isSafetyComfortCtx && !maintenanceTypeReq.trim()) return "Type of Request is required";
-    if ((workRequestType === "inspection" || isTripInspection) && !inspectionSubType) return "Type of Request is required";
-    if (!kmReading.trim()) return "KM reading is required";
-    if (!driverPhone.trim()) return "Driver Phone No. is required";
-    if (!isTripInspection && !isSafetyComfortCtx && !fuelLevel.trim()) return "Fuel level in the tank is required";
-    return null;
-  };
-
   const handleSubmit = async () => {
-    const err = validate();
-    if (err) { toast.error(err); return; }
+    const result = validation.validateAll(buildValues());
+    if (!result.ok) {
+      const first = Object.values(result.errors)[0];
+      toast.error(first || "Please fix the highlighted fields before submitting.");
+      return;
+    }
 
     // Resolve vehicle id from asset number if needed
     let resolvedVehicleId = vehicleId;
