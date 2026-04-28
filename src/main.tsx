@@ -14,7 +14,7 @@ const isInIframe = (() => {
   }
 })();
 
-// Kill stale PWA workers/caches before the app boots in preview contexts.
+// Kill stale PWA workers/caches before the app boots in preview contexts (v2).
 if ((import.meta.env.DEV || isLovablePreview || isInIframe) && "serviceWorker" in navigator) {
   navigator.serviceWorker.getRegistrations().then((regs) => {
     regs.forEach((r) => r.unregister());
