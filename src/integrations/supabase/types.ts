@@ -3224,6 +3224,62 @@ export type Database = {
           },
         ]
       }
+      dispatch_job_audit_log: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          changed_fields: string[] | null
+          created_at: string
+          event_type: string
+          from_value: string | null
+          id: string
+          job_id: string | null
+          job_number: string | null
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          to_value: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          changed_fields?: string[] | null
+          created_at?: string
+          event_type: string
+          from_value?: string | null
+          id?: string
+          job_id?: string | null
+          job_number?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          to_value?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          changed_fields?: string[] | null
+          created_at?: string
+          event_type?: string
+          from_value?: string | null
+          id?: string
+          job_id?: string | null
+          job_number?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          to_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_job_audit_log_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispatch_jobs: {
         Row: {
           actual_dropoff_at: string | null

@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { MapPin, User, Phone, Package, Truck, Clock, FileText, Navigation } from "lucide-react";
 import SLAIndicator from "./SLAIndicator";
+import { DispatchJobAuditTrail } from "./DispatchJobAuditTrail";
 
 interface DispatchJobDetailDialogProps {
   open: boolean;
@@ -46,7 +47,7 @@ export const DispatchJobDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             <span className="font-mono">{job.job_number}</span>
@@ -99,6 +100,9 @@ export const DispatchJobDetailDialog = ({
             </div>
           </>
         )}
+
+        <Separator />
+        <DispatchJobAuditTrail jobId={job.id} open={open} />
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
