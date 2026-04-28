@@ -423,7 +423,62 @@ export const FuelRequestFormDialog = ({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const set = <K extends keyof FormData>(k: K, v: FormData[K]) => setForm(f => ({ ...f, [k]: v }));
+  const set = <K extends keyof FormData>(k: K, value: FormData[K]) => setForm(f => ({ ...f, [k]: value }));
+
+  /** Build the FRFormValues snapshot consumed by the validation hook. */
+  const validationSnapshot = () => ({
+    request_type: form.request_type,
+    vehicle_id: form.vehicle_id,
+    generator_id: form.generator_id,
+    driver_id: form.driver_id,
+    driver_type: form.driver_type,
+    driver_phone: form.driver_phone,
+    phone_number: form.phone_number,
+    email: form.email,
+    current_odometer: form.current_odometer,
+    running_hours: form.running_hours,
+    liters_requested: form.liters_requested,
+    estimated_cost: form.estimated_cost,
+    fuel_in_telebirr: form.fuel_in_telebirr,
+    fuel_by_cash_coupon: form.fuel_by_cash_coupon,
+    fuel_type: form.fuel_type,
+    fuel_request_type: form.fuel_request_type,
+    assigned_department: form.assigned_department,
+    requestor_department: form.requestor_department,
+    request_by_start_date: form.request_by_start_date,
+    request_by_completion_date: form.request_by_completion_date,
+    priority: form.priority,
+    context_value: form.context_value,
+    technician_name: form.technician_name,
+    project_number: form.project_number,
+    purpose: form.purpose,
+    remark: form.remark,
+    additional_description: form.additional_description,
+    notes: form.notes,
+  });
+
+  const handleSubmit = () => {
+    const result = v.validateAll(validationSnapshot());
+    if (!result.ok) {
+      const firstMsg = Object.values(result.errors)[0];
+      toast.error(firstMsg ?? "Please fix the highlighted fields and try again.");
+      return;
+    }
+    // Apply sanitized values back into the form before submitting.
+    setForm((f) => ({
+      ...f,
+      driver_phone: result.sanitized.driver_phone ?? "",
+      phone_number: result.sanitized.phone_number ?? "",
+      email: result.sanitized.email ?? "",
+      project_number: result.sanitized.project_number ?? "",
+      purpose: result.sanitized.purpose ?? "",
+      remark: result.sanitized.remark ?? "",
+      additional_description: result.sanitized.additional_description ?? "",
+      notes: result.sanitized.notes ?? "",
+      technician_name: result.sanitized.technician_name ?? "",
+    }));
+    createMutation.mutate();
+  };
 
   const lockVehicle = !!prefill?.lockVehicle;
   const lockDriver = !!prefill?.lockDriver;
