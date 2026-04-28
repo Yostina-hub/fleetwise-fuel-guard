@@ -725,8 +725,17 @@ export const EVWorkOrderDialog = ({ open, onOpenChange, workOrderId, vehicleId, 
         </ScrollArea>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.work_order_number || !form.vehicle_id}
+          <Button variant="outline" onClick={() => { validation.reset(); onOpenChange(false); }}>Cancel</Button>
+          <Button
+            onClick={() => {
+              if (!validateAll()) {
+                markAllTouched();
+                toast.error(`Please fix ${invalidCount} invalid field${invalidCount === 1 ? "" : "s"} before saving`);
+                return;
+              }
+              saveMutation.mutate();
+            }}
+            disabled={saveMutation.isPending}
             className="bg-emerald-600 hover:bg-emerald-700">
             {saveMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {workOrderId ? "Save Changes" : "Create Work Order"}
