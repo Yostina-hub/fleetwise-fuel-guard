@@ -166,14 +166,6 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
     mutationFn: async () => {
       const activeItems = (mode === "single" ? items.slice(0, 1) : items).filter(it => it.position);
       if (activeItems.length === 0) throw new Error("At least one position is required");
-      if (!header.vehicle_id) throw new Error("Asset (vehicle) is required");
-      if (!header.assigned_department_id) throw new Error("Assigned Department is required");
-      if (!header.requestor_department_id) throw new Error("Requestor Department is required");
-      if (!header.additional_description.trim()) throw new Error("Additional Description is required");
-      if (!header.driver_type) throw new Error("Driver type is required");
-      if (!header.driver_phone.trim()) throw new Error("Driver Phone No. is required");
-      if (!header.fuel_level_in_tank.trim()) throw new Error("Fuel level in the tank is required");
-      if (!header.km_reading) throw new Error("KM reading is required");
 
       const { data: req, error: reqErr } = await supabase
         .from("tire_requests")
