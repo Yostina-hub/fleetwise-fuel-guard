@@ -279,13 +279,11 @@ export const ReportTripIncidentDialog = ({
       return { incidentId, uploaded: uploadedPaths.length };
     },
     onSuccess: ({ uploaded }) => {
-      toast({
-        title: "Incident reported",
-        description:
-          uploaded > 0
-            ? `Your report and ${uploaded} attachment${uploaded > 1 ? "s" : ""} have been sent to the fleet manager.`
-            : "Your report has been sent to the fleet manager.",
-      });
+      toast.success(
+        uploaded > 0
+          ? `Report and ${uploaded} attachment${uploaded > 1 ? "s" : ""} sent to the fleet manager`
+          : "Your report has been sent to the fleet manager",
+      );
       queryClient.invalidateQueries({ queryKey: ["incidents"] });
       queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
       onOpenChange(false);
@@ -293,7 +291,7 @@ export const ReportTripIncidentDialog = ({
     onError: (error: unknown) => {
       const message =
         error instanceof Error ? error.message : "Failed to submit report";
-      toast({ title: "Submission failed", description: message, variant: "destructive" });
+      toast.error(message);
     },
   });
 
