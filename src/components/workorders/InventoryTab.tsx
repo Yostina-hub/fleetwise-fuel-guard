@@ -31,24 +31,81 @@ import {
 } from "@/components/ui/table";
 import { TablePagination } from "@/components/reports/TablePagination";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, AlertTriangle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Plus, Search, AlertTriangle, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 import { z } from "zod";
 import { friendlyToastError } from "@/lib/errorMessages";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
+import { cn } from "@/lib/utils";
 
-const inventorySchema = z.object({
-  part_number: z.string().trim().min(1, "Part number is required").max(50),
-  part_name: z.string().trim().min(1, "Part name is required").max(100),
-  category: z.enum(["engine", "transmission", "brakes", "tires", "electrical", "body", "other"]),
-  current_quantity: z.number().min(0),
-  minimum_quantity: z.number().min(0).optional(),
-  unit_cost: z.number().min(0).optional(),
-  unit_of_measure: z.string().trim().max(20),
-});
+const INVENTORY_CATEGORIES = [
+  "engine",
+  "transmission",
+  "brakes",
+  "tires",
+  "electrical",
+  "body",
+  "other",
+] as const;
+
+/**
+ * Inventory part schema
+ * ---------------------
+ * - Part number / name length-bounded.
+ * - Quantities non-negative and bounded.
+ * - Cross-field: minimum_quantity must not exceed current_quantity at creation
+ *   time (otherwise every newly-added part is born "low stock").
+ */
+const inventorySchema = z
+  .object({
+    part_number: z
+      .string()
+      .trim()
+      .min(1, "Part number is required")
+      .max(50, "Part number must be 50 characters or fewer"),
+    part_name: z
+      .string()
+      .trim()
+      .min(2, "Part name must be at least 2 characters")
+      .max(100, "Part name must be 100 characters or fewer"),
+    category: z.enum(INVENTORY_CATEGORIES, {
+      errorMap: () => ({ message: "Select a category" }),
+    }),
+    current_quantity: z
+      .number({ invalid_type_error: "Current quantity must be a number" })
+      .min(0, "Current quantity cannot be negative")
+      .max(1_000_000, "Current quantity is unrealistically high"),
+    minimum_quantity: z
+      .number({ invalid_type_error: "Minimum quantity must be a number" })
+      .min(0, "Minimum quantity cannot be negative")
+      .max(1_000_000, "Minimum quantity is unrealistically high")
+      .optional(),
+    unit_cost: z
+      .number({ invalid_type_error: "Unit cost must be a number" })
+      .min(0, "Unit cost cannot be negative")
+      .max(10_000_000, "Unit cost is unrealistically high")
+      .optional(),
+    unit_of_measure: z
+      .string()
+      .trim()
+      .min(1, "Unit of measure is required")
+      .max(20, "Unit of measure must be 20 characters or fewer"),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      typeof data.minimum_quantity === "number" &&
+      data.minimum_quantity > data.current_quantity
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["minimum_quantity"],
+        message: "Minimum quantity cannot exceed current stock at creation",
+      });
+    }
+  });
 
 const InventoryTab = () => {
   const { organizationId } = useOrganization();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,12 +116,13 @@ const InventoryTab = () => {
   const [formData, setFormData] = useState({
     part_number: "",
     part_name: "",
-    category: "other" as const,
+    category: "other" as (typeof INVENTORY_CATEGORIES)[number],
     current_quantity: 0,
     minimum_quantity: 0,
     unit_cost: 0,
     unit_of_measure: "pcs",
   });
+  const v = useFieldValidation(inventorySchema, () => formData);
 
   const { data: inventory, isLoading } = useQuery({
     queryKey: ["inventory_items", organizationId],
@@ -130,7 +188,7 @@ const InventoryTab = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
-      toast({ title: "Inventory item added successfully" });
+      toast.success("Inventory item added successfully");
       setIsDialogOpen(false);
       resetForm();
     },
@@ -149,12 +207,23 @@ const InventoryTab = () => {
       unit_cost: 0,
       unit_of_measure: "pcs",
     });
+    v.reset();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const result = v.validateAll(formData);
+    if (!result.success) {
+      const count = Object.keys(result.errors).length;
+      toast.error(`Please fix ${count} invalid field${count === 1 ? "" : "s"} before saving`);
+      return;
+    }
     createMutation.mutate(formData);
   };
+
+  const errCls = (field: keyof typeof formData) =>
+    v.getError(field) ? "border-destructive focus-visible:ring-destructive" : "";
+  const visibleErrorCount = Object.keys(v.errors).length;
 
   if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading inventory">Loading...</div>;
 
@@ -176,29 +245,53 @@ const InventoryTab = () => {
                 Add a new part to your inventory
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
               <div className="space-y-4">
+                {visibleErrorCount > 0 && (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+                  >
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-semibold">
+                        {visibleErrorCount} field{visibleErrorCount === 1 ? "" : "s"} need attention
+                      </div>
+                      <div className="text-xs opacity-90">
+                        Fix the highlighted fields before saving.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="part_number">Part Number *</Label>
+                    <Label htmlFor="part_number">Part Number <span className="text-destructive">*</span></Label>
                     <Input
                       id="part_number"
                       value={formData.part_number}
-                      onChange={(e) =>
-                        setFormData({ ...formData, part_number: e.target.value })
-                      }
-                      required
+                      onChange={(e) => {
+                        setFormData({ ...formData, part_number: e.target.value });
+                        v.handleChange("part_number", e.target.value);
+                      }}
+                      onBlur={(e) => v.handleBlur("part_number", e.target.value)}
+                      aria-invalid={!!v.getError("part_number")}
+                      className={cn(errCls("part_number"))}
                     />
+                    {v.getError("part_number") && (
+                      <p className="text-sm text-destructive mt-1">{v.getError("part_number")}</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="category">Category *</Label>
+                    <Label htmlFor="category">Category <span className="text-destructive">*</span></Label>
                     <Select
                       value={formData.category}
-                      onValueChange={(value: any) =>
-                        setFormData({ ...formData, category: value })
-                      }
+                      onValueChange={(value: any) => {
+                        setFormData({ ...formData, category: value });
+                        v.handleChange("category", value);
+                      }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={cn(errCls("category"))} aria-invalid={!!v.getError("category")}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -211,66 +304,110 @@ const InventoryTab = () => {
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
+                    {v.getError("category") && (
+                      <p className="text-sm text-destructive mt-1">{v.getError("category")}</p>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="part_name">Part Name *</Label>
+                  <Label htmlFor="part_name">Part Name <span className="text-destructive">*</span></Label>
                   <Input
                     id="part_name"
                     value={formData.part_name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, part_name: e.target.value })
-                    }
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, part_name: e.target.value });
+                      v.handleChange("part_name", e.target.value);
+                    }}
+                    onBlur={(e) => v.handleBlur("part_name", e.target.value)}
+                    aria-invalid={!!v.getError("part_name")}
+                    className={cn(errCls("part_name"))}
                   />
+                  {v.getError("part_name") && (
+                    <p className="text-sm text-destructive mt-1">{v.getError("part_name")}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="current_quantity">Current Qty *</Label>
+                    <Label htmlFor="current_quantity">Current Qty <span className="text-destructive">*</span></Label>
                     <Input
                       id="current_quantity"
                       type="number"
+                      min="0"
+                      step="0.01"
                       value={formData.current_quantity}
-                      onChange={(e) =>
-                        setFormData({ ...formData, current_quantity: parseFloat(e.target.value) || 0 })
-                      }
-                      required
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setFormData({ ...formData, current_quantity: val });
+                        v.handleChange("current_quantity", val);
+                      }}
+                      onBlur={(e) => v.handleBlur("current_quantity", parseFloat(e.target.value) || 0)}
+                      aria-invalid={!!v.getError("current_quantity")}
+                      className={cn(errCls("current_quantity"))}
                     />
+                    {v.getError("current_quantity") && (
+                      <p className="text-sm text-destructive mt-1">{v.getError("current_quantity")}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="minimum_quantity">Min Qty</Label>
                     <Input
                       id="minimum_quantity"
                       type="number"
+                      min="0"
+                      step="0.01"
                       value={formData.minimum_quantity}
-                      onChange={(e) =>
-                        setFormData({ ...formData, minimum_quantity: parseFloat(e.target.value) || 0 })
-                      }
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setFormData({ ...formData, minimum_quantity: val });
+                        v.handleChange("minimum_quantity", val);
+                      }}
+                      onBlur={(e) => v.handleBlur("minimum_quantity", parseFloat(e.target.value) || 0)}
+                      aria-invalid={!!v.getError("minimum_quantity")}
+                      className={cn(errCls("minimum_quantity"))}
                     />
+                    {v.getError("minimum_quantity") && (
+                      <p className="text-sm text-destructive mt-1">{v.getError("minimum_quantity")}</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="unit_of_measure">Unit</Label>
+                    <Label htmlFor="unit_of_measure">Unit <span className="text-destructive">*</span></Label>
                     <Input
                       id="unit_of_measure"
                       value={formData.unit_of_measure}
-                      onChange={(e) =>
-                        setFormData({ ...formData, unit_of_measure: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setFormData({ ...formData, unit_of_measure: e.target.value });
+                        v.handleChange("unit_of_measure", e.target.value);
+                      }}
+                      onBlur={(e) => v.handleBlur("unit_of_measure", e.target.value)}
                       placeholder="pcs"
+                      aria-invalid={!!v.getError("unit_of_measure")}
+                      className={cn(errCls("unit_of_measure"))}
                     />
+                    {v.getError("unit_of_measure") && (
+                      <p className="text-sm text-destructive mt-1">{v.getError("unit_of_measure")}</p>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="unit_cost">Unit Cost ($)</Label>
+                  <Label htmlFor="unit_cost">Unit Cost (Br)</Label>
                   <Input
                     id="unit_cost"
                     type="number"
                     step="0.01"
+                    min="0"
                     value={formData.unit_cost}
-                    onChange={(e) =>
-                      setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })
-                    }
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0;
+                      setFormData({ ...formData, unit_cost: val });
+                      v.handleChange("unit_cost", val);
+                    }}
+                    onBlur={(e) => v.handleBlur("unit_cost", parseFloat(e.target.value) || 0)}
+                    aria-invalid={!!v.getError("unit_cost")}
+                    className={cn(errCls("unit_cost"))}
                   />
+                  {v.getError("unit_cost") && (
+                    <p className="text-sm text-destructive mt-1">{v.getError("unit_cost")}</p>
+                  )}
                 </div>
               </div>
               <DialogFooter className="mt-6">
@@ -336,7 +473,7 @@ const InventoryTab = () => {
             <TableHead>Category</TableHead>
             <TableHead>Current Qty</TableHead>
             <TableHead>Min Qty</TableHead>
-            <TableHead>Unit Cost</TableHead>
+            <TableHead>Unit Cost (Br)</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
@@ -358,7 +495,7 @@ const InventoryTab = () => {
                 {item.minimum_quantity ? `${item.minimum_quantity} ${item.unit_of_measure}` : "-"}
               </TableCell>
               <TableCell>
-                {item.unit_cost ? `$${Number(item.unit_cost).toFixed(2)}` : "-"}
+                {item.unit_cost ? `${Number(item.unit_cost).toFixed(2)} Br` : "-"}
               </TableCell>
               <TableCell>
                 {isLowStock(item) ? (
