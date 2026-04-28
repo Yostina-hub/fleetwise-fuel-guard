@@ -92,6 +92,15 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
   const { organizationId } = useOrganization();
   const [form, setForm] = useState({ ...DEFAULT_FORM });
 
+  const validation = useFuelWorkOrderValidation(form as Partial<FuelWorkOrderValues>);
+  const { errors, markTouched, markAllTouched, validateAll, invalidCount, reset, submitAttempted } =
+    validation;
+
+  // Reset validation state when dialog closes.
+  useEffect(() => {
+    if (!open) reset();
+  }, [open, reset]);
+
   // Load existing WO if editing
   const { data: existingWO } = useQuery({
     queryKey: ["fuel-work-order-edit", workOrderId],
