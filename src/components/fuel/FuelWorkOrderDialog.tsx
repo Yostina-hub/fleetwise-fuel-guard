@@ -402,8 +402,12 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
                     <Input
                       value={form.asset_activity}
                       onChange={(e) => setForm((f) => ({ ...f, asset_activity: e.target.value }))}
+                      onBlur={() => markTouched("asset_activity")}
                       placeholder="e.g. Refueling"
+                      aria-invalid={!!errors.asset_activity || undefined}
+                      className={cn(errorRing(!!errors.asset_activity))}
                     />
+                    <FieldError msg={errors.asset_activity} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -418,8 +422,16 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
                     </div>
                     <div>
                       <Label>Status</Label>
-                      <Select value={form.wo_status} onValueChange={(v) => setForm((f) => ({ ...f, wo_status: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Select
+                        value={form.wo_status}
+                        onValueChange={(v) => {
+                          setForm((f) => ({ ...f, wo_status: v }));
+                          markTouched("wo_status");
+                        }}
+                      >
+                        <SelectTrigger className={cn(errorRing(!!errors.wo_status))}>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="draft">Draft</SelectItem>
                           <SelectItem value="released">Released</SelectItem>
@@ -428,6 +440,7 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
                           <SelectItem value="cancelled">Cancelled</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FieldError msg={errors.wo_status} />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -457,8 +470,16 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
                   </div>
                   <div>
                     <Label>Priority</Label>
-                    <Select value={form.priority} onValueChange={(v) => setForm((f) => ({ ...f, priority: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select
+                      value={form.priority}
+                      onValueChange={(v) => {
+                        setForm((f) => ({ ...f, priority: v }));
+                        markTouched("priority");
+                      }}
+                    >
+                      <SelectTrigger className={cn(errorRing(!!errors.priority))}>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="critical">Critical</SelectItem>
                         <SelectItem value="high">High</SelectItem>
@@ -466,6 +487,7 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
                         <SelectItem value="low">Low</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FieldError msg={errors.priority} />
                   </div>
                 </div>
 
@@ -683,7 +705,19 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
                   </p>
                   <div>
                     <Label>E-Money Amount (ETB)</Label>
-                    <Input type="number" step="0.01" value={form.emoney_amount} onChange={(e) => setForm((f) => ({ ...f, emoney_amount: Number(e.target.value) }))} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={form.emoney_amount}
+                      onChange={(e) => {
+                        const cleaned = sanitizeDecimal(e.target.value);
+                        setForm((f) => ({ ...f, emoney_amount: cleaned === "" ? 0 : Number(cleaned) }));
+                      }}
+                      onBlur={() => markTouched("emoney_amount")}
+                      aria-invalid={!!errors.emoney_amount || undefined}
+                      className={cn(errorRing(!!errors.emoney_amount))}
+                    />
+                    <FieldError msg={errors.emoney_amount} />
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -721,7 +755,21 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.work_order_number}>
+          <Button
+            onClick={() => {
+              markAllTouched();
+              if (!validateAll()) {
+                toast.error(
+                  invalidCount === 1
+                    ? "Please fix 1 invalid field before saving"
+                    : `Please fix ${invalidCount} invalid fields before saving`,
+                );
+                return;
+              }
+              saveMutation.mutate();
+            }}
+            disabled={saveMutation.isPending}
+          >
             {saveMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {workOrderId ? "Save Changes" : "Create Work Order"}
           </Button>
