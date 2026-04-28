@@ -16,7 +16,10 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useDepartments } from "@/hooks/useDepartments";
 import { toast } from "sonner";
-import { Plus, Trash2, Upload, FileText, X, Paperclip, CircleDot, CheckCircle2, Layers, User, Info, Wrench } from "lucide-react";
+import { Plus, Trash2, Upload, FileText, X, Paperclip, CircleDot, CheckCircle2, Layers, User, Info, Wrench, AlertCircle, Truck, Calendar, Gauge, Phone, Mail, Building2, Fuel, Hash, ClipboardList, Coins, MessageSquare } from "lucide-react";
+import { ValidatedField } from "@/components/forms/ValidatedField";
+import { useTireRequestValidation } from "./useTireRequestValidation";
+import { sanitizeNumeric, sanitizeDecimal, sanitizePhone } from "./tireRequestValidation";
 
 const POSITIONS = ["Front Left", "Front Right", "Rear Left Outer", "Rear Left Inner", "Rear Right Outer", "Rear Right Inner", "Spare"];
 
@@ -91,6 +94,10 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
   });
 
   const [items, setItems] = useState<LineItem[]>([emptyItem()]);
+  const [itemErrors, setItemErrors] = useState<Record<number, string>>({});
+
+  const validation = useTireRequestValidation(header as any);
+  const { errors, markTouched, markAllTouched, validateAll, invalidCount, submitAttempted, reset: resetValidation } = validation;
 
   useEffect(() => {
     if (open && (profile?.email || user?.email)) {
@@ -112,9 +119,11 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
       contact_preference: "", notify_user: false, reason: "",
     });
     setItems([emptyItem()]);
+    setItemErrors({});
     setAttachments([]);
     setShowNewDept(null);
     setNewDeptName("");
+    resetValidation();
   };
 
   const updateItem = (idx: number, patch: Partial<LineItem>) => {
@@ -157,14 +166,6 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
     mutationFn: async () => {
       const activeItems = (mode === "single" ? items.slice(0, 1) : items).filter(it => it.position);
       if (activeItems.length === 0) throw new Error("At least one position is required");
-      if (!header.vehicle_id) throw new Error("Asset (vehicle) is required");
-      if (!header.assigned_department_id) throw new Error("Assigned Department is required");
-      if (!header.requestor_department_id) throw new Error("Requestor Department is required");
-      if (!header.additional_description.trim()) throw new Error("Additional Description is required");
-      if (!header.driver_type) throw new Error("Driver type is required");
-      if (!header.driver_phone.trim()) throw new Error("Driver Phone No. is required");
-      if (!header.fuel_level_in_tank.trim()) throw new Error("Fuel level in the tank is required");
-      if (!header.km_reading) throw new Error("KM reading is required");
 
       const { data: req, error: reqErr } = await supabase
         .from("tire_requests")
@@ -287,6 +288,30 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
     if (prefill?.vehicle_id) setHeader(h => ({ ...h, vehicle_id: prefill.vehicle_id! }));
   }, [prefill?.vehicle_id]);
 
+  const validateLineItems = () => {
+    const errs: Record<number, string> = {};
+    const active = mode === "single" ? items.slice(0, 1) : items;
+    active.forEach((it, i) => {
+      if (!it.position) errs[i] = "Position is required";
+    });
+    setItemErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = () => {
+    markAllTouched();
+    const headerOk = validateAll();
+    const itemsOk = validateLineItems();
+    if (!headerOk || !itemsOk) {
+      const total = invalidCount + (itemsOk ? 0 : 1);
+      toast.error(`Please fix ${total} field${total === 1 ? "" : "s"} before submitting`);
+      return;
+    }
+    mutation.mutate();
+  };
+
+  const showSummary = submitAttempted && (invalidCount > 0 || Object.keys(itemErrors).length > 0);
+
   const HeaderInner = (
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-2.5 min-w-0">
@@ -331,23 +356,35 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
 
       <div className={`${embedded ? "px-1" : "px-3 sm:px-5 md:px-6"} pt-2 pb-1 space-y-3`}>
         <div className="space-y-5">
+          {showSummary && (
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive animate-fade-in"
+            >
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium">
+                  {invalidCount + Object.keys(itemErrors).length} field{(invalidCount + Object.keys(itemErrors).length) === 1 ? "" : "s"} need attention
+                </p>
+                <p className="text-xs opacity-90">Resolve the highlighted fields below to submit the request.</p>
+              </div>
+            </div>
+          )}
           {/* ===== Header / Request meta ===== */}
           <section className="space-y-3">
             <SectionTitle icon={Layers} title="Request Details" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label><span className="text-destructive">*</span> Asset Number (Vehicle)</Label>
-              <Select value={header.vehicle_id} onValueChange={v => setHeader(h => ({ ...h, vehicle_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
+            <ValidatedField id="tr-vehicle" label="Asset Number (Vehicle)" icon={Truck} required error={errors.vehicle_id} filled={!!header.vehicle_id}>
+              <Select value={header.vehicle_id} onValueChange={v => { setHeader(h => ({ ...h, vehicle_id: v })); markTouched("vehicle_id"); }}>
+                <SelectTrigger onBlur={() => markTouched("vehicle_id")}><SelectValue placeholder="Select vehicle" /></SelectTrigger>
                 <SelectContent>
                   {vehicles.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>)}
                 </SelectContent>
               </Select>
-            </div>
+            </ValidatedField>
 
-            <div>
-              <Label className="text-primary font-medium text-sm">Work Request Type</Label>
-              <Select value={header.request_type} onValueChange={v => setHeader(h => ({ ...h, request_type: v }))}>
+            <ValidatedField id="tr-type" label="Work Request Type" icon={Wrench} error={errors.request_type} filled={!!header.request_type}>
+              <Select value={header.request_type} onValueChange={v => { setHeader(h => ({ ...h, request_type: v })); markTouched("request_type"); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="replacement">Tire Replacement</SelectItem>
@@ -356,13 +393,12 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                   <SelectItem value="new_install">New Install</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </ValidatedField>
 
-            <div>
-              <Label><span className="text-destructive">*</span> Assigned Department</Label>
+            <ValidatedField id="tr-assigned-dept" label="Assigned Department" icon={Building2} required error={errors.assigned_department_id} filled={!!header.assigned_department_id}>
               <div className="flex gap-2">
-                <Select value={header.assigned_department_id} onValueChange={v => setHeader(h => ({ ...h, assigned_department_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                <Select value={header.assigned_department_id} onValueChange={v => { setHeader(h => ({ ...h, assigned_department_id: v })); markTouched("assigned_department_id"); }}>
+                  <SelectTrigger onBlur={() => markTouched("assigned_department_id")}><SelectValue placeholder="Select department" /></SelectTrigger>
                   <SelectContent>
                     {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                   </SelectContent>
@@ -371,11 +407,10 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
-            </div>
+            </ValidatedField>
 
-            <div>
-              <Label><span className="text-destructive">*</span> Priority</Label>
-              <Select value={header.priority} onValueChange={v => setHeader(h => ({ ...h, priority: v }))}>
+            <ValidatedField id="tr-priority" label="Priority" icon={AlertCircle} required error={errors.priority} filled={!!header.priority}>
+              <Select value={header.priority} onValueChange={v => { setHeader(h => ({ ...h, priority: v })); markTouched("priority"); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
@@ -384,27 +419,31 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                   <SelectItem value="urgent">Urgent</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </ValidatedField>
 
-            <div>
-              <Label><span className="text-destructive">*</span> Request By Start Date</Label>
-              <Input type="datetime-local" value={header.request_by_start_date} onChange={e => setHeader(h => ({ ...h, request_by_start_date: e.target.value }))} />
-            </div>
+            <ValidatedField id="tr-start" label="Request By Start Date" icon={Calendar} required error={errors.request_by_start_date} filled={!!header.request_by_start_date}>
+              <Input id="tr-start" type="datetime-local" value={header.request_by_start_date} onChange={e => setHeader(h => ({ ...h, request_by_start_date: e.target.value }))} onBlur={() => markTouched("request_by_start_date")} />
+            </ValidatedField>
 
-            <div>
-              <Label><span className="text-destructive">*</span> Request By Completion Date</Label>
-              <Input type="datetime-local" value={header.request_by_completion_date} onChange={e => setHeader(h => ({ ...h, request_by_completion_date: e.target.value }))} />
-            </div>
+            <ValidatedField id="tr-end" label="Request By Completion Date" icon={Calendar} required error={errors.request_by_completion_date} filled={!!header.request_by_completion_date}>
+              <Input id="tr-end" type="datetime-local" value={header.request_by_completion_date} onChange={e => setHeader(h => ({ ...h, request_by_completion_date: e.target.value }))} onBlur={() => markTouched("request_by_completion_date")} />
+            </ValidatedField>
 
             <div>
               <Label className="text-primary font-medium text-sm">Requested For</Label>
               <Input value={profile?.full_name || user?.email || ""} disabled />
             </div>
 
-            <div>
-              <Label className="text-primary font-medium text-sm">Estimated Cost (ETB)</Label>
-              <Input type="number" value={header.estimated_cost} onChange={e => setHeader(h => ({ ...h, estimated_cost: e.target.value }))} />
-            </div>
+            <ValidatedField id="tr-cost" label="Estimated Cost (ETB)" icon={Coins} error={errors.estimated_cost} filled={!!header.estimated_cost} hint="Optional">
+              <Input
+                id="tr-cost"
+                type="text"
+                inputMode="decimal"
+                value={header.estimated_cost}
+                onChange={e => setHeader(h => ({ ...h, estimated_cost: sanitizeDecimal(e.target.value) }))}
+                onBlur={() => markTouched("estimated_cost")}
+              />
+            </ValidatedField>
             </div>
           </section>
 
@@ -430,15 +469,17 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
           {/* ===== Request Description ===== */}
           <section className="space-y-3">
             <SectionTitle icon={FileText} title="Request Description" />
-            <div>
-              <Label><span className="text-destructive">*</span> Additional Description</Label>
+            <ValidatedField id="tr-desc" label="Additional Description" icon={FileText} required error={errors.additional_description} filled={!!header.additional_description.trim()}>
               <Textarea
+                id="tr-desc"
                 rows={3}
+                maxLength={2000}
                 value={header.additional_description}
                 onChange={e => setHeader(h => ({ ...h, additional_description: e.target.value }))}
+                onBlur={() => markTouched("additional_description")}
                 placeholder="Describe the tire issue, observation, or context..."
               />
-            </div>
+            </ValidatedField>
           </section>
 
           {/* ===== Attachments ===== */}
@@ -493,17 +534,14 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                   </div>
                 </div>
               </div>
-              <div>
-                <Label className="text-primary font-medium text-sm">Phone Number</Label>
-                <Input value={header.contact_phone} onChange={e => setHeader(h => ({ ...h, contact_phone: e.target.value }))} />
-              </div>
-              <div>
-                <Label className="text-primary font-medium text-sm">E-mail</Label>
-                <Input type="email" value={header.contact_email} onChange={e => setHeader(h => ({ ...h, contact_email: e.target.value }))} />
-              </div>
-              <div>
-                <Label className="text-primary font-medium text-sm">Contact Preference</Label>
-                <Select value={header.contact_preference} onValueChange={v => setHeader(h => ({ ...h, contact_preference: v }))}>
+              <ValidatedField id="tr-contact-phone" label="Phone Number" icon={Phone} error={errors.contact_phone} filled={!!header.contact_phone} hint="Optional · Ethiopian format">
+                <Input id="tr-contact-phone" inputMode="tel" value={header.contact_phone} onChange={e => setHeader(h => ({ ...h, contact_phone: sanitizePhone(e.target.value) }))} onBlur={() => markTouched("contact_phone")} />
+              </ValidatedField>
+              <ValidatedField id="tr-contact-email" label="E-mail" icon={Mail} error={errors.contact_email} filled={!!header.contact_email}>
+                <Input id="tr-contact-email" type="email" value={header.contact_email} onChange={e => setHeader(h => ({ ...h, contact_email: e.target.value }))} onBlur={() => markTouched("contact_email")} />
+              </ValidatedField>
+              <ValidatedField id="tr-contact-pref" label="Contact Preference" icon={MessageSquare} error={errors.contact_preference} filled={!!header.contact_preference}>
+                <Select value={header.contact_preference} onValueChange={v => { setHeader(h => ({ ...h, contact_preference: v })); markTouched("contact_preference"); }}>
                   <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="phone">Phone</SelectItem>
@@ -512,7 +550,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                     <SelectItem value="any">Any</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </ValidatedField>
             </div>
           </section>
 
@@ -524,11 +562,10 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                 <Label className="text-primary font-medium text-sm">Context Value</Label>
                 <Input value="Vehicle Maintenance request" disabled />
               </div>
-              <div>
-                <Label><span className="text-destructive">*</span> Requestor Department</Label>
+              <ValidatedField id="tr-req-dept" label="Requestor Department" icon={Building2} required error={errors.requestor_department_id} filled={!!header.requestor_department_id}>
                 <div className="flex gap-2">
-                  <Select value={header.requestor_department_id} onValueChange={v => setHeader(h => ({ ...h, requestor_department_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                  <Select value={header.requestor_department_id} onValueChange={v => { setHeader(h => ({ ...h, requestor_department_id: v })); markTouched("requestor_department_id"); }}>
+                    <SelectTrigger onBlur={() => markTouched("requestor_department_id")}><SelectValue placeholder="Select department" /></SelectTrigger>
                     <SelectContent>
                       {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                     </SelectContent>
@@ -537,19 +574,24 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
-              </div>
+              </ValidatedField>
               <div>
                 <Label><span className="text-destructive">*</span> Type of Maintenance Request</Label>
                 <Input value="Tyre replacement" disabled />
               </div>
-              <div>
-                <Label><span className="text-destructive">*</span> KM Reading</Label>
-                <Input type="number" value={header.km_reading} onChange={e => setHeader(h => ({ ...h, km_reading: e.target.value }))} />
-              </div>
-              <div>
-                <Label><span className="text-destructive">*</span> Driver Type</Label>
-                <Select value={header.driver_type} onValueChange={v => setHeader(h => ({ ...h, driver_type: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <ValidatedField id="tr-km" label="KM Reading" icon={Gauge} required error={errors.km_reading} filled={!!header.km_reading}>
+                <Input
+                  id="tr-km"
+                  type="text"
+                  inputMode="numeric"
+                  value={header.km_reading}
+                  onChange={e => setHeader(h => ({ ...h, km_reading: sanitizeNumeric(e.target.value) }))}
+                  onBlur={() => markTouched("km_reading")}
+                />
+              </ValidatedField>
+              <ValidatedField id="tr-driver-type" label="Driver Type" icon={User} required error={errors.driver_type} filled={!!header.driver_type}>
+                <Select value={header.driver_type} onValueChange={v => { setHeader(h => ({ ...h, driver_type: v })); markTouched("driver_type"); }}>
+                  <SelectTrigger onBlur={() => markTouched("driver_type")}><SelectValue placeholder="Select..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="company">Company Driver</SelectItem>
                     <SelectItem value="contract">Contract Driver</SelectItem>
@@ -557,19 +599,22 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                     <SelectItem value="self">Self</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <Label className="text-primary font-medium text-sm">Driver Name</Label>
-                <Input value={header.driver_name} onChange={e => setHeader(h => ({ ...h, driver_name: e.target.value }))} />
-              </div>
-              <div>
-                <Label><span className="text-destructive">*</span> Driver Phone No.</Label>
-                <Input value={header.driver_phone} onChange={e => setHeader(h => ({ ...h, driver_phone: e.target.value }))} />
-              </div>
-              <div>
-                <Label><span className="text-destructive">*</span> Fuel Level in the Tank</Label>
-                <Select value={header.fuel_level_in_tank} onValueChange={v => setHeader(h => ({ ...h, fuel_level_in_tank: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              </ValidatedField>
+              <ValidatedField id="tr-driver-name" label="Driver Name" icon={User} error={errors.driver_name} filled={!!header.driver_name}>
+                <Input id="tr-driver-name" value={header.driver_name} onChange={e => setHeader(h => ({ ...h, driver_name: e.target.value }))} onBlur={() => markTouched("driver_name")} />
+              </ValidatedField>
+              <ValidatedField id="tr-driver-phone" label="Driver Phone No." icon={Phone} required error={errors.driver_phone} filled={!!header.driver_phone} hint="Ethiopian format (e.g. 0912345678)">
+                <Input
+                  id="tr-driver-phone"
+                  inputMode="tel"
+                  value={header.driver_phone}
+                  onChange={e => setHeader(h => ({ ...h, driver_phone: sanitizePhone(e.target.value) }))}
+                  onBlur={() => markTouched("driver_phone")}
+                />
+              </ValidatedField>
+              <ValidatedField id="tr-fuel" label="Fuel Level in the Tank" icon={Fuel} required error={errors.fuel_level_in_tank} filled={!!header.fuel_level_in_tank}>
+                <Select value={header.fuel_level_in_tank} onValueChange={v => { setHeader(h => ({ ...h, fuel_level_in_tank: v })); markTouched("fuel_level_in_tank"); }}>
+                  <SelectTrigger onBlur={() => markTouched("fuel_level_in_tank")}><SelectValue placeholder="Select..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="empty">Empty</SelectItem>
                     <SelectItem value="quarter">1/4</SelectItem>
@@ -578,11 +623,10 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                     <SelectItem value="full">Full</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="md:col-span-2">
-                <Label className="text-primary font-medium text-sm">Remark</Label>
-                <Input value={header.notes} onChange={e => setHeader(h => ({ ...h, notes: e.target.value }))} />
-              </div>
+              </ValidatedField>
+              <ValidatedField id="tr-remark" label="Remark" icon={MessageSquare} error={errors.notes} filled={!!header.notes} className="md:col-span-2">
+                <Input id="tr-remark" maxLength={500} value={header.notes} onChange={e => setHeader(h => ({ ...h, notes: e.target.value }))} onBlur={() => markTouched("notes")} />
+              </ValidatedField>
             </div>
           </section>
 
@@ -596,7 +640,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
               </TabsList>
 
               <TabsContent value="single" className="mt-3">
-                <ItemFields item={items[0]} onChange={(p) => updateItem(0, p)} />
+                <ItemFields item={items[0]} onChange={(p) => updateItem(0, p)} error={itemErrors[0]} />
               </TabsContent>
 
               <TabsContent value="batch" className="mt-3 space-y-3">
@@ -610,7 +654,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
                         </Button>
                       )}
                     </div>
-                    <ItemFields item={it} onChange={(p) => updateItem(idx, p)} />
+                    <ItemFields item={it} onChange={(p) => updateItem(idx, p)} error={itemErrors[idx]} />
                   </div>
                 ))}
                 <Button variant="outline" size="sm" className="gap-2" onClick={addItem}>
@@ -637,7 +681,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
             </Button>
             <Button
               size="sm"
-              onClick={() => mutation.mutate()}
+              onClick={handleSubmit}
               disabled={mutation.isPending}
               className="gap-1.5"
             >
@@ -670,16 +714,25 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
   );
 };
 
-function ItemFields({ item, onChange }: { item: LineItem; onChange: (p: Partial<LineItem>) => void }) {
+function ItemFields({ item, onChange, error }: { item: LineItem; onChange: (p: Partial<LineItem>) => void; error?: string }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-primary font-medium text-xs"><span className="text-destructive">*</span> Position</Label>
+          <Label className="text-primary font-medium text-xs flex items-center gap-1">
+            <span className="text-destructive">*</span> Position
+          </Label>
           <Select value={item.position} onValueChange={v => onChange({ position: v })}>
-            <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
+            <SelectTrigger className={error ? "border-destructive ring-1 ring-destructive/30" : ""}>
+              <SelectValue placeholder="Select position" />
+            </SelectTrigger>
             <SelectContent>{POSITIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
           </Select>
+          {error && (
+            <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-destructive">
+              <AlertCircle className="h-3 w-3" /> {error}
+            </p>
+          )}
         </div>
         <div>
           <Label className="text-primary font-medium text-xs">Tire Size</Label>
