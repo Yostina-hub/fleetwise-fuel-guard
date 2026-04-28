@@ -27674,6 +27674,7 @@ export type Database = {
           reason: string
         }[]
       }
+      cleanup_dispatch_jobs_e2e_test: { Args: never; Returns: undefined }
       cleanup_license_renewal_e2e_test: { Args: never; Returns: undefined }
       cleanup_maintenance_workflow_e2e_test: { Args: never; Returns: string }
       cleanup_old_telemetry: {
@@ -28275,6 +28276,15 @@ export type Database = {
       route_vehicle_request_approval: {
         Args: { p_request_id: string }
         Returns: string
+      }
+      run_dispatch_jobs_e2e_test: {
+        Args: never
+        Returns: {
+          t_detail: string
+          t_flow: string
+          t_status: string
+          t_step: string
+        }[]
       }
       run_drivers_page_e2e_test: {
         Args: never
