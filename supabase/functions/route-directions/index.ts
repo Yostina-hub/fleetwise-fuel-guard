@@ -554,11 +554,7 @@ serve(async (req) => {
     if (recovered) {
       return secureJsonResponse(adjustResponse(recovered), req);
     }
-    return secureJsonResponse(
-      { ok: false, provider: "osrm", error: osrm.error, status: osrm.status },
-      req,
-      502,
-    );
+    return secureJsonResponse(adjustResponse(fallbackRoute(coords as Coord[], osrm.error || "osrm_unavailable")), req);
   } catch (err) {
     console.error("route-directions upstream error:", err);
     // Network exception (timeout, DNS, etc.). Try stitched as a last resort
@@ -571,10 +567,6 @@ serve(async (req) => {
     } catch (innerErr) {
       console.error("stitched recovery also failed:", innerErr);
     }
-    return secureJsonResponse(
-      { ok: false, provider: "osrm", error: "upstream_unavailable" },
-      req,
-      502,
-    );
+    return secureJsonResponse(adjustResponse(fallbackRoute(coords as Coord[], "upstream_unavailable")), req);
   }
 });
