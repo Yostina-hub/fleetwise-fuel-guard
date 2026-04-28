@@ -354,6 +354,7 @@ export default function CreateWorkRequestForm({
         ? ` — routed to ${insertedReq.approver_role.replace(/_/g, " ")}`
         : "";
       toast.success(`Work Request ${reqNumber} created${approverInfo}`);
+      validation.reset();
       onSubmitted?.({
         maintenance_request_id: insertedReq?.id ?? null,
         inspection_id: createdInspectionId,
