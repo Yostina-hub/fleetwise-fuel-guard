@@ -512,8 +512,9 @@ export const OpsMapView = ({ organizationId }: Props) => {
     if (eligible.length === 0) return;
     console.log("[OpsMap] route fetch eligible:", eligible.length, eligible.map((r) => r.request_number));
     const queue = [...eligible];
+    let cancelled = false;
     const runOne = async () => {
-      while (queue.length > 0 && mountedRef.current) {
+      while (queue.length > 0 && mountedRef.current && !cancelled) {
         const r = queue.shift()!;
         const coordinates: [number, number][] =
           parentStopSequence[r.id] ?? [
