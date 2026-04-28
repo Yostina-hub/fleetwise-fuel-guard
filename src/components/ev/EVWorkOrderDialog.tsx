@@ -554,13 +554,17 @@ export const EVWorkOrderDialog = ({ open, onOpenChange, workOrderId, vehicleId, 
                     </div>
                     <div>
                       <Label>Current SoC (%)</Label>
-                      <Input type="number" min="0" max="100" value={form.current_soc_percent}
+                      <Input type="number" min="0" max="100" className={errorRing(vErrors.current_soc_percent)} value={form.current_soc_percent}
+                        onBlur={onBlur("current_soc_percent")}
                         onChange={(e) => setForm((f) => ({ ...f, current_soc_percent: Number(e.target.value) }))} />
+                      <FieldError msg={vErrors.current_soc_percent} />
                     </div>
                     <div>
                       <Label>Target SoC (%)</Label>
-                      <Input type="number" min="0" max="100" value={form.target_soc_percent}
+                      <Input type="number" min="0" max="100" className={errorRing(vErrors.target_soc_percent)} value={form.target_soc_percent}
+                        onBlur={onBlur("target_soc_percent")}
                         onChange={(e) => setForm((f) => ({ ...f, target_soc_percent: Number(e.target.value) }))} />
+                      <FieldError msg={vErrors.target_soc_percent} />
                     </div>
                     <div>
                       <Label>Energy Required (kWh)</Label>
