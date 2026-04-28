@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +7,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+  Truck,
+  User,
+  ClipboardList,
+  Gauge,
+  FileText,
+  StickyNote,
+} from "lucide-react";
 import { useMaintenanceSchedules } from "@/hooks/useMaintenanceSchedules";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import PhotoUploader from "@/components/driver-portal/PhotoUploader";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { ValidatedField } from "@/components/forms/ValidatedField";
+import { useInspectionValidation } from "./useInspectionValidation";
+import { sanitizeNumeric } from "./inspectionValidation";
+import { cn } from "@/lib/utils";
 
 const DEFAULT_INSPECTION_CHECKLIST = [
   { key: 'tires', label: 'Tires & Wheels', items: ['Tire pressure', 'Tread depth', 'Wheel nuts'] },
@@ -28,10 +43,8 @@ export interface InspectionPrefill {
   vehicle_id?: string;
   driver_id?: string;
   inspection_type?: string;
-  /** lock fields when caller already has the entity context (e.g. driver portal) */
   lockVehicle?: boolean;
   lockDriver?: boolean;
-  /** show photo uploader (driver-portal pattern) */
   enablePhotos?: boolean;
 }
 
@@ -40,16 +53,14 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   prefill?: InspectionPrefill;
   invalidateKeys?: string[][];
-  /** Optional callback fired after a successful inspection submission. */
   onSubmitted?: (payload: { inspection_id?: string; safe: boolean; status: string }) => void;
-  /** When true, render inline (no outer Dialog) — used by the unified FormRenderer / legacy registry. */
   embedded?: boolean;
 }
 
 const buildState = (prefill?: InspectionPrefill) => ({
   vehicle_id: prefill?.vehicle_id || '',
   driver_id: prefill?.driver_id || '',
-  inspection_type: prefill?.inspection_type || 'pre_trip',
+  inspection_type: (prefill?.inspection_type as any) || 'pre_trip',
   odometer_km: 0,
   checklist_data: DEFAULT_INSPECTION_CHECKLIST.reduce<Record<string, Record<string, boolean>>>((acc, cat) => {
     acc[cat.key] = cat.items.reduce<Record<string, boolean>>((m, item) => { m[item] = true; return m; }, {});
@@ -77,11 +88,34 @@ export const VehicleInspectionFormDialog = ({
   const [state, setState] = useState(() => buildState(prefill));
   const [photos, setPhotos] = useState<string[]>([]);
 
+  const failedItems = useMemo(() => {
+    const out: string[] = [];
+    Object.entries(state.checklist_data).forEach(([_cat, items]) => {
+      Object.entries(items).forEach(([item, passed]) => { if (!passed) out.push(item); });
+    });
+    return out;
+  }, [state.checklist_data]);
+  const hasFailures = failedItems.length > 0 || !!state.defects_text.trim();
+  const safe = !hasFailures && state.certified_safe;
+
+  const validation = useInspectionValidation({
+    vehicle_id: state.vehicle_id,
+    driver_id: state.driver_id || undefined,
+    inspection_type: state.inspection_type,
+    odometer_km: state.odometer_km || undefined,
+    defects_text: state.defects_text,
+    mechanic_notes: state.mechanic_notes,
+    certified_safe: state.certified_safe,
+    has_failures: failedItems.length > 0,
+  });
+
   useEffect(() => {
     if (open || embedded) {
       setState(buildState(prefill));
       setPhotos([]);
+      validation.reset();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, embedded, prefill?.vehicle_id, prefill?.driver_id, prefill?.inspection_type]);
 
   const handleChecklistChange = (category: string, item: string, checked: boolean) => {
@@ -94,19 +128,13 @@ export const VehicleInspectionFormDialog = ({
     }));
   };
 
-  const failedItems: string[] = [];
-  Object.entries(state.checklist_data).forEach(([_cat, items]) => {
-    Object.entries(items).forEach(([item, passed]) => { if (!passed) failedItems.push(item); });
-  });
-  const hasFailures = failedItems.length > 0 || !!state.defects_text.trim();
-  const safe = !hasFailures && state.certified_safe;
-
   const lockVehicle = !!prefill?.lockVehicle;
   const lockDriver = !!prefill?.lockDriver;
 
   const handleSubmit = async () => {
-    if (!state.vehicle_id) {
-      toast.error("Vehicle is required");
+    validation.markAllTouched();
+    if (!validation.validateAll()) {
+      toast.error(`Please fix ${validation.invalidCount} field${validation.invalidCount === 1 ? "" : "s"} before submitting`);
       return;
     }
     setSubmitting(true);
@@ -146,6 +174,9 @@ export const VehicleInspectionFormDialog = ({
     }
   };
 
+  const { errors, markTouched, invalidCount, submitAttempted } = validation;
+  const showSummary = submitAttempted && invalidCount > 0;
+
   const body = (
     <>
       {!embedded && (
@@ -156,16 +187,40 @@ export const VehicleInspectionFormDialog = ({
           </DialogDescription>
         </DialogHeader>
       )}
+
       <div className="space-y-6">
+        {showSummary && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive animate-fade-in"
+          >
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium">
+                {invalidCount} field{invalidCount === 1 ? "" : "s"} need{invalidCount === 1 ? "s" : ""} attention
+              </p>
+              <p className="text-xs opacity-90">Resolve the highlighted fields below to submit the inspection.</p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="insp-vehicle">Vehicle</Label>
+          <ValidatedField
+            id="insp-vehicle"
+            label="Vehicle"
+            icon={Truck}
+            required
+            error={errors.vehicle_id}
+            filled={!!state.vehicle_id}
+          >
             <Select
               value={state.vehicle_id}
-              onValueChange={v => setState(s => ({ ...s, vehicle_id: v }))}
+              onValueChange={v => { setState(s => ({ ...s, vehicle_id: v })); markTouched("vehicle_id"); }}
               disabled={lockVehicle}
             >
-              <SelectTrigger id="insp-vehicle"><SelectValue placeholder="Select vehicle" /></SelectTrigger>
+              <SelectTrigger id="insp-vehicle" onBlur={() => markTouched("vehicle_id")}>
+                <SelectValue placeholder="Select vehicle" />
+              </SelectTrigger>
               <SelectContent>
                 {vehicles.map(v => (
                   <SelectItem key={v.id} value={v.id}>
@@ -174,15 +229,24 @@ export const VehicleInspectionFormDialog = ({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div>
-            <Label htmlFor="insp-inspector">Inspector</Label>
+          </ValidatedField>
+
+          <ValidatedField
+            id="insp-inspector"
+            label="Inspector"
+            icon={User}
+            error={errors.driver_id}
+            filled={!!state.driver_id}
+            hint="Optional"
+          >
             <Select
               value={state.driver_id}
-              onValueChange={v => setState(s => ({ ...s, driver_id: v }))}
+              onValueChange={v => { setState(s => ({ ...s, driver_id: v })); markTouched("driver_id"); }}
               disabled={lockDriver}
             >
-              <SelectTrigger id="insp-inspector"><SelectValue placeholder="Select inspector" /></SelectTrigger>
+              <SelectTrigger id="insp-inspector" onBlur={() => markTouched("driver_id")}>
+                <SelectValue placeholder="Select inspector" />
+              </SelectTrigger>
               <SelectContent>
                 {drivers.map(d => (
                   <SelectItem key={d.id} value={d.id}>
@@ -191,17 +255,25 @@ export const VehicleInspectionFormDialog = ({
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </ValidatedField>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="insp-type">Inspection Type</Label>
+          <ValidatedField
+            id="insp-type"
+            label="Inspection Type"
+            icon={ClipboardList}
+            required
+            error={errors.inspection_type}
+            filled={!!state.inspection_type}
+          >
             <Select
               value={state.inspection_type}
-              onValueChange={v => setState(s => ({ ...s, inspection_type: v }))}
+              onValueChange={v => { setState(s => ({ ...s, inspection_type: v as any })); markTouched("inspection_type"); }}
             >
-              <SelectTrigger id="insp-type"><SelectValue /></SelectTrigger>
+              <SelectTrigger id="insp-type" onBlur={() => markTouched("inspection_type")}>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="pre_trip">Pre-Trip</SelectItem>
                 <SelectItem value="post_trip">Post-Trip</SelectItem>
@@ -211,16 +283,29 @@ export const VehicleInspectionFormDialog = ({
                 <SelectItem value="annual">Annual</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div>
-            <Label htmlFor="insp-odometer">Odometer (km)</Label>
+          </ValidatedField>
+
+          <ValidatedField
+            id="insp-odometer"
+            label="Odometer (km)"
+            icon={Gauge}
+            error={errors.odometer_km}
+            filled={state.odometer_km > 0}
+            hint="Optional"
+          >
             <Input
               id="insp-odometer"
               type="number"
+              inputMode="numeric"
+              min={0}
               value={state.odometer_km || ''}
-              onChange={e => setState(s => ({ ...s, odometer_km: Number(e.target.value) }))}
+              onChange={e => {
+                const clean = sanitizeNumeric(e.target.value);
+                setState(s => ({ ...s, odometer_km: clean ? Number(clean) : 0 }));
+              }}
+              onBlur={() => markTouched("odometer_km")}
             />
-          </div>
+          </ValidatedField>
         </div>
 
         <div className="space-y-4">
@@ -232,45 +317,72 @@ export const VehicleInspectionFormDialog = ({
               </CardHeader>
               <CardContent className="py-2">
                 <div className="grid grid-cols-2 gap-2">
-                  {category.items.map(item => (
-                    <div key={item} className="flex items-center gap-2">
-                      <Checkbox
-                        id={`${category.key}-${item}`}
-                        checked={state.checklist_data[category.key]?.[item] ?? true}
-                        onCheckedChange={(checked) => handleChecklistChange(category.key, item, !!checked)}
-                      />
-                      <Label htmlFor={`${category.key}-${item}`} className="text-sm font-normal cursor-pointer">
-                        {item}
-                      </Label>
-                    </div>
-                  ))}
+                  {category.items.map(item => {
+                    const checked = state.checklist_data[category.key]?.[item] ?? true;
+                    return (
+                      <div
+                        key={item}
+                        className={cn(
+                          "flex items-center gap-2 rounded-md px-2 py-1 transition-colors",
+                          !checked && "bg-warning/10",
+                        )}
+                      >
+                        <Checkbox
+                          id={`${category.key}-${item}`}
+                          checked={checked}
+                          onCheckedChange={(v) => handleChecklistChange(category.key, item, !!v)}
+                        />
+                        <Label htmlFor={`${category.key}-${item}`} className={cn(
+                          "text-sm font-normal cursor-pointer",
+                          !checked && "text-warning"
+                        )}>
+                          {item}
+                        </Label>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div>
-          <Label htmlFor="insp-defects">Other Defects (if any)</Label>
+        <ValidatedField
+          id="insp-defects"
+          label="Other Defects (if any)"
+          icon={FileText}
+          error={errors.defects_text}
+          filled={!!state.defects_text.trim()}
+          hint={failedItems.length > 0 ? "Describe failed items above for the maintenance team" : undefined}
+        >
           <Textarea
             id="insp-defects"
             value={state.defects_text}
             onChange={e => setState(s => ({ ...s, defects_text: e.target.value }))}
+            onBlur={() => markTouched("defects_text")}
             placeholder="Describe any other issues found..."
             rows={2}
+            maxLength={1000}
           />
-        </div>
+        </ValidatedField>
 
-        <div>
-          <Label htmlFor="insp-notes">Notes</Label>
+        <ValidatedField
+          id="insp-notes"
+          label="Notes"
+          icon={StickyNote}
+          error={errors.mechanic_notes}
+          filled={!!state.mechanic_notes.trim()}
+        >
           <Textarea
             id="insp-notes"
             value={state.mechanic_notes}
             onChange={e => setState(s => ({ ...s, mechanic_notes: e.target.value }))}
+            onBlur={() => markTouched("mechanic_notes")}
             placeholder="Optional notes"
             rows={2}
+            maxLength={1000}
           />
-        </div>
+        </ValidatedField>
 
         {prefill?.enablePhotos && state.vehicle_id && (
           <div>
@@ -296,7 +408,7 @@ export const VehicleInspectionFormDialog = ({
           <Checkbox
             id="certified_safe"
             checked={state.certified_safe}
-            onCheckedChange={(checked) => setState(s => ({ ...s, certified_safe: !!checked }))}
+            onCheckedChange={(checked) => { setState(s => ({ ...s, certified_safe: !!checked })); markTouched("certified_safe"); }}
           />
           <Label htmlFor="certified_safe" className="cursor-pointer">
             I certify this vehicle is safe to operate
@@ -306,7 +418,7 @@ export const VehicleInspectionFormDialog = ({
 
       <div className={embedded ? "flex justify-end gap-2 pt-4 border-t mt-4" : "hidden"}>
         <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-        <Button onClick={handleSubmit} disabled={submitting || !state.vehicle_id}>
+        <Button onClick={handleSubmit} disabled={submitting}>
           {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           Submit Inspection
         </Button>
@@ -315,7 +427,7 @@ export const VehicleInspectionFormDialog = ({
       {!embedded && (
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={submitting || !state.vehicle_id}>
+          <Button onClick={handleSubmit} disabled={submitting}>
             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Submit Inspection
           </Button>
