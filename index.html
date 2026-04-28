@@ -46,19 +46,36 @@
     <style>@keyframes fleettrack-spin{to{transform:rotate(360deg)}}</style>
     <script>
       (function () {
-        var reloadKey = "fleettrack-module-reload";
+        var reloadKey = "fleettrack-startup-reload";
+        var maxReloads = 3;
+        var reloadWindowMs = 60000;
+        function requestStartupReload(reason) {
+          var now = Date.now();
+          var previous = JSON.parse(sessionStorage.getItem(reloadKey) || "{\"count\":0,\"first\":0}");
+          var first = now - previous.first > reloadWindowMs ? now : previous.first;
+          var count = now - previous.first > reloadWindowMs ? 0 : previous.count;
+          if (count >= maxReloads) {
+            var root = document.getElementById("root");
+            if (root) root.setAttribute("data-startup-error", reason || "module-load-failed");
+            return;
+          }
+          sessionStorage.setItem(reloadKey, JSON.stringify({ count: count + 1, first: first }));
+          window.location.replace(window.location.pathname + window.location.search + window.location.hash);
+        }
         window.addEventListener("error", function (event) {
           var target = event && event.target;
           var failedUrl = target && (target.src || target.href || "");
           if (!failedUrl || !/\/node_modules\/\.vite\/deps\/|\/src\//.test(failedUrl)) return;
-          if (sessionStorage.getItem(reloadKey) === failedUrl) return;
-          sessionStorage.setItem(reloadKey, failedUrl);
-          window.location.replace(window.location.pathname + window.location.search + window.location.hash);
+          requestStartupReload("module-load-failed");
         }, true);
         window.addEventListener("load", function () {
           window.setTimeout(function () {
-            if (window.__fleettrackBooted) sessionStorage.removeItem(reloadKey);
-          }, 1200);
+            if (window.__fleettrackBooted) {
+              sessionStorage.removeItem(reloadKey);
+            } else {
+              requestStartupReload("startup-timeout");
+            }
+          }, 9000);
         });
         if (!("serviceWorker" in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (registrations) {
