@@ -164,7 +164,14 @@ export function EditRequestDialog({ request, open, onOpenChange }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request?.id, open]);
 
-  const errCls = (field: string) =>
+  type FormField =
+    | "purpose"
+    | "departure"
+    | "destination"
+    | "neededFrom"
+    | "neededUntil"
+    | "passengers";
+  const errCls = (field: FormField) =>
     v.getError(field) ? "border-destructive focus-visible:ring-destructive" : "";
 
   const save = useMutation({
