@@ -377,12 +377,32 @@ export default function CreateWorkRequestForm({
     <h3 className="text-base font-semibold border-b pb-2 mb-4 text-foreground">{children}</h3>
   );
 
-  const FieldRow = ({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) => (
-    <div className="grid grid-cols-12 items-center gap-2 mb-3">
-      <Label className="col-span-4 text-right text-sm">
+  const FieldRow = ({
+    label,
+    required,
+    error,
+    children,
+  }: {
+    label: string;
+    required?: boolean;
+    error?: string;
+    children: React.ReactNode;
+  }) => (
+    <div className="grid grid-cols-12 items-start gap-2 mb-3">
+      <Label className={cn("col-span-4 text-right text-sm pt-2", error && "text-destructive")}>
         {required && REQUIRED_MARK} {label}
       </Label>
-      <div className="col-span-8">{children}</div>
+      <div className="col-span-8">
+        <div className={cn(error && "[&_input]:border-destructive [&_textarea]:border-destructive [&_button[role=combobox]]:border-destructive")}>
+          {children}
+        </div>
+        {error && (
+          <p role="alert" className="mt-1 flex items-center gap-1 text-[11px] font-medium text-destructive">
+            <AlertCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   );
 
