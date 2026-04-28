@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCircle2, Info, ChevronRight, MailCheck } from "lucide-react";
+import { Bell, CheckCircle2, Info, ChevronRight, MailCheck, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
