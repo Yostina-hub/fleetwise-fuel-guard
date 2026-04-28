@@ -140,8 +140,8 @@ export default function IncidentDispatchDecisionDialog({
   const submit = useMutation({
     mutationFn: async () => {
       if (!incident) throw new Error("No incident");
-      if (decision === "replacement" && !vehicleId && !driverId) {
-        throw new Error("Pick a replacement vehicle or driver");
+      if (decision === "replacement" && (!vehicleId || !driverId)) {
+        throw new Error("Pick both a replacement vehicle and driver");
       }
       const { data, error } = await (supabase as any).rpc(
         "dispatch_incident_decision",
