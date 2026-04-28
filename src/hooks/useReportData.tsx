@@ -182,8 +182,8 @@ export const useReportData = (dateRange: DateRange) => {
         .from('incidents')
         .select(`
           *,
-          vehicle:vehicle_id (plate_number),
-          driver:driver_id (first_name, last_name)
+          vehicle:vehicles!incidents_vehicle_id_fkey (plate_number),
+          driver:drivers!incidents_driver_id_fkey (first_name, last_name)
         `)
         .eq('organization_id', organizationId)
         .gte('incident_time', startOfDay(dateRange.start).toISOString())
