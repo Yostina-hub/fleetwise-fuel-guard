@@ -106,6 +106,7 @@ function poolColor(pool?: string | null): string {
 }
 
 const ADDIS_CENTER: [number, number] = [38.7525, 9.0192];
+const ROUTE_CLIENT_TIMEOUT_MS = 6500;
 
 type RouteAlt = { geometry: [number, number][]; distance_m: number; duration_s: number };
 type RouteStatus = "loading" | "road" | "estimated" | "error";
@@ -144,6 +145,12 @@ const makeEstimatedRoute = (coordinates: [number, number][]): RouteAlt => {
     duration_s: Math.max(60, Math.round((roadMeters / 11.5) * 1.9 + 180)),
   };
 };
+
+const withTimeout = async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error(`${label}_timeout`)), ms)),
+  ]);
 
 export const OpsMapView = ({ organizationId }: Props) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
