@@ -254,6 +254,7 @@ export const FuelRequestFormDialog = ({
 
   const [form, setForm] = useState<FormData>(() => buildInitial(prefill));
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
+  const v = useFuelRequestValidation();
 
   // Reset on open/prefill change
   useEffect(() => {
