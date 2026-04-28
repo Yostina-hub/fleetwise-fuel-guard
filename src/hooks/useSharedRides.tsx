@@ -176,9 +176,11 @@ export const useDriverSharedRides = () => {
         .select(
           `id, pool_code, origin_label, destination_label, departure_at,
            total_seats, available_seats, status, vehicle_id,
+           origin_lat, origin_lng, destination_lat, destination_lng,
            shared_ride_passengers (
              id, vehicle_request_id, passenger_user_id, pickup_label,
-             dropoff_label, seats, status, boarded_at, dropped_off_at
+             pickup_lat, pickup_lng, dropoff_label, dropoff_lat, dropoff_lng,
+             seats, status, boarded_at, dropped_off_at, created_at
            )`,
         )
         .eq("organization_id", organizationId)

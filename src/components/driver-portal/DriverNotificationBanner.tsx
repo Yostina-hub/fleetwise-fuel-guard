@@ -4,7 +4,7 @@
  * "Driver license renewed") with a dismiss action that marks it read.
  */
 import { useMemo } from "react";
-import { CheckCircle2, Info, X, ChevronRight, Bell } from "lucide-react";
+import { CheckCircle2, Info, X, ChevronRight, Bell, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDriverNotifications, markDriverNotificationRead, markAllDriverNotificationsRead } from "@/hooks/useDriverNotifications";
 
@@ -17,6 +17,7 @@ const KIND_ICON: Record<string, JSX.Element> = {
   license_renewed: <CheckCircle2 className="w-5 h-5 text-success" aria-hidden="true" />,
   workflow_completed: <CheckCircle2 className="w-5 h-5 text-success" aria-hidden="true" />,
   workflow_stage: <Bell className="w-5 h-5 text-primary" aria-hidden="true" />,
+  passenger_added: <UserPlus className="w-5 h-5 text-amber-600" aria-hidden="true" />,
 };
 
 export default function DriverNotificationBanner({ driverId, onOpenRequests }: Props) {
