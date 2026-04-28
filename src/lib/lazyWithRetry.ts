@@ -5,6 +5,7 @@ type ComponentModule<T extends ComponentType<any>> = {
 };
 
 const RETRY_STORAGE_KEY = "lazy-route-retry";
+const MAX_RETRIES = 4;
 const MODULE_FETCH_ERROR_PATTERN = /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i;
 
 const getLocationKey = () => {
@@ -39,9 +40,12 @@ export const lazyWithRetry = <T extends ComponentType<any>>(
       if (typeof window !== "undefined" && isRecoverableImportError(error)) {
         const retryToken = `${key}:${getLocationKey()}`;
         const existingRetry = sessionStorage.getItem(RETRY_STORAGE_KEY);
+        const retryCount = existingRetry?.startsWith(`${retryToken}:`)
+          ? Number(existingRetry.split(":").pop() ?? "0")
+          : 0;
 
-        if (existingRetry !== retryToken) {
-          sessionStorage.setItem(RETRY_STORAGE_KEY, retryToken);
+        if (retryCount < MAX_RETRIES) {
+          sessionStorage.setItem(RETRY_STORAGE_KEY, `${retryToken}:${retryCount + 1}`);
           window.location.reload();
 
           return new Promise<ComponentModule<T>>(() => {
