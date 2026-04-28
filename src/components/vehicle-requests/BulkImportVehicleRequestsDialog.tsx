@@ -271,7 +271,7 @@ export default function BulkImportVehicleRequestsDialog({ open, onOpenChange }: 
       if (!organizationId) throw new Error("No organization context");
       if (!user?.id) throw new Error("Not authenticated");
       if (valid.length === 0) throw new Error("No valid rows to import");
-      if (valid.length > 200) throw new Error("Maximum 200 requests per import");
+      if (valid.length > MAX_ROWS) throw new Error(`Maximum ${MAX_ROWS} requests per import`);
 
       const requesterName =
         (profile as any)?.full_name ||
