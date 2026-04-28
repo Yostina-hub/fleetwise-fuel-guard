@@ -640,7 +640,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
               </TabsList>
 
               <TabsContent value="single" className="mt-3">
-                <ItemFields item={items[0]} onChange={(p) => updateItem(0, p)} />
+                <ItemFields item={items[0]} onChange={(p) => updateItem(0, p)} error={itemErrors[0]} />
               </TabsContent>
 
               <TabsContent value="batch" className="mt-3 space-y-3">
