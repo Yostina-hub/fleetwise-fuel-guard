@@ -37,7 +37,19 @@ const StartupError = ({ error }: { error: unknown }) => (
 
 root.render(<StartupFallback />);
 
-import("./App.tsx")
+const importApp = async () => {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await import(/* @vite-ignore */ `/src/App.tsx?t=${Date.now()}-${attempt}`);
+    } catch (error) {
+      if (attempt === 2) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+    }
+  }
+  throw new Error("App import retry exhausted");
+};
+
+importApp()
   .then(({ default: App }) => {
     root.render(<App />);
   })
