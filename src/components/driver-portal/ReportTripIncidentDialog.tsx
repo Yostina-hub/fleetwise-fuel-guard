@@ -297,8 +297,18 @@ export const ReportTripIncidentDialog = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const kmNum = kmReading.trim() === "" ? undefined : Number(kmReading);
+    const result = v.validateAll({ reason, description, km_reading: kmNum });
+    if (!result.success) {
+      const count = Object.keys(result.errors).length;
+      toast.error(`Please fix ${count} field${count > 1 ? "s" : ""} before submitting`);
+      return;
+    }
     submit.mutate();
   };
+
+  const errCls = (field: "reason" | "description" | "km_reading") =>
+    v.getError(field) ? "border-destructive focus-visible:ring-destructive" : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
