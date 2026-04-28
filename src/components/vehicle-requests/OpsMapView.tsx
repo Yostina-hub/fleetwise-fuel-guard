@@ -106,6 +106,51 @@ function poolColor(pool?: string | null): string {
 }
 
 const ADDIS_CENTER: [number, number] = [38.7525, 9.0192];
+const ROUTE_CLIENT_TIMEOUT_MS = 6500;
+
+type RouteAlt = { geometry: [number, number][]; distance_m: number; duration_s: number };
+type RouteStatus = "loading" | "road" | "estimated" | "error";
+
+const isFiniteCoord = (coord: [number, number] | null | undefined): coord is [number, number] =>
+  Array.isArray(coord) &&
+  coord.length === 2 &&
+  Number.isFinite(coord[0]) &&
+  Number.isFinite(coord[1]) &&
+  coord[0] >= -180 &&
+  coord[0] <= 180 &&
+  coord[1] >= -90 &&
+  coord[1] <= 90;
+
+const routeSignature = (coordinates: [number, number][]) =>
+  coordinates.map((c) => `${c[0].toFixed(5)},${c[1].toFixed(5)}`).join("|");
+
+const haversineMeters = (a: [number, number], b: [number, number]) => {
+  const R = 6371000;
+  const dLat = ((b[1] - a[1]) * Math.PI) / 180;
+  const dLng = ((b[0] - a[0]) * Math.PI) / 180;
+  const lat1 = (a[1] * Math.PI) / 180;
+  const lat2 = (b[1] * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+};
+
+const makeEstimatedRoute = (coordinates: [number, number][]): RouteAlt => {
+  const geometry = coordinates.filter(isFiniteCoord);
+  let meters = 0;
+  for (let i = 1; i < geometry.length; i += 1) meters += haversineMeters(geometry[i - 1], geometry[i]);
+  const roadMeters = Math.round(meters * 1.28);
+  return {
+    geometry,
+    distance_m: roadMeters,
+    duration_s: Math.max(60, Math.round((roadMeters / 11.5) * 1.9 + 180)),
+  };
+};
+
+const withTimeout = async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error(`${label}_timeout`)), ms)),
+  ]);
 
 export const OpsMapView = ({ organizationId }: Props) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -429,14 +474,21 @@ export const OpsMapView = ({ organizationId }: Props) => {
   // For consolidated parents we send the FULL multi-stop sequence so the
   // returned geometry traces every merged child stop in the correct order.
   const [routeGeoms, setRouteGeoms] = useState<Record<string, [number, number][]>>({});
-  // Per-request list of OSRM-computed alternatives so dispatchers can pick a
+  // Per-request list of computed alternatives so dispatchers can pick a
   // different driving path between the same pickup/drop pair.
-  type RouteAlt = { geometry: [number, number][]; distance_m: number; duration_s: number };
   const [routeAlts, setRouteAlts] = useState<Record<string, RouteAlt[]>>({});
+  const [routeStatus, setRouteStatus] = useState<Record<string, RouteStatus>>({});
   const [selectedAltIdx, setSelectedAltIdx] = useState<Record<string, number>>({});
   // Re-key cache by sequence signature so adding/removing children re-fetches.
   const routeCacheKeyRef = useRef<Record<string, string>>({});
+  const routeDesiredSigRef = useRef<Record<string, string>>({});
   const inflightRef = useRef<Set<string>>(new Set());
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   useEffect(() => {
     const eligible = requests.filter((r) => {
       if (
@@ -447,9 +499,11 @@ export const OpsMapView = ({ organizationId }: Props) => {
       )
         return false;
       const seq = parentStopSequence[r.id];
-      const sig = seq
-        ? seq.map((c) => `${c[0].toFixed(5)},${c[1].toFixed(5)}`).join("|")
-        : `${r.departure_lng},${r.departure_lat}|${r.destination_lng},${r.destination_lat}`;
+      const coordinates = seq ?? [
+        [r.departure_lng, r.departure_lat] as [number, number],
+        [r.destination_lng, r.destination_lat] as [number, number],
+      ];
+      const sig = routeSignature(coordinates);
       const cached = routeCacheKeyRef.current[r.id];
       if (cached === sig) return false;
       if (inflightRef.current.has(r.id)) return false;
@@ -457,28 +511,33 @@ export const OpsMapView = ({ organizationId }: Props) => {
     });
     if (eligible.length === 0) return;
     console.log("[OpsMap] route fetch eligible:", eligible.length, eligible.map((r) => r.request_number));
-    let cancelled = false;
     const queue = [...eligible];
+    let cancelled = false;
     const runOne = async () => {
-      while (queue.length > 0 && !cancelled) {
+      while (queue.length > 0 && mountedRef.current && !cancelled) {
         const r = queue.shift()!;
         const coordinates: [number, number][] =
           parentStopSequence[r.id] ?? [
             [r.departure_lng!, r.departure_lat!],
             [r.destination_lng!, r.destination_lat!],
           ];
-        const sig = coordinates
-          .map((c) => `${c[0].toFixed(5)},${c[1].toFixed(5)}`)
-          .join("|");
+        const sig = routeSignature(coordinates);
+        routeDesiredSigRef.current[r.id] = sig;
         inflightRef.current.add(r.id);
+        setRouteStatus((prev) => ({ ...prev, [r.id]: "loading" }));
         try {
           // Always ask for alternatives — backend has fallbacks (stitched +
           // via-points) so even single-leg routes get 2-3 genuine variants.
-          const { data, error } = await supabase.functions.invoke("route-directions", {
-            body: { coordinates, alternatives: true },
-          });
+          const { data, error } = await withTimeout(
+            supabase.functions.invoke("route-directions", {
+              body: { coordinates, alternatives: true },
+            }),
+            ROUTE_CLIENT_TIMEOUT_MS,
+            "route-directions",
+          );
+          const isFresh = !cancelled && mountedRef.current && routeDesiredSigRef.current[r.id] === sig;
           console.log("[OpsMap] route-directions", r.request_number, { error, ok: data?.ok, geomLen: data?.geometry?.length, alts: data?.alternatives?.length });
-          if (!cancelled && !error && data?.ok && Array.isArray(data.geometry)) {
+          if (isFresh && !error && data?.ok && Array.isArray(data.geometry)) {
             routeCacheKeyRef.current[r.id] = sig;
             const alts: RouteAlt[] = Array.isArray(data.alternatives) && data.alternatives.length > 0
               ? data.alternatives.map((a: any) => ({
@@ -493,11 +552,29 @@ export const OpsMapView = ({ organizationId }: Props) => {
                 }];
             setRouteAlts((prev) => ({ ...prev, [r.id]: alts }));
             setRouteGeoms((prev) => ({ ...prev, [r.id]: alts[0].geometry }));
-          } else if (error) {
-            console.error("[OpsMap] route-directions error", r.request_number, error);
+            setRouteStatus((prev) => ({ ...prev, [r.id]: data.fallback ? "estimated" : "road" }));
+          } else {
+            if (error) console.error("[OpsMap] route-directions error", r.request_number, error);
+            const fallback = makeEstimatedRoute(coordinates);
+            if (isFresh && fallback.geometry.length >= 2) {
+              routeCacheKeyRef.current[r.id] = sig;
+              setRouteAlts((prev) => ({ ...prev, [r.id]: [fallback] }));
+              setRouteGeoms((prev) => ({ ...prev, [r.id]: fallback.geometry }));
+              setRouteStatus((prev) => ({ ...prev, [r.id]: "estimated" }));
+            }
           }
         } catch (err) {
           console.error("[OpsMap] route-directions threw", r.request_number, err);
+          const fallback = makeEstimatedRoute(coordinates);
+          const isFresh = !cancelled && mountedRef.current && routeDesiredSigRef.current[r.id] === sig;
+          if (isFresh && fallback.geometry.length >= 2) {
+            routeCacheKeyRef.current[r.id] = sig;
+            setRouteAlts((prev) => ({ ...prev, [r.id]: [fallback] }));
+            setRouteGeoms((prev) => ({ ...prev, [r.id]: fallback.geometry }));
+            setRouteStatus((prev) => ({ ...prev, [r.id]: "estimated" }));
+          } else if (isFresh) {
+            setRouteStatus((prev) => ({ ...prev, [r.id]: "error" }));
+          }
         } finally {
           inflightRef.current.delete(r.id);
         }
@@ -512,8 +589,12 @@ export const OpsMapView = ({ organizationId }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requests, parentStopSequence]);
   const routeFetchedCount = useMemo(
-    () => requests.filter((r) => routeGeoms[r.id]).length,
-    [requests, routeGeoms],
+    () => requests.filter((r) => routeGeoms[r.id] || routeStatus[r.id] === "estimated").length,
+    [requests, routeGeoms, routeStatus],
+  );
+  const estimatedRouteCount = useMemo(
+    () => requests.filter((r) => routeStatus[r.id] === "estimated").length,
+    [requests, routeStatus],
   );
   const withCoordsCount = useMemo(
     () =>
@@ -673,7 +754,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
         const realGeom = alts && alts.length > 0
           ? alts[Math.min(altIdx, alts.length - 1)].geometry
           : routeGeoms[r.id];
-        const usingFallback = !realGeom;
+        const usingFallback = !realGeom || routeStatus[r.id] === "estimated";
         const lineCoords: [number, number][] = realGeom ?? [
           [r.departure_lng, r.departure_lat],
           [r.destination_lng, r.destination_lat],
@@ -830,7 +911,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
     // every routeAlts/routeGeoms update was causing the map to pan/zoom
     // repeatedly during routing, which pushed geofences off-screen and made
     // them appear to "disappear" once routing finished.
-  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms, routeAlts, selectedAltIdx, parentStopSequence]);
+  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms, routeAlts, routeStatus, selectedAltIdx, parentStopSequence]);
 
   // Dedicated auto-fit pass — runs only when the *set* of requests / vehicles /
   // geofences changes (not when per-route geometry arrives). Bounds include
@@ -1037,10 +1118,16 @@ export const OpsMapView = ({ organizationId }: Props) => {
                 Routing {routeFetchedCount}/{withCoordsCount}
               </Badge>
             )}
-            {showRoutes && withCoordsCount > 0 && routeFetchedCount === withCoordsCount && (
+            {showRoutes && withCoordsCount > 0 && routeFetchedCount === withCoordsCount && estimatedRouteCount === 0 && (
               <Badge variant="outline" className="h-5 text-[10px] gap-1">
                 <RouteIcon className="w-3 h-3" />
                 Real road geometry
+              </Badge>
+            )}
+            {showRoutes && withCoordsCount > 0 && routeFetchedCount === withCoordsCount && estimatedRouteCount > 0 && (
+              <Badge variant="outline" className="h-5 text-[10px] gap-1">
+                <RouteIcon className="w-3 h-3" />
+                {withCoordsCount - estimatedRouteCount}/{withCoordsCount} road · {estimatedRouteCount} estimated
               </Badge>
             )}
           </CardTitle>
