@@ -25,6 +25,9 @@ export default defineConfig(({ mode }) => ({
       ].join("; "),
     },
   },
+  optimizeDeps: {
+    disabled: mode === "development",
+  },
   plugins: [
     react(), 
     mode === "development" && componentTagger(),
