@@ -23,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Power, MapPin, ShieldAlert, FileText, Hash } from "lucide-react";
+import { AlertCircle, FileText, Hash, Loader2, MapPin, Power, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
 import {
   defaultGeneratorValues,
   generatorSchema,
@@ -146,6 +147,64 @@ export const GeneratorRegistrationDialog = ({
     return typeof m === "string" ? m : null;
   };
 
+  /** Field → tab map used to jump to the offending tab on submit. */
+  const FIELD_TAB: Record<string, "main" | "location" | "safety" | "others"> = {
+    // Header fields default to "main" since they sit above the tabs.
+    asset_number: "main",
+    name: "main",
+    asset_group: "main",
+    asset_serial_number: "main",
+    asset_category: "main",
+    asset_type: "main",
+    owning_department: "main",
+    criticality: "main",
+    wip_accounting_class: "main",
+    asset_status: "main",
+    warranty_expiration: "main",
+    status: "main",
+    parent_asset_id: "main",
+    is_maintainable: "main",
+    is_gis_asset: "main",
+    operation_log_enabled: "main",
+    checked_out: "main",
+    model: "main",
+    fuel_type: "main",
+    tank_capacity_liters: "main",
+    area: "location",
+    location: "location",
+    address: "location",
+    latitude: "location",
+    longitude: "location",
+    hazard_class: "safety",
+    safety_notes: "safety",
+    lockout_tagout_required: "safety",
+    ppe_required: "safety",
+    inspection_frequency_days: "safety",
+    manufacturer: "others",
+    supplier: "others",
+    manufacture_date: "others",
+    commission_date: "others",
+    purchase_cost: "others",
+    current_fuel_level_percent: "others",
+    notes: "others",
+  };
+
+  const onInvalid = (errs: Record<string, unknown>) => {
+    const fields = Object.keys(errs);
+    const count = fields.length;
+    // Jump to the tab containing the first offending field.
+    const firstTab = fields.map((f) => FIELD_TAB[f]).find(Boolean);
+    if (firstTab) setTab(firstTab);
+    toast.error(
+      count === 1
+        ? "Please fix 1 invalid field before saving"
+        : `Please fix ${count} invalid fields before saving`,
+    );
+  };
+
+  const invalidCount = Object.keys(errors).length;
+  const submitAttempted = form.formState.submitCount > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -159,7 +218,20 @@ export const GeneratorRegistrationDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-4">
+          {submitAttempted && invalidCount > 0 && (
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
+              <span>
+                {invalidCount === 1
+                  ? "1 field needs your attention before saving."
+                  : `${invalidCount} fields need your attention before saving.`}
+              </span>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 rounded-lg bg-muted/40 border">
             <div className="space-y-1">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
