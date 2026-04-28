@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { MapPin, User, Phone, Package, Truck, Clock, FileText, Navigation } from "lucide-react";
 import SLAIndicator from "./SLAIndicator";
+import { DispatchJobAuditTrail } from "./DispatchJobAuditTrail";
 
 interface DispatchJobDetailDialogProps {
   open: boolean;
