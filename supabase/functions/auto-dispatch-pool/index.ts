@@ -62,6 +62,131 @@ const dayKey = (iso: string) => {
 const norm = (s: string | null | undefined) =>
   (s || "").toLowerCase().trim().replace(/\s+/g, " ");
 
+const ADDIS_TIME_ZONE = "Africa/Addis_Ababa";
+const ROUTE_PICKUP_CLUSTER_KM = 1.0;
+const ROUTE_DESTINATION_CLUSTER_KM = 1.5;
+const ROUTE_TIME_WINDOW_MIN = 90;
+
+type DispatchRow = {
+  id: string;
+  request_number: string;
+  requester_id: string | null;
+  organization_id: string;
+  pool_name: string | null;
+  departure_place: string | null;
+  destination: string | null;
+  departure_lat: number | null;
+  departure_lng: number | null;
+  destination_lat: number | null;
+  destination_lng: number | null;
+  needed_from: string;
+  passengers: number | null;
+  created_at: string;
+  status: string;
+  assigned_vehicle_id: string | null;
+  pool_review_status: string | null;
+  pool_review_decision: string | null;
+};
+
+type DispatchGroup = {
+  key: string;
+  poolName: string | null;
+  poolKey: string;
+  day: string;
+  departure: string;
+  destination: string;
+  pickupLat: number;
+  pickupLng: number;
+  destinationLat: number;
+  destinationLng: number;
+  startMs: number;
+  reqs: DispatchRow[];
+};
+
+const localDayKey = (iso: string) => {
+  try {
+    const parts = new Intl.DateTimeFormat("en", {
+      timeZone: ADDIS_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date(iso));
+    const get = (type: string) => parts.find((p) => p.type === type)?.value;
+    return `${get("year")}-${get("month")}-${get("day")}`;
+  } catch {
+    return dayKey(iso);
+  }
+};
+
+const hasRouteCoordinates = (r: DispatchRow) =>
+  typeof r.departure_lat === "number" &&
+  typeof r.departure_lng === "number" &&
+  typeof r.destination_lat === "number" &&
+  typeof r.destination_lng === "number";
+
+const poolMatchesVehicle = (v: any, poolName: string | null) => {
+  const target = norm(poolName);
+  if (!target || target === "unassigned") return true;
+  return norm(v.specific_pool) === target || norm(v.assigned_location) === target;
+};
+
+const routeRequestNumbers = (reqs: DispatchRow[]) => reqs.map((r) => r.request_number);
+
+const makeDetailBase = (group: DispatchGroup) => ({
+  key: group.key,
+  pool_name: group.poolName || "Unassigned",
+  day: group.day,
+  route_label: `${group.departure || "Pickup"} → ${group.destination || "Drop-off"}`,
+  departure: group.departure,
+  destination: group.destination,
+  request_count: group.reqs.length,
+  requests: routeRequestNumbers(group.reqs),
+  request_ids: group.reqs.map((r) => r.id),
+  passengers: group.reqs.reduce((s, r) => s + (r.passengers || 1), 0),
+});
+
+const realisticRouteDurationMin = (rawDurationS: number, stopCount: number) =>
+  Math.max(1, Math.round(realisticDuration(rawDurationS, stopCount) / 60));
+
+const summarizeRoute = async (coords: Array<[number, number]>) => {
+  const unique = coords.filter(
+    (c, i) => i === 0 || c[0] !== coords[i - 1][0] || c[1] !== coords[i - 1][1],
+  );
+  if (unique.length < 2) return { distance_km: 0, duration_min: 0, provider: "same-point" };
+
+  try {
+    const path = unique.slice(0, 25).map((c) => `${c[0]},${c[1]}`).join(";");
+    const res = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${path}?overview=false&geometries=geojson`,
+      { headers: { "User-Agent": "fleetwise-auto-dispatch/1.0" }, signal: AbortSignal.timeout(3000) },
+    );
+    if (res.ok) {
+      const json = await res.json();
+      const route = Array.isArray(json?.routes) ? json.routes[0] : null;
+      if (route) {
+        return {
+          distance_km: Math.round((Number(route.distance) || 0) / 100) / 10,
+          duration_min: realisticRouteDurationMin(Number(route.duration) || 0, unique.length),
+          provider: "osrm",
+        };
+      }
+    }
+  } catch (_) {
+    // Fallback below keeps dispatch usable if the public router is throttled.
+  }
+
+  let haversineTotal = 0;
+  for (let i = 1; i < unique.length; i++) {
+    haversineTotal += haversineKm(unique[i - 1][1], unique[i - 1][0], unique[i][1], unique[i][0]);
+  }
+  const roadEstimateKm = haversineTotal * 1.28;
+  return {
+    distance_km: Math.round(roadEstimateKm * 10) / 10,
+    duration_min: Math.max(1, Math.round((roadEstimateKm / 24) * 60 + 3 + Math.max(0, unique.length - 2) * 1.5)),
+    provider: "estimated",
+  };
+};
+
 interface Geofence {
   id: string;
   name: string;
