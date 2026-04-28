@@ -1183,6 +1183,8 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         onClose={() => setAssignTarget(null)}
       />
     )}
+    {PreviewDialog}
+    {ConfirmRunDialog}
     </div>
   );
 };
