@@ -252,6 +252,19 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
 
         <ScrollArea className="max-h-[72vh] pr-3">
           <div className="space-y-4">
+            {submitAttempted && invalidCount > 0 && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
+                <span>
+                  {invalidCount === 1
+                    ? "1 field needs your attention before saving."
+                    : `${invalidCount} fields need your attention before saving.`}
+                </span>
+              </div>
+            )}
             {/* === HEADER GRID === */}
             <div className="rounded-lg border border-border bg-muted/20 p-4">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
