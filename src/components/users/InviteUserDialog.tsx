@@ -427,6 +427,29 @@ const InviteUserDialog = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2" noValidate>
+          {/* Top-of-dialog error summary — visible after the user attempts to
+              submit and any field has a validation error. Mirrors the
+              standardized pattern used across the rest of the form dialogs. */}
+          {(() => {
+            const visibleErrorCount = (Object.keys(errors) as Array<keyof FieldErrors>).filter(
+              (k) => touched[k] && errors[k],
+            ).length;
+            if (visibleErrorCount === 0) return null;
+            return (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>
+                  {visibleErrorCount === 1
+                    ? "1 field needs your attention before you can create this user."
+                    : `${visibleErrorCount} fields need your attention before you can create this user.`}
+                </span>
+              </div>
+            );
+          })()}
+
           {/* Email */}
           <div className="space-y-1.5">
             <Label htmlFor="invite-email">
