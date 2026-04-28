@@ -535,8 +535,9 @@ export const OpsMapView = ({ organizationId }: Props) => {
             ROUTE_CLIENT_TIMEOUT_MS,
             "route-directions",
           );
+          const isFresh = !cancelled && mountedRef.current && routeDesiredSigRef.current[r.id] === sig;
           console.log("[OpsMap] route-directions", r.request_number, { error, ok: data?.ok, geomLen: data?.geometry?.length, alts: data?.alternatives?.length });
-          if (!cancelled && !error && data?.ok && Array.isArray(data.geometry)) {
+          if (isFresh && !error && data?.ok && Array.isArray(data.geometry)) {
             routeCacheKeyRef.current[r.id] = sig;
             const alts: RouteAlt[] = Array.isArray(data.alternatives) && data.alternatives.length > 0
               ? data.alternatives.map((a: any) => ({
@@ -555,7 +556,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
           } else {
             if (error) console.error("[OpsMap] route-directions error", r.request_number, error);
             const fallback = makeEstimatedRoute(coordinates);
-            if (!cancelled && fallback.geometry.length >= 2) {
+            if (isFresh && fallback.geometry.length >= 2) {
               routeCacheKeyRef.current[r.id] = sig;
               setRouteAlts((prev) => ({ ...prev, [r.id]: [fallback] }));
               setRouteGeoms((prev) => ({ ...prev, [r.id]: fallback.geometry }));
@@ -565,12 +566,13 @@ export const OpsMapView = ({ organizationId }: Props) => {
         } catch (err) {
           console.error("[OpsMap] route-directions threw", r.request_number, err);
           const fallback = makeEstimatedRoute(coordinates);
-          if (!cancelled && fallback.geometry.length >= 2) {
+          const isFresh = !cancelled && mountedRef.current && routeDesiredSigRef.current[r.id] === sig;
+          if (isFresh && fallback.geometry.length >= 2) {
             routeCacheKeyRef.current[r.id] = sig;
             setRouteAlts((prev) => ({ ...prev, [r.id]: [fallback] }));
             setRouteGeoms((prev) => ({ ...prev, [r.id]: fallback.geometry }));
             setRouteStatus((prev) => ({ ...prev, [r.id]: "estimated" }));
-          } else if (!cancelled) {
+          } else if (isFresh) {
             setRouteStatus((prev) => ({ ...prev, [r.id]: "error" }));
           }
         } finally {
