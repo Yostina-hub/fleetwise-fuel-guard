@@ -324,6 +324,19 @@ export const ReportTripIncidentDialog = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {v.hasVisibleErrors && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive">
+              <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">Please fix the highlighted fields</p>
+                <ul className="list-disc list-inside mt-1 space-y-0.5">
+                  {Object.entries(v.errors).map(([k, msg]) =>
+                    msg ? <li key={k}>{msg}</li> : null,
+                  )}
+                </ul>
+              </div>
+            </div>
+          )}
           {/* Driver & Vehicle Information (auto-filled from your active trip) */}
           <div className="space-y-3">
             <div className="space-y-1">
