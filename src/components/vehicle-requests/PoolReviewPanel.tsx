@@ -450,7 +450,12 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         <div className="flex items-start sm:items-center gap-2 text-sm">
           <Zap className="w-4 h-4 text-primary mt-0.5 sm:mt-0 shrink-0" />
           <div>
-            <div className="font-medium">Auto-Dispatch Pool</div>
+            <div className="font-medium flex items-center gap-2">
+              Auto-Dispatch Pool
+              <Badge variant="outline" className="text-[10px] h-4">
+                {eligibleCount} eligible
+              </Badge>
+            </div>
             <div className="text-xs text-muted-foreground">
               Merges same-route requests and assigns the closest available pool vehicle by live GPS.
             </div>
@@ -461,16 +466,21 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
             size="sm"
             variant="outline"
             onClick={() => autoDispatchMutation.mutate({ dryRun: true })}
-            disabled={autoDispatchMutation.isPending}
+            disabled={autoDispatchMutation.isPending || eligibleCount === 0}
+            title={eligibleCount === 0 ? "No eligible requests" : "Preview the dispatch plan"}
           >
-            Preview
+            {autoDispatchMutation.isPending && autoDispatchMutation.variables?.dryRun ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : null}
+            Preview Plan
           </Button>
           <Button
             size="sm"
-            onClick={() => autoDispatchMutation.mutate({ dryRun: false })}
-            disabled={autoDispatchMutation.isPending}
+            onClick={() => setConfirmRunOpen(true)}
+            disabled={autoDispatchMutation.isPending || eligibleCount === 0}
+            title={eligibleCount === 0 ? "No eligible requests" : "Execute auto-dispatch"}
           >
-            {autoDispatchMutation.isPending ? (
+            {autoDispatchMutation.isPending && autoDispatchMutation.variables?.dryRun === false ? (
               <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
             ) : (
               <Zap className="w-3.5 h-3.5 mr-1.5" />
@@ -480,6 +490,202 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         </div>
       </CardContent>
     </Card>
+  );
+
+  // Preview plan dialog (shown after a dry-run completes)
+  const PreviewDialog = (
+    <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-primary" />
+            Auto-Dispatch Preview
+          </DialogTitle>
+          <DialogDescription>
+            This is a dry-run. Nothing has been assigned yet. Review the plan, then run dispatch.
+          </DialogDescription>
+        </DialogHeader>
+
+        {previewData && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <Card>
+                <CardContent className="p-3">
+                  <div className="text-2xl font-semibold">{previewData.groups}</div>
+                  <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                    Route groups
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-emerald-500/30 bg-emerald-500/5">
+                <CardContent className="p-3">
+                  <div className="text-2xl font-semibold text-emerald-500">
+                    {previewData.details.filter((d: any) => d.chosen_vehicle).reduce(
+                      (s: number, d: any) => s + ((d.requests?.length) || 1),
+                      0,
+                    )}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                    Will assign
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-amber-500/30 bg-amber-500/5">
+                <CardContent className="p-3">
+                  <div className="text-2xl font-semibold text-amber-500">
+                    {previewData.details
+                      .filter((d: any) => !d.chosen_vehicle)
+                      .reduce((s: number, d: any) => s + (typeof d.requests === "number" ? d.requests : 0), 0)}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                    Will skip
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="max-h-[360px] overflow-auto rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Route + Day</TableHead>
+                    <TableHead>Requests</TableHead>
+                    <TableHead>Pax</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Distance</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {previewData.details.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-xs text-muted-foreground py-6">
+                        No groups produced — nothing eligible.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {previewData.details.map((d: any, i: number) => {
+                    const parts = String(d.key || "").split("|");
+                    const route = `${parts[1] || "—"} → ${parts[2] || "—"}`;
+                    const day = parts[3] || "";
+                    const reqList = Array.isArray(d.requests) ? d.requests : [];
+                    return (
+                      <TableRow key={i}>
+                        <TableCell className="text-xs">
+                          <div className="font-medium truncate max-w-[220px]">{route}</div>
+                          <div className="text-muted-foreground">{day}</div>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {reqList.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {reqList.slice(0, 3).map((rn: string) => (
+                                <Badge key={rn} variant="outline" className="text-[10px] h-4">
+                                  {rn}
+                                </Badge>
+                              ))}
+                              {reqList.length > 3 && (
+                                <Badge variant="outline" className="text-[10px] h-4">
+                                  +{reqList.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">{d.requests || 0}</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">{d.passengers ?? "—"}</TableCell>
+                        <TableCell className="text-xs">
+                          {d.chosen_vehicle ? (
+                            <div className="flex items-center gap-1">
+                              <Badge className="text-[10px] h-4 bg-emerald-500/15 text-emerald-500 border-emerald-500/30">
+                                {d.chosen_vehicle}
+                              </Badge>
+                              {d.in_pickup_geofence && (
+                                <Badge variant="outline" className="text-[10px] h-4">
+                                  <MapPin className="w-2.5 h-2.5 mr-0.5" /> in zone
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-amber-500">{d.reason || "Skipped"}</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {d.chosen_vehicle
+                            ? d.distance_km != null
+                              ? `${d.distance_km} km`
+                              : "no GPS"
+                            : "—"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setPreviewOpen(false)}>
+            Close
+          </Button>
+          <Button
+            onClick={() => autoDispatchMutation.mutate({ dryRun: false })}
+            disabled={
+              autoDispatchMutation.isPending ||
+              !previewData ||
+              previewData.details.every((d: any) => !d.chosen_vehicle)
+            }
+          >
+            {autoDispatchMutation.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Zap className="w-3.5 h-3.5 mr-1.5" />
+            )}
+            Confirm & Dispatch
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  // Confirm dialog when user clicks "Run Auto-Dispatch" without previewing
+  const ConfirmRunDialog = (
+    <Dialog open={confirmRunOpen} onOpenChange={setConfirmRunOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Run Auto-Dispatch?</DialogTitle>
+          <DialogDescription>
+            This will immediately assign vehicles and drivers to{" "}
+            <span className="font-semibold text-foreground">{eligibleCount}</span> approved
+            request(s) based on closest live GPS. Requesters will be notified.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setConfirmRunOpen(false);
+              autoDispatchMutation.mutate({ dryRun: true });
+            }}
+            disabled={autoDispatchMutation.isPending}
+          >
+            Preview First
+          </Button>
+          <Button
+            onClick={() => autoDispatchMutation.mutate({ dryRun: false })}
+            disabled={autoDispatchMutation.isPending}
+          >
+            {autoDispatchMutation.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Zap className="w-3.5 h-3.5 mr-1.5" />
+            )}
+            Dispatch Now
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 
   if (approvedRequests.length === 0) {
