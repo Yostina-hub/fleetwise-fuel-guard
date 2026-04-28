@@ -54,6 +54,7 @@ import {
   ShieldAlert,
   Car,
 } from "lucide-react";
+import IncidentDispatchDecisionDialog from "./IncidentDispatchDecisionDialog";
 
 /* ────────────────────────────── helpers ─────────────────────────────── */
 
