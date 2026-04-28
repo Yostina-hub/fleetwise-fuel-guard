@@ -66,6 +66,7 @@ import {
   type RequestDetail,
 } from "@/components/requester-portal/RequestDetailDrawer";
 import { EditRequestDialog } from "@/components/requester-portal/EditRequestDialog";
+import SharedTripPassengerBanner from "@/components/requester-portal/SharedTripPassengerBanner";
 import { RateTripDialog } from "@/components/ratings/RateTripDialog";
 import { usePendingRatings, type PendingRatingTrip } from "@/hooks/usePendingRatings";
 import {
