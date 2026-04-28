@@ -31,20 +31,78 @@ import {
 } from "@/components/ui/table";
 import { TablePagination } from "@/components/reports/TablePagination";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, AlertTriangle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Plus, Search, AlertTriangle, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 import { z } from "zod";
 import { friendlyToastError } from "@/lib/errorMessages";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
+import { cn } from "@/lib/utils";
 
-const inventorySchema = z.object({
-  part_number: z.string().trim().min(1, "Part number is required").max(50),
-  part_name: z.string().trim().min(1, "Part name is required").max(100),
-  category: z.enum(["engine", "transmission", "brakes", "tires", "electrical", "body", "other"]),
-  current_quantity: z.number().min(0),
-  minimum_quantity: z.number().min(0).optional(),
-  unit_cost: z.number().min(0).optional(),
-  unit_of_measure: z.string().trim().max(20),
-});
+const INVENTORY_CATEGORIES = [
+  "engine",
+  "transmission",
+  "brakes",
+  "tires",
+  "electrical",
+  "body",
+  "other",
+] as const;
+
+/**
+ * Inventory part schema
+ * ---------------------
+ * - Part number / name length-bounded.
+ * - Quantities non-negative and bounded.
+ * - Cross-field: minimum_quantity must not exceed current_quantity at creation
+ *   time (otherwise every newly-added part is born "low stock").
+ */
+const inventorySchema = z
+  .object({
+    part_number: z
+      .string()
+      .trim()
+      .min(1, "Part number is required")
+      .max(50, "Part number must be 50 characters or fewer"),
+    part_name: z
+      .string()
+      .trim()
+      .min(2, "Part name must be at least 2 characters")
+      .max(100, "Part name must be 100 characters or fewer"),
+    category: z.enum(INVENTORY_CATEGORIES, {
+      errorMap: () => ({ message: "Select a category" }),
+    }),
+    current_quantity: z
+      .number({ invalid_type_error: "Current quantity must be a number" })
+      .min(0, "Current quantity cannot be negative")
+      .max(1_000_000, "Current quantity is unrealistically high"),
+    minimum_quantity: z
+      .number({ invalid_type_error: "Minimum quantity must be a number" })
+      .min(0, "Minimum quantity cannot be negative")
+      .max(1_000_000, "Minimum quantity is unrealistically high")
+      .optional(),
+    unit_cost: z
+      .number({ invalid_type_error: "Unit cost must be a number" })
+      .min(0, "Unit cost cannot be negative")
+      .max(10_000_000, "Unit cost is unrealistically high")
+      .optional(),
+    unit_of_measure: z
+      .string()
+      .trim()
+      .min(1, "Unit of measure is required")
+      .max(20, "Unit of measure must be 20 characters or fewer"),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      typeof data.minimum_quantity === "number" &&
+      data.minimum_quantity > data.current_quantity
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["minimum_quantity"],
+        message: "Minimum quantity cannot exceed current stock at creation",
+      });
+    }
+  });
 
 const InventoryTab = () => {
   const { organizationId } = useOrganization();
