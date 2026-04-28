@@ -588,7 +588,7 @@ export const ReportTripIncidentDialog = ({
             </Button>
             <Button
               type="submit"
-              disabled={submit.isPending || description.trim().length < 5}
+              disabled={submit.isPending}
               className="gap-2"
             >
               {submit.isPending ? (
