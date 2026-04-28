@@ -469,15 +469,17 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
           {/* ===== Request Description ===== */}
           <section className="space-y-3">
             <SectionTitle icon={FileText} title="Request Description" />
-            <div>
-              <Label><span className="text-destructive">*</span> Additional Description</Label>
+            <ValidatedField id="tr-desc" label="Additional Description" icon={FileText} required error={errors.additional_description} filled={!!header.additional_description.trim()}>
               <Textarea
+                id="tr-desc"
                 rows={3}
+                maxLength={2000}
                 value={header.additional_description}
                 onChange={e => setHeader(h => ({ ...h, additional_description: e.target.value }))}
+                onBlur={() => markTouched("additional_description")}
                 placeholder="Describe the tire issue, observation, or context..."
               />
-            </div>
+            </ValidatedField>
           </section>
 
           {/* ===== Attachments ===== */}
