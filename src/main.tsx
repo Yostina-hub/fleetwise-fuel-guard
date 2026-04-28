@@ -27,6 +27,39 @@ const preparePreviewRuntime = async () => {
   ]);
 };
 
+const BOOT_RELOAD_KEY = "fleettrack:boot-reload-attempt";
+
+const isModuleFetchError = (error: unknown) =>
+  error instanceof Error && /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(error.message);
+
+const importAppWithRetry = async () => {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await import("./App.tsx");
+    } catch (error) {
+      lastError = error;
+      if (!isModuleFetchError(error)) break;
+      await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)));
+      await preparePreviewRuntime();
+    }
+  }
+
+  if (typeof window !== "undefined" && isModuleFetchError(lastError)) {
+    const currentPath = window.location.pathname + window.location.search;
+    const previousRetry = sessionStorage.getItem(BOOT_RELOAD_KEY);
+
+    if (previousRetry !== currentPath) {
+      sessionStorage.setItem(BOOT_RELOAD_KEY, currentPath);
+      window.location.reload();
+      return new Promise<never>(() => {});
+    }
+  }
+
+  throw lastError;
+};
+
 const boot = async () => {
   const rootEl = document.getElementById("root");
   if (!rootEl) throw new Error("Root element not found");
@@ -34,10 +67,12 @@ const boot = async () => {
   await preparePreviewRuntime();
 
   const [{ default: App }, { storeAndForwardService }] = await Promise.all([
-    import("./App.tsx"),
+    importAppWithRetry(),
     import("./services/storeAndForwardService"),
     import("./i18n"),
   ]);
+
+  sessionStorage.removeItem(BOOT_RELOAD_KEY);
 
   storeAndForwardService.initialize().catch((err) =>
     console.warn("[StoreForward] Init failed:", err)
