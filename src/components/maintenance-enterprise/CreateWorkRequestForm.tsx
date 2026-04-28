@@ -608,8 +608,18 @@ export default function CreateWorkRequestForm({
             <FieldRow label="Created By">
               <Input value={createdBy} disabled className="bg-muted/30" />
             </FieldRow>
-            <FieldRow label="Phone Number">
-              <Input value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} />
+            <FieldRow label="Phone Number" error={validation.getError("phone_number")}>
+              <Input
+                value={phoneNumber}
+                onChange={e => {
+                  const v = sanitizePhone(e.target.value);
+                  setPhoneNumber(v);
+                  validation.validateField("phone_number", v, buildValues());
+                }}
+                onBlur={e => validation.handleBlur("phone_number", e.target.value, buildValues())}
+                placeholder="0911234567 or +251911234567"
+                inputMode="tel"
+              />
             </FieldRow>
             <FieldRow label="Contact Preference">
               <Select value={contactPreference} onValueChange={setContactPreference}>
@@ -632,8 +642,17 @@ export default function CreateWorkRequestForm({
                 </SelectContent>
               </Select>
             </FieldRow>
-            <FieldRow label="E-mail">
-              <Input value={emailAddr} onChange={e => setEmailAddr(e.target.value)} type="email" />
+            <FieldRow label="E-mail" error={validation.getError("email")}>
+              <Input
+                value={emailAddr}
+                onChange={e => {
+                  setEmailAddr(e.target.value);
+                  validation.validateField("email", e.target.value, buildValues());
+                }}
+                onBlur={e => validation.handleBlur("email", e.target.value, buildValues())}
+                type="email"
+                inputMode="email"
+              />
             </FieldRow>
           </div>
         </div>
