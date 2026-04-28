@@ -1194,14 +1194,16 @@ export const MergedTripStopsPanel = ({
 
               {/* Map + alternative-routes legend (only when toggled) */}
               {showMap && stopsWithCoords.length > 0 && (
-                <div className="relative">
+                <div className="flex flex-col lg:flex-row">
                   <div
                     ref={containerRef}
-                    className="w-full h-[360px] bg-muted"
+                    className="w-full lg:flex-1 h-[320px] lg:h-[440px] bg-muted"
                     aria-label="Consolidated trip map"
                   />
-                  {/* Floating legend overlay — Google-Maps-style route picker */}
-                  <div className="absolute top-3 left-3 bg-card/95 backdrop-blur-md rounded-lg border border-border/60 shadow-lg overflow-hidden w-[260px] max-w-[calc(100%-1.5rem)] max-h-[calc(100%-1.5rem)] overflow-y-auto">
+                  {/* Side panel — Google-Maps-style route picker. Sits beside the
+                      map on lg+ and stacks below on smaller widths so nothing
+                      overlaps the map and both panes stay legible. */}
+                  <div className="w-full lg:w-[280px] lg:max-w-[320px] shrink-0 bg-card border-t lg:border-t-0 lg:border-l border-border/60 overflow-hidden flex flex-col max-h-[440px] overflow-y-auto">
                     <div className="px-3 py-2 border-b border-border/60 bg-muted/40 flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
                         <RouteIcon className="w-3.5 h-3.5 text-primary" />
