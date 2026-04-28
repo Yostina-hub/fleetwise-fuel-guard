@@ -74,7 +74,7 @@
         document.body.appendChild(script);
         setTimeout(function () {
           if (window.__fleettrackBooted || attempt >= 4) return;
-          loadApp(attempt + 1);
+          window.location.reload();
         }, 5000);
       })(1);
     </script>
