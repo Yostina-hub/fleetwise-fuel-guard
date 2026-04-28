@@ -58,25 +58,6 @@
         }
       })();
     </script>
-    <script>
-      (function loadApp(attempt) {
-        window.__fleettrackBooted = false;
-        var script = document.createElement("script");
-        script.type = "module";
-        script.src = "/src/main.tsx?boot=" + Date.now() + "-" + attempt;
-        script.onerror = function () {
-          if (attempt < 4) {
-            setTimeout(function () { loadApp(attempt + 1); }, 350 * attempt);
-            return;
-          }
-          document.getElementById("root").innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:hsl(220 35% 7%);color:hsl(0 84% 70%);font-family:Inter,system-ui,sans-serif;padding:24px;text-align:center;"><div><h1 style="font-size:20px;margin:0 0 8px;">App failed to load</h1><p style="margin:0;color:hsl(215 20% 70%);">Refresh the preview to retry the startup module.</p></div></div>';
-        };
-        document.body.appendChild(script);
-        setTimeout(function () {
-          if (window.__fleettrackBooted || attempt >= 4) return;
-          window.location.reload();
-        }, 5000);
-      })(1);
-    </script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
