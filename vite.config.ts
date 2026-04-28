@@ -26,7 +26,8 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    disabled: mode === "development",
+    noDiscovery: mode === "development",
+    include: mode === "development" ? [] : undefined,
   },
   plugins: [
     react(), 
