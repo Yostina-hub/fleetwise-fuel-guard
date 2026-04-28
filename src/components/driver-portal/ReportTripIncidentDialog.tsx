@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   AlertTriangle,
+  AlertCircle,
   Wrench,
   Car,
   HeartPulse,
@@ -30,7 +31,9 @@ import {
   X,
   Loader2,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
+import { cn } from "@/lib/utils";
 
 // Limited to the four categories drivers actually need to report from the
 // portal. Anything more nuanced is captured under "Other" with a description.
