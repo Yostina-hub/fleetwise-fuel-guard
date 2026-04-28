@@ -288,6 +288,30 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
     if (prefill?.vehicle_id) setHeader(h => ({ ...h, vehicle_id: prefill.vehicle_id! }));
   }, [prefill?.vehicle_id]);
 
+  const validateLineItems = () => {
+    const errs: Record<number, string> = {};
+    const active = mode === "single" ? items.slice(0, 1) : items;
+    active.forEach((it, i) => {
+      if (!it.position) errs[i] = "Position is required";
+    });
+    setItemErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = () => {
+    markAllTouched();
+    const headerOk = validateAll();
+    const itemsOk = validateLineItems();
+    if (!headerOk || !itemsOk) {
+      const total = invalidCount + (itemsOk ? 0 : 1);
+      toast.error(`Please fix ${total} field${total === 1 ? "" : "s"} before submitting`);
+      return;
+    }
+    mutation.mutate();
+  };
+
+  const showSummary = submitAttempted && (invalidCount > 0 || Object.keys(itemErrors).length > 0);
+
   const HeaderInner = (
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-2.5 min-w-0">
