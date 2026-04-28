@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   AlertTriangle,
+  AlertCircle,
   Wrench,
   Car,
   HeartPulse,
@@ -30,7 +31,9 @@ import {
   X,
   Loader2,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
+import { cn } from "@/lib/utils";
 
 // Limited to the four categories drivers actually need to report from the
 // portal. Anything more nuanced is captured under "Other" with a description.
@@ -125,7 +128,6 @@ export const ReportTripIncidentDialog = ({
 }: ReportTripIncidentDialogProps) => {
   const { organizationId } = useOrganization();
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [reason, setReason] = useState<ReasonValue>("vehicle_technical");
@@ -134,12 +136,15 @@ export const ReportTripIncidentDialog = ({
   const [kmReading, setKmReading] = useState("");
   const [files, setFiles] = useState<File[]>([]);
 
+  const v = useFieldValidation(formSchema);
+
   useEffect(() => {
     if (!open) {
       setReason("vehicle_technical");
       setDescription("");
       setKmReading("");
       setFiles([]);
+      v.reset();
     }
   }, [open]);
 
@@ -194,21 +199,14 @@ export const ReportTripIncidentDialog = ({
     const validated: File[] = [];
     for (const f of incoming) {
       if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: `${f.name} is over ${MAX_FILE_SIZE_MB}MB.`,
-          variant: "destructive",
-        });
+        toast.error(`${f.name} is over ${MAX_FILE_SIZE_MB}MB and was skipped`);
         continue;
       }
       validated.push(f);
     }
     const next = [...files, ...validated].slice(0, MAX_FILES);
     if (files.length + validated.length > MAX_FILES) {
-      toast({
-        title: "Attachment limit",
-        description: `You can attach up to ${MAX_FILES} files.`,
-      });
+      toast.warning(`You can attach up to ${MAX_FILES} files`);
     }
     setFiles(next);
   };
@@ -281,13 +279,11 @@ export const ReportTripIncidentDialog = ({
       return { incidentId, uploaded: uploadedPaths.length };
     },
     onSuccess: ({ uploaded }) => {
-      toast({
-        title: "Incident reported",
-        description:
-          uploaded > 0
-            ? `Your report and ${uploaded} attachment${uploaded > 1 ? "s" : ""} have been sent to the fleet manager.`
-            : "Your report has been sent to the fleet manager.",
-      });
+      toast.success(
+        uploaded > 0
+          ? `Report and ${uploaded} attachment${uploaded > 1 ? "s" : ""} sent to the fleet manager`
+          : "Your report has been sent to the fleet manager",
+      );
       queryClient.invalidateQueries({ queryKey: ["incidents"] });
       queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
       onOpenChange(false);
@@ -295,14 +291,24 @@ export const ReportTripIncidentDialog = ({
     onError: (error: unknown) => {
       const message =
         error instanceof Error ? error.message : "Failed to submit report";
-      toast({ title: "Submission failed", description: message, variant: "destructive" });
+      toast.error(message);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const kmNum = kmReading.trim() === "" ? undefined : Number(kmReading);
+    const result = v.validateAll({ reason, description, km_reading: kmNum });
+    if (!result.success) {
+      const count = Object.keys(result.errors).length;
+      toast.error(`Please fix ${count} field${count > 1 ? "s" : ""} before submitting`);
+      return;
+    }
     submit.mutate();
   };
+
+  const errCls = (field: "reason" | "description" | "km_reading") =>
+    v.getError(field) ? "border-destructive focus-visible:ring-destructive" : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -318,6 +324,19 @@ export const ReportTripIncidentDialog = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {v.hasVisibleErrors && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive">
+              <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">Please fix the highlighted fields</p>
+                <ul className="list-disc list-inside mt-1 space-y-0.5">
+                  {Object.entries(v.errors).map(([k, msg]) =>
+                    msg ? <li key={k}>{msg}</li> : null,
+                  )}
+                </ul>
+              </div>
+            </div>
+          )}
           {/* Driver & Vehicle Information (auto-filled from your active trip) */}
           <div className="space-y-3">
             <div className="space-y-1">
@@ -384,9 +403,23 @@ export const ReportTripIncidentDialog = ({
                   min={0}
                   step="1"
                   value={kmReading}
-                  onChange={(e) => setKmReading(e.target.value)}
+                  onChange={(e) => {
+                    setKmReading(e.target.value);
+                    const n = e.target.value.trim() === "" ? undefined : Number(e.target.value);
+                    v.handleChange("km_reading", n);
+                  }}
+                  onBlur={() => {
+                    const n = kmReading.trim() === "" ? undefined : Number(kmReading);
+                    v.handleBlur("km_reading", n);
+                  }}
                   placeholder="Current odometer (km)"
+                  className={cn(errCls("km_reading"))}
                 />
+                {v.getError("km_reading") && (
+                  <p className="text-[10px] text-destructive mt-1">
+                    {v.getError("km_reading")}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -445,15 +478,26 @@ export const ReportTripIncidentDialog = ({
             <Textarea
               id="incident-description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                v.handleChange("description", e.target.value);
+              }}
+              onBlur={() => v.handleBlur("description", description)}
               placeholder="Describe the situation briefly so the fleet team can help…"
               rows={4}
               maxLength={1000}
-              required
+              className={cn(errCls("description"))}
             />
-            <p className="text-xs text-muted-foreground text-right">
-              {description.length}/1000
-            </p>
+            <div className="flex justify-between">
+              {v.getError("description") ? (
+                <p className="text-xs text-destructive">{v.getError("description")}</p>
+              ) : (
+                <span />
+              )}
+              <p className="text-xs text-muted-foreground tabular-nums">
+                {description.length}/1000
+              </p>
+            </div>
           </div>
 
           {/* Attachments */}
@@ -544,7 +588,7 @@ export const ReportTripIncidentDialog = ({
             </Button>
             <Button
               type="submit"
-              disabled={submit.isPending || description.trim().length < 5}
+              disabled={submit.isPending}
               className="gap-2"
             >
               {submit.isPending ? (
