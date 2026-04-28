@@ -51,7 +51,12 @@
         var reloadWindowMs = 60000;
         function requestStartupReload(reason) {
           var now = Date.now();
-          var previous = JSON.parse(sessionStorage.getItem(reloadKey) || "{\"count\":0,\"first\":0}");
+          var previous;
+          try {
+            previous = JSON.parse(sessionStorage.getItem(reloadKey) || "{\"count\":0,\"first\":0}");
+          } catch (_) {
+            previous = { count: 0, first: 0 };
+          }
           var first = now - previous.first > reloadWindowMs ? now : previous.first;
           var count = now - previous.first > reloadWindowMs ? 0 : previous.count;
           if (count >= maxReloads) {
