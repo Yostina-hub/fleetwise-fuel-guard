@@ -119,9 +119,11 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
       contact_preference: "", notify_user: false, reason: "",
     });
     setItems([emptyItem()]);
+    setItemErrors({});
     setAttachments([]);
     setShowNewDept(null);
     setNewDeptName("");
+    resetValidation();
   };
 
   const updateItem = (idx: number, patch: Partial<LineItem>) => {
