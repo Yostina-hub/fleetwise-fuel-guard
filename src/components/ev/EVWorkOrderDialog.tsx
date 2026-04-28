@@ -101,6 +101,9 @@ export const EVWorkOrderDialog = ({ open, onOpenChange, workOrderId, vehicleId, 
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
   const [form, setForm] = useState({ ...DEFAULT_FORM });
+  const validation = useEVWorkOrderValidation(form as any);
+  const { errors: vErrors, markTouched, markAllTouched, validateAll, invalidCount, submitAttempted } = validation;
+  const onBlur = (f: EVWorkOrderFieldKey) => () => markTouched(f);
 
   const { data: existingWO } = useQuery({
     queryKey: ["ev-work-order-edit", workOrderId],
