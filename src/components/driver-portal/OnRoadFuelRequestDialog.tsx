@@ -46,8 +46,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Fuel, MapPin, Gauge, Loader2, AlertTriangle, Route, Satellite, RefreshCw } from "lucide-react";
+import { Fuel, MapPin, Gauge, Loader2, AlertTriangle, AlertCircle, Route, Satellite, RefreshCw } from "lucide-react";
 import ConfirmActionDialog from "@/components/users/ConfirmActionDialog";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
 
 interface ActiveRequestLike {
   id: string;
