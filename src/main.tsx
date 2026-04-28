@@ -34,6 +34,12 @@ if (typeof window !== "undefined") {
   });
 }
 
+declare global {
+  interface Window {
+    __fleettrackBooted?: boolean;
+  }
+}
+
 const boot = async () => {
   root.render(<StartupFallback />);
 
@@ -48,6 +54,7 @@ const boot = async () => {
     storeAndForwardService.initialize().catch((err) =>
       console.warn("[StoreForward] Init failed:", err),
     );
+    window.__fleettrackBooted = true;
     root.render(<App />);
   } catch (error) {
     const retries = Number(sessionStorage.getItem(STARTUP_RETRY_KEY) ?? "0");
