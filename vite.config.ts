@@ -9,34 +9,13 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    headers: {
-      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-      "Content-Security-Policy": [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://cdn.gpteng.co",
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com data: https://cdn.gpteng.co",
-        "img-src 'self' data: blob: https:",
-        "connect-src 'self' ws: wss: http: https:",
-        "frame-src 'self' https://www.openstreetmap.org https://www.google.com https://maps.google.com",
-        "worker-src 'self' blob:",
-        "base-uri 'self'",
-        "form-action 'self'",
-      ].join("; "),
-    },
-  },
-  optimizeDeps: {
-    noDiscovery: mode === "development",
-    include: mode === "development" ? [] : undefined,
-    exclude: mode === "development"
-      ? ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime"]
-      : undefined,
   },
   plugins: [
-    react(), 
+    react(),
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
+      disable: mode === "development",
       includeAssets: ['favicon.png', 'robots.txt'],
       manifest: {
         name: 'FleetTrack FMS',
@@ -69,7 +48,8 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB limit
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\.mapbox\.com\/.*/i,
@@ -78,7 +58,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: 'mapbox-cache',
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                maxAgeSeconds: 60 * 60 * 24 * 30,
               },
             },
           },
