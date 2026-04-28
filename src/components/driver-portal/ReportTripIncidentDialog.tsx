@@ -199,21 +199,14 @@ export const ReportTripIncidentDialog = ({
     const validated: File[] = [];
     for (const f of incoming) {
       if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: `${f.name} is over ${MAX_FILE_SIZE_MB}MB.`,
-          variant: "destructive",
-        });
+        toast.error(`${f.name} is over ${MAX_FILE_SIZE_MB}MB and was skipped`);
         continue;
       }
       validated.push(f);
     }
     const next = [...files, ...validated].slice(0, MAX_FILES);
     if (files.length + validated.length > MAX_FILES) {
-      toast({
-        title: "Attachment limit",
-        description: `You can attach up to ${MAX_FILES} files.`,
-      });
+      toast.warning(`You can attach up to ${MAX_FILES} files`);
     }
     setFiles(next);
   };
