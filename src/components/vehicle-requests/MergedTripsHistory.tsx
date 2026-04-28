@@ -209,7 +209,7 @@ export const MergedTripsHistory = ({ organizationId }: Props) => {
           //   - mobile: single column (list, then detail underneath)
           //   - lg: 2 columns; detail width animates closed when minimized
           detailOpen
-            ? "grid-cols-1 lg:grid-cols-[minmax(320px,420px)_1fr]"
+            ? "grid-cols-1 xl:grid-cols-[minmax(300px,360px)_1fr]"
             : "grid-cols-1",
         )}
       >
