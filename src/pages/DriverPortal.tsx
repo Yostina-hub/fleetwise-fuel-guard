@@ -49,7 +49,15 @@ const DriverPortal = () => {
   const { organizationId, isSuperAdmin, loading: organizationLoading } = useOrganization();
   const [searchParams] = useSearchParams();
   const overrideDriverId = isSuperAdmin ? searchParams.get("driverId") : null;
-  const [activeTab, setActiveTab] = useState("assignments");
+  // Allow `?tab=shared|requests|...` deep-links from notifications to open
+  // the correct tab on first paint.
+  const initialTab = searchParams.get("tab") || "assignments";
+  const [activeTab, setActiveTab] = useState(initialTab);
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t && t !== activeTab) setActiveTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Dialog states
   // Maintenance/fuel quick actions now route to the focused incident + on-road
