@@ -392,6 +392,16 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   });
 
   // ── Auto-Dispatch (server-side route merge + closest-vehicle assignment) ──
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<{
+    groups: number;
+    assigned: number;
+    skipped: number;
+    dry_run: boolean;
+    details: any[];
+  } | null>(null);
+  const [confirmRunOpen, setConfirmRunOpen] = useState(false);
+
   const autoDispatchMutation = useMutation({
     mutationFn: async ({ dryRun }: { dryRun: boolean }) => {
       const { data, error } = await supabase.functions.invoke("auto-dispatch-pool", {
@@ -409,8 +419,9 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     },
     onSuccess: (data) => {
       if (data.dry_run) {
-        const wouldAssign = data.details.filter((d: any) => d.chosen_vehicle).length;
-        toast.info(`Preview: ${data.groups} route group(s), would assign ${wouldAssign}`);
+        // Open the preview dialog with full breakdown
+        setPreviewData(data);
+        setPreviewOpen(true);
       } else if (data.assigned === 0) {
         toast.warning(
           data.skipped > 0
@@ -421,6 +432,8 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         toast.success(
           `Auto-dispatched ${data.assigned} request(s) across ${data.groups} consolidated trip(s)`,
         );
+        setPreviewOpen(false);
+        setConfirmRunOpen(false);
       }
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
@@ -428,6 +441,8 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     },
     onError: (err: any) => toast.error(err?.message || "Auto-dispatch failed"),
   });
+
+  const eligibleCount = approvedRequests.length;
 
   const AutoDispatchBar = (
     <Card className="border-primary/30 bg-primary/5">
