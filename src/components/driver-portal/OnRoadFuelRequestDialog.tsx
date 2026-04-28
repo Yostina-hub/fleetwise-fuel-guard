@@ -46,8 +46,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Fuel, MapPin, Gauge, Loader2, AlertTriangle, Route, Satellite, RefreshCw } from "lucide-react";
+import { Fuel, MapPin, Gauge, Loader2, AlertTriangle, AlertCircle, Route, Satellite, RefreshCw } from "lucide-react";
 import ConfirmActionDialog from "@/components/users/ConfirmActionDialog";
+import { useFieldValidation } from "@/hooks/useFieldValidation";
 
 interface ActiveRequestLike {
   id: string;
@@ -179,6 +180,23 @@ export const OnRoadFuelRequestDialog = ({
 
   const [form, setForm] = useState<FormState>(() => initialState(lastOdometerKm));
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const v = useFieldValidation(schema, () => ({
+    current_location: form.current_location,
+    current_odometer: Number(form.current_odometer),
+    current_fuel_percent:
+      form.current_fuel_percent.trim() === "" ? undefined : Number(form.current_fuel_percent),
+    liters_requested: Number(form.liters_requested),
+    urgency: form.urgency,
+    reason: form.reason,
+    remaining_distance_km:
+      form.remaining_distance_km.trim() === "" ? undefined : Number(form.remaining_distance_km),
+    notes: form.notes.trim() || undefined,
+  }));
+
+  useEffect(() => {
+    if (open) v.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Resolve effective vehicle: prefer the active trip's assigned vehicle,
   // otherwise fall back to the driver's permanently assigned vehicle.
@@ -466,31 +484,29 @@ export const OnRoadFuelRequestDialog = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Validate up-front so we surface friendly errors before the confirm step.
-    try {
-      schema.parse({
-        current_location: form.current_location,
-        current_odometer: Number(form.current_odometer),
-        current_fuel_percent:
-          form.current_fuel_percent.trim() === "" ? undefined : Number(form.current_fuel_percent),
-        liters_requested: Number(form.liters_requested),
-        urgency: form.urgency,
-        reason: form.reason,
-        remaining_distance_km:
-          form.remaining_distance_km.trim() === ""
-            ? undefined
-            : Number(form.remaining_distance_km),
-        notes: form.notes.trim() || undefined,
-      });
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        toast.error(err.issues[0]?.message ?? "Please fix the highlighted fields");
-        return;
-      }
-      throw err;
+    const result = v.validateAll({
+      current_location: form.current_location,
+      current_odometer: Number(form.current_odometer),
+      current_fuel_percent:
+        form.current_fuel_percent.trim() === "" ? undefined : Number(form.current_fuel_percent),
+      liters_requested: Number(form.liters_requested),
+      urgency: form.urgency,
+      reason: form.reason,
+      remaining_distance_km:
+        form.remaining_distance_km.trim() === "" ? undefined : Number(form.remaining_distance_km),
+      notes: form.notes.trim() || undefined,
+    });
+    if (!result.success) {
+      const first = Object.values(result.errors)[0];
+      if (first) toast.error(first);
+      return;
     }
     setConfirmOpen(true);
   };
+
+  const visibleErrorCount = (Object.keys(v.errors) as Array<keyof typeof v.errors>).filter(
+    (k) => v.touched[k] && v.errors[k]
+  ).length;
 
   return (
     <>
@@ -509,6 +525,19 @@ export const OnRoadFuelRequestDialog = ({
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {visibleErrorCount > 0 && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>
+                  {visibleErrorCount === 1
+                    ? "1 field needs your attention before submitting."
+                    : `${visibleErrorCount} fields need your attention before submitting.`}
+                </span>
+              </div>
+            )}
             {/* Trip / shift context (read-only, auto-captured) */}
             <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
@@ -694,10 +723,18 @@ export const OnRoadFuelRequestDialog = ({
                   min={1}
                   step="0.5"
                   value={form.liters_requested}
-                  onChange={(e) => set("liters_requested", e.target.value)}
+                  onChange={(e) => {
+                    set("liters_requested", e.target.value);
+                    v.handleChange("liters_requested", Number(e.target.value));
+                  }}
+                  onBlur={() => v.handleBlur("liters_requested", Number(form.liters_requested))}
+                  aria-invalid={!!v.getError("liters_requested")}
                   placeholder="e.g. 25"
                   required
                 />
+                {v.getError("liters_requested") && (
+                  <p className="text-xs text-destructive">{v.getError("liters_requested")}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Urgency *</Label>
