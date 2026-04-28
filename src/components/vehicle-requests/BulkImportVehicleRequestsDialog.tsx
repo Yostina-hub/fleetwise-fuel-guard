@@ -15,18 +15,24 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Loader2,
   Upload,
   FileSpreadsheet,
   Download,
   AlertTriangle,
+  AlertCircle,
   CheckCircle2,
   FileText,
   X,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+
+// Hard cap on uploaded spreadsheet size to keep parsing snappy and stop
+// runaway memory use on accidental huge files. 10 MB easily covers 200 rows.
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_ROWS = 200;
 
 interface Props {
   open: boolean;
