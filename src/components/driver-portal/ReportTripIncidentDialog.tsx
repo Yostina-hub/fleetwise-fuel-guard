@@ -242,7 +242,7 @@ export const ReportTripIncidentDialog = ({
           trip_id: tripId || null,
           incident_number: incidentNumber,
           incident_type: meta.incidentType,
-          severity: meta.severity,
+          severity: canContinue === "emergency" ? "critical" : meta.severity,
           reason: parsed.reason,
           description: parsed.description,
           km_reading: parsed.km_reading ?? null,
@@ -250,6 +250,8 @@ export const ReportTripIncidentDialog = ({
           incident_time: new Date().toISOString(),
           status: "open",
           reported_via: "driver-portal",
+          can_continue: canContinue,
+          requested_assistance: assistance,
         })
         .select("id")
         .single();
