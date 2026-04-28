@@ -447,28 +447,59 @@ export default function CreateWorkRequestForm({
       <Card className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
           <div>
-            <FieldRow label="Asset Number" required>
+            <FieldRow label="Asset Number" required error={validation.getError("asset_number")}>
               <div className="relative">
-                <Input value={assetNumber} onChange={e => setAssetNumber(e.target.value)} list="asset-list" className="pr-8" />
+                <Input
+                  value={assetNumber}
+                  onChange={e => {
+                    setAssetNumber(e.target.value);
+                    validation.validateField("asset_number", e.target.value, buildValues());
+                  }}
+                  onBlur={e => validation.handleBlur("asset_number", e.target.value, buildValues())}
+                  list="asset-list"
+                  className="pr-8"
+                />
                 <datalist id="asset-list">
                   {vehicles.map(v => <option key={v.id} value={v.plate_number}>{v.make} {v.model}</option>)}
                 </datalist>
                 <Search className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
               </div>
             </FieldRow>
-            <FieldRow label="Assigned Department" required>
-              <Input value={assignedDept} onChange={e => setAssignedDept(e.target.value)} placeholder="Department" />
+            <FieldRow label="Assigned Department" required error={validation.getError("assigned_dept")}>
+              <Input
+                value={assignedDept}
+                onChange={e => {
+                  setAssignedDept(e.target.value);
+                  validation.validateField("assigned_dept", e.target.value, buildValues());
+                }}
+                onBlur={e => validation.handleBlur("assigned_dept", e.target.value, buildValues())}
+                placeholder="Department"
+              />
             </FieldRow>
-            <FieldRow label="Request By Start Date" required>
-              <DatePickerInline value={requestStartDate} onChange={d => d && setRequestStartDate(d)} />
+            <FieldRow label="Request By Start Date" required error={validation.getError("request_start_date")}>
+              <DatePickerInline
+                value={requestStartDate}
+                onChange={d => {
+                  if (d) setRequestStartDate(d);
+                  validation.validateField("request_start_date", d?.toISOString() ?? "", buildValues());
+                }}
+              />
             </FieldRow>
             <FieldRow label="Requested For">
               <Input value={requestedFor} onChange={e => setRequestedFor(e.target.value)} placeholder="Employee code" />
             </FieldRow>
           </div>
           <div>
-            <FieldRow label="Work Request Type">
-              <Select value={workRequestType} onValueChange={setWorkRequestType}>
+            <FieldRow label="Work Request Type" error={validation.getError("work_request_type")}>
+              <Select
+                value={workRequestType}
+                onValueChange={(v) => {
+                  setWorkRequestType(v);
+                  validation.validateField("work_request_type", v, { ...buildValues(), work_request_type: v });
+                  // Inspection sub-type becomes required/optional depending on this
+                  validation.validateField("inspection_sub_type", inspectionSubType, { ...buildValues(), work_request_type: v });
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="corrective">Corrective</SelectItem>
@@ -478,8 +509,14 @@ export default function CreateWorkRequestForm({
                 </SelectContent>
               </Select>
             </FieldRow>
-            <FieldRow label="Priority" required>
-              <Select value={priority} onValueChange={setPriority}>
+            <FieldRow label="Priority" required error={validation.getError("priority")}>
+              <Select
+                value={priority}
+                onValueChange={(v) => {
+                  setPriority(v);
+                  validation.validateField("priority", v, buildValues());
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
@@ -489,9 +526,15 @@ export default function CreateWorkRequestForm({
                 </SelectContent>
               </Select>
             </FieldRow>
-            <FieldRow label="Request By Completion Date">
+            <FieldRow label="Request By Completion Date" error={validation.getError("completion_date")}>
               <div>
-                <DatePickerInline value={completionDate} onChange={setCompletionDate} />
+                <DatePickerInline
+                  value={completionDate}
+                  onChange={(d) => {
+                    setCompletionDate(d);
+                    validation.validateField("completion_date", d?.toISOString() ?? "", buildValues());
+                  }}
+                />
                 <p className="text-xs text-muted-foreground mt-1">(example {format(new Date(Date.now() + 86400000), "dd-MMM-yyyy HH:mm:ss")})</p>
               </div>
             </FieldRow>
@@ -513,8 +556,17 @@ export default function CreateWorkRequestForm({
       {/* Request Description */}
       <Card className="p-6">
         <SectionTitle>Request Description</SectionTitle>
-        <FieldRow label="Additional Description" required>
-          <Textarea value={additionalDescription} onChange={e => setAdditionalDescription(e.target.value)} rows={3} />
+        <FieldRow label="Additional Description" required error={validation.getError("additional_description")}>
+          <Textarea
+            value={additionalDescription}
+            onChange={e => {
+              setAdditionalDescription(e.target.value);
+              validation.validateField("additional_description", e.target.value, buildValues());
+            }}
+            onBlur={e => validation.handleBlur("additional_description", e.target.value, buildValues())}
+            rows={3}
+            maxLength={2000}
+          />
         </FieldRow>
       </Card>
 
