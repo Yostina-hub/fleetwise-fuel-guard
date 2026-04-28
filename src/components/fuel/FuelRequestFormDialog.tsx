@@ -256,12 +256,13 @@ export const FuelRequestFormDialog = ({
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
   const v = useFuelRequestValidation();
 
-  // Reset on open/prefill change
   useEffect(() => {
     if (open) {
       setForm(buildInitial(prefill));
       setSelectedStation(null);
+      v.reset();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, prefill?.vehicle_id, prefill?.driver_id, prefill?.request_type]);
 
   // Auto-fill driver phone/employee from drivers list when driver_id present (driver portal)
