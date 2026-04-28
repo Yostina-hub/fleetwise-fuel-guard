@@ -106,7 +106,6 @@ const inventorySchema = z
 
 const InventoryTab = () => {
   const { organizationId } = useOrganization();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -117,12 +116,13 @@ const InventoryTab = () => {
   const [formData, setFormData] = useState({
     part_number: "",
     part_name: "",
-    category: "other" as const,
+    category: "other" as (typeof INVENTORY_CATEGORIES)[number],
     current_quantity: 0,
     minimum_quantity: 0,
     unit_cost: 0,
     unit_of_measure: "pcs",
   });
+  const v = useFieldValidation(inventorySchema, () => formData);
 
   const { data: inventory, isLoading } = useQuery({
     queryKey: ["inventory_items", organizationId],
