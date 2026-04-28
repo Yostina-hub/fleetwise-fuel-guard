@@ -7,7 +7,7 @@ import { WorkflowFieldset } from "./WorkflowFieldset";
 import type { WorkflowConfig } from "./types";
 import { useWorkflow } from "./useWorkflow";
 import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
-import { FileText } from "lucide-react";
+import { FileText, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { DraftStatus } from "@/components/inbox/DraftStatus";
