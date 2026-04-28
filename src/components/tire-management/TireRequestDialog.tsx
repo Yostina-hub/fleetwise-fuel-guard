@@ -676,7 +676,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
             </Button>
             <Button
               size="sm"
-              onClick={() => mutation.mutate()}
+              onClick={handleSubmit}
               disabled={mutation.isPending}
               className="gap-1.5"
             >
