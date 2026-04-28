@@ -21,6 +21,32 @@ export default defineConfig(({ mode }) => ({
       protocol: "wss",
       clientPort: 443,
     },
+    warmup: {
+      clientFiles: [
+        "./src/main.tsx",
+        "./src/App.tsx",
+        "./src/index.css",
+        "./src/i18n/index.ts",
+        "./src/services/storeAndForwardService.ts",
+      ],
+    },
+  },
+  optimizeDeps: {
+    include: [
+      "@vite/client",
+      "@react-refresh",
+      "react",
+      "react/jsx-dev-runtime",
+      "react-dom/client",
+      "react-router-dom",
+      "@tanstack/react-query",
+      "react-i18next",
+      "i18next",
+      "i18next-browser-languagedetector",
+      "sonner",
+      "lucide-react",
+      "framer-motion",
+    ],
   },
   plugins: [
     react(),
