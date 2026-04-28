@@ -568,8 +568,12 @@ export const OpsMapView = ({ organizationId }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requests, parentStopSequence]);
   const routeFetchedCount = useMemo(
-    () => requests.filter((r) => routeGeoms[r.id]).length,
-    [requests, routeGeoms],
+    () => requests.filter((r) => routeGeoms[r.id] || routeStatus[r.id] === "estimated").length,
+    [requests, routeGeoms, routeStatus],
+  );
+  const estimatedRouteCount = useMemo(
+    () => requests.filter((r) => routeStatus[r.id] === "estimated").length,
+    [requests, routeStatus],
   );
   const withCoordsCount = useMemo(
     () =>
@@ -729,7 +733,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
         const realGeom = alts && alts.length > 0
           ? alts[Math.min(altIdx, alts.length - 1)].geometry
           : routeGeoms[r.id];
-        const usingFallback = !realGeom;
+        const usingFallback = !realGeom || routeStatus[r.id] === "estimated";
         const lineCoords: [number, number][] = realGeom ?? [
           [r.departure_lng, r.departure_lat],
           [r.destination_lng, r.destination_lat],
@@ -886,7 +890,7 @@ export const OpsMapView = ({ organizationId }: Props) => {
     // every routeAlts/routeGeoms update was causing the map to pan/zoom
     // repeatedly during routing, which pushed geofences off-screen and made
     // them appear to "disappear" once routing finished.
-  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms, routeAlts, selectedAltIdx, parentStopSequence]);
+  }, [ready, visibleRequests, available, allVehicles, showRoutes, showVehicles, mergeGroupColorByRequestId, routeGeoms, routeAlts, routeStatus, selectedAltIdx, parentStopSequence]);
 
   // Dedicated auto-fit pass — runs only when the *set* of requests / vehicles /
   // geofences changes (not when per-route geometry arrives). Bounds include
