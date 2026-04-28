@@ -520,9 +520,13 @@ export const OpsMapView = ({ organizationId }: Props) => {
         try {
           // Always ask for alternatives — backend has fallbacks (stitched +
           // via-points) so even single-leg routes get 2-3 genuine variants.
-          const { data, error } = await supabase.functions.invoke("route-directions", {
-            body: { coordinates, alternatives: true },
-          });
+          const { data, error } = await withTimeout(
+            supabase.functions.invoke("route-directions", {
+              body: { coordinates, alternatives: true },
+            }),
+            ROUTE_CLIENT_TIMEOUT_MS,
+            "route-directions",
+          );
           console.log("[OpsMap] route-directions", r.request_number, { error, ok: data?.ok, geomLen: data?.geometry?.length, alts: data?.alternatives?.length });
           if (!cancelled && !error && data?.ok && Array.isArray(data.geometry)) {
             routeCacheKeyRef.current[r.id] = sig;
