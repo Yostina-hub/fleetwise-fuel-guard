@@ -371,7 +371,7 @@ export default function IncidentDispatchDecisionDialog({
             variant={decision === "emergency" ? "destructive" : "default"}
             disabled={
               submit.isPending ||
-              (decision === "replacement" && !vehicleId && !driverId) ||
+              (decision === "replacement" && (!vehicleId || !driverId)) ||
               (decision === "emergency" && notes.trim().length < 5)
             }
             onClick={() => submit.mutate()}
